@@ -9,8 +9,10 @@ import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw } from 'lucide-rea
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question } from '@/lib/questions';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
+import { ScoreHistoryChart } from './score-history-chart';
+import { Skeleton } from './ui/skeleton';
 
 const motivationalMessages = [
   "Excellent travail !", "Tu es une star !", "Incroyable !", "Continue comme ça !", "Fantastique !", "Bien joué !"
@@ -24,6 +26,14 @@ const icons = [
 
 const NUM_QUESTIONS = 10;
 
+export interface Score {
+  userId: string;
+  skill: string;
+  score: number;
+  createdAt: Timestamp;
+}
+
+
 export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -34,6 +44,8 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const [isFinished, setIsFinished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
+  const [scoreHistory, setScoreHistory] = useState<Score[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   useEffect(() => {
     setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
@@ -73,24 +85,50 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     }
   };
   
-  const handleSaveScore = async () => {
-    if (!username) return;
-    setIsSaving(true);
-    try {
-      await addDoc(collection(db, "scores"), {
-        userId: username,
-        skill: skill.slug,
-        score: (correctAnswers / NUM_QUESTIONS) * 100,
-        createdAt: serverTimestamp()
-      });
-    } catch (e) {
-      console.error("Error adding document: ", e);
-      // Optionally: show a toast to the user
-    } finally {
-      setIsSaving(false);
-      // Maybe navigate away or show a "Done" message
-    }
-  };
+  // Effect to save score and fetch history when finished
+  useEffect(() => {
+    const saveScoreAndFetchHistory = async () => {
+      if (isFinished && username && !isSaving) {
+        setIsSaving(true);
+        setIsLoadingHistory(true);
+        
+        // 1. Save the new score
+        const newScore = (correctAnswers / NUM_QUESTIONS) * 100;
+        try {
+          await addDoc(collection(db, "scores"), {
+            userId: username,
+            skill: skill.slug,
+            score: newScore,
+            createdAt: serverTimestamp()
+          });
+        } catch (e) {
+          console.error("Error adding document: ", e);
+        } finally {
+            setIsSaving(false);
+        }
+        
+        // 2. Fetch all scores for this user and skill
+        try {
+          const scoresRef = collection(db, "scores");
+          const q = query(
+            scoresRef,
+            where("userId", "==", username),
+            where("skill", "==", skill.slug),
+            orderBy("createdAt", "desc")
+          );
+          const querySnapshot = await getDocs(q);
+          const history = querySnapshot.docs.map(doc => doc.data() as Score);
+          setScoreHistory(history);
+        } catch (e) {
+          console.error("Error fetching scores: ", e);
+        } finally {
+            setIsLoadingHistory(false);
+        }
+      }
+    };
+    
+    saveScoreAndFetchHistory();
+  }, [isFinished, username, skill.slug, correctAnswers, isSaving]);
   
   const restartExercise = () => {
     setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
@@ -99,26 +137,35 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setFeedback(null);
     setIsFinished(false);
     setShowConfetti(false);
+    setScoreHistory([]);
+    setIsLoadingHistory(true);
   };
 
   if (isFinished) {
     const score = (correctAnswers / NUM_QUESTIONS) * 100;
     return (
-      <Card className="w-full shadow-2xl text-center p-8">
-        <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
+      <Card className="w-full shadow-2xl text-center p-4 sm:p-8">
+        <CardHeader>
+          <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-2xl">
             Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
           </p>
           <p className="text-5xl font-bold text-accent">{score}%</p>
-          {username && (
-             <Button onClick={handleSaveScore} disabled={isSaving} size="lg">
-              {isSaving ? "Enregistrement..." : "Enregistrer mon score"}
-            </Button>
+         
+          {isLoadingHistory ? (
+            <div className="space-y-4 mt-6">
+              <Skeleton className="h-8 w-1/3 mx-auto" />
+              <Skeleton className="h-48 w-full" />
+            </div>
+          ) : (
+            scoreHistory.length > 0 && <ScoreHistoryChart scoreHistory={scoreHistory} />
           )}
-          <Button onClick={restartExercise} variant="outline" size="lg">
+
+          <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
             <RefreshCw className="mr-2" />
-            Recommencer
+            Recommencer un autre exercice
           </Button>
         </CardContent>
       </Card>
