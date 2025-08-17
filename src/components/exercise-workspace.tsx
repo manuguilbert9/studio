@@ -10,27 +10,27 @@ import { Check, Heart, Sparkles, Star, ThumbsUp, X } from 'lucide-react';
 
 const questions = {
   time: [
-    { question: 'What time does the clock show?', image: 'https://placehold.co/400x200.png', options: ['3:00', '9:00', '12:30', '6:00'], answer: '3:00', hint: 'analog clock' },
+    { question: 'Quelle heure est-il sur l\'horloge ?', image: 'https://placehold.co/400x200.png', options: ['3:00', '9:00', '12:30', '6:00'], answer: '3:00', hint: 'analog clock' },
   ],
   writing: [
-    { question: 'Which word is spelled correctly?', image: null, options: ['Elefant', 'Elephant', 'Elaphant', 'Elefent'], answer: 'Elephant', hint: 'animal spelling' },
+    { question: 'Quel mot est correctement orthographié ?', image: null, options: ['Éléfan', 'Éléphant', 'Éléfant', 'Éléfen'], answer: 'Éléphant', hint: 'orthographe animal' },
   ],
   currency: [
-    { question: 'How much money is this?', image: 'https://placehold.co/300x150.png', options: ['$1.25', '$0.75', '$1.50', '$2.00'], answer: '$1.25', hint: 'us coins' },
+    { question: 'Combien d\'argent y a-t-il ?', image: 'https://placehold.co/300x150.png', options: ['1,25 €', '0,75 €', '1,50 €', '2,00 €'], answer: '1,25 €', hint: 'pièces euros' },
   ],
   reading: [
-    { question: 'Read the story and answer: What did the fox eat?', image: 'https://placehold.co/600x100.png', options: ['Grapes', 'Cheese', 'Chicken', 'Fish'], answer: 'Grapes', hint: 'story book' },
+    { question: 'Lisez l\'histoire et répondez : Qu\'a mangé le renard ?', image: 'https://placehold.co/600x100.png', options: ['Des raisins', 'Du fromage', 'Du poulet', 'Du poisson'], answer: 'Des raisins', hint: 'livre histoire' },
   ],
   calculation: [
-    { question: 'What is 5 + 7?', image: null, options: ['10', '11', '12', '13'], answer: '12', hint: 'math equation' },
+    { question: 'Combien font 5 + 7 ?', image: null, options: ['10', '11', '12', '13'], answer: '12', hint: 'équation mathématique' },
   ],
   default: [
-    { question: 'This is a sample question. Pick the correct answer.', image: null, options: ['Correct Answer', 'Wrong Answer', 'Wrong Answer', 'Wrong Answer'], answer: 'Correct Answer', hint: 'question mark' },
+    { question: 'Ceci est un exemple de question. Choisissez la bonne réponse.', image: null, options: ['Bonne réponse', 'Mauvaise réponse', 'Mauvaise réponse', 'Mauvaise réponse'], answer: 'Bonne réponse', hint: 'point d\'interrogation' },
   ]
 };
 
 const motivationalMessages = [
-  "Great job!", "You're a star!", "Amazing!", "Keep it up!", "Fantastic!", "Well done!"
+  "Excellent travail !", "Tu es une star !", "Incroyable !", "Continue comme ça !", "Fantastique !", "Bien joué !"
 ];
 const icons = [
   <Star key="star" className="h-8 w-8 text-yellow-400" />,

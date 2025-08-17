@@ -52,29 +52,29 @@ export default function Home() {
         </div>
         <Card className="w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
           <CardHeader className="text-center">
-            <CardTitle className="font-headline text-4xl">Welcome!</CardTitle>
+            <CardTitle className="font-headline text-4xl">Bienvenue !</CardTitle>
             <CardDescription className="text-lg">
-              Let's get started. What should we call you?
+              Commençons. Comment devrions-nous vous appeler ?
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent>
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-base">First Name</Label>
+                <Label htmlFor="name" className="text-base">Prénom</Label>
                 <Input
                   id="name"
-                  placeholder="Enter your name..."
+                  placeholder="Entrez votre nom..."
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   className="text-base h-12"
                   required
-                  aria-label="First Name"
+                  aria-label="Prénom"
                 />
               </div>
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full text-lg py-6 bg-accent text-accent-foreground hover:bg-accent/90">
-                Continue <ArrowRight className="ml-2" />
+                Continuer <ArrowRight className="ml-2" />
               </Button>
             </CardFooter>
           </form>
@@ -87,12 +87,12 @@ export default function Home() {
     <main className="container mx-auto px-4 py-8">
       <header className="mb-12 text-center space-y-4">
         <Logo />
-        <h2 className="font-headline text-5xl">Hello, {name}!</h2>
-        <p className="text-xl text-muted-foreground">What would you like to practice today?</p>
+        <h2 className="font-headline text-5xl">Bonjour, {name}!</h2>
+        <p className="text-xl text-muted-foreground">Que voudriez-vous pratiquer aujourd'hui ?</p>
       </header>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
         {skills.map((skill) => (
-          <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Practice ${skill.name}`}>
+          <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
             <Card className="flex h-full flex-col items-center justify-center p-8 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
               <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-20 [&>svg]:w-20">
                 {skill.icon}

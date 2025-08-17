@@ -16,33 +16,33 @@ export interface Skill {
 
 export const skills: Skill[] = [
   {
-    name: 'Writing',
+    name: 'Écriture',
     slug: 'writing',
-    description: 'Practice spelling and grammar.',
+    description: "Pratiquez l'orthographe et la grammaire.",
     icon: <FilePenLine />,
   },
   {
-    name: 'Time',
+    name: 'L\'heure',
     slug: 'time',
-    description: 'Learn to read analog and digital clocks.',
+    description: 'Apprenez à lire les horloges analogiques et numériques.',
     icon: <Clock />,
   },
   {
-    name: 'Currency',
+    name: 'Monnaie',
     slug: 'currency',
-    description: 'Practice counting money and making change.',
+    description: "Entraînez-vous à compter l'argent et à rendre la monnaie.",
     icon: <PiggyBank />,
   },
   {
-    name: 'Reading',
+    name: 'Lecture',
     slug: 'reading',
-    description: 'Improve reading comprehension skills.',
+    description: 'Améliorez vos compétences en compréhension de lecture.',
     icon: <BookOpenText />,
   },
   {
-    name: 'Calculation',
+    name: 'Calcul',
     slug: 'calculation',
-    description: 'Sharpen your addition and subtraction skills.',
+    description: "Aiguisez vos compétences en addition et soustraction.",
     icon: <Calculator />,
   },
 ];

@@ -26,11 +26,11 @@ export default function ExercisePage({ params }: { params: { skill: string } }) 
            <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link href="/">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Skills
+              Retour aux compétences
             </Link>
           </Button>
            <Button asChild variant="ghost" size="icon" className="sm:hidden">
-            <Link href="/" aria-label="Back to Skills">
+            <Link href="/" aria-label="Retour aux compétences">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
