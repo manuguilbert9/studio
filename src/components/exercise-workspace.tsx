@@ -2,7 +2,7 @@
 
 import type { Skill } from '@/lib/skills.tsx';
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
@@ -80,12 +80,6 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
              };
              return <div key={i} style={style} className="absolute top-[-10%]">{icons[i % icons.length]}</div>
            })}
-           <style jsx>{`
-            @keyframes fall {
-              0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
-              100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-            }
-          `}</style>
         </div>
       )}
 
@@ -133,6 +127,10 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         )}
       </CardFooter>
       <style jsx>{`
+        @keyframes fall {
+          0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
