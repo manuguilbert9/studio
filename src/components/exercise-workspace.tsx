@@ -89,7 +89,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
       if (isFinished && username && !isSaving) {
-        setIsSaving(true);
+        setIsSaving(true); // Set saving status
         setIsLoadingHistory(true);
         
         // 1. Save the new score
@@ -103,8 +103,6 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           });
         } catch (e) {
           console.error("Error adding document: ", e);
-        } finally {
-            setIsSaving(false);
         }
         
         // 2. Fetch all scores for this user and skill
@@ -123,11 +121,15 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           console.error("Error fetching scores: ", e);
         } finally {
             setIsLoadingHistory(false);
+            // DO NOT set isSaving to false here, to prevent re-triggering
         }
       }
     };
     
     saveScoreAndFetchHistory();
+    // This effect should ONLY depend on isFinished, username, and skill.slug
+    // to avoid re-running when other state like correctAnswers changes during the quiz.
+    // The isSaving flag prevents it from running multiple times.
   }, [isFinished, username, skill.slug, correctAnswers, isSaving]);
   
   const restartExercise = () => {
@@ -139,6 +141,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setShowConfetti(false);
     setScoreHistory([]);
     setIsLoadingHistory(true);
+    setIsSaving(false); // Reset saving status for the next round
   };
 
   if (isFinished) {
