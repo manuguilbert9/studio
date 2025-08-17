@@ -3,14 +3,20 @@
 import type { Skill } from '@/lib/skills.tsx';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import Image from 'next/image';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X } from 'lucide-react';
+import { AnalogClock } from './analog-clock';
 
 const questions = {
   time: [
-    { question: 'Quelle heure est-il sur l\'horloge ?', image: 'https://placehold.co/400x200.png', options: ['3:00', '9:00', '12:30', '6:00'], answer: '3:00', hint: 'analog clock' },
+    { 
+      question: 'Quelle heure est-il sur l\'horloge ?', 
+      hour: 3, 
+      minute: 0,
+      options: ['3:00', '9:00', '12:30', '6:00'], 
+      answer: '3:00', 
+    },
   ],
   writing: [
     { question: 'Quel mot est correctement orthographié ?', image: null, options: ['Éléfan', 'Éléphant', 'Éléfant', 'Éléfen'], answer: 'Éléphant', hint: 'orthographe animal' },
@@ -87,8 +93,10 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         <CardTitle className="text-3xl text-center font-body">{exerciseData.question}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px]">
-        {exerciseData.image && (
-          <Image
+        {skill.slug === 'time' ? (
+          <AnalogClock hour={exerciseData.hour} minute={exerciseData.minute} />
+        ) : exerciseData.image ? (
+          <img
             src={exerciseData.image}
             alt={exerciseData.question}
             width={400}
@@ -96,7 +104,8 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
             className="rounded-lg object-contain"
             data-ai-hint={exerciseData.hint}
           />
-        )}
+        ) : null}
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
           {exerciseData.options.map((option: string) => (
             <Button
