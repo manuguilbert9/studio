@@ -1,6 +1,5 @@
 'use client';
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import {
   Card,
   CardContent,
@@ -8,30 +7,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart';
 import type { Score } from './exercise-workspace';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ScoreGlass } from './score-glass';
 
 interface ScoreHistoryChartProps {
   scoreHistory: Score[];
 }
 
-const chartConfig = {
-  score: {
-    label: 'Score (%)',
-    color: 'hsl(var(--primary))',
-  },
-} satisfies ChartConfig;
-
 export function ScoreHistoryChart({ scoreHistory }: ScoreHistoryChartProps) {
-  const chartData = scoreHistory.map(item => ({
-    date: item.createdAt ? format(item.createdAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A',
+  // We only show the last 5 scores for clarity
+  const chartData = scoreHistory.slice(0, 5).reverse().map(item => ({
+    date: item.createdAt ? format(item.createdAt.toDate(), 'd MMM', { locale: fr }) : 'N/A',
     score: item.score,
   }));
 
@@ -39,36 +27,23 @@ export function ScoreHistoryChart({ scoreHistory }: ScoreHistoryChartProps) {
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Votre progression</CardTitle>
-        <CardDescription>Voici vos scores pour les derniers exercices.</CardDescription>
+        <CardDescription>Voici vos 5 derniers scores.</CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: -10, bottom: 5 }}>
-              <CartesianGrid vertical={false} />
-              <XAxis
-                dataKey="date"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                fontSize={12}
-              />
-               <YAxis 
-                domain={[0, 100]}
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                fontSize={12}
-                tickFormatter={(value) => `${value}%`}
-              />
-              <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent indicator="line" />}
-              />
-              <Bar dataKey="score" fill="var(--color-score)" radius={4} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartContainer>
+        {chartData.length > 0 ? (
+          <div className="flex justify-around items-end gap-2 sm:gap-4">
+            {chartData.map((item, index) => (
+              <div key={index} className="flex flex-col items-center text-center">
+                 <div style={{ transform: `scale(${1 - (chartData.length - 1 - index) * 0.1})` }}>
+                    <ScoreGlass score={item.score} />
+                 </div>
+                 <p className="text-sm font-medium text-muted-foreground mt-[-1rem]">{item.date}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-muted-foreground">Aucun historique de score pour le moment.</p>
+        )}
       </CardContent>
     </Card>
   );
