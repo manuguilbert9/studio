@@ -15,7 +15,7 @@ const writingQuestions: Omit<Question, 'question'>[] = [
     { options: ['Écolle', 'Aicole', 'École', 'Aicolle'], answer: 'École', hint: 'orthographe lieu d\'apprentissage' },
     { options: ['Garçon', 'Garcon', 'Garscon', 'Garçons'], answer: 'Garçon', hint: 'orthographe personne' },
     { options: ['Fille', 'Fiile', 'Fie', 'Fill'], answer: 'Fille', hint: 'orthographe personne' },
-    { options: ['Livre', 'Lievre', 'Livre', 'Leavre'], answer: 'Livre', hint: 'orthographe objet' },
+    { options: ['Livre', 'Lievre', 'Lyvre', 'Leavre'], answer: 'Livre', hint: 'orthographe objet' },
     { options: ['Table', 'Tabble', 'Tabel', 'Tabl'], answer: 'Table', hint: 'orthographe meuble' },
     { options: ['Chése', 'Chaize', 'Chèze', 'Chaise'], answer: 'Chaise', hint: 'orthographe meuble' },
     { options: ['Ordinater', 'Ordinateur', 'Ordinatore', 'Ordinatur'], answer: 'Ordinateur', hint: 'orthographe appareil' },
@@ -89,7 +89,7 @@ export function generateQuestions(skill: string, count: number): Question[] {
   // Fallback for other skills for now
   return Array.from({ length: count }, () => ({
     question: 'Ceci est un exemple de question. Choisissez la bonne réponse.',
-    options: ['Bonne réponse', 'Mauvaise réponse', 'Mauvaise réponse', 'Mauvaise réponse'],
+    options: ['Bonne réponse', 'Mauvaise réponse', 'Autre mauvaise réponse', 'Encore une autre'],
     answer: 'Bonne réponse',
     hint: 'point d\'interrogation',
   }));
