@@ -13,6 +13,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, Ti
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryChart } from './score-history-chart';
 import { Skeleton } from './ui/skeleton';
+import { ScoreGlass } from './score-glass';
 
 const motivationalMessages = [
   "Excellent travail !", "Tu es une star !", "Incroyable !", "Continue comme ça !", "Fantastique !", "Bien joué !"
@@ -133,7 +134,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     // This effect should ONLY depend on isFinished, username, and skill.slug
     // to avoid re-running when other state like correctAnswers changes during the quiz.
     // The isSaving flag prevents it from running multiple times.
-  }, [isFinished, username, skill.slug, isSaving]);
+  }, [isFinished, username, skill.slug, isSaving, correctAnswers]);
   
   const restartExercise = () => {
     setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
@@ -158,7 +159,8 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           <p className="text-2xl">
             Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
           </p>
-          <p className="text-5xl font-bold text-accent">{score}%</p>
+          
+          <ScoreGlass score={score} />
          
           {isLoadingHistory ? (
             <div className="space-y-4 mt-6">
