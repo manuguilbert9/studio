@@ -1,16 +1,17 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Par défaut, refuser l'accès à toutes les collections
-    match /{document=**} {
-      allow read, write: if false;
-    }
-
-    // Autoriser la lecture et l'écriture pour la collection "scores"
     match /scores/{scoreId} {
       allow read, write: if true;
+    }
+    
+    // This rule is a default rule that allows anyone to read and write to the database.
+    // It is not recommended for production environments.
+    // Before deploying to production, you should secure your database.
+    // See https://firebase.google.com/docs/firestore/security/get-started
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
