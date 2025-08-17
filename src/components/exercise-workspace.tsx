@@ -108,14 +108,17 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         // 2. Fetch all scores for this user and skill
         try {
           const scoresRef = collection(db, "scores");
+          // The query that required an index was: query(scoresRef, where("userId", "==", username), where("skill", "==", skill.slug), orderBy("createdAt", "desc"))
+          // Let's simplify it and sort on the client.
           const q = query(
             scoresRef,
             where("userId", "==", username),
-            where("skill", "==", skill.slug),
-            orderBy("createdAt", "desc")
+            where("skill", "==", skill.slug)
           );
           const querySnapshot = await getDocs(q);
-          const history = querySnapshot.docs.map(doc => doc.data() as Score);
+          const history = querySnapshot.docs
+            .map(doc => doc.data() as Score)
+            .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()); // Sort client-side
           setScoreHistory(history);
         } catch (e) {
           console.error("Error fetching scores: ", e);
@@ -130,7 +133,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     // This effect should ONLY depend on isFinished, username, and skill.slug
     // to avoid re-running when other state like correctAnswers changes during the quiz.
     // The isSaving flag prevents it from running multiple times.
-  }, [isFinished, username, skill.slug, correctAnswers, isSaving]);
+  }, [isFinished, username, skill.slug, isSaving]);
   
   const restartExercise = () => {
     setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
@@ -191,7 +194,8 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
                 animation: `fall ${Math.random() * 2 + 3}s linear ${Math.random() * 2}s infinite`,
                 transform: `scale(${Math.random() * 0.5 + 0.5})`,
                };
-               return <div key={i} style={style} className="absolute top-[-10%]">{icons[i % icons.length]}</div>
+               const Icon = icons[i % icons.length];
+               return <div key={i} style={style} className="absolute top-[-10%]">{Icon}</div>
              })}
           </div>
         )}
