@@ -7,13 +7,14 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question } from '@/lib/questions';
+import { generateQuestions, type Question, type CalculationSettings as CalcSettings } from '@/lib/questions';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryChart } from './score-history-chart';
 import { Skeleton } from './ui/skeleton';
 import { ScoreGlass } from './score-glass';
+import { CalculationSettings } from './calculation-settings';
 
 const motivationalMessages = [
   "Excellent travail !", "Tu es une star !", "Incroyable !", "Continue comme ça !", "Fantastique !", "Bien joué !"
@@ -34,7 +35,6 @@ export interface Score {
   createdAt: Timestamp;
 }
 
-
 export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -47,14 +47,26 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const [username, setUsername] = useState<string | null>(null);
   const [scoreHistory, setScoreHistory] = useState<Score[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [calculationSettings, setCalculationSettings] = useState<CalcSettings | null>(null);
+  const [isReadyToStart, setIsReadyToStart] = useState(false);
+
 
   useEffect(() => {
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+    if (skill.slug !== 'calculation') {
+      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+      setIsReadyToStart(true);
+    }
     const storedName = localStorage.getItem('skillfiesta_username');
     if (storedName) {
       setUsername(storedName);
     }
   }, [skill.slug]);
+  
+  const startCalculationExercise = (settings: CalcSettings) => {
+    setCalculationSettings(settings);
+    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, settings));
+    setIsReadyToStart(true);
+  };
 
   const exerciseData = useMemo(() => {
     return questions[currentQuestionIndex];
@@ -86,14 +98,12 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     }
   };
   
-  // Effect to save score and fetch history when finished
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
       if (isFinished && username && !isSaving) {
-        setIsSaving(true); // Set saving status
+        setIsSaving(true);
         setIsLoadingHistory(true);
         
-        // 1. Save the new score
         const newScore = (correctAnswers / NUM_QUESTIONS) * 100;
         try {
           await addDoc(collection(db, "scores"), {
@@ -106,11 +116,8 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           console.error("Error adding document: ", e);
         }
         
-        // 2. Fetch all scores for this user and skill
         try {
           const scoresRef = collection(db, "scores");
-          // The query that required an index was: query(scoresRef, where("userId", "==", username), where("skill", "==", skill.slug), orderBy("createdAt", "desc"))
-          // Let's simplify it and sort on the client.
           const q = query(
             scoresRef,
             where("userId", "==", username),
@@ -119,25 +126,21 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           const querySnapshot = await getDocs(q);
           const history = querySnapshot.docs
             .map(doc => doc.data() as Score)
-            .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()); // Sort client-side
+            .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
           setScoreHistory(history);
         } catch (e) {
           console.error("Error fetching scores: ", e);
         } finally {
             setIsLoadingHistory(false);
-            // DO NOT set isSaving to false here, to prevent re-triggering
         }
       }
     };
     
     saveScoreAndFetchHistory();
-    // This effect should ONLY depend on isFinished, username, and skill.slug
-    // to avoid re-running when other state like correctAnswers changes during the quiz.
-    // The isSaving flag prevents it from running multiple times.
   }, [isFinished, username, skill.slug, isSaving, correctAnswers]);
   
   const restartExercise = () => {
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+    setQuestions([]);
     setCurrentQuestionIndex(0);
     setCorrectAnswers(0);
     setFeedback(null);
@@ -145,8 +148,18 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setShowConfetti(false);
     setScoreHistory([]);
     setIsLoadingHistory(true);
-    setIsSaving(false); // Reset saving status for the next round
+    setIsSaving(false);
+    setIsReadyToStart(false);
+    setCalculationSettings(null);
+     if (skill.slug !== 'calculation') {
+      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+      setIsReadyToStart(true);
+    }
   };
+
+  if (!isReadyToStart && skill.slug === 'calculation') {
+    return <CalculationSettings onStart={startCalculationExercise} />;
+  }
 
   if (isFinished) {
     const score = (correctAnswers / NUM_QUESTIONS) * 100;
