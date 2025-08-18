@@ -3,6 +3,7 @@
 
 
 
+
 export interface Question {
   type: 'qcm' | 'compose-sum';
   question: string;
@@ -105,15 +106,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
     let image: string | null = null;
     
     // For level 3, we can have different types of questions
-    const questionTypeRandomizer = Math.random();
-    if (difficulty === 2 && questionTypeRandomizer < 0.33) {
-      const targetAmount = (Math.floor(Math.random() * 10) + 1) * 100 + (Math.floor(Math.random() * 10)) * 5; // e.g., 7.50€
-      return {
-          type: 'compose-sum',
-          question: `Compose la somme de ${formatCurrency(targetAmount)}`,
-          targetAmount: targetAmount,
-      };
-    }
+    let questionTypeRandomizer = Math.random();
 
     switch (difficulty) {
         case 0: { // Reconnaissance
@@ -132,33 +125,53 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
             break;
         }
 
-        case 1: { // Comptage simple
-             const numItems = Math.floor(Math.random() * 3) + 2; // 2 to 4 items
-             let selectedItems = [];
-             let totalValue = 0;
-             const availableSimpleCurrency = currency.filter(c => [100, 200, 500, 1000].includes(c.value)); // 1€, 2€, 5€, 10€
+        case 1: { // Comptage simple / Composition simple
+             if (questionTypeRandomizer < 0.5) {
+                // Compose-sum with simple, round amounts
+                const targetAmount = (Math.floor(Math.random() * 10) + 2) * 100; // 2€ to 11€
+                return {
+                    type: 'compose-sum',
+                    question: `Compose la somme de ${formatCurrency(targetAmount)}`,
+                    targetAmount: targetAmount,
+                };
+             } else {
+                // Simple counting QCM
+                const numItems = Math.floor(Math.random() * 3) + 2; // 2 to 4 items
+                let selectedItems = [];
+                let totalValue = 0;
+                const availableSimpleCurrency = currency.filter(c => [100, 200, 500, 1000].includes(c.value)); // 1€, 2€, 5€, 10€
 
-             for (let i = 0; i < numItems; i++) {
-                 const item = availableSimpleCurrency[Math.floor(Math.random() * availableSimpleCurrency.length)];
-                 selectedItems.push(item);
-                 totalValue += item.value;
-             }
+                for (let i = 0; i < numItems; i++) {
+                    const item = availableSimpleCurrency[Math.floor(Math.random() * availableSimpleCurrency.length)];
+                    selectedItems.push(item);
+                    totalValue += item.value;
+                }
 
-             question = 'Quelle est la somme totale ?';
-             answer = formatCurrency(totalValue);
-             options = new Set([answer]);
-             images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
-             while (options.size < 4) {
-                 const errorAmount = (Math.floor(Math.random() * 5) + 1) * 100; // +/- 1, 2...5 euros
-                 const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
-                 if (wrongValue > 0) {
-                     options.add(formatCurrency(wrongValue));
-                 }
+                question = 'Quelle est la somme totale ?';
+                answer = formatCurrency(totalValue);
+                options = new Set([answer]);
+                images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
+                while (options.size < 4) {
+                    const errorAmount = (Math.floor(Math.random() * 5) + 1) * 100; // +/- 1, 2...5 euros
+                    const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
+                    if (wrongValue > 0) {
+                        options.add(formatCurrency(wrongValue));
+                    }
+                }
              }
             break;
         }
         
         case 2: { // Composition / Décomposition / Soustraction
+            if (questionTypeRandomizer < 0.33) {
+                const targetAmount = (Math.floor(Math.random() * 10) + 1) * 100 + (Math.floor(Math.random() * 10)) * 5; // e.g., 7.50€
+                return {
+                    type: 'compose-sum',
+                    question: `Compose la somme de ${formatCurrency(targetAmount)}`,
+                    targetAmount: targetAmount,
+                };
+            }
+
             const questionType = Math.random() > 0.5 ? 'addition' : 'subtraction';
 
             if (questionType === 'subtraction') {
