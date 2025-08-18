@@ -10,121 +10,98 @@ interface AnalogClockProps {
   matchColors?: boolean;
 }
 
-export function AnalogClock({ hour, minute, showMinuteCircle = false, matchColors = false }: AnalogClockProps) {
+export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors = true }: AnalogClockProps) {
   const hourAngle = (hour % 12 + minute / 60) * 30;
   const minuteAngle = minute * 6;
+  
+  const hourColor = "hsl(var(--destructive))";
+  const minuteColor = "hsl(var(--ring))";
 
   return (
     <div className="w-64 h-64 sm:w-80 sm:h-80 mx-auto my-4">
       <svg viewBox="0 0 200 200" className="w-full h-full">
-        <defs>
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
-            <feOffset dx="2" dy="2" result="offsetblur" />
-            <feComponentTransfer>
-              <feFuncA type="linear" slope="0.5" />
-            </feComponentTransfer>
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
+        {/* Backgrounds */}
+        <circle cx="100" cy="100" r="98" fill={minuteColor} fillOpacity="0.3" />
+        <circle cx="100" cy="100" r="70" fill={hourColor} fillOpacity="0.5" />
+        <circle cx="100" cy="100" r="70" stroke={hourColor} strokeWidth="1.5" fill="none" />
 
-        {/* Clock Face */}
-        <circle cx="100" cy="100" r="95" fill="var(--card)" stroke="var(--foreground)" strokeWidth="3" filter="url(#shadow)" />
-
-        {/* Hour and Minute Markers */}
-        {Array.from({ length: 12 }).map((_, i) => {
-          const angle = i * 30;
-          const x1 = 100 + 85 * Math.cos(angle * Math.PI / 180);
-          const y1 = 100 + 85 * Math.sin(angle * Math.PI / 180);
-          const x2 = 100 + 92 * Math.cos(angle * Math.PI / 180);
-          const y2 = 100 + 92 * Math.sin(angle * Math.PI / 180);
-          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--muted-foreground)" strokeWidth="2" />;
-        })}
-        
-        {/* Optional Minute Circle */}
+        {/* Minute Markers and Numbers */}
         {showMinuteCircle && Array.from({ length: 60 }).map((_, i) => {
           const angle = i * 6;
-          const isHourMark = i % 5 === 0;
-          const x1 = 100 + (isHourMark ? 88 : 90) * Math.cos(angle * Math.PI / 180);
-          const y1 = 100 + (isHourMark ? 88 : 90) * Math.sin(angle * Math.PI / 180);
-          const x2 = 100 + 92 * Math.cos(angle * Math.PI / 180);
-          const y2 = 100 + 92 * Math.sin(angle * Math.PI / 180);
-          return <line key={`min-${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--muted-foreground)" strokeWidth={isHourMark ? 2 : 1} />;
-        })}
+          const isFiveMinuteMark = i % 5 === 0;
+          const x1 = 100 + (isFiveMinuteMark ? 80 : 84) * Math.cos((angle - 90) * Math.PI / 180);
+          const y1 = 100 + (isFiveMinuteMark ? 80 : 84) * Math.sin((angle - 90) * Math.PI / 180);
+          const x2 = 100 + 88 * Math.cos((angle - 90) * Math.PI / 180);
+          const y2 = 100 + 88 * Math.sin((angle - 90) * Math.PI / 180);
 
+          if (isFiveMinuteMark) {
+            const numX = 100 + 90 * Math.cos((angle - 90) * Math.PI / 180);
+            const numY = 100 + 90 * Math.sin((angle - 90) * Math.PI / 180);
+            return (
+              <text
+                key={`min-num-${i}`}
+                x={numX}
+                y={numY}
+                dy="0.35em"
+                textAnchor="middle"
+                className={cn("text-[10px] sm:text-xs font-bold", matchColors ? "fill-ring" : "fill-foreground")}
+              >
+                {i}
+              </text>
+            );
+          } else {
+             return (
+                 <circle key={`min-dot-${i}`} cx={x2} cy={y2} r="1" className={cn(matchColors ? "fill-ring" : "fill-muted-foreground")} />
+             )
+          }
+        })}
 
         {/* Hour Numbers */}
         {Array.from({ length: 12 }).map((_, i) => {
-          const angle = (i - 2) * 30;
-          const num = i + 1;
-          const x = 100 + 60 * Math.cos(angle * Math.PI / 180);
-          const y = 100 + 60 * Math.sin(angle * Math.PI / 180);
+          const num = i === 0 ? 12 : i;
+          const angle = (num - 3) * 30; // -3 to align 12 at the top
+          const x = 100 + 55 * Math.cos(angle * Math.PI / 180);
+          const y = 100 + 55 * Math.sin(angle * Math.PI / 180);
           return (
-            <text 
+            <text
               key={`hour-${num}`}
-              x={x} 
-              y={y} 
-              dy=".3em"
+              x={x}
+              y={y}
+              dy=".35em"
               textAnchor="middle"
-              className={cn("text-xl font-numbers font-bold fill-current",
-                 matchColors ? "text-destructive" : "text-foreground"
+              className={cn("text-base sm:text-xl font-bold",
+                 matchColors ? "fill-destructive" : "fill-foreground"
               )}
             >
               {num}
             </text>
           )
         })}
-        
-         {/* Optional Minute Numbers */}
-        {showMinuteCircle && Array.from({ length: 12 }).map((_, i) => {
-          const angle = (i - 2) * 30;
-           const num = (i + 1) * 5 % 60;
-          const x = 100 + 78 * Math.cos(angle * Math.PI / 180);
-          const y = 100 + 78 * Math.sin(angle * Math.PI / 180);
-          return (
-            <text 
-              key={`min-num-${i}`}
-              x={x} 
-              y={y} 
-              dy=".3em"
-              textAnchor="middle"
-              className={cn("text-xs font-numbers font-bold fill-current",
-                 matchColors ? "text-ring" : "text-muted-foreground"
-              )}
-            >
-              {num === 0 ? "00" : num}
-            </text>
-          )
-        })}
 
-
+        {/* Hands */}
         {/* Hour Hand */}
         <line
           x1="100"
           y1="100"
           x2={100 + 40 * Math.cos((hourAngle - 90) * Math.PI / 180)}
           y2={100 + 40 * Math.sin((hourAngle - 90) * Math.PI / 180)}
-          stroke={matchColors ? "hsl(var(--destructive))" : "hsl(var(--foreground))"}
-          strokeWidth="6"
+          stroke={matchColors ? hourColor : "hsl(var(--foreground))"}
+          strokeWidth="5"
           strokeLinecap="round"
         />
-
         {/* Minute Hand */}
         <line
           x1="100"
           y1="100"
-          x2={100 + 75 * Math.cos((minuteAngle - 90) * Math.PI / 180)}
-          y2={100 + 75 * Math.sin((minuteAngle - 90) * Math.PI / 180)}
-          stroke={matchColors ? "hsl(var(--ring))" : "hsl(var(--foreground))"}
+          x2={100 + 65 * Math.cos((minuteAngle - 90) * Math.PI / 180)}
+          y2={100 + 65 * Math.sin((minuteAngle - 90) * Math.PI / 180)}
+          stroke={matchColors ? minuteColor : "hsl(var(--foreground))"}
           strokeWidth="4"
           strokeLinecap="round"
         />
 
         {/* Center Pin */}
-        <circle cx="100" cy="100" r="5" fill="var(--foreground)" />
+        <circle cx="100" cy="100" r="3" fill="hsl(var(--foreground))" />
       </svg>
     </div>
   );
