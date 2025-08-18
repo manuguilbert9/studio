@@ -18,8 +18,10 @@ export interface Question {
   hint?: string;
   hour?: number;
   minute?: number;
-  // For compose-sum
+  // For compose-sum & new visual questions
   targetAmount?: number; // in cents
+  cost?: number; // in cents
+  paymentImages?: CurrencyItem[];
   // For select-multiple
   items?: CurrencyItem[];
   correctValue?: number; // in cents
@@ -262,8 +264,8 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
             }
         }
 
-        case 3: { // Transactions avec rendu de monnaie
-            const bills = currency.filter(c => [500, 1000, 2000].includes(c.value)); // 5, 10, 20 euros
+        case 3: { // Transactions avec rendu de monnaie (Niveau 4)
+            const bills = currency.filter(c => [500, 1000, 2000, 5000].includes(c.value)); // 5, 10, 20, 50 euros
             const paymentItem = bills[Math.floor(Math.random() * bills.length)];
             const paymentAmount = paymentItem.value;
 
@@ -271,12 +273,14 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
             const cost = paymentAmount - ((Math.floor(Math.random() * (paymentAmount / 100 - 2)) + 1) * 100) - ((Math.floor(Math.random() * 9)+1) * 10)
             const change = paymentAmount - cost;
 
-            question = `Un article coûte ${formatCurrency(cost)}. Vous payez avec ${formatCurrency(paymentAmount)}. Composez la monnaie qui doit vous être rendue.`;
+            question = `Composez la monnaie à rendre.`;
             
             return { 
                 type: 'compose-sum', 
                 question: question,
                 targetAmount: change,
+                cost: cost,
+                paymentImages: [paymentItem] // Simple for now, just the single bill
             };
         }
         

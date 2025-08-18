@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -6,7 +7,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2 } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, currency as currencyData, formatCurrency } from '@/lib/questions';
 import { db } from '@/lib/firebase';
@@ -17,6 +18,7 @@ import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
 import { CalculationSettings } from './calculation-settings';
 import { CurrencySettings } from './currency-settings';
+import { PriceTag } from './price-tag';
 
 
 const motivationalMessages = [
@@ -350,6 +352,26 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
 
   const renderComposeSum = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-4">
+        
+        {/* Visual context for Level 4 */}
+        {typeof exerciseData.cost !== 'undefined' && exerciseData.paymentImages && (
+          <div className="w-full flex flex-col sm:flex-row items-center justify-around gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
+              <div className="flex flex-col items-center gap-2">
+                  <p className="text-muted-foreground font-semibold">Prix de l'article</p>
+                  <PriceTag price={formatCurrency(exerciseData.cost)} />
+              </div>
+              <ArrowRight className="h-8 w-8 text-muted-foreground hidden sm:block" />
+              <div className="flex flex-col items-center gap-2">
+                  <p className="text-muted-foreground font-semibold">Argent donné</p>
+                  <div className="flex gap-2">
+                  {exerciseData.paymentImages.map((item, index) => (
+                      <img key={index} src={item.image} alt={item.name} className="h-16 object-contain" />
+                  ))}
+                  </div>
+              </div>
+          </div>
+        )}
+
         {/* Current sum display */}
         <div className={cn("rounded-lg border-2 p-4 w-full text-center mb-4 transition-colors",
             feedback === 'correct' ? 'bg-green-100 border-green-500' :
