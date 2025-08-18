@@ -17,27 +17,41 @@ export function AnalogClock({ hour, minute, showMinuteCircle = false, matchColor
   return (
     <div className="w-48 h-48 sm:w-64 sm:h-64 mx-auto my-4">
       <svg viewBox="0 0 200 200" className="w-full h-full">
+        <defs>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="3" />
+            <feOffset dx="2" dy="2" result="offsetblur" />
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.5" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
         {/* Clock Face */}
-        <circle cx="100" cy="100" r="95" fill="var(--card)" stroke="var(--foreground)" strokeWidth="4" />
+        <circle cx="100" cy="100" r="95" fill="var(--card)" stroke="var(--foreground)" strokeWidth="3" filter="url(#shadow)" />
 
         {/* Hour and Minute Markers */}
         {Array.from({ length: 12 }).map((_, i) => {
           const angle = i * 30;
-          const x1 = 100 + 80 * Math.cos(angle * Math.PI / 180);
-          const y1 = 100 + 80 * Math.sin(angle * Math.PI / 180);
-          const x2 = 100 + 90 * Math.cos(angle * Math.PI / 180);
-          const y2 = 100 + 90 * Math.sin(angle * Math.PI / 180);
-          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--muted-foreground)" strokeWidth="3" />;
+          const x1 = 100 + 85 * Math.cos(angle * Math.PI / 180);
+          const y1 = 100 + 85 * Math.sin(angle * Math.PI / 180);
+          const x2 = 100 + 92 * Math.cos(angle * Math.PI / 180);
+          const y2 = 100 + 92 * Math.sin(angle * Math.PI / 180);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--muted-foreground)" strokeWidth="2" />;
         })}
         
         {/* Optional Minute Circle */}
         {showMinuteCircle && Array.from({ length: 60 }).map((_, i) => {
           const angle = i * 6;
           const isHourMark = i % 5 === 0;
-          const x1 = 100 + (isHourMark ? 85 : 88) * Math.cos(angle * Math.PI / 180);
-          const y1 = 100 + (isHourMark ? 85 : 88) * Math.sin(angle * Math.PI / 180);
-          const x2 = 100 + 90 * Math.cos(angle * Math.PI / 180);
-          const y2 = 100 + 90 * Math.sin(angle * Math.PI / 180);
+          const x1 = 100 + (isHourMark ? 88 : 90) * Math.cos(angle * Math.PI / 180);
+          const y1 = 100 + (isHourMark ? 88 : 90) * Math.sin(angle * Math.PI / 180);
+          const x2 = 100 + 92 * Math.cos(angle * Math.PI / 180);
+          const y2 = 100 + 92 * Math.sin(angle * Math.PI / 180);
           return <line key={`min-${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--muted-foreground)" strokeWidth={isHourMark ? 2 : 1} />;
         })}
 
@@ -91,8 +105,8 @@ export function AnalogClock({ hour, minute, showMinuteCircle = false, matchColor
         <line
           x1="100"
           y1="100"
-          x2={100 + 50 * Math.cos((hourAngle - 90) * Math.PI / 180)}
-          y2={100 + 50 * Math.sin((hourAngle - 90) * Math.PI / 180)}
+          x2={100 + 40 * Math.cos((hourAngle - 90) * Math.PI / 180)}
+          y2={100 + 40 * Math.sin((hourAngle - 90) * Math.PI / 180)}
           stroke={matchColors ? "hsl(var(--destructive))" : "hsl(var(--foreground))"}
           strokeWidth="6"
           strokeLinecap="round"
