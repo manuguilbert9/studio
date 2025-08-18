@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { skills } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, UserCog } from 'lucide-react';
 
 export default function Home() {
   const [name, setName] = useState<string | null>(null);
@@ -34,9 +34,19 @@ export default function Home() {
       setName(trimmedName);
       try {
         localStorage.setItem('skillfiesta_username', trimmedName);
+        setInputValue('');
       } catch (error) {
         console.error("Could not access localStorage", error);
       }
+    }
+  };
+  
+  const handleUserChange = () => {
+    try {
+      localStorage.removeItem('skillfiesta_username');
+      setName(null);
+    } catch (error) {
+      console.error("Could not access localStorage", error);
     }
   };
 
@@ -85,10 +95,14 @@ export default function Home() {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <header className="mb-12 text-center space-y-4">
+       <header className="mb-12 text-center space-y-4 relative">
         <Logo />
         <h2 className="font-headline text-5xl">Bonjour, {name}!</h2>
         <p className="text-xl text-muted-foreground">Que voudriez-vous pratiquer aujourd'hui ?</p>
+         <Button onClick={handleUserChange} variant="ghost" className="absolute top-0 right-0">
+            <UserCog className="mr-2" />
+            Changer d'utilisateur
+        </Button>
       </header>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
         {skills.map((skill) => (
