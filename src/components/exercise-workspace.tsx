@@ -6,7 +6,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2 } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, currency as currencyData, formatCurrency } from '@/lib/questions';
 import { db } from '@/lib/firebase';
@@ -55,6 +55,10 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const [calculationSettings, setCalculationSettings] = useState<CalcSettings | null>(null);
   const [currencySettings, setCurrencySettings] = useState<CurrSettings | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
+  
+  // State for compose-sum
+  const [composedAmount, setComposedAmount] = useState(0);
+  const [selectedCoins, setSelectedCoins] = useState<{ src: string; alt: string; value: number }[]>([]);
 
 
   useEffect(() => {
@@ -83,10 +87,16 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const exerciseData = useMemo(() => {
     return questions[currentQuestionIndex];
   }, [currentQuestionIndex, questions]);
+  
+  const resetComposedSum = () => {
+    setComposedAmount(0);
+    setSelectedCoins([]);
+  }
 
   const handleNextQuestion = () => {
     setFeedback(null);
     setShowConfetti(false);
+    resetComposedSum();
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
@@ -94,7 +104,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     }
   };
   
-  const handleAnswer = (option: string) => {
+  const handleQcmAnswer = (option: string) => {
     if (feedback || !exerciseData.answer) return;
 
     if (option === exerciseData.answer) {
@@ -109,6 +119,27 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
       setTimeout(handleNextQuestion, 1500);
     }
   };
+  
+  const handleComposeSumSubmit = () => {
+    if (feedback) return;
+    
+    if (composedAmount === exerciseData.targetAmount) {
+      setCorrectAnswers(prev => prev + 1);
+      setFeedback('correct');
+      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+      setMotivationalMessage(randomMessage);
+      setShowConfetti(true);
+      setTimeout(handleNextQuestion, 2500);
+    } else {
+      setFeedback('incorrect');
+      setTimeout(handleNextQuestion, 1500);
+    }
+  }
+
+  const handleAddToSum = (item: { name: string; value: number; image: string; hint?: string }) => {
+    setComposedAmount(prev => prev + item.value);
+    setSelectedCoins(prev => [...prev, {src: item.image, alt: item.name, value: item.value}].sort((a,b) => b.value - a.value));
+  }
   
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
@@ -175,6 +206,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setIsReadyToStart(false);
     setCalculationSettings(null);
     setCurrencySettings(null);
+    resetComposedSum();
      if (skill.slug !== 'calculation' && skill.slug !== 'currency') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
@@ -258,7 +290,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           <Button
             key={`${option}-${index}`}
             variant="outline"
-            onClick={() => handleAnswer(option)}
+            onClick={() => handleQcmAnswer(option)}
             className={cn(
               "text-xl h-20 p-4 justify-center transition-all duration-300 transform active:scale-95",
               feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
@@ -280,14 +312,65 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   );
 
   const renderComposeSum = () => (
-    <div className="flex flex-col items-center justify-center space-y-8">
-      <p className="text-2xl font-bold">
-        Montant cible: {formatCurrency(exerciseData.targetAmount || 0)}
-      </p>
-      {/* This is where the interactive part will go */}
-      <p className="text-muted-foreground">(Interface de composition à venir)</p>
+    <div className="flex flex-col items-center justify-center w-full space-y-4">
+        {/* Current sum display */}
+        <div className={cn("rounded-lg border-2 p-4 w-full text-center mb-4 transition-colors",
+            feedback === 'correct' ? 'bg-green-100 border-green-500' :
+            feedback === 'incorrect' ? 'bg-red-100 border-red-500' :
+            'bg-secondary'
+        )}>
+            <p className="text-muted-foreground">Votre somme</p>
+            <p className="text-4xl font-bold font-numbers">{formatCurrency(composedAmount)}</p>
+            <div className="h-16 mt-2 flex flex-wrap gap-1 justify-center items-center overflow-y-auto">
+                {selectedCoins.map((coin, index) => (
+                    <img key={index} src={coin.src} alt={coin.alt} className="h-8 object-contain" />
+                ))}
+            </div>
+        </div>
+
+        {/* Currency selection */}
+        <Card className="w-full p-4">
+            <CardContent className="flex flex-wrap items-center justify-center gap-2 p-0">
+                {currencyData.map((item) => (
+                    <Button 
+                        key={item.name} 
+                        variant="ghost" 
+                        onClick={() => handleAddToSum(item)}
+                        disabled={!!feedback}
+                        className="h-auto p-1 flex flex-col gap-1 items-center transform active:scale-95 hover:bg-accent/50"
+                    >
+                        <img src={item.image} alt={item.name} className="h-12 object-contain" />
+                        <span className="text-xs font-numbers">{item.name}</span>
+                    </Button>
+                ))}
+            </CardContent>
+        </Card>
+
+        {/* Action buttons */}
+        <div className="flex w-full gap-4">
+             <Button
+                variant="outline"
+                size="lg"
+                className="w-full"
+                onClick={resetComposedSum}
+                disabled={!!feedback}
+            >
+                <Trash2 className="mr-2" />
+                Effacer
+            </Button>
+            <Button
+                size="lg"
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={handleComposeSumSubmit}
+                disabled={!!feedback}
+            >
+                <Check className="mr-2" />
+                Valider
+            </Button>
+        </div>
     </div>
-  );
+);
+
 
   return (
     <>
@@ -310,13 +393,16 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         <CardHeader>
           <CardTitle className="text-3xl text-center font-body">{exerciseData.question}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px]">
+        <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
           {exerciseData.type === 'compose-sum' && renderComposeSum()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (
             <div className="text-2xl font-bold text-green-600 animate-pulse">{motivationalMessage}</div>
+          )}
+           {feedback === 'incorrect' && (
+            <div className="text-2xl font-bold text-red-600 animate-shake">Oups ! Essaye encore.</div>
           )}
         </CardFooter>
         <style jsx>{`
