@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -13,7 +14,7 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp }
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryChart } from './score-history-chart';
 import { Skeleton } from './ui/skeleton';
-import { ScoreGlass } from './score-glass';
+import { ScoreTube } from './score-tube';
 import { CalculationSettings } from './calculation-settings';
 
 const motivationalMessages = [
@@ -181,7 +182,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
             Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
           </p>
           
-          <ScoreGlass score={score} />
+          <ScoreTube score={score} />
          
           {isLoadingHistory ? (
             <div className="space-y-4 mt-6">

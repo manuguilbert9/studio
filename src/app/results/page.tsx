@@ -9,7 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { ScoreGlass } from '@/components/score-glass';
+import { ScoreTube } from '@/components/score-tube';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -118,7 +118,7 @@ export default function ResultsPage() {
                             <p className="text-sm text-muted-foreground mb-2">
                                 Dernier exercice le {format(latestScore.createdAt.toDate(), 'd MMMM yyyy', { locale: fr })}
                             </p>
-                            <ScoreGlass score={latestScore.score} />
+                            <ScoreTube score={latestScore.score} />
                             <p className="text-lg">
                                 Total exercices : <span className="font-bold">{skillScores.find(s => s.skill.slug === skill.slug)?.scores.length}</span>
                             </p>

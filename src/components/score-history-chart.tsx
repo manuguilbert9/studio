@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -10,7 +11,7 @@ import {
 import type { Score } from './exercise-workspace';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ScoreGlass } from './score-glass';
+import { ScoreTube } from './score-tube';
 
 interface ScoreHistoryChartProps {
   scoreHistory: Score[];
@@ -35,7 +36,7 @@ export function ScoreHistoryChart({ scoreHistory }: ScoreHistoryChartProps) {
             {chartData.map((item, index) => (
               <div key={index} className="flex flex-col items-center text-center">
                  <div style={{ transform: `scale(${1 - (chartData.length - 1 - index) * 0.1})` }}>
-                    <ScoreGlass score={item.score} />
+                    <ScoreTube score={item.score} />
                  </div>
                  <p className="text-sm font-medium text-muted-foreground mt-[-1rem]">{item.date}</p>
               </div>
