@@ -200,8 +200,8 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
              }
         }
         
-        case 2: { // Composition / Décomposition / Soustraction simple
-            if (questionTypeRandomizer < 0.33) { // Compose-sum
+        case 2: { // Composition / Décomposition / Rendu simple
+            if (questionTypeRandomizer < 0.33) { // Compose-sum complexe
                 const targetAmount = (Math.floor(Math.random() * 10) + 1) * 100 + (Math.floor(Math.random() * 10)) * 5; // e.g., 7.50€
                 return {
                     type: 'compose-sum',
@@ -210,38 +210,28 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                 };
             }
 
-            const questionType = Math.random() > 0.5 ? 'addition' : 'subtraction';
-
-            if (questionType === 'subtraction') { // Subtraction QCM
+            if (questionTypeRandomizer < 0.66) { // Visual change-making (simple)
                 const simpleBills = currency.filter(c => c.value >= 500 && c.value <= 2000); // 5, 10, 20
-                const startAmountItem = simpleBills[Math.floor(Math.random() * simpleBills.length)];
-                const startAmount = startAmountItem.value;
+                const paymentItem = simpleBills[Math.floor(Math.random() * simpleBills.length)];
+                const paymentAmount = paymentItem.value;
 
-                // Cost is a round number of euros, less than startAmount
-                const cost = (Math.floor(Math.random() * (startAmount / 100 - 2)) + 1) * 100; 
+                // Cost is a round number of euros, less than paymentAmount
+                const cost = (Math.floor(Math.random() * (paymentAmount / 100 - 2)) + 1) * 100; 
+                const change = paymentAmount - cost;
                 
-                const remaining = startAmount - cost;
-                
-                question = `Je paie avec ${formatCurrency(startAmount)} un article qui coûte ${formatCurrency(cost)}. Combien me reste-t-il ?`;
-                answer = formatCurrency(remaining);
-                options = new Set([answer]);
-                image = startAmountItem.image;
-                hint = startAmountItem.hint;
+                return { 
+                    type: 'compose-sum', 
+                    question: "Composez la monnaie à rendre.",
+                    targetAmount: change,
+                    cost: cost,
+                    paymentImages: [paymentItem]
+                };
 
-                while (options.size < 4) {
-                    const error = (Math.floor(Math.random() * 4) + 1) * 100; // +/- 1, 2, 3, 4 euros
-                    let wrongAnswer = remaining + (Math.random() > 0.5 ? error : -error);
-                    if(wrongAnswer > 0 && wrongAnswer !== remaining) {
-                        options.add(formatCurrency(wrongAnswer));
-                    }
-                }
-                 return { type: 'qcm', question, answer, options: Array.from(options).sort(() => Math.random() - 0.5), image, hint };
-            } else { // Addition QCM (more complex than level 2)
+            } else { // Addition QCM (plus complexe que niveau 1)
                  const numItems = Math.floor(Math.random() * 4) + 3; // 3 to 6 items
                  let selectedItems = [];
                  let totalValue = 0;
-                 // Use a wider range of currency, including cents
-                 const availableCurrency = currency.filter(c => c.value <= 5000); // Up to 50€
+                 const availableCurrency = currency.filter(c => c.value <= 5000);
 
                  for (let i = 0; i < numItems; i++) {
                      const item = availableCurrency[Math.floor(Math.random() * availableCurrency.length)];
@@ -254,7 +244,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                  options = new Set([answer]);
                  images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
                  while (options.size < 4) {
-                     const errorAmount = (Math.floor(Math.random() * 10) + 1) * (Math.random() > 0.3 ? 100 : 10); // Error in euros or tens of cents
+                     const errorAmount = (Math.floor(Math.random() * 10) + 1) * (Math.random() > 0.3 ? 100 : 10);
                      const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
                      if (wrongValue > 0 && wrongValue !== totalValue) {
                          options.add(formatCurrency(wrongValue));
@@ -280,7 +270,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                 question: question,
                 targetAmount: change,
                 cost: cost,
-                paymentImages: [paymentItem] // Simple for now, just the single bill
+                paymentImages: [paymentItem]
             };
         }
         
