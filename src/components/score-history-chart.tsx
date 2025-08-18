@@ -38,7 +38,7 @@ export function ScoreHistoryChart({ scoreHistory }: ScoreHistoryChartProps) {
                  <div style={{ transform: `scale(${1 - (chartData.length - 1 - index) * 0.1})` }}>
                     <ScoreTube score={item.score} />
                  </div>
-                 <p className="text-sm font-medium text-muted-foreground mt-[-1rem]">{item.date}</p>
+                 <p className="text-sm font-medium text-muted-foreground mt-[-2.5rem]">{item.date}</p>
               </div>
             ))}
           </div>

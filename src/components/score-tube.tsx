@@ -61,7 +61,7 @@ export function ScoreTube({ score }: ScoreTubeProps) {
 
   return (
     <div className="relative flex flex-col items-center justify-center my-4">
-      <svg width={tubeWidth + 20} height={tubeHeight + 20} viewBox={`-10 -10 ${tubeWidth + 20} ${tubeHeight + 20}`}>
+      <svg width={tubeWidth + 20} height={tubeHeight + 40} viewBox={`-10 -10 ${tubeWidth + 20} ${tubeHeight + 40}`}>
         <defs>
           <clipPath id="tubeClip">
             <path d={tubePath} />
@@ -105,13 +105,12 @@ export function ScoreTube({ score }: ScoreTubeProps) {
         {/* Score Text */}
         <text
           x={tubeWidth / 2}
-          y={liquidY - 10 > 20 ? liquidY - 10 : 20}
+          y={tubeHeight + 18}
           textAnchor="middle"
-          fontSize="20"
+          fontSize="24"
           fontWeight="bold"
-          fill={isRainbow ? 'hsl(var(--primary))' : 'hsl(var(--accent-foreground))'}
+          fill={'hsl(var(--foreground))'}
           className="font-headline"
-          style={{ transition: 'y 1.5s ease-out' }}
         >
           {Math.round(fillHeight)}%
         </text>
@@ -129,4 +128,3 @@ export function ScoreTube({ score }: ScoreTubeProps) {
     </div>
   );
 }
-
