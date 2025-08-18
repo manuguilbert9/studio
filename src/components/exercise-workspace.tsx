@@ -33,6 +33,7 @@ export interface Score {
   skill: string;
   score: number;
   createdAt: Timestamp;
+  calculationSettings?: CalcSettings;
 }
 
 export function ExerciseWorkspace({ skill }: { skill: Skill }) {
@@ -105,13 +106,20 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         setIsLoadingHistory(true);
         
         const newScore = (correctAnswers / NUM_QUESTIONS) * 100;
-        try {
-          await addDoc(collection(db, "scores"), {
+        
+        const scoreData: any = {
             userId: username,
             skill: skill.slug,
             score: newScore,
             createdAt: serverTimestamp()
-          });
+        };
+
+        if (skill.slug === 'calculation' && calculationSettings) {
+            scoreData.calculationSettings = calculationSettings;
+        }
+
+        try {
+          await addDoc(collection(db, "scores"), scoreData);
         } catch (e) {
           console.error("Error adding document: ", e);
         }
@@ -137,7 +145,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, username, skill.slug, isSaving, correctAnswers]);
+  }, [isFinished, username, skill.slug, isSaving, correctAnswers, calculationSettings]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -233,9 +241,9 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           ) : null}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
-            {exerciseData.options.map((option: string) => (
+            {exerciseData.options.map((option: string, index: number) => (
               <Button
-                key={option}
+                key={`${option}-${index}`}
                 variant="outline"
                 onClick={() => handleAnswer(option)}
                 className={cn(
