@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { skills, getSkillBySlug, Skill } from '@/lib/skills';
+import { skills, getSkillBySlug, Skill, difficultyLevelToString } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -12,12 +12,16 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { ScoreTube } from '@/components/score-tube';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { CalculationSettings, CurrencySettings } from '@/lib/questions';
+import { Badge } from '@/components/ui/badge';
 
 interface Score {
   userId: string;
   skill: string;
   score: number;
   createdAt: Timestamp;
+  calculationSettings?: CalculationSettings;
+  currencySettings?: CurrencySettings;
 }
 
 interface SkillScores {
@@ -115,13 +119,16 @@ export default function ResultsPage() {
                     <CardTitle className="font-headline text-3xl mt-4 mb-2">{skill.name}</CardTitle>
                     {latestScore && (
                         <>
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <p className="text-sm text-muted-foreground mb-4">
                                 Dernier exercice le {format(latestScore.createdAt.toDate(), 'd MMMM yyyy', { locale: fr })}
                             </p>
                             <ScoreTube score={latestScore.score} />
-                            <p className="text-lg">
+                             <p className="text-lg mt-2">
                                 Total exercices : <span className="font-bold">{skillScores.find(s => s.skill.slug === skill.slug)?.scores.length}</span>
                             </p>
+                             <Badge variant="secondary" className="mt-2">
+                                {difficultyLevelToString(latestScore.skill, latestScore.calculationSettings, latestScore.currencySettings) || "Niveau Standard"}
+                            </Badge>
                         </>
                     )}
                 </Card>

@@ -1,3 +1,4 @@
+
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -6,6 +7,8 @@ import {
   FilePenLine,
   PiggyBank,
 } from 'lucide-react';
+import type { CalculationSettings, CurrencySettings } from './questions';
+
 
 export interface Skill {
   name: string;
@@ -49,4 +52,24 @@ export const skills: Skill[] = [
 
 export function getSkillBySlug(slug: string): Skill | undefined {
   return skills.find((skill) => skill.slug === slug);
+}
+
+
+export function difficultyLevelToString(
+    skillSlug: string,
+    calcSettings?: CalculationSettings,
+    currSettings?: CurrencySettings
+): string | null {
+    if (skillSlug === 'calculation' && calcSettings) {
+        const { operations, numberSize, complexity } = calcSettings;
+        const total = operations + numberSize + complexity;
+        if (total <= 3) return "Niveau 1";
+        if (total <= 6) return "Niveau 2";
+        if (total <= 9) return "Niveau 3";
+        return "Niveau 4";
+    }
+    if (skillSlug === 'currency' && currSettings) {
+        return `Niveau ${currSettings.difficulty + 1}`;
+    }
+    return null;
 }
