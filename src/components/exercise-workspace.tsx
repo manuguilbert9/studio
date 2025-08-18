@@ -60,6 +60,9 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const [composedAmount, setComposedAmount] = useState(0);
   const [selectedCoins, setSelectedCoins] = useState<{ src: string; alt: string; value: number }[]>([]);
 
+  // State for select-multiple
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
+
 
   useEffect(() => {
     if (skill.slug !== 'calculation' && skill.slug !== 'currency') {
@@ -88,15 +91,16 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     return questions[currentQuestionIndex];
   }, [currentQuestionIndex, questions]);
   
-  const resetComposedSum = () => {
+  const resetInteractiveStates = () => {
     setComposedAmount(0);
     setSelectedCoins([]);
+    setSelectedIndices([]);
   }
 
   const handleNextQuestion = () => {
     setFeedback(null);
     setShowConfetti(false);
-    resetComposedSum();
+    resetInteractiveStates();
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
@@ -104,19 +108,27 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     }
   };
   
-  const handleQcmAnswer = (option: string) => {
-    if (feedback || !exerciseData.answer) return;
-
-    if (option === exerciseData.answer) {
+  const processCorrectAnswer = () => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
       setMotivationalMessage(randomMessage);
       setShowConfetti(true);
       setTimeout(handleNextQuestion, 2500);
-    } else {
+  }
+  
+  const processIncorrectAnswer = () => {
       setFeedback('incorrect');
       setTimeout(handleNextQuestion, 1500);
+  }
+  
+  const handleQcmAnswer = (option: string) => {
+    if (feedback || !exerciseData.answer) return;
+
+    if (option === exerciseData.answer) {
+      processCorrectAnswer();
+    } else {
+      processIncorrectAnswer();
     }
   };
   
@@ -124,15 +136,31 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     if (feedback || typeof exerciseData.targetAmount === 'undefined') return;
     
     if (composedAmount === exerciseData.targetAmount) {
-      setCorrectAnswers(prev => prev + 1);
-      setFeedback('correct');
-      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
-      setMotivationalMessage(randomMessage);
-      setShowConfetti(true);
-      setTimeout(handleNextQuestion, 2500);
+      processCorrectAnswer();
     } else {
-      setFeedback('incorrect');
-      setTimeout(handleNextQuestion, 1500);
+      processIncorrectAnswer();
+    }
+  }
+
+  const handleSelectMultipleSubmit = () => {
+    if (feedback || !exerciseData.items || typeof exerciseData.correctValue === 'undefined') return;
+    
+    // Find all indices of correct items
+    const correctIndices = exerciseData.items.reduce((acc: number[], item, index) => {
+        if (item.value === exerciseData.correctValue) {
+            acc.push(index);
+        }
+        return acc;
+    }, []);
+
+    // Check if the selected indices match the correct indices perfectly
+    const isCorrect = selectedIndices.length === correctIndices.length && 
+                      selectedIndices.every(index => correctIndices.includes(index));
+
+    if (isCorrect) {
+        processCorrectAnswer();
+    } else {
+        processIncorrectAnswer();
     }
   }
 
@@ -140,6 +168,14 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setComposedAmount(prev => prev + item.value);
     setSelectedCoins(prev => [...prev, {src: item.image, alt: item.name, value: item.value}].sort((a,b) => b.value - a.value));
   }
+  
+  const handleToggleSelectItem = (index: number) => {
+    setSelectedIndices(prev => 
+        prev.includes(index) 
+            ? prev.filter(i => i !== index)
+            : [...prev, index]
+    );
+  };
   
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
@@ -206,7 +242,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setIsReadyToStart(false);
     setCalculationSettings(null);
     setCurrencySettings(null);
-    resetComposedSum();
+    resetInteractiveStates();
      if (skill.slug !== 'calculation' && skill.slug !== 'currency') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
@@ -352,7 +388,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
                 variant="outline"
                 size="lg"
                 className="w-full"
-                onClick={resetComposedSum}
+                onClick={() => { setComposedAmount(0); setSelectedCoins([]); }}
                 disabled={!!feedback}
             >
                 <Trash2 className="mr-2" />
@@ -363,6 +399,44 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
                 className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
                 onClick={handleComposeSumSubmit}
                 disabled={!!feedback}
+            >
+                <Check className="mr-2" />
+                Valider
+            </Button>
+        </div>
+    </div>
+);
+
+const renderSelectMultiple = () => (
+    <div className="flex flex-col items-center justify-center w-full space-y-4">
+        {/* Item cloud */}
+        <Card className="w-full p-4">
+            <CardContent className="flex flex-wrap items-center justify-center gap-3 p-0">
+                {exerciseData.items?.map((item, index) => (
+                    <button
+                        key={index}
+                        onClick={() => handleToggleSelectItem(index)}
+                        disabled={!!feedback}
+                        className={cn("h-auto p-1 rounded-md transform active:scale-95 transition-all",
+                            selectedIndices.includes(index) ? 'ring-4 ring-accent' : 'ring-2 ring-transparent',
+                            feedback === 'correct' && selectedIndices.includes(index) && 'ring-green-500',
+                            feedback === 'incorrect' && selectedIndices.includes(index) && 'ring-red-500 animate-shake',
+                            feedback && !selectedIndices.includes(index) && 'opacity-50'
+                        )}
+                    >
+                        <img src={item.image} alt={item.name} className="h-14 object-contain" />
+                    </button>
+                ))}
+            </CardContent>
+        </Card>
+
+        {/* Action buttons */}
+        <div className="flex w-full gap-4 pt-4">
+            <Button
+                size="lg"
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={handleSelectMultipleSubmit}
+                disabled={!!feedback || selectedIndices.length === 0}
             >
                 <Check className="mr-2" />
                 Valider
@@ -396,6 +470,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
           {exerciseData.type === 'compose-sum' && renderComposeSum()}
+          {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (

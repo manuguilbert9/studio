@@ -1,12 +1,14 @@
 
 
-
-
-
-
+export type CurrencyItem = {
+    name: string;
+    value: number; // in cents
+    image: string;
+    hint?: string;
+};
 
 export interface Question {
-  type: 'qcm' | 'compose-sum';
+  type: 'qcm' | 'compose-sum' | 'select-multiple';
   question: string;
   // For QCM
   options?: string[];
@@ -18,6 +20,9 @@ export interface Question {
   minute?: number;
   // For compose-sum
   targetAmount?: number; // in cents
+  // For select-multiple
+  items?: CurrencyItem[];
+  correctValue?: number; // in cents
 }
 
 export interface CalculationSettings {
@@ -73,7 +78,7 @@ function generateTimeQuestion(): Question {
     };
 }
 
-export const currency = [
+export const currency: CurrencyItem[] = [
   { name: '1 cent', value: 1, image: '/1cent.png', hint: 'pièce 1 centime' },
   { name: '2 cents', value: 2, image: '/2cents.png', hint: 'pièce 2 centimes' },
   { name: '5 cents', value: 5, image: '/5cents.png', hint: 'pièce 5 centimes' },
@@ -111,20 +116,49 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
 
     switch (difficulty) {
         case 0: { // Reconnaissance
-            const item = currency[Math.floor(Math.random() * currency.length)];
-            question = 'Quelle est la valeur de cette pièce/ce billet ?';
-            answer = formatCurrency(item.value);
-            options = new Set([answer]);
-            image = item.image;
-            hint = item.hint;
-            images = [];
-             while (options.size < 4) {
-                const randomItem = currency[Math.floor(Math.random() * currency.length)];
-                if(randomItem.value !== item.value) {
-                    options.add(formatCurrency(randomItem.value));
+            if (questionTypeRandomizer < 0.5) {
+                // QCM : Quelle est la valeur de cette pièce/ce billet ?
+                const item = currency[Math.floor(Math.random() * currency.length)];
+                question = 'Quelle est la valeur de cette pièce/ce billet ?';
+                answer = formatCurrency(item.value);
+                options = new Set([answer]);
+                image = item.image;
+                hint = item.hint;
+                images = [];
+                 while (options.size < 4) {
+                    const randomItem = currency[Math.floor(Math.random() * currency.length)];
+                    if(randomItem.value !== item.value) {
+                        options.add(formatCurrency(randomItem.value));
+                    }
                 }
+                return {
+                    type: 'qcm',
+                    question,
+                    image,
+                    images,
+                    hint,
+                    options: Array.from(options).sort(() => Math.random() - 0.5),
+                    answer,
+                };
+            } else {
+                // Select-multiple: Cliquer sur toutes les pièces qui valent X
+                const numItems = Math.floor(Math.random() * 6) + 15; // 15 to 20 items
+                let questionItems: CurrencyItem[] = [];
+                for (let i = 0; i < numItems; i++) {
+                    questionItems.push(currency[Math.floor(Math.random() * currency.length)]);
+                }
+                
+                // Pick a correct value that is actually in the list
+                const correctItem = questionItems[Math.floor(Math.random() * questionItems.length)];
+                const correctValue = correctItem.value;
+
+                return {
+                    type: 'select-multiple',
+                    question: `Clique sur tous les éléments qui valent ${formatCurrency(correctValue)}`,
+                    items: questionItems.sort(() => Math.random() - 0.5), // shuffle them
+                    correctValue: correctValue,
+                };
             }
-            break;
         }
 
         case 1: { // Comptage simple / Composition simple
@@ -160,8 +194,8 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                         options.add(formatCurrency(wrongValue));
                     }
                 }
+                return { type: 'qcm', question, answer, options: Array.from(options).sort(() => Math.random() - 0.5), images };
              }
-            break;
         }
         
         case 2: { // Composition / Décomposition / Soustraction
@@ -199,6 +233,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                         options.add(formatCurrency(wrongAnswer));
                     }
                 }
+                 return { type: 'qcm', question, answer, options: Array.from(options).sort(() => Math.random() - 0.5), image, hint };
             } else { // Addition (more complex than level 2)
                  const numItems = Math.floor(Math.random() * 4) + 3; // 3 to 6 items
                  let selectedItems = [];
@@ -223,8 +258,8 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                          options.add(formatCurrency(wrongValue));
                      }
                  }
+                return { type: 'qcm', question, answer, options: Array.from(options).sort(() => Math.random() - 0.5), images };
             }
-            break;
         }
         
         default: { // Fallback, default to level 1 logic
@@ -241,19 +276,9 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                      options.add(formatCurrency(randomItem.value));
                  }
              }
-            break;
+            return { type: 'qcm', question, answer, options: Array.from(options).sort(() => Math.random() - 0.5), image, hint };
         }
     }
-
-    return {
-        type: 'qcm',
-        question,
-        image,
-        images,
-        hint,
-        options: Array.from(options).sort(() => Math.random() - 0.5),
-        answer,
-    };
 }
 
 
