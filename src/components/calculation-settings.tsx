@@ -31,8 +31,6 @@ const complexityDesc = [
   "Calcul immédiat (faits de base)",
   "Calcul simple sans retenue",
   "Calcul avec retenue ou emprunt",
-  "Stratégie de décomposition (Bientôt disponible)",
-  "Calcul multi-étapes (Bientôt disponible)"
 ];
 
 export function CalculationSettings({ onStart }: CalculationSettingsProps) {
@@ -86,7 +84,7 @@ export function CalculationSettings({ onStart }: CalculationSettingsProps) {
           <Slider
             id="complexity"
             min={0}
-            max={4}
+            max={2}
             step={1}
             value={[complexity]}
             onValueChange={(value) => setComplexity(value[0])}
