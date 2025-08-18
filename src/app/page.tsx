@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { skills } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { ArrowRight, UserCog } from 'lucide-react';
+import { ArrowRight, UserCog, BarChart3 } from 'lucide-react';
 
 export default function Home() {
   const [name, setName] = useState<string | null>(null);
@@ -99,10 +99,18 @@ export default function Home() {
         <Logo />
         <h2 className="font-headline text-5xl">Bonjour, {name}!</h2>
         <p className="text-xl text-muted-foreground">Que voudriez-vous pratiquer aujourd'hui ?</p>
-         <Button onClick={handleUserChange} variant="ghost" className="absolute top-0 right-0">
-            <UserCog className="mr-2" />
-            Changer d'utilisateur
-        </Button>
+         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
+            <Button onClick={handleUserChange} variant="outline" size="sm">
+                <UserCog className="mr-2" />
+                Changer d'utilisateur
+            </Button>
+            <Button asChild variant="outline" size="sm">
+                <Link href="/results">
+                    <BarChart3 className="mr-2" />
+                    Voir les résultats
+                </Link>
+            </Button>
+        </div>
       </header>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
         {skills.map((skill) => (
