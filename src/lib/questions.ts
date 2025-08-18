@@ -1,5 +1,6 @@
 
 
+
 export interface Question {
   question: string;
   options: string[];
@@ -82,13 +83,19 @@ const currency = [
 const formatCurrency = (value: number) => {
     const euros = Math.floor(value / 100);
     const cents = value % 100;
-    if (cents === 0) return `${euros} €`;
-    return `${euros},${cents.toString().padStart(2, '0')} €`;
+    if (euros > 0 && cents === 0) return `${euros} €`;
+    if (euros === 0 && cents > 0) return `${cents}c`;
+    if (euros > 0 && cents > 0) return `${euros},${cents.toString().padStart(2, '0')} €`;
+    return '0 €';
 }
 
 function generateCurrencyQuestion(settings: CurrencySettings): Question {
     const { difficulty } = settings;
-    let question: string, answer: string, options: Set<string>, images: { src: string; alt: string; hint?: string }[], image: string | null = null;
+    let question: string = '';
+    let answer: string = '';
+    let options: Set<string> = new Set();
+    let images: { src: string; alt: string; hint?: string }[] = [];
+    let image: string | null = null;
     
     switch (difficulty) {
         case 0: { // Reconnaissance
@@ -133,29 +140,54 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
             break;
         }
         
-        default: { // Fallback, default to level 2 logic
-            const numItems = Math.floor(Math.random() * 4) + 2; // 2 to 5 items
-            let selectedItems = [];
-            let totalValue = 0;
+        case 2: { // Composition / Soustraction simple
+            const simpleBills = currency.filter(c => c.value >= 500 && c.value <= 2000); // 5, 10, 20
+            const startAmountItem = simpleBills[Math.floor(Math.random() * simpleBills.length)];
+            const startAmount = startAmountItem.value;
 
-            for (let i = 0; i < numItems; i++) {
-                const item = currency[Math.floor(Math.random() * currency.length)];
-                selectedItems.push(item);
-                totalValue += item.value;
-            }
+            // Cost is a round number of euros, less than startAmount
+            const cost = (Math.floor(Math.random() * (startAmount / 100 - 2)) + 1) * 100; 
             
-            question = 'Quelle est la somme totale ?';
-            answer = formatCurrency(totalValue);
-            options = new Set<string>([answer]);
-            images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
+            const remaining = startAmount - cost;
+            
+            question = `Je paie avec ${formatCurrency(startAmount)} un article qui coûte ${formatCurrency(cost)}. Combien me reste-t-il ?`;
+            answer = formatCurrency(remaining);
+            options = new Set([answer]);
+            image = startAmountItem.image;
 
-             while (options.size < 4) {
-                const errorAmount = (Math.floor(Math.random() * 10) + 1) * 10; // +/- 10, 20...100 cents
-                const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
-                if (wrongValue > 0) {
-                    options.add(formatCurrency(wrongValue));
+            while (options.size < 4) {
+                const error = (Math.floor(Math.random() * 4) + 1) * 100; // +/- 1, 2, 3, 4 euros
+                let wrongAnswer = remaining + (Math.random() > 0.5 ? error : -error);
+                if(wrongAnswer > 0 && wrongAnswer !== remaining) {
+                    options.add(formatCurrency(wrongAnswer));
                 }
             }
+            break;
+        }
+        
+        default: { // Fallback, default to level 1 logic
+             const numItems = Math.floor(Math.random() * 3) + 2; // 2 to 4 items
+             let selectedItems = [];
+             let totalValue = 0;
+             const availableSimpleCurrency = currency.filter(c => [100, 200, 500, 1000].includes(c.value)); // 1€, 2€, 5€, 10€
+
+             for (let i = 0; i < numItems; i++) {
+                 const item = availableSimpleCurrency[Math.floor(Math.random() * availableSimpleCurrency.length)];
+                 selectedItems.push(item);
+                 totalValue += item.value;
+             }
+
+             question = 'Quelle est la somme totale ?';
+             answer = formatCurrency(totalValue);
+             options = new Set([answer]);
+             images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
+             while (options.size < 4) {
+                 const errorAmount = (Math.floor(Math.random() * 5) + 1) * 100; // +/- 1, 2...5 euros
+                 const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
+                 if (wrongValue > 0) {
+                     options.add(formatCurrency(wrongValue));
+                 }
+             }
             break;
         }
     }
@@ -200,7 +232,7 @@ function generateCalculationQuestion(settings: CalculationSettings): Question {
                  if(num2 < 0) num2 = 0;
             } else { // With carry (level 2+)
                 num1 = Math.floor(Math.random() * maxNumber);
-                num2 = Math.floor(Math.random() * maxNumber);
+                num2 = Math.floor(Math.random() * (maxNumber - num1));
             }
             question = `${num1} + ${num2} = ?`;
             answer = num1 + num2;

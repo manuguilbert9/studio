@@ -15,7 +15,7 @@ interface CurrencySettingsProps {
 const difficultyDesc = [
   "Reconnaissance et association simple",
   "Comptage sans conversion compliquée",
-  "Composition et décomposition (Bientôt disponible)",
+  "Composition et décomposition simple",
   "Transactions avec rendu de monnaie (Bientôt disponible)",
 ];
 
@@ -40,7 +40,7 @@ export function CurrencySettings({ onStart }: CurrencySettingsProps) {
           <Slider
             id="difficulty"
             min={0}
-            max={1} // Only enable first 2 levels for now
+            max={2} // Only enable first 3 levels for now
             step={1}
             value={[difficulty]}
             onValueChange={(value) => setDifficulty(value[0])}

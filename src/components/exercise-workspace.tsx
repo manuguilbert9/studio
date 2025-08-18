@@ -268,7 +268,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
               alt={exerciseData.question}
               width={400}
               height={200}
-              className="rounded-lg object-contain"
+              className="rounded-lg object-contain max-h-32"
               data-ai-hint={exerciseData.hint}
             />
           ) : null}
