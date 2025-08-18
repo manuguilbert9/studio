@@ -4,6 +4,7 @@
 
 
 
+
 export interface Question {
   type: 'qcm' | 'compose-sum';
   question: string;
@@ -104,8 +105,8 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
     let options: Set<string> = new Set();
     let images: { src: string; alt: string; hint?: string }[] = [];
     let image: string | null = null;
+    let hint: string | undefined = undefined;
     
-    // For level 3, we can have different types of questions
     let questionTypeRandomizer = Math.random();
 
     switch (difficulty) {
@@ -115,6 +116,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
             answer = formatCurrency(item.value);
             options = new Set([answer]);
             image = item.image;
+            hint = item.hint;
             images = [];
              while (options.size < 4) {
                 const randomItem = currency[Math.floor(Math.random() * currency.length)];
@@ -188,6 +190,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                 answer = formatCurrency(remaining);
                 options = new Set([answer]);
                 image = startAmountItem.image;
+                hint = startAmountItem.hint;
 
                 while (options.size < 4) {
                     const error = (Math.floor(Math.random() * 4) + 1) * 100; // +/- 1, 2, 3, 4 euros
@@ -230,6 +233,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
              answer = formatCurrency(item.value);
              options = new Set([answer]);
              image = item.image;
+             hint = item.hint;
              images = [];
               while (options.size < 4) {
                  const randomItem = currency[Math.floor(Math.random() * currency.length)];
@@ -246,6 +250,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
         question,
         image,
         images,
+        hint,
         options: Array.from(options).sort(() => Math.random() - 0.5),
         answer,
     };

@@ -262,7 +262,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     <>
       {skill.slug === 'time' && typeof exerciseData.hour === 'number' && typeof exerciseData.minute === 'number' ? (
         <AnalogClock hour={exerciseData.hour} minute={exerciseData.minute} />
-      ) : exerciseData.images ? (
+      ) : exerciseData.images && exerciseData.images.length > 0 ? (
         <div className="flex flex-wrap items-center justify-center gap-4">
           {exerciseData.images.map((image, index) => (
             <img
@@ -280,7 +280,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           alt={exerciseData.question}
           width={400}
           height={200}
-          className="rounded-lg object-contain max-h-32"
+          className="rounded-lg object-contain max-h-32 mx-auto"
           data-ai-hint={exerciseData.hint}
         />
       ) : null}
