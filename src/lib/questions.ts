@@ -98,7 +98,7 @@ export const formatCurrency = (value: number) => {
     const euros = Math.floor(value / 100);
     const cents = value % 100;
     if (euros > 0 && cents === 0) return `${euros} €`;
-    if (euros === 0 && cents > 0) return `${cents}c`;
+    if (euros === 0 && cents > 0) return `${cents} cents`;
     if (euros > 0 && cents > 0) return `${euros},${cents.toString().padStart(2, '0')} €`;
     return '0 €';
 }
