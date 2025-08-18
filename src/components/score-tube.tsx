@@ -59,9 +59,14 @@ export function ScoreTube({ score }: ScoreTubeProps) {
 
   const tubePath = `M0,0 V${tubeHeight-tubeRadius} A${tubeRadius},${tubeRadius} 0 0 0 ${tubeWidth},${tubeHeight-tubeRadius} V0 Z`;
 
+  // Determine text color and position
+  const textColor = fillHeight < 40 ? 'hsl(var(--foreground))' : 'hsl(var(--accent-foreground))';
+  const textY = fillHeight < 20 ? liquidY - 10 : liquidY + 25;
+
+
   return (
     <div className="relative flex flex-col items-center justify-center my-4">
-      <svg width={tubeWidth + 20} height={tubeHeight + 40} viewBox={`-10 -10 ${tubeWidth + 20} ${tubeHeight + 40}`}>
+      <svg width={tubeWidth + 20} height={tubeHeight + 20} viewBox={`-10 -10 ${tubeWidth + 20} ${tubeHeight + 20}`}>
         <defs>
           <clipPath id="tubeClip">
             <path d={tubePath} />
@@ -105,12 +110,13 @@ export function ScoreTube({ score }: ScoreTubeProps) {
         {/* Score Text */}
         <text
           x={tubeWidth / 2}
-          y={tubeHeight + 18}
+          y={textY}
           textAnchor="middle"
-          fontSize="24"
+          fontSize="20"
           fontWeight="bold"
-          fill={'hsl(var(--foreground))'}
+          fill={textColor}
           className="font-headline"
+          style={{ transition: 'y 1.5s ease-out' }}
         >
           {Math.round(fillHeight)}%
         </text>

@@ -35,15 +35,15 @@ export function ScoreHistoryChart({ scoreHistory }: ScoreHistoryChartProps) {
       </CardHeader>
       <CardContent>
         {chartData.length > 0 ? (
-          <div className="flex justify-around items-end gap-2 sm:gap-4">
+          <div className="flex justify-around items-end gap-2 sm:gap-4 pt-4">
             {chartData.map((item, index) => (
-              <div key={index} className="flex flex-col items-center text-center gap-1">
+              <div key={index} className="flex flex-col items-center text-center gap-2">
                  <div style={{ transform: `scale(${1 - (chartData.length - 1 - index) * 0.1})` }}>
                     <ScoreTube score={item.score} />
                  </div>
-                 <p className="text-xs font-medium text-muted-foreground mt-[-2.5rem]">{item.date}</p>
+                 <p className="text-xs font-medium text-muted-foreground mt-[-1.5rem]">{item.date}</p>
                  {item.difficulty && (
-                    <Badge variant="secondary" className="text-xs mt-[-1rem]">{item.difficulty}</Badge>
+                    <Badge variant="secondary" className="text-xs">{item.difficulty}</Badge>
                  )}
               </div>
             ))}
