@@ -155,7 +155,8 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
 
     // Check if the selected indices match the correct indices perfectly
     const isCorrect = selectedIndices.length === correctIndices.length && 
-                      selectedIndices.every(index => correctIndices.includes(index));
+                      selectedIndices.every(index => correctIndices.includes(index)) &&
+                      correctIndices.every(index => selectedIndices.includes(index));
 
     if (isCorrect) {
         processCorrectAnswer();
@@ -498,3 +499,5 @@ const renderSelectMultiple = () => (
     </>
   );
 }
+
+    
