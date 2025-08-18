@@ -15,7 +15,7 @@ export function AnalogClock({ hour, minute, showMinuteCircle = false, matchColor
   const minuteAngle = minute * 6;
 
   return (
-    <div className="w-48 h-48 sm:w-64 sm:h-64 mx-auto my-4">
+    <div className="w-64 h-64 sm:w-80 sm:h-80 mx-auto my-4">
       <svg viewBox="0 0 200 200" className="w-full h-full">
         <defs>
           <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -60,8 +60,8 @@ export function AnalogClock({ hour, minute, showMinuteCircle = false, matchColor
         {Array.from({ length: 12 }).map((_, i) => {
           const angle = (i - 2) * 30;
           const num = i + 1;
-          const x = 100 + 72 * Math.cos(angle * Math.PI / 180);
-          const y = 100 + 72 * Math.sin(angle * Math.PI / 180);
+          const x = 100 + 60 * Math.cos(angle * Math.PI / 180);
+          const y = 100 + 60 * Math.sin(angle * Math.PI / 180);
           return (
             <text 
               key={`hour-${num}`}
@@ -82,8 +82,8 @@ export function AnalogClock({ hour, minute, showMinuteCircle = false, matchColor
         {showMinuteCircle && Array.from({ length: 12 }).map((_, i) => {
           const angle = (i - 2) * 30;
            const num = (i + 1) * 5 % 60;
-          const x = 100 + 50 * Math.cos(angle * Math.PI / 180);
-          const y = 100 + 50 * Math.sin(angle * Math.PI / 180);
+          const x = 100 + 78 * Math.cos(angle * Math.PI / 180);
+          const y = 100 + 78 * Math.sin(angle * Math.PI / 180);
           return (
             <text 
               key={`min-num-${i}`}
