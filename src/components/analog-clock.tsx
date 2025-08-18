@@ -37,7 +37,7 @@ export function AnalogClock({ hour, minute }: AnalogClockProps) {
               y={y} 
               dy=".3em"
               textAnchor="middle"
-              className="text-xl font-body font-bold fill-current text-foreground"
+              className="text-xl font-numbers font-bold fill-current text-foreground"
             >
               {i + 1}
             </text>

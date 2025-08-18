@@ -17,9 +17,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['Alegreya', 'serif'],
+        body: ['Open-Dyslexic', 'Alegreya', 'serif'],
         headline: ['Belleza', 'sans-serif'],
         code: ['monospace'],
+        numbers: ['Alegreya', 'serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
