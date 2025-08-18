@@ -4,6 +4,7 @@
 
 
 
+
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -73,21 +74,21 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     let answerHour: number;
     let minute = Math.floor(Math.random() * 12) * 5;
 
-    // Levels 3 and 4 have a chance for afternoon hours
+    // Levels 3 and 4 have afternoon hours
     if (difficulty >= 2) { 
         if(Math.random() > 0.5) {
             hour = Math.floor(Math.random() * 11) + 13; // 13h to 23h
         } else {
-             hour = Math.floor(Math.random() * 12) + 1; // 1h to 12h
+             hour = Math.floor(Math.random() * 13); // 0h to 12h
         }
         answerHour = hour;
     } else {
-        hour = Math.floor(Math.random() * 12) + 1; // 1h to 12h
+        hour = Math.floor(Math.random() * 13); // 0h to 12h
         answerHour = hour;
     }
     
     // For clock display, we always want a 1-12 hour format.
-    let displayHour = hour > 12 ? hour - 12 : hour;
+    let displayHour = hour >= 12 ? hour - 12 : hour;
     if (displayHour === 0) displayHour = 12; // Handle midnight/noon case for display
 
     const answer = `${answerHour}:${minute.toString().padStart(2, '0')}`;
@@ -113,10 +114,10 @@ function generateTimeQuestion(settings: TimeSettings): Question {
              if(Math.random() > 0.5) {
                 wrongHour = Math.floor(Math.random() * 11) + 13;
              } else {
-                wrongHour = Math.floor(Math.random() * 12) + 1;
+                wrongHour = Math.floor(Math.random() * 13);
              }
         } else {
-             wrongHour = Math.floor(Math.random() * 12) + 1;
+             wrongHour = Math.floor(Math.random() * 13);
         }
         const wrongMinute = Math.floor(Math.random() * 12) * 5;
         const wrongOption = `${wrongHour}:${wrongMinute.toString().padStart(2, '0')}`;
