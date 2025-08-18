@@ -25,8 +25,9 @@ export function TimeSettings({ onStart }: TimeSettingsProps) {
   const handleSubmit = () => {
     onStart({
       difficulty,
-      showMinuteCircle: difficulty < 4, 
-      matchColors: difficulty === 0 || difficulty === 2, 
+      // Level 4 (difficulty 3) should not show the minute circle.
+      showMinuteCircle: difficulty < 3, 
+      matchColors: difficulty === 0, 
     });
   };
 
