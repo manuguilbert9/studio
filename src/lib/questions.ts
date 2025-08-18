@@ -1,8 +1,10 @@
 
+
 export interface Question {
   question: string;
   options: string[];
   answer: string;
+  images?: { src: string; alt: string, hint?: string }[];
   image?: string | null;
   hint?: string;
   hour?: number;
@@ -12,7 +14,7 @@ export interface Question {
 export interface CalculationSettings {
   operations: number; // 0-4
   numberSize: number; // 0-4
-  complexity: number; // 0-4
+  complexity: number; // 0-2
 }
 
 const writingQuestions: Omit<Question, 'question'>[] = [
@@ -52,6 +54,59 @@ function generateTimeQuestion(): Question {
     };
 }
 
+const currency = [
+  { name: '1 cent', value: 1, image: 'https://placehold.co/100x100.png', hint: 'pièce 1 centime' },
+  { name: '2 cents', value: 2, image: 'https://placehold.co/100x100.png', hint: 'pièce 2 centimes' },
+  { name: '5 cents', value: 5, image: 'https://placehold.co/100x100.png', hint: 'pièce 5 centimes' },
+  { name: '10 cents', value: 10, image: 'https://placehold.co/100x100.png', hint: 'pièce 10 centimes' },
+  { name: '20 cents', value: 20, image: 'https://placehold.co/100x100.png', hint: 'pièce 20 centimes' },
+  { name: '50 cents', value: 50, image: 'https://placehold.co/100x100.png', hint: 'pièce 50 centimes' },
+  { name: '1 euro', value: 100, image: 'https://placehold.co/100x100.png', hint: 'pièce 1 euro' },
+  { name: '2 euros', value: 200, image: 'https://placehold.co/100x100.png', hint: 'pièce 2 euros' },
+  { name: '5 euros', value: 500, image: 'https://placehold.co/150x80.png', hint: 'billet 5 euros' },
+  { name: '10 euros', value: 1000, image: 'https://placehold.co/150x80.png', hint: 'billet 10 euros' },
+  { name: '20 euros', value: 2000, image: 'https://placehold.co/150x80.png', hint: 'billet 20 euros' },
+  { name: '50 euros', value: 5000, image: 'https://placehold.co/150x80.png', hint: 'billet 50 euros' },
+  { name: '100 euros', value: 10000, image: 'https://placehold.co/150x80.png', hint: 'billet 100 euros' },
+];
+
+function generateCurrencyQuestion(): Question {
+    const numItems = Math.floor(Math.random() * 4) + 2; // 2 to 5 items
+    let selectedItems = [];
+    let totalValue = 0;
+
+    for (let i = 0; i < numItems; i++) {
+        const item = currency[Math.floor(Math.random() * currency.length)];
+        selectedItems.push(item);
+        totalValue += item.value;
+    }
+    
+    const formatCurrency = (value: number) => {
+        const euros = Math.floor(value / 100);
+        const cents = value % 100;
+        if (cents === 0) return `${euros} €`;
+        return `${euros},${cents.toString().padStart(2, '0')} €`;
+    }
+
+    const answer = formatCurrency(totalValue);
+    const options = new Set<string>([answer]);
+
+    while (options.size < 4) {
+        const errorAmount = (Math.floor(Math.random() * 10) + 1) * 10; // +/- 10, 20...100 cents
+        const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
+        if (wrongValue > 0) {
+            options.add(formatCurrency(wrongValue));
+        }
+    }
+    
+    return {
+        question: 'Quelle est la somme totale ?',
+        images: selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint })),
+        options: Array.from(options).sort(() => Math.random() - 0.5),
+        answer,
+    };
+}
+
 
 const numberRanges = [10, 20, 100, 500, 1000];
 const availableOps = ['+', '-', 'x', '÷'];
@@ -64,13 +119,6 @@ function generateCalculationQuestion(settings: CalculationSettings): Question {
     const selectedOp = ops[Math.floor(Math.random() * ops.length)];
 
     let num1: number, num2: number, question: string, answer: number;
-
-    // Complexity Levels:
-    // 0: Immediate (e.g., 2+3)
-    // 1: Simple, no carry (e.g., 12+14)
-    // 2: With carry/borrow (e.g., 27+38)
-    // 3: Decomposition (e.g., 49x6) - Not yet implemented
-    // 4: Multi-step (e.g., (38+47)-29) - Not yet implemented
 
     switch (selectedOp) {
         case '+':
@@ -145,7 +193,6 @@ function generateCalculationQuestion(settings: CalculationSettings): Question {
         const errorMargin = Math.max(1, Math.ceil(answer * 0.2) + 5);
         let wrongAnswer = answer + (Math.floor(Math.random() * errorMargin) + 1) * (Math.random() < 0.5 ? -1 : 1);
         
-        // Ensure options are somewhat close but not identical
         if(Math.abs(wrongAnswer - answer) < 2 && answer > 5) {
              wrongAnswer = answer + (Math.random() < 0.5 ? -2 : 2)
         }
@@ -174,14 +221,13 @@ export function generateQuestions(skill: string, count: number, settings?: Calcu
         question: 'Quel mot est correctement orthographié ?'
      }));
   }
+  
+  if (skill === 'currency') {
+    return Array.from({ length: count }, generateCurrencyQuestion);
+  }
 
   if (skill === 'calculation' && settings) {
-    // Levels 3 and 4 are not fully implemented, they will behave like level 2 for now.
-    const effectiveSettings = {...settings};
-    if (settings.complexity > 2) {
-      effectiveSettings.complexity = 2; 
-    }
-    return Array.from({ length: count }, () => generateCalculationQuestion(effectiveSettings));
+    return Array.from({ length: count }, () => generateCalculationQuestion(settings));
   }
 
   // Fallback for other skills for now

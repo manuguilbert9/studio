@@ -229,6 +229,18 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px]">
           {skill.slug === 'time' && typeof exerciseData.hour === 'number' && typeof exerciseData.minute === 'number' ? (
             <AnalogClock hour={exerciseData.hour} minute={exerciseData.minute} />
+          ) : exerciseData.images ? (
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              {exerciseData.images.map((image, index) => (
+                <img
+                  key={index}
+                  src={image.src}
+                  alt={image.alt}
+                  className="max-h-24 rounded-lg object-contain"
+                  data-ai-hint={image.hint}
+                />
+              ))}
+            </div>
           ) : exerciseData.image ? (
             <img
               src={exerciseData.image}
