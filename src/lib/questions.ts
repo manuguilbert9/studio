@@ -55,19 +55,19 @@ function generateTimeQuestion(): Question {
 }
 
 const currency = [
-  { name: '1 cent', value: 1, image: 'https://placehold.co/100x100.png', hint: 'pièce 1 centime' },
-  { name: '2 cents', value: 2, image: 'https://placehold.co/100x100.png', hint: 'pièce 2 centimes' },
-  { name: '5 cents', value: 5, image: 'https://placehold.co/100x100.png', hint: 'pièce 5 centimes' },
-  { name: '10 cents', value: 10, image: 'https://placehold.co/100x100.png', hint: 'pièce 10 centimes' },
-  { name: '20 cents', value: 20, image: 'https://placehold.co/100x100.png', hint: 'pièce 20 centimes' },
-  { name: '50 cents', value: 50, image: 'https://placehold.co/100x100.png', hint: 'pièce 50 centimes' },
-  { name: '1 euro', value: 100, image: 'https://placehold.co/100x100.png', hint: 'pièce 1 euro' },
-  { name: '2 euros', value: 200, image: 'https://placehold.co/100x100.png', hint: 'pièce 2 euros' },
-  { name: '5 euros', value: 500, image: 'https://placehold.co/150x80.png', hint: 'billet 5 euros' },
-  { name: '10 euros', value: 1000, image: 'https://placehold.co/150x80.png', hint: 'billet 10 euros' },
-  { name: '20 euros', value: 2000, image: 'https://placehold.co/150x80.png', hint: 'billet 20 euros' },
-  { name: '50 euros', value: 5000, image: 'https://placehold.co/150x80.png', hint: 'billet 50 euros' },
-  { name: '100 euros', value: 10000, image: 'https://placehold.co/150x80.png', hint: 'billet 100 euros' },
+  { name: '1 cent', value: 1, image: '/1cent.png', hint: 'pièce 1 centime' },
+  { name: '2 cents', value: 2, image: '/2cents.png', hint: 'pièce 2 centimes' },
+  { name: '5 cents', value: 5, image: '/5cents.png', hint: 'pièce 5 centimes' },
+  { name: '10 cents', value: 10, image: '/10cents.png', hint: 'pièce 10 centimes' },
+  { name: '20 cents', value: 20, image: '/20cents.png', hint: 'pièce 20 centimes' },
+  { name: '50 cents', value: 50, image: '/50cents.png', hint: 'pièce 50 centimes' },
+  { name: '1 euro', value: 100, image: '/1euro.png', hint: 'pièce 1 euro' },
+  { name: '2 euros', value: 200, image: '/2euros.png', hint: 'pièce 2 euros' },
+  { name: '5 euros', value: 500, image: '/5euros.png', hint: 'billet 5 euros' },
+  { name: '10 euros', value: 1000, image: '/10euros.png', hint: 'billet 10 euros' },
+  { name: '20 euros', value: 2000, image: '/20euros.png', hint: 'billet 20 euros' },
+  { name: '50 euros', value: 5000, image: '/50euros.png', hint: 'billet 50 euros' },
+  { name: '100 euros', value: 10000, image: '/100euros.png', hint: 'billet 100 euros' },
 ];
 
 function generateCurrencyQuestion(): Question {
