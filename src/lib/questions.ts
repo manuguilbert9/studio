@@ -3,6 +3,7 @@
 
 
 
+
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -72,10 +73,13 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     let answerHour: number;
     let minute = Math.floor(Math.random() * 12) * 5;
 
-    // Level 3 introduces afternoon hours (13h-23h)
-    // Level 4 also includes afternoon hours without visual aids
+    // Levels 3 and 4 have a chance for afternoon hours
     if (difficulty >= 2) { 
-        hour = Math.floor(Math.random() * 11) + 13; // 13h to 23h
+        if(Math.random() > 0.5) {
+            hour = Math.floor(Math.random() * 11) + 13; // 13h to 23h
+        } else {
+             hour = Math.floor(Math.random() * 12) + 1; // 1h to 12h
+        }
         answerHour = hour;
     } else {
         hour = Math.floor(Math.random() * 12) + 1; // 1h to 12h
@@ -83,17 +87,19 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     }
     
     // For clock display, we always want a 1-12 hour format.
-    const displayHour = hour > 12 ? hour - 12 : hour;
-    if (displayHour === 0) hour = 12; // Handle midnight/noon case for display
+    let displayHour = hour > 12 ? hour - 12 : hour;
+    if (displayHour === 0) displayHour = 12; // Handle midnight/noon case for display
 
     const answer = `${answerHour}:${minute.toString().padStart(2, '0')}`;
     const options = new Set<string>([answer]);
 
-    // For levels 2 and 3, add a trap answer
-    if (difficulty === 1 || difficulty === 2) {
-        if (minute > 0 && minute < 13 && minute !== displayHour) {
-            const trapHour = minute;
+    // For levels 2, 3 and 4 add a trap answer
+    if (difficulty >= 1) {
+        if (minute > 0 && minute <= 12 && minute * 5 < 60 && displayHour <= 12 && displayHour > 0) {
+            let trapHour = minute;
             const trapMinute = displayHour * 5;
+            if(hour > 12 && trapHour < 13) trapHour += 12; // keep afternoon format for trap
+            
             const trapOption = `${trapHour}:${trapMinute.toString().padStart(2, '0')}`;
             if (trapOption !== answer) {
                 options.add(trapOption);
@@ -104,7 +110,11 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     while (options.size < 4) {
         let wrongHour: number;
         if (difficulty >= 2) {
-             wrongHour = Math.floor(Math.random() * 11) + 13;
+             if(Math.random() > 0.5) {
+                wrongHour = Math.floor(Math.random() * 11) + 13;
+             } else {
+                wrongHour = Math.floor(Math.random() * 12) + 1;
+             }
         } else {
              wrongHour = Math.floor(Math.random() * 12) + 1;
         }
@@ -472,4 +482,3 @@ export function generateQuestions(skill: string, count: number, settings?: AllSe
     hint: 'point d\'interrogation',
   }));
 }
-

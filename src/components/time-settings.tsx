@@ -25,8 +25,8 @@ export function TimeSettings({ onStart }: TimeSettingsProps) {
   const handleSubmit = () => {
     onStart({
       difficulty,
-      showMinuteCircle: difficulty < 3, // Affiché pour niveaux 1, 2, 3
-      matchColors: difficulty === 0, // Uniquement pour niveau 1
+      showMinuteCircle: difficulty < 4, 
+      matchColors: difficulty === 0 || difficulty === 2, 
     });
   };
 

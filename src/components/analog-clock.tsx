@@ -21,9 +21,15 @@ export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors
     <div className="w-64 h-64 sm:w-80 sm:h-80 mx-auto my-4">
       <svg viewBox="0 0 200 200" className="w-full h-full">
         {/* Backgrounds */}
-        <circle cx="100" cy="100" r="98" fill={minuteColor} fillOpacity="0.3" />
-        <circle cx="100" cy="100" r="70" fill={hourColor} fillOpacity="0.5" />
-        <circle cx="100" cy="100" r="70" stroke={hourColor} strokeWidth="1.5" fill="none" />
+        {matchColors && (
+            <>
+                <circle cx="100" cy="100" r="98" fill={minuteColor} fillOpacity="0.3" />
+                <circle cx="100" cy="100" r="70" fill={hourColor} fillOpacity="0.5" />
+            </>
+        )}
+        <circle cx="100" cy="100" r="98" stroke="hsl(var(--foreground) / 0.1)" strokeWidth="1" fill="none" />
+        <circle cx="100" cy="100" r="70" stroke="hsl(var(--foreground) / 0.1)" strokeWidth="1" fill="none" />
+
 
         {/* Minute Markers and Numbers */}
         {showMinuteCircle && Array.from({ length: 60 }).map((_, i) => {
@@ -46,7 +52,7 @@ export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors
                 textAnchor="middle"
                 className={cn("text-[10px] sm:text-xs font-bold", matchColors ? "fill-ring" : "fill-foreground")}
               >
-                {i}
+                {i === 0 ? "00" : i}
               </text>
             );
           } else {
