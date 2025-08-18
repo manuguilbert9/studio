@@ -8,7 +8,7 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings } from '@/lib/questions';
+import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings } from '@/lib/questions';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
@@ -16,6 +16,8 @@ import { ScoreHistoryChart } from './score-history-chart';
 import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
 import { CalculationSettings } from './calculation-settings';
+import { CurrencySettings } from './currency-settings';
+
 
 const motivationalMessages = [
   "Excellent travail !", "Tu es une star !", "Incroyable !", "Continue comme ça !", "Fantastique !", "Bien joué !"
@@ -35,6 +37,7 @@ export interface Score {
   score: number;
   createdAt: Timestamp;
   calculationSettings?: CalcSettings;
+  currencySettings?: CurrSettings;
 }
 
 export function ExerciseWorkspace({ skill }: { skill: Skill }) {
@@ -50,11 +53,12 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const [scoreHistory, setScoreHistory] = useState<Score[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [calculationSettings, setCalculationSettings] = useState<CalcSettings | null>(null);
+  const [currencySettings, setCurrencySettings] = useState<CurrSettings | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
 
 
   useEffect(() => {
-    if (skill.slug !== 'calculation') {
+    if (skill.slug !== 'calculation' && skill.slug !== 'currency') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
@@ -66,7 +70,13 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   
   const startCalculationExercise = (settings: CalcSettings) => {
     setCalculationSettings(settings);
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, settings));
+    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { calculation: settings }));
+    setIsReadyToStart(true);
+  };
+  
+  const startCurrencyExercise = (settings: CurrSettings) => {
+    setCurrencySettings(settings);
+    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { currency: settings }));
     setIsReadyToStart(true);
   };
 
@@ -119,6 +129,10 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
             scoreData.calculationSettings = calculationSettings;
         }
 
+        if (skill.slug === 'currency' && currencySettings) {
+            scoreData.currencySettings = currencySettings;
+        }
+
         try {
           await addDoc(collection(db, "scores"), scoreData);
         } catch (e) {
@@ -146,7 +160,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, username, skill.slug, isSaving, correctAnswers, calculationSettings]);
+  }, [isFinished, username, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -160,14 +174,20 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setIsSaving(false);
     setIsReadyToStart(false);
     setCalculationSettings(null);
-     if (skill.slug !== 'calculation') {
+    setCurrencySettings(null);
+     if (skill.slug !== 'calculation' && skill.slug !== 'currency') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
   };
 
-  if (!isReadyToStart && skill.slug === 'calculation') {
-    return <CalculationSettings onStart={startCalculationExercise} />;
+  if (!isReadyToStart) {
+      if (skill.slug === 'calculation') {
+        return <CalculationSettings onStart={startCalculationExercise} />;
+      }
+      if (skill.slug === 'currency') {
+        return <CurrencySettings onStart={startCurrencyExercise} />;
+      }
   }
 
   if (isFinished) {

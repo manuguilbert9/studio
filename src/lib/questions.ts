@@ -17,6 +17,15 @@ export interface CalculationSettings {
   complexity: number; // 0-2
 }
 
+export interface CurrencySettings {
+    difficulty: number; // 0-3
+}
+
+export interface AllSettings {
+    calculation?: CalculationSettings;
+    currency?: CurrencySettings;
+}
+
 const writingQuestions: Omit<Question, 'question'>[] = [
     { options: ['Voiture', 'Voitrue', 'Vouature', 'Voiturre'], answer: 'Voiture', hint: 'orthographe véhicule' },
     { options: ['Maison', 'Maizon', 'Meison', 'Maisone'], answer: 'Maison', hint: 'orthographe bâtiment' },
@@ -70,38 +79,91 @@ const currency = [
   { name: '100 euros', value: 10000, image: '/100euros.png', hint: 'billet 100 euros' },
 ];
 
-function generateCurrencyQuestion(): Question {
-    const numItems = Math.floor(Math.random() * 4) + 2; // 2 to 5 items
-    let selectedItems = [];
-    let totalValue = 0;
+const formatCurrency = (value: number) => {
+    const euros = Math.floor(value / 100);
+    const cents = value % 100;
+    if (cents === 0) return `${euros} €`;
+    return `${euros},${cents.toString().padStart(2, '0')} €`;
+}
 
-    for (let i = 0; i < numItems; i++) {
-        const item = currency[Math.floor(Math.random() * currency.length)];
-        selectedItems.push(item);
-        totalValue += item.value;
-    }
+function generateCurrencyQuestion(settings: CurrencySettings): Question {
+    const { difficulty } = settings;
+    let question: string, answer: string, options: Set<string>, images: { src: string; alt: string; hint?: string }[], image: string | null = null;
     
-    const formatCurrency = (value: number) => {
-        const euros = Math.floor(value / 100);
-        const cents = value % 100;
-        if (cents === 0) return `${euros} €`;
-        return `${euros},${cents.toString().padStart(2, '0')} €`;
-    }
+    switch (difficulty) {
+        case 0: { // Reconnaissance
+            const item = currency[Math.floor(Math.random() * currency.length)];
+            question = 'Quelle est la valeur de cette pièce/ce billet ?';
+            answer = formatCurrency(item.value);
+            options = new Set([answer]);
+            image = item.image;
+            images = [];
+             while (options.size < 4) {
+                const randomItem = currency[Math.floor(Math.random() * currency.length)];
+                if(randomItem.value !== item.value) {
+                    options.add(formatCurrency(randomItem.value));
+                }
+            }
+            break;
+        }
 
-    const answer = formatCurrency(totalValue);
-    const options = new Set<string>([answer]);
+        case 1: { // Comptage simple
+             const numItems = Math.floor(Math.random() * 3) + 2; // 2 to 4 items
+             let selectedItems = [];
+             let totalValue = 0;
+             const availableSimpleCurrency = currency.filter(c => [100, 200, 500, 1000].includes(c.value)); // 1€, 2€, 5€, 10€
 
-    while (options.size < 4) {
-        const errorAmount = (Math.floor(Math.random() * 10) + 1) * 10; // +/- 10, 20...100 cents
-        const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
-        if (wrongValue > 0) {
-            options.add(formatCurrency(wrongValue));
+             for (let i = 0; i < numItems; i++) {
+                 const item = availableSimpleCurrency[Math.floor(Math.random() * availableSimpleCurrency.length)];
+                 selectedItems.push(item);
+                 totalValue += item.value;
+             }
+
+             question = 'Quelle est la somme totale ?';
+             answer = formatCurrency(totalValue);
+             options = new Set([answer]);
+             images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
+             while (options.size < 4) {
+                 const errorAmount = (Math.floor(Math.random() * 5) + 1) * 100; // +/- 1, 2...5 euros
+                 const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
+                 if (wrongValue > 0) {
+                     options.add(formatCurrency(wrongValue));
+                 }
+             }
+            break;
+        }
+        
+        default: { // Fallback, default to level 2 logic
+            const numItems = Math.floor(Math.random() * 4) + 2; // 2 to 5 items
+            let selectedItems = [];
+            let totalValue = 0;
+
+            for (let i = 0; i < numItems; i++) {
+                const item = currency[Math.floor(Math.random() * currency.length)];
+                selectedItems.push(item);
+                totalValue += item.value;
+            }
+            
+            question = 'Quelle est la somme totale ?';
+            answer = formatCurrency(totalValue);
+            options = new Set<string>([answer]);
+            images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
+
+             while (options.size < 4) {
+                const errorAmount = (Math.floor(Math.random() * 10) + 1) * 10; // +/- 10, 20...100 cents
+                const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
+                if (wrongValue > 0) {
+                    options.add(formatCurrency(wrongValue));
+                }
+            }
+            break;
         }
     }
-    
+
     return {
-        question: 'Quelle est la somme totale ?',
-        images: selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint })),
+        question,
+        image,
+        images,
         options: Array.from(options).sort(() => Math.random() - 0.5),
         answer,
     };
@@ -210,7 +272,7 @@ function generateCalculationQuestion(settings: CalculationSettings): Question {
 }
 
 
-export function generateQuestions(skill: string, count: number, settings?: CalculationSettings): Question[] {
+export function generateQuestions(skill: string, count: number, settings?: AllSettings): Question[] {
   if (skill === 'time') {
     return Array.from({ length: count }, generateTimeQuestion);
   }
@@ -222,12 +284,12 @@ export function generateQuestions(skill: string, count: number, settings?: Calcu
      }));
   }
   
-  if (skill === 'currency') {
-    return Array.from({ length: count }, generateCurrencyQuestion);
+  if (skill === 'currency' && settings?.currency) {
+    return Array.from({ length: count }, () => generateCurrencyQuestion(settings.currency!));
   }
 
-  if (skill === 'calculation' && settings) {
-    return Array.from({ length: count }, () => generateCalculationQuestion(settings));
+  if (skill === 'calculation' && settings?.calculation) {
+    return Array.from({ length: count }, () => generateCalculationQuestion(settings.calculation!));
   }
 
   // Fallback for other skills for now
