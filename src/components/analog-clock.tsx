@@ -39,7 +39,7 @@ export function AnalogClock({ hour, minute }: AnalogClockProps) {
               textAnchor="middle"
               className="text-xl font-numbers font-bold fill-current text-foreground"
             >
-              {i + 1}
+              {(i === 0 ? 12 : i) + 1}
             </text>
           )
         })}
