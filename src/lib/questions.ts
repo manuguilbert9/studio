@@ -1,6 +1,7 @@
 
 
 
+
 export interface Question {
   question: string;
   options: string[];
@@ -140,52 +141,70 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
             break;
         }
         
-        case 2: { // Composition / Soustraction simple
-            const simpleBills = currency.filter(c => c.value >= 500 && c.value <= 2000); // 5, 10, 20
-            const startAmountItem = simpleBills[Math.floor(Math.random() * simpleBills.length)];
-            const startAmount = startAmountItem.value;
+        case 2: { // Composition / Décomposition / Soustraction
+            const questionType = Math.random() > 0.5 ? 'addition' : 'subtraction';
 
-            // Cost is a round number of euros, less than startAmount
-            const cost = (Math.floor(Math.random() * (startAmount / 100 - 2)) + 1) * 100; 
-            
-            const remaining = startAmount - cost;
-            
-            question = `Je paie avec ${formatCurrency(startAmount)} un article qui coûte ${formatCurrency(cost)}. Combien me reste-t-il ?`;
-            answer = formatCurrency(remaining);
-            options = new Set([answer]);
-            image = startAmountItem.image;
+            if (questionType === 'subtraction') {
+                const simpleBills = currency.filter(c => c.value >= 500 && c.value <= 2000); // 5, 10, 20
+                const startAmountItem = simpleBills[Math.floor(Math.random() * simpleBills.length)];
+                const startAmount = startAmountItem.value;
 
-            while (options.size < 4) {
-                const error = (Math.floor(Math.random() * 4) + 1) * 100; // +/- 1, 2, 3, 4 euros
-                let wrongAnswer = remaining + (Math.random() > 0.5 ? error : -error);
-                if(wrongAnswer > 0 && wrongAnswer !== remaining) {
-                    options.add(formatCurrency(wrongAnswer));
+                // Cost is a round number of euros, less than startAmount
+                const cost = (Math.floor(Math.random() * (startAmount / 100 - 2)) + 1) * 100; 
+                
+                const remaining = startAmount - cost;
+                
+                question = `Je paie avec ${formatCurrency(startAmount)} un article qui coûte ${formatCurrency(cost)}. Combien me reste-t-il ?`;
+                answer = formatCurrency(remaining);
+                options = new Set([answer]);
+                image = startAmountItem.image;
+
+                while (options.size < 4) {
+                    const error = (Math.floor(Math.random() * 4) + 1) * 100; // +/- 1, 2, 3, 4 euros
+                    let wrongAnswer = remaining + (Math.random() > 0.5 ? error : -error);
+                    if(wrongAnswer > 0 && wrongAnswer !== remaining) {
+                        options.add(formatCurrency(wrongAnswer));
+                    }
                 }
+            } else { // Addition (more complex than level 2)
+                 const numItems = Math.floor(Math.random() * 4) + 3; // 3 to 6 items
+                 let selectedItems = [];
+                 let totalValue = 0;
+                 // Use a wider range of currency, including cents
+                 const availableCurrency = currency.filter(c => c.value <= 5000); // Up to 50€
+
+                 for (let i = 0; i < numItems; i++) {
+                     const item = availableCurrency[Math.floor(Math.random() * availableCurrency.length)];
+                     selectedItems.push(item);
+                     totalValue += item.value;
+                 }
+
+                 question = 'Quelle est la somme totale ?';
+                 answer = formatCurrency(totalValue);
+                 options = new Set([answer]);
+                 images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
+                 while (options.size < 4) {
+                     const errorAmount = (Math.floor(Math.random() * 10) + 1) * (Math.random() > 0.3 ? 100 : 10); // Error in euros or tens of cents
+                     const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
+                     if (wrongValue > 0 && wrongValue !== totalValue) {
+                         options.add(formatCurrency(wrongValue));
+                     }
+                 }
             }
             break;
         }
         
         default: { // Fallback, default to level 1 logic
-             const numItems = Math.floor(Math.random() * 3) + 2; // 2 to 4 items
-             let selectedItems = [];
-             let totalValue = 0;
-             const availableSimpleCurrency = currency.filter(c => [100, 200, 500, 1000].includes(c.value)); // 1€, 2€, 5€, 10€
-
-             for (let i = 0; i < numItems; i++) {
-                 const item = availableSimpleCurrency[Math.floor(Math.random() * availableSimpleCurrency.length)];
-                 selectedItems.push(item);
-                 totalValue += item.value;
-             }
-
-             question = 'Quelle est la somme totale ?';
-             answer = formatCurrency(totalValue);
+             const item = currency[Math.floor(Math.random() * currency.length)];
+             question = 'Quelle est la valeur de cette pièce/ce billet ?';
+             answer = formatCurrency(item.value);
              options = new Set([answer]);
-             images = selectedItems.map(item => ({ src: item.image, alt: item.name, hint: item.hint }));
-             while (options.size < 4) {
-                 const errorAmount = (Math.floor(Math.random() * 5) + 1) * 100; // +/- 1, 2...5 euros
-                 const wrongValue = totalValue + (Math.random() > 0.5 ? errorAmount : -errorAmount);
-                 if (wrongValue > 0) {
-                     options.add(formatCurrency(wrongValue));
+             image = item.image;
+             images = [];
+              while (options.size < 4) {
+                 const randomItem = currency[Math.floor(Math.random() * currency.length)];
+                 if(randomItem.value !== item.value) {
+                     options.add(formatCurrency(randomItem.value));
                  }
              }
             break;
