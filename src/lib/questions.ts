@@ -2,15 +2,20 @@
 
 
 
+
 export interface Question {
+  type: 'qcm' | 'compose-sum';
   question: string;
-  options: string[];
-  answer: string;
+  // For QCM
+  options?: string[];
+  answer?: string;
   images?: { src: string; alt: string, hint?: string }[];
   image?: string | null;
   hint?: string;
   hour?: number;
   minute?: number;
+  // For compose-sum
+  targetAmount?: number; // in cents
 }
 
 export interface CalculationSettings {
@@ -28,7 +33,7 @@ export interface AllSettings {
     currency?: CurrencySettings;
 }
 
-const writingQuestions: Omit<Question, 'question'>[] = [
+const writingQuestions: Omit<Question, 'question' | 'type'>[] = [
     { options: ['Voiture', 'Voitrue', 'Vouature', 'Voiturre'], answer: 'Voiture', hint: 'orthographe véhicule' },
     { options: ['Maison', 'Maizon', 'Meison', 'Maisone'], answer: 'Maison', hint: 'orthographe bâtiment' },
     { options: ['Écolle', 'Aicole', 'École', 'Aicolle'], answer: 'École', hint: 'orthographe lieu d\'apprentissage' },
@@ -57,6 +62,7 @@ function generateTimeQuestion(): Question {
     }
 
     return {
+        type: 'qcm',
         question: 'Quelle heure est-il sur l\'horloge ?',
         hour,
         minute,
@@ -65,7 +71,7 @@ function generateTimeQuestion(): Question {
     };
 }
 
-const currency = [
+export const currency = [
   { name: '1 cent', value: 1, image: '/1cent.png', hint: 'pièce 1 centime' },
   { name: '2 cents', value: 2, image: '/2cents.png', hint: 'pièce 2 centimes' },
   { name: '5 cents', value: 5, image: '/5cents.png', hint: 'pièce 5 centimes' },
@@ -81,7 +87,7 @@ const currency = [
   { name: '100 euros', value: 10000, image: '/100euros.png', hint: 'billet 100 euros' },
 ];
 
-const formatCurrency = (value: number) => {
+export const formatCurrency = (value: number) => {
     const euros = Math.floor(value / 100);
     const cents = value % 100;
     if (euros > 0 && cents === 0) return `${euros} €`;
@@ -98,6 +104,17 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
     let images: { src: string; alt: string; hint?: string }[] = [];
     let image: string | null = null;
     
+    // For level 3, we can have different types of questions
+    const questionTypeRandomizer = Math.random();
+    if (difficulty === 2 && questionTypeRandomizer < 0.33) {
+      const targetAmount = (Math.floor(Math.random() * 10) + 1) * 100 + (Math.floor(Math.random() * 10)) * 5; // e.g., 7.50€
+      return {
+          type: 'compose-sum',
+          question: `Compose la somme de ${formatCurrency(targetAmount)}`,
+          targetAmount: targetAmount,
+      };
+    }
+
     switch (difficulty) {
         case 0: { // Reconnaissance
             const item = currency[Math.floor(Math.random() * currency.length)];
@@ -212,6 +229,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
     }
 
     return {
+        type: 'qcm',
         question,
         image,
         images,
@@ -316,6 +334,7 @@ function generateCalculationQuestion(settings: CalculationSettings): Question {
     }
 
     return {
+        type: 'qcm',
         question,
         answer: answer.toString(),
         options: Array.from(options).sort(() => Math.random() - 0.5),
@@ -331,6 +350,7 @@ export function generateQuestions(skill: string, count: number, settings?: AllSe
   if (skill === 'writing') {
      return writingQuestions.slice(0, count).map(q => ({
         ...q,
+        type: 'qcm',
         question: 'Quel mot est correctement orthographié ?'
      }));
   }
@@ -345,6 +365,7 @@ export function generateQuestions(skill: string, count: number, settings?: AllSe
 
   // Fallback for other skills for now
   return Array.from({ length: count }, () => ({
+    type: 'qcm',
     question: 'Ceci est un exemple de question. Choisissez la bonne réponse.',
     options: ['Bonne réponse', 'Mauvaise réponse', 'Autre mauvaise réponse', 'Encore une autre'],
     answer: 'Bonne réponse',

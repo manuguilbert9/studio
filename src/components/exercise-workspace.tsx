@@ -8,7 +8,7 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings } from '@/lib/questions';
+import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, currency as currencyData, formatCurrency } from '@/lib/questions';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
@@ -95,7 +95,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   };
   
   const handleAnswer = (option: string) => {
-    if (feedback) return;
+    if (feedback || !exerciseData.answer) return;
 
     if (option === exerciseData.answer) {
       setCorrectAnswers(prev => prev + 1);
@@ -226,6 +226,69 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     return <Card className="w-full shadow-2xl p-8 text-center">Chargement des questions...</Card>;
   }
 
+  const renderQCM = () => (
+    <>
+      {skill.slug === 'time' && typeof exerciseData.hour === 'number' && typeof exerciseData.minute === 'number' ? (
+        <AnalogClock hour={exerciseData.hour} minute={exerciseData.minute} />
+      ) : exerciseData.images ? (
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          {exerciseData.images.map((image, index) => (
+            <img
+              key={index}
+              src={image.src}
+              alt={image.alt}
+              className="max-h-24 rounded-lg object-contain"
+              data-ai-hint={image.hint}
+            />
+          ))}
+        </div>
+      ) : exerciseData.image ? (
+        <img
+          src={exerciseData.image}
+          alt={exerciseData.question}
+          width={400}
+          height={200}
+          className="rounded-lg object-contain max-h-32"
+          data-ai-hint={exerciseData.hint}
+        />
+      ) : null}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
+        {exerciseData.options?.map((option: string, index: number) => (
+          <Button
+            key={`${option}-${index}`}
+            variant="outline"
+            onClick={() => handleAnswer(option)}
+            className={cn(
+              "text-xl h-20 p-4 justify-center transition-all duration-300 transform active:scale-95",
+              feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+              feedback === 'incorrect' && option !== exerciseData.answer && 'bg-red-500/80 text-white border-red-600 animate-shake',
+              feedback && option !== exerciseData.answer && 'opacity-50',
+              feedback && option === exerciseData.answer && 'opacity-100'
+            )}
+            disabled={!!feedback}
+          >
+            <span className="flex items-center gap-4">
+              {feedback === 'correct' && option === exerciseData.answer && <Check />}
+              {feedback === 'incorrect' && option !== exerciseData.answer && <X />}
+              {option}
+            </span>
+          </Button>
+        ))}
+      </div>
+    </>
+  );
+
+  const renderComposeSum = () => (
+    <div className="flex flex-col items-center justify-center space-y-8">
+      <p className="text-2xl font-bold">
+        Montant cible: {formatCurrency(exerciseData.targetAmount || 0)}
+      </p>
+      {/* This is where the interactive part will go */}
+      <p className="text-muted-foreground">(Interface de composition à venir)</p>
+    </div>
+  );
+
   return (
     <>
       <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
@@ -248,54 +311,8 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
           <CardTitle className="text-3xl text-center font-body">{exerciseData.question}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px]">
-          {skill.slug === 'time' && typeof exerciseData.hour === 'number' && typeof exerciseData.minute === 'number' ? (
-            <AnalogClock hour={exerciseData.hour} minute={exerciseData.minute} />
-          ) : exerciseData.images ? (
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              {exerciseData.images.map((image, index) => (
-                <img
-                  key={index}
-                  src={image.src}
-                  alt={image.alt}
-                  className="max-h-24 rounded-lg object-contain"
-                  data-ai-hint={image.hint}
-                />
-              ))}
-            </div>
-          ) : exerciseData.image ? (
-            <img
-              src={exerciseData.image}
-              alt={exerciseData.question}
-              width={400}
-              height={200}
-              className="rounded-lg object-contain max-h-32"
-              data-ai-hint={exerciseData.hint}
-            />
-          ) : null}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-lg">
-            {exerciseData.options.map((option: string, index: number) => (
-              <Button
-                key={`${option}-${index}`}
-                variant="outline"
-                onClick={() => handleAnswer(option)}
-                className={cn(
-                  "text-xl h-20 p-4 justify-center transition-all duration-300 transform active:scale-95",
-                  feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
-                  feedback === 'incorrect' && option !== exerciseData.answer && 'bg-red-500/80 text-white border-red-600 animate-shake',
-                  feedback && option !== exerciseData.answer && 'opacity-50',
-                  feedback && option === exerciseData.answer && 'opacity-100'
-                )}
-                disabled={!!feedback}
-              >
-                <span className="flex items-center gap-4">
-                  {feedback === 'correct' && option === exerciseData.answer && <Check />}
-                  {feedback === 'incorrect' && option !== exerciseData.answer && <X />}
-                  {option}
-                </span>
-              </Button>
-            ))}
-          </div>
+          {exerciseData.type === 'qcm' && renderQCM()}
+          {exerciseData.type === 'compose-sum' && renderComposeSum()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (
