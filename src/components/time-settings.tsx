@@ -14,9 +14,9 @@ interface TimeSettingsProps {
 
 const difficultyDesc = [
   "Niveau 1 : Guidage complet (cercle des minutes et couleurs)",
-  "Niveau 2 : Minutes affichées, sans aide des couleurs",
-  "Niveau 3 : Heures de l'après-midi (ex: 14h30)",
-  "Niveau 4 : Pas d'aide visuelle",
+  "Niveau 2 : Minutes affichées, mais sans aide des couleurs",
+  "Niveau 3 : Heures de l'après-midi (ex: 14h30), sans couleurs",
+  "Niveau 4 : Pas d'aide visuelle, heures de l'après-midi",
 ];
 
 export function TimeSettings({ onStart }: TimeSettingsProps) {
