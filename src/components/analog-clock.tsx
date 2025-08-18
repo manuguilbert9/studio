@@ -1,11 +1,16 @@
+
 'use client';
+
+import { cn } from "@/lib/utils";
 
 interface AnalogClockProps {
   hour: number;
   minute: number;
+  showMinuteCircle?: boolean;
+  matchColors?: boolean;
 }
 
-export function AnalogClock({ hour, minute }: AnalogClockProps) {
+export function AnalogClock({ hour, minute, showMinuteCircle = false, matchColors = false }: AnalogClockProps) {
   const hourAngle = (hour % 12 + minute / 60) * 30;
   const minuteAngle = minute * 6;
 
@@ -24,22 +29,59 @@ export function AnalogClock({ hour, minute }: AnalogClockProps) {
           const y2 = 100 + 90 * Math.sin(angle * Math.PI / 180);
           return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--muted-foreground)" strokeWidth="3" />;
         })}
+        
+        {/* Optional Minute Circle */}
+        {showMinuteCircle && Array.from({ length: 60 }).map((_, i) => {
+          const angle = i * 6;
+          const isHourMark = i % 5 === 0;
+          const x1 = 100 + (isHourMark ? 85 : 88) * Math.cos(angle * Math.PI / 180);
+          const y1 = 100 + (isHourMark ? 85 : 88) * Math.sin(angle * Math.PI / 180);
+          const x2 = 100 + 90 * Math.cos(angle * Math.PI / 180);
+          const y2 = 100 + 90 * Math.sin(angle * Math.PI / 180);
+          return <line key={`min-${i}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--muted-foreground)" strokeWidth={isHourMark ? 2 : 1} />;
+        })}
 
-        {/* Numbers */}
+
+        {/* Hour Numbers */}
         {Array.from({ length: 12 }).map((_, i) => {
           const angle = (i - 2) * 30;
+          const num = i + 1;
           const x = 100 + 72 * Math.cos(angle * Math.PI / 180);
           const y = 100 + 72 * Math.sin(angle * Math.PI / 180);
           return (
             <text 
-              key={i} 
+              key={`hour-${num}`}
               x={x} 
               y={y} 
               dy=".3em"
               textAnchor="middle"
-              className="text-xl font-numbers font-bold fill-current text-foreground"
+              className={cn("text-xl font-numbers font-bold fill-current",
+                 matchColors ? "text-destructive" : "text-foreground"
+              )}
             >
-              {(i === 0 ? 12 : i) + 1}
+              {num}
+            </text>
+          )
+        })}
+        
+         {/* Optional Minute Numbers */}
+        {showMinuteCircle && Array.from({ length: 12 }).map((_, i) => {
+          const angle = (i - 2) * 30;
+           const num = (i + 1) * 5 % 60;
+          const x = 100 + 50 * Math.cos(angle * Math.PI / 180);
+          const y = 100 + 50 * Math.sin(angle * Math.PI / 180);
+          return (
+            <text 
+              key={`min-num-${i}`}
+              x={x} 
+              y={y} 
+              dy=".3em"
+              textAnchor="middle"
+              className={cn("text-xs font-numbers font-bold fill-current",
+                 matchColors ? "text-ring" : "text-muted-foreground"
+              )}
+            >
+              {num === 0 ? "00" : num}
             </text>
           )
         })}
@@ -51,7 +93,7 @@ export function AnalogClock({ hour, minute }: AnalogClockProps) {
           y1="100"
           x2={100 + 50 * Math.cos((hourAngle - 90) * Math.PI / 180)}
           y2={100 + 50 * Math.sin((hourAngle - 90) * Math.PI / 180)}
-          stroke="hsl(var(--destructive))"
+          stroke={matchColors ? "hsl(var(--destructive))" : "hsl(var(--foreground))"}
           strokeWidth="6"
           strokeLinecap="round"
         />
@@ -62,7 +104,7 @@ export function AnalogClock({ hour, minute }: AnalogClockProps) {
           y1="100"
           x2={100 + 75 * Math.cos((minuteAngle - 90) * Math.PI / 180)}
           y2={100 + 75 * Math.sin((minuteAngle - 90) * Math.PI / 180)}
-          stroke="hsl(var(--ring))"
+          stroke={matchColors ? "hsl(var(--ring))" : "hsl(var(--foreground))"}
           strokeWidth="4"
           strokeLinecap="round"
         />

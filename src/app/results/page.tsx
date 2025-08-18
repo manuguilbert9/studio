@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,7 +13,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { ScoreTube } from '@/components/score-tube';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { CalculationSettings, CurrencySettings } from '@/lib/questions';
+import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
 import { Badge } from '@/components/ui/badge';
 
 interface Score {
@@ -22,6 +23,7 @@ interface Score {
   createdAt: Timestamp;
   calculationSettings?: CalculationSettings;
   currencySettings?: CurrencySettings;
+  timeSettings?: TimeSettings;
 }
 
 interface SkillScores {
@@ -127,7 +129,7 @@ export default function ResultsPage() {
                                 Total exercices : <span className="font-bold">{skillScores.find(s => s.skill.slug === skill.slug)?.scores.length}</span>
                             </p>
                              <Badge variant="secondary" className="mt-2">
-                                {difficultyLevelToString(latestScore.skill, latestScore.calculationSettings, latestScore.currencySettings) || "Niveau Standard"}
+                                {difficultyLevelToString(latestScore.skill, latestScore.calculationSettings, latestScore.currencySettings, latestScore.timeSettings) || "Niveau Standard"}
                             </Badge>
                         </>
                     )}

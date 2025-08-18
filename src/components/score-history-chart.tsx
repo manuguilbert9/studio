@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -24,7 +25,7 @@ export function ScoreHistoryChart({ scoreHistory }: ScoreHistoryChartProps) {
   const chartData = scoreHistory.slice(0, 5).reverse().map(item => ({
     date: item.createdAt ? format(item.createdAt.toDate(), 'd MMM', { locale: fr }) : 'N/A',
     score: item.score,
-    difficulty: difficultyLevelToString(item.skill, item.calculationSettings, item.currencySettings)
+    difficulty: difficultyLevelToString(item.skill, item.calculationSettings, item.currencySettings, item.timeSettings)
   }));
 
   return (

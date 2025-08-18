@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -9,7 +10,7 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, currency as currencyData, formatCurrency } from '@/lib/questions';
+import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, currency as currencyData, formatCurrency } from '@/lib/questions';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
@@ -18,6 +19,7 @@ import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
 import { CalculationSettings } from './calculation-settings';
 import { CurrencySettings } from './currency-settings';
+import { TimeSettings } from './time-settings';
 import { PriceTag } from './price-tag';
 
 
@@ -40,6 +42,7 @@ export interface Score {
   createdAt: Timestamp;
   calculationSettings?: CalcSettings;
   currencySettings?: CurrSettings;
+  timeSettings?: TimeSettingsType;
 }
 
 export function ExerciseWorkspace({ skill }: { skill: Skill }) {
@@ -56,6 +59,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [calculationSettings, setCalculationSettings] = useState<CalcSettings | null>(null);
   const [currencySettings, setCurrencySettings] = useState<CurrSettings | null>(null);
+  const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
   
   // State for compose-sum
@@ -67,7 +71,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
 
 
   useEffect(() => {
-    if (skill.slug !== 'calculation' && skill.slug !== 'currency') {
+    if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
@@ -88,6 +92,12 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { currency: settings }));
     setIsReadyToStart(true);
   };
+
+  const startTimeExercise = (settings: TimeSettingsType) => {
+    setTimeSettings(settings);
+    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }));
+    setIsReadyToStart(true);
+  }
 
   const exerciseData = useMemo(() => {
     return questions[currentQuestionIndex];
@@ -203,6 +213,10 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
             scoreData.currencySettings = currencySettings;
         }
 
+        if (skill.slug === 'time' && timeSettings) {
+            scoreData.timeSettings = timeSettings;
+        }
+
         try {
           await addDoc(collection(db, "scores"), scoreData);
         } catch (e) {
@@ -230,7 +244,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, username, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings]);
+  }, [isFinished, username, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings, timeSettings]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -245,8 +259,9 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setIsReadyToStart(false);
     setCalculationSettings(null);
     setCurrencySettings(null);
+    setTimeSettings(null);
     resetInteractiveStates();
-     if (skill.slug !== 'calculation' && skill.slug !== 'currency') {
+     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
@@ -258,6 +273,9 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
       }
       if (skill.slug === 'currency') {
         return <CurrencySettings onStart={startCurrencyExercise} />;
+      }
+      if (skill.slug === 'time') {
+        return <TimeSettings onStart={startTimeExercise} />;
       }
   }
 
@@ -300,7 +318,12 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   const renderQCM = () => (
     <>
       {skill.slug === 'time' && typeof exerciseData.hour === 'number' && typeof exerciseData.minute === 'number' ? (
-        <AnalogClock hour={exerciseData.hour} minute={exerciseData.minute} />
+        <AnalogClock
+            hour={exerciseData.hour} 
+            minute={exerciseData.minute} 
+            showMinuteCircle={exerciseData.timeSettings?.showMinuteCircle}
+            matchColors={exerciseData.timeSettings?.matchColors}
+        />
       ) : exerciseData.images && exerciseData.images.length > 0 ? (
         <div className="flex flex-wrap items-center justify-center gap-4">
           {exerciseData.images.map((image, index) => (
@@ -521,5 +544,3 @@ const renderSelectMultiple = () => (
     </>
   );
 }
-
-    

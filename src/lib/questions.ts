@@ -1,5 +1,6 @@
 
 
+
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -18,6 +19,7 @@ export interface Question {
   hint?: string;
   hour?: number;
   minute?: number;
+  timeSettings?: TimeSettings;
   // For compose-sum & new visual questions
   targetAmount?: number; // in cents
   cost?: number; // in cents
@@ -37,9 +39,16 @@ export interface CurrencySettings {
     difficulty: number; // 0-3
 }
 
+export interface TimeSettings {
+    difficulty: number; // 0-2
+    showMinuteCircle: boolean;
+    matchColors: boolean;
+}
+
 export interface AllSettings {
     calculation?: CalculationSettings;
     currency?: CurrencySettings;
+    time?: TimeSettings;
 }
 
 const writingQuestions: Omit<Question, 'question' | 'type'>[] = [
@@ -55,7 +64,7 @@ const writingQuestions: Omit<Question, 'question' | 'type'>[] = [
     { options: ['Soleil', 'Solail', 'Soleille', 'Solleil'], answer: 'Soleil', hint: 'orthographe astre' },
 ];
 
-function generateTimeQuestion(): Question {
+function generateTimeQuestion(settings: TimeSettings): Question {
     const hour = Math.floor(Math.random() * 12) + 1;
     const minute = Math.floor(Math.random() * 12) * 5;
     const answer = `${hour}:${minute.toString().padStart(2, '0')}`;
@@ -77,6 +86,7 @@ function generateTimeQuestion(): Question {
         minute,
         options: options.sort(() => Math.random() - 0.5),
         answer,
+        timeSettings: settings
     };
 }
 
@@ -398,8 +408,8 @@ function generateCalculationQuestion(settings: CalculationSettings): Question {
 
 
 export function generateQuestions(skill: string, count: number, settings?: AllSettings): Question[] {
-  if (skill === 'time') {
-    return Array.from({ length: count }, generateTimeQuestion);
+  if (skill === 'time' && settings?.time) {
+    return Array.from({ length: count }, () => generateTimeQuestion(settings.time!));
   }
   
   if (skill === 'writing') {
