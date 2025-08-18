@@ -28,11 +28,11 @@ const numberSizeDesc = [
 ];
 
 const complexityDesc = [
-  "Calcul direct",
-  "Calcul avec retenue",
-  "Problème à deux étapes",
-  "Problème écrit simple",
-  "Problème écrit complexe"
+  "Calcul immédiat (faits de base)",
+  "Calcul simple sans retenue",
+  "Calcul avec retenue ou emprunt",
+  "Stratégie de décomposition (Bientôt disponible)",
+  "Calcul multi-étapes (Bientôt disponible)"
 ];
 
 export function CalculationSettings({ onStart }: CalculationSettingsProps) {
@@ -90,9 +90,8 @@ export function CalculationSettings({ onStart }: CalculationSettingsProps) {
             step={1}
             value={[complexity]}
             onValueChange={(value) => setComplexity(value[0])}
-             disabled // TODO: Implement cognitive complexity logic in question generation
           />
-           <p className="text-center text-muted-foreground font-medium">{complexityDesc[complexity]} {complexity === 4 ? '(Bientôt disponible)' : ''}</p>
+           <p className="text-center text-muted-foreground font-medium">{complexityDesc[complexity]}</p>
         </div>
       </CardContent>
       <CardFooter>
