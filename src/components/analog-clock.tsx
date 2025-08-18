@@ -88,6 +88,7 @@ export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors
           stroke={matchColors ? hourColor : "hsl(var(--foreground))"}
           strokeWidth="5"
           strokeLinecap="round"
+          strokeOpacity="0.8"
         />
         {/* Minute Hand */}
         <line
@@ -98,6 +99,7 @@ export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors
           stroke={matchColors ? minuteColor : "hsl(var(--foreground))"}
           strokeWidth="4"
           strokeLinecap="round"
+          strokeOpacity="0.8"
         />
 
         {/* Center Pin */}
