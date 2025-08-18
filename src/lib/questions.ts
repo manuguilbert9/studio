@@ -1,5 +1,6 @@
 
 
+
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -198,8 +199,8 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
              }
         }
         
-        case 2: { // Composition / Décomposition / Soustraction
-            if (questionTypeRandomizer < 0.33) {
+        case 2: { // Composition / Décomposition / Soustraction simple
+            if (questionTypeRandomizer < 0.5) {
                 const targetAmount = (Math.floor(Math.random() * 10) + 1) * 100 + (Math.floor(Math.random() * 10)) * 5; // e.g., 7.50€
                 return {
                     type: 'compose-sum',
@@ -260,6 +261,41 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                  }
                 return { type: 'qcm', question, answer, options: Array.from(options).sort(() => Math.random() - 0.5), images };
             }
+        }
+
+        case 3: { // Transactions avec rendu de monnaie
+            const bills = currency.filter(c => [500, 1000, 2000].includes(c.value)); // 5, 10, 20 euros
+            const paymentItem = bills[Math.floor(Math.random() * bills.length)];
+            const paymentAmount = paymentItem.value;
+
+            // Cost is a non-round number, less than payment amount
+            const cost = paymentAmount - ((Math.floor(Math.random() * (paymentAmount / 100 - 2)) + 1) * 100) - ((Math.floor(Math.random() * 9)+1) * 10)
+            const change = paymentAmount - cost;
+
+            question = `Un article coûte ${formatCurrency(cost)}. Je paie avec ${formatCurrency(paymentAmount)}. Combien me rend-on ?`;
+            answer = formatCurrency(change);
+            options.add(answer);
+            image = paymentItem.image;
+            hint = paymentItem.hint;
+
+            while (options.size < 4) {
+                const errorType = Math.random();
+                let wrongAnswer;
+                if (errorType < 0.33) { // Error on euros
+                    const error = (Math.floor(Math.random() * 2) + 1) * 100;
+                    wrongAnswer = change + (Math.random() > 0.5 ? error : -error);
+                } else if (errorType < 0.66) { // Error on cents
+                     const error = (Math.floor(Math.random() * 5) + 1) * 10;
+                     wrongAnswer = change + (Math.random() > 0.5 ? error : -error);
+                } else { // Completely different number
+                    wrongAnswer = (Math.floor(Math.random() * 5) + 1) * 100 + (Math.floor(Math.random() * 9)) * 10;
+                }
+
+                if (wrongAnswer > 0 && wrongAnswer !== change) {
+                    options.add(formatCurrency(wrongAnswer));
+                }
+            }
+            return { type: 'qcm', question, answer, options: Array.from(options).sort(() => Math.random() - 0.5), image, hint };
         }
         
         default: { // Fallback, default to level 1 logic
