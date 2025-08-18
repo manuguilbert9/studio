@@ -1,6 +1,7 @@
 
 
 
+
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -40,7 +41,7 @@ export interface CurrencySettings {
 }
 
 export interface TimeSettings {
-    difficulty: number; // 0-2
+    difficulty: number; // 0-3
     showMinuteCircle: boolean;
     matchColors: boolean;
 }
@@ -65,26 +66,46 @@ const writingQuestions: Omit<Question, 'question' | 'type'>[] = [
 ];
 
 function generateTimeQuestion(settings: TimeSettings): Question {
-    const hour = Math.floor(Math.random() * 12) + 1;
+    const { difficulty } = settings;
+    let hour: number;
+    let answerHour: number;
     const minute = Math.floor(Math.random() * 12) * 5;
-    const answer = `${hour}:${minute.toString().padStart(2, '0')}`;
 
-    const options = [answer];
-    while (options.length < 4) {
-        const wrongHour = Math.floor(Math.random() * 12) + 1;
+    if (difficulty === 2) { // Niveau 3: Heures de l'après-midi
+        hour = Math.floor(Math.random() * 11) + 13; // 13h à 23h
+        answerHour = hour;
+    } else {
+        hour = Math.floor(Math.random() * 12) + 1; // 1h à 12h
+        answerHour = hour;
+    }
+    
+    // For clock display, we always want a 1-12 hour format.
+    const displayHour = hour > 12 ? hour - 12 : hour;
+
+    const answer = `${answerHour}:${minute.toString().padStart(2, '0')}`;
+
+    const options = new Set<string>([answer]);
+    while (options.size < 4) {
+        let wrongHour: number;
+        if (difficulty === 2) {
+             wrongHour = Math.floor(Math.random() * 11) + 13;
+        } else {
+             wrongHour = Math.floor(Math.random() * 12) + 1;
+        }
         const wrongMinute = Math.floor(Math.random() * 12) * 5;
         const wrongOption = `${wrongHour}:${wrongMinute.toString().padStart(2, '0')}`;
-        if (!options.includes(wrongOption)) {
-            options.push(wrongOption);
+        
+        if (wrongOption !== answer) {
+            options.add(wrongOption);
         }
     }
 
     return {
         type: 'qcm',
         question: 'Quelle heure est-il sur l\'horloge ?',
-        hour,
+        hour: displayHour,
         minute,
-        options: options.sort(() => Math.random() - 0.5),
+        options: Array.from(options).sort(() => Math.random() - 0.5),
         answer,
         timeSettings: settings
     };
@@ -218,9 +239,7 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
                     question: `Compose la somme de ${formatCurrency(targetAmount)}`,
                     targetAmount: targetAmount,
                 };
-            }
-
-            if (questionTypeRandomizer < 0.66) { // Visual change-making (simple)
+            } else if (questionTypeRandomizer < 0.66) { // Visual change-making (simple)
                 const simpleBills = currency.filter(c => c.value >= 500 && c.value <= 2000); // 5, 10, 20
                 const paymentItem = simpleBills[Math.floor(Math.random() * simpleBills.length)];
                 const paymentAmount = paymentItem.value;

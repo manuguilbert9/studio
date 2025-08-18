@@ -14,8 +14,9 @@ interface TimeSettingsProps {
 
 const difficultyDesc = [
   "Niveau 1 : Guidage complet (cercle des minutes et couleurs)",
-  "Niveau 2 : Aide visuelle (couleurs uniquement)",
-  "Niveau 3 : Pas d'aide visuelle",
+  "Niveau 2 : Minutes affichées, sans aide des couleurs",
+  "Niveau 3 : Heures de l'après-midi (ex: 14h30)",
+  "Niveau 4 : Pas d'aide visuelle",
 ];
 
 export function TimeSettings({ onStart }: TimeSettingsProps) {
@@ -24,8 +25,8 @@ export function TimeSettings({ onStart }: TimeSettingsProps) {
   const handleSubmit = () => {
     onStart({
       difficulty,
-      showMinuteCircle: difficulty === 0,
-      matchColors: difficulty < 2,
+      showMinuteCircle: difficulty < 3, // Affiché pour niveaux 1, 2, 3
+      matchColors: difficulty === 0, // Uniquement pour niveau 1
     });
   };
 
@@ -41,7 +42,7 @@ export function TimeSettings({ onStart }: TimeSettingsProps) {
           <Slider
             id="difficulty"
             min={0}
-            max={2}
+            max={3}
             step={1}
             value={[difficulty]}
             onValueChange={(value) => setDifficulty(value[0])}
