@@ -121,7 +121,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   };
   
   const handleComposeSumSubmit = () => {
-    if (feedback) return;
+    if (feedback || typeof exerciseData.targetAmount === 'undefined') return;
     
     if (composedAmount === exerciseData.targetAmount) {
       setCorrectAnswers(prev => prev + 1);
