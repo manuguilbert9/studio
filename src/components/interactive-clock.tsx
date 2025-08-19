@@ -69,7 +69,7 @@ export function InteractiveClock({ hour, minute, settings, onSubmit, isCorrect }
         size="lg"
         className={cn("w-full max-w-sm text-xl py-7",
             isCorrect === true ? "bg-green-500 hover:bg-green-600" : 
-            isCorrect === false ? "bg-red-500 hover:bg-red-600" :
+            isCorrect === false ? "bg-red-500 hover:bg-red-600 animate-shake" :
             "bg-accent text-accent-foreground hover:bg-accent/90"
         )}
         onClick={handleSubmit}
