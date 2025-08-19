@@ -13,10 +13,10 @@ interface InteractiveClockProps {
   minute: number;
   settings: TimeSettings;
   onSubmit: (h: number, m: number) => void;
-  isCorrect: boolean | null;
+  feedback: 'correct' | 'incorrect' | null;
 }
 
-export function InteractiveClock({ hour, minute, settings, onSubmit, isCorrect }: InteractiveClockProps) {
+export function InteractiveClock({ hour, minute, settings, onSubmit, feedback }: InteractiveClockProps) {
   // Initialize with a neutral time, like 12:00
   const [displayHour, setDisplayHour] = useState(12);
   const [displayMinute, setDisplayMinute] = useState(0);
@@ -68,12 +68,12 @@ export function InteractiveClock({ hour, minute, settings, onSubmit, isCorrect }
       <Button
         size="lg"
         className={cn("w-full max-w-sm text-xl py-7",
-            isCorrect === true ? "bg-green-500 hover:bg-green-600" : 
-            isCorrect === false ? "bg-red-500 hover:bg-red-600 animate-shake" :
+            feedback === 'correct' ? "bg-green-500 hover:bg-green-600" : 
+            feedback === 'incorrect' ? "bg-red-500 hover:bg-red-600 animate-shake" :
             "bg-accent text-accent-foreground hover:bg-accent/90"
         )}
         onClick={handleSubmit}
-        disabled={isCorrect !== null}
+        disabled={feedback !== null}
       >
         <Check className="mr-2" />
         Valider

@@ -508,7 +508,7 @@ const renderSetTime = () => (
       minute={exerciseData.minute!}
       onSubmit={handleSetTimeSubmit}
       settings={exerciseData.timeSettings!}
-      isCorrect={feedback === 'correct'}
+      feedback={feedback}
     />
 )
 
