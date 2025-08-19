@@ -2,6 +2,7 @@
 
 
 
+
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -22,6 +23,7 @@ import { CalculationSettings } from './calculation-settings';
 import { CurrencySettings } from './currency-settings';
 import { TimeSettings } from './time-settings';
 import { PriceTag } from './price-tag';
+import { InteractiveClock } from './interactive-clock';
 
 
 const motivationalMessages = [
@@ -493,6 +495,15 @@ const renderSelectMultiple = () => (
     </div>
 );
 
+const renderSetTime = () => (
+    <InteractiveClock
+      hour={exerciseData.hour || 12}
+      minute={exerciseData.minute || 0}
+      onSubmit={() => {}}
+      settings={exerciseData.timeSettings!}
+    />
+)
+
 
   return (
     <>
@@ -519,6 +530,7 @@ const renderSelectMultiple = () => (
           {exerciseData.type === 'qcm' && renderQCM()}
           {exerciseData.type === 'compose-sum' && renderComposeSum()}
           {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
+          {exerciseData.type === 'set-time' && renderSetTime()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (
