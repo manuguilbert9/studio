@@ -1,5 +1,4 @@
 
-
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -72,26 +71,30 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     
     const questionTypeRandomizer = Math.random();
 
-    // Generate time based on difficulty
+    // Determine hour based on difficulty
+    if (difficulty < 2) {
+        hour = Math.floor(Math.random() * 13); // 0-12
+    } else {
+        hour = Math.floor(Math.random() * 24); // 0-23
+    }
+    
+    // Determine minute based on difficulty
     switch (difficulty) {
         case 0: // Level 1: heures pile et demi-heures
-            hour = Math.floor(Math.random() * 13);
             minute = Math.random() < 0.5 ? 0 : 30;
             break;
         case 1: // Level 2: pile, 15, 30 et 45
-            hour = Math.floor(Math.random() * 13);
             minute = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
             break;
         case 2: // Level 3: Multiples de 5
-            hour = Math.random() < 0.5 ? Math.floor(Math.random() * 13) : Math.floor(Math.random() * 11) + 13;
             minute = Math.floor(Math.random() * 12) * 5;
             break;
         case 3: // Level 4: heure et minutes précises
         default:
-            hour = Math.random() < 0.5 ? Math.floor(Math.random() * 13) : Math.floor(Math.random() * 11) + 13;
             minute = Math.floor(Math.random() * 60);
             break;
     }
+
 
     // Determine question type: 50% QCM, 50% set-time
     if (questionTypeRandomizer < 0.5) {
@@ -106,10 +109,11 @@ function generateTimeQuestion(settings: TimeSettings): Question {
 
         // Add trap answer for levels 2, 3, 4
         if (difficulty >= 1) {
-            if (minute / 5 > 0 && minute / 5 <= 12 && displayHour <= 12 && displayHour > 0) {
+             if (minute > 0 && minute <= 12 * 5 && displayHour <= 12 && displayHour > 0) {
                 let trapHour = minute / 5;
-                const trapMinute = displayHour * 5;
-                if (hour > 12 && trapHour < 12) {
+                if(trapHour === 0) trapHour = 12;
+                const trapMinute = displayHour * 5 > 59 ? 55 : displayHour * 5;
+                if (hour >= 13 && trapHour > 0 && trapHour < 12) {
                      trapHour += 12;
                 }
                 const trapOption = `${trapHour.toString().padStart(2, '0')}:${trapMinute.toString().padStart(2, '0')}`;
