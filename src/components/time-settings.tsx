@@ -14,7 +14,7 @@ interface TimeSettingsProps {
 
 const difficultyDesc = [
   "Niveau 1 : Guidage complet (cercle des minutes et couleurs)",
-  "Niveau 2 : Suppression des couleurs d'aide",
+  "Niveau 2 : Aiguilles en couleur, sans fond coloré",
   "Niveau 3 : Introduction des heures de l'après-midi",
   "Niveau 4 : Maîtrise (sans cercle des minutes)",
 ];
@@ -27,8 +27,10 @@ export function TimeSettings({ onStart }: TimeSettingsProps) {
       difficulty,
       // Level 4 (difficulty 3) should not show the minute circle.
       showMinuteCircle: difficulty < 3, 
-      // Only level 1 (difficulty 0) has color matching
+      // Only level 1 (difficulty 0) has color matching on background and numbers
       matchColors: difficulty === 0, 
+      // Level 1 and 2 have colored hands
+      coloredHands: difficulty < 2,
     });
   };
 

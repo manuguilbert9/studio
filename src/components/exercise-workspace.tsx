@@ -1,6 +1,7 @@
 
 
 
+
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -323,6 +324,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
             minute={exerciseData.minute} 
             showMinuteCircle={exerciseData.timeSettings?.showMinuteCircle}
             matchColors={exerciseData.timeSettings?.matchColors}
+            coloredHands={exerciseData.timeSettings?.coloredHands}
         />
       ) : exerciseData.images && exerciseData.images.length > 0 ? (
         <div className="flex flex-wrap items-center justify-center gap-4">

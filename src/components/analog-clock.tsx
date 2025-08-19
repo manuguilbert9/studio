@@ -8,9 +8,10 @@ interface AnalogClockProps {
   minute: number;
   showMinuteCircle?: boolean;
   matchColors?: boolean;
+  coloredHands?: boolean;
 }
 
-export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors = true }: AnalogClockProps) {
+export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors = true, coloredHands = true }: AnalogClockProps) {
   const hourAngle = (hour % 12 + minute / 60) * 30;
   const minuteAngle = minute * 6;
   
@@ -91,7 +92,7 @@ export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors
           y1="100"
           x2={100 + 40 * Math.cos((hourAngle - 90) * Math.PI / 180)}
           y2={100 + 40 * Math.sin((hourAngle - 90) * Math.PI / 180)}
-          stroke={matchColors ? hourColor : "hsl(var(--foreground))"}
+          stroke={coloredHands ? hourColor : "hsl(var(--foreground))"}
           strokeWidth="5"
           strokeLinecap="round"
           strokeOpacity="0.8"
@@ -102,7 +103,7 @@ export function AnalogClock({ hour, minute, showMinuteCircle = true, matchColors
           y1="100"
           x2={100 + 65 * Math.cos((minuteAngle - 90) * Math.PI / 180)}
           y2={100 + 65 * Math.sin((minuteAngle - 90) * Math.PI / 180)}
-          stroke={matchColors ? minuteColor : "hsl(var(--foreground))"}
+          stroke={coloredHands ? minuteColor : "hsl(var(--foreground))"}
           strokeWidth="4"
           strokeLinecap="round"
           strokeOpacity="0.8"

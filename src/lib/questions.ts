@@ -5,6 +5,7 @@
 
 
 
+
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -47,6 +48,7 @@ export interface TimeSettings {
     difficulty: number; // 0-3
     showMinuteCircle: boolean;
     matchColors: boolean;
+    coloredHands: boolean;
 }
 
 export interface AllSettings {
@@ -74,7 +76,7 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     let answerHour: number;
     let minute = Math.floor(Math.random() * 12) * 5;
 
-    // Levels 3 and 4 have afternoon hours
+    // Levels 3 and 4 have afternoon hours (mixed with morning)
     if (difficulty >= 2) { 
         if(Math.random() > 0.5) {
             hour = Math.floor(Math.random() * 11) + 13; // 13h to 23h
@@ -82,7 +84,7 @@ function generateTimeQuestion(settings: TimeSettings): Question {
              hour = Math.floor(Math.random() * 13); // 0h to 12h
         }
         answerHour = hour;
-    } else {
+    } else { // Levels 1 and 2 only have morning hours
         hour = Math.floor(Math.random() * 13); // 0h to 12h
         answerHour = hour;
     }
@@ -91,17 +93,23 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     let displayHour = hour >= 12 ? hour - 12 : hour;
     if (displayHour === 0) displayHour = 12; // Handle midnight/noon case for display
 
-    const answer = `${answerHour}:${minute.toString().padStart(2, '0')}`;
+    const answer = `${answerHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
     const options = new Set<string>([answer]);
 
     // For levels 2, 3 and 4 add a trap answer
     if (difficulty >= 1) {
-        if (minute > 0 && minute <= 12 && minute * 5 < 60 && displayHour <= 12 && displayHour > 0) {
-            let trapHour = minute;
+        // Simple inversion trap: 10:05 -> 01:50 or 05:10
+        // We make sure the inverted time is plausible
+        if (minute / 5 > 0 && minute / 5 <= 12 && displayHour <= 12 && displayHour > 0) {
+            let trapHour = minute / 5;
             const trapMinute = displayHour * 5;
-            if(hour > 12 && trapHour < 13) trapHour += 12; // keep afternoon format for trap
+
+            // If we are in afternoon hours, try to make the trap afternoon too
+            if (hour > 12 && trapHour < 12) {
+                 trapHour += 12;
+            }
             
-            const trapOption = `${trapHour}:${trapMinute.toString().padStart(2, '0')}`;
+            const trapOption = `${trapHour.toString().padStart(2, '0')}:${trapMinute.toString().padStart(2, '0')}`;
             if (trapOption !== answer) {
                 options.add(trapOption);
             }
@@ -110,17 +118,17 @@ function generateTimeQuestion(settings: TimeSettings): Question {
 
     while (options.size < 4) {
         let wrongHour: number;
-        if (difficulty >= 2) {
+         if (difficulty >= 2) { // AM/PM hours
              if(Math.random() > 0.5) {
                 wrongHour = Math.floor(Math.random() * 11) + 13;
              } else {
                 wrongHour = Math.floor(Math.random() * 13);
              }
-        } else {
+        } else { // Only AM hours
              wrongHour = Math.floor(Math.random() * 13);
         }
         const wrongMinute = Math.floor(Math.random() * 12) * 5;
-        const wrongOption = `${wrongHour}:${wrongMinute.toString().padStart(2, '0')}`;
+        const wrongOption = `${wrongHour.toString().padStart(2, '0')}:${wrongMinute.toString().padStart(2, '0')}`;
         
         if (wrongOption !== answer) {
             options.add(wrongOption);
