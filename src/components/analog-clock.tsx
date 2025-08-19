@@ -45,39 +45,59 @@ export const AnalogClock = React.forwardRef<SVGSVGElement, AnalogClockProps>(
 
 
                 {/* Minute Markers and Numbers */}
-                {showMinuteCircle && Array.from({ length: 60 }).map((_, i) => {
-                const angle = i * 6;
-                const isFiveMinuteMark = i % 5 === 0;
-                const x1 = 100 + (isFiveMinuteMark ? 80 : 84) * Math.cos((angle - 90) * Math.PI / 180);
-                const y1 = 100 + (isFiveMinuteMark ? 80 : 84) * Math.sin((angle - 90) * Math.PI / 180);
-                const x2 = 100 + 88 * Math.cos((angle - 90) * Math.PI / 180);
-                const y2 = 100 + 88 * Math.sin((angle - 90) * Math.PI / 180);
+                {Array.from({ length: 60 }).map((_, i) => {
+                    const angle = i * 6;
+                    const isFiveMinuteMark = i % 5 === 0;
 
-                if (isFiveMinuteMark) {
-                    const numX = 100 + 90 * Math.cos((angle - 90) * Math.PI / 180);
-                    const numY = 100 + 90 * Math.sin((angle - 90) * Math.PI / 180);
-                    return (
-                    <text
-                        key={`min-num-${i}`}
-                        x={numX}
-                        y={numY}
-                        dy="0.35em"
-                        textAnchor="middle"
-                        className={cn(
-                            "text-[10px] sm:text-xs font-bold",
-                            matchColors || coloredHands ? "fill-ring" : "fill-foreground",
-                            onMinuteClick && "cursor-pointer hover:opacity-70 transition-opacity"
-                        )}
-                        onClick={() => onMinuteClick?.(i)}
-                    >
-                        {i === 0 ? "00" : i}
-                    </text>
-                    );
-                } else {
-                    return (
-                        <circle key={`min-dot-${i}`} cx={x2} cy={y2} r="1" className={cn(matchColors || coloredHands ? "fill-ring/50" : "fill-muted-foreground")} />
-                    )
-                }
+                    if (showMinuteCircle) {
+                        const x1 = 100 + (isFiveMinuteMark ? 80 : 84) * Math.cos((angle - 90) * Math.PI / 180);
+                        const y1 = 100 + (isFiveMinuteMark ? 80 : 84) * Math.sin((angle - 90) * Math.PI / 180);
+                        const x2 = 100 + 88 * Math.cos((angle - 90) * Math.PI / 180);
+                        const y2 = 100 + 88 * Math.sin((angle - 90) * Math.PI / 180);
+                        if (isFiveMinuteMark) {
+                            const numX = 100 + 90 * Math.cos((angle - 90) * Math.PI / 180);
+                            const numY = 100 + 90 * Math.sin((angle - 90) * Math.PI / 180);
+                            return (
+                            <text
+                                key={`min-num-${i}`}
+                                x={numX}
+                                y={numY}
+                                dy="0.35em"
+                                textAnchor="middle"
+                                className={cn(
+                                    "text-[10px] sm:text-xs font-bold",
+                                    matchColors || coloredHands ? "fill-ring" : "fill-foreground",
+                                    onMinuteClick && "cursor-pointer hover:opacity-70 transition-opacity"
+                                )}
+                                onClick={() => onMinuteClick?.(i)}
+                            >
+                                {i === 0 ? "00" : i}
+                            </text>
+                            );
+                        }
+                    } else { // For level 4, show markers but not numbers
+                        const x1 = 100 + (isFiveMinuteMark ? 84 : 86) * Math.cos((angle - 90) * Math.PI / 180);
+                        const y1 = 100 + (isFiveMinuteMark ? 84 : 86) * Math.sin((angle - 90) * Math.PI / 180);
+                        const x2 = 100 + 88 * Math.cos((angle - 90) * Math.PI / 180);
+                        const y2 = 100 + 88 * Math.sin((angle - 90) * Math.PI / 180);
+                        
+                        // Clickable area for minutes
+                        const clickRadius = 8;
+                        const clickX = 100 + 86 * Math.cos((angle - 90) * Math.PI / 180);
+                        const clickY = 100 + 86 * Math.sin((angle - 90) * Math.PI / 180);
+                        
+                        return (
+                             <g key={`min-marker-${i}`} onClick={() => onMinuteClick?.(i)} className={cn(onMinuteClick && "cursor-pointer")}>
+                                {/* Invisible larger circle for easier clicking */}
+                                <circle cx={clickX} cy={clickY} r={clickRadius} fill="transparent" />
+                                 {isFiveMinuteMark ? (
+                                    <line x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth="2" className="stroke-muted-foreground" />
+                                 ) : (
+                                    <circle cx={x2} cy={y2} r="1" className="fill-muted-foreground" />
+                                 )}
+                             </g>
+                        )
+                    }
                 })}
 
                 {/* Hour Numbers */}
