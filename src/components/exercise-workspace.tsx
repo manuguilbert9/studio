@@ -1,8 +1,4 @@
 
-
-
-
-
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -110,10 +106,10 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     setComposedAmount(0);
     setSelectedCoins([]);
     setSelectedIndices([]);
+    setFeedback(null);
   }
 
   const handleNextQuestion = () => {
-    setFeedback(null);
     setShowConfetti(false);
     resetInteractiveStates();
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
@@ -177,6 +173,17 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         processCorrectAnswer();
     } else {
         processIncorrectAnswer();
+    }
+  }
+
+  const handleSetTimeSubmit = (h: number, m: number) => {
+    if (feedback) return;
+    const { hour, minute } = exerciseData;
+
+    if (h === hour && m === minute) {
+      processCorrectAnswer();
+    } else {
+      processIncorrectAnswer();
     }
   }
 
@@ -497,10 +504,11 @@ const renderSelectMultiple = () => (
 
 const renderSetTime = () => (
     <InteractiveClock
-      hour={exerciseData.hour || 12}
-      minute={exerciseData.minute || 0}
-      onSubmit={() => {}}
+      hour={exerciseData.hour!}
+      minute={exerciseData.minute!}
+      onSubmit={handleSetTimeSubmit}
       settings={exerciseData.timeSettings!}
+      isCorrect={feedback === 'correct'}
     />
 )
 
