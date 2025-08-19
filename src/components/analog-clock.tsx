@@ -10,10 +10,12 @@ interface AnalogClockProps extends React.HTMLAttributes<SVGSVGElement> {
   showMinuteCircle?: boolean;
   matchColors?: boolean;
   coloredHands?: boolean;
+  onHourClick?: (hour: number) => void;
+  onMinuteClick?: (minute: number) => void;
 }
 
 export const AnalogClock = React.forwardRef<SVGSVGElement, AnalogClockProps>(
-    ({ hour, minute, showMinuteCircle = true, matchColors = true, coloredHands = true, ...props }, ref) => {
+    ({ hour, minute, showMinuteCircle = true, matchColors = true, coloredHands = true, onHourClick, onMinuteClick, ...props }, ref) => {
     const hourAngle = (hour % 12 + minute / 60) * 30;
     const minuteAngle = minute * 6;
     
@@ -86,7 +88,12 @@ export const AnalogClock = React.forwardRef<SVGSVGElement, AnalogClockProps>(
                         y={numY}
                         dy="0.35em"
                         textAnchor="middle"
-                        className={cn("text-[10px] sm:text-xs font-bold", matchColors || coloredHands ? "fill-ring" : "fill-foreground")}
+                        className={cn(
+                            "text-[10px] sm:text-xs font-bold",
+                            matchColors || coloredHands ? "fill-ring" : "fill-foreground",
+                            onMinuteClick && "cursor-pointer hover:opacity-70 transition-opacity"
+                        )}
+                        onClick={() => onMinuteClick?.(i)}
                     >
                         {i === 0 ? "00" : i}
                     </text>
@@ -112,8 +119,10 @@ export const AnalogClock = React.forwardRef<SVGSVGElement, AnalogClockProps>(
                     dy=".35em"
                     textAnchor="middle"
                     className={cn("text-base sm:text-xl font-bold",
-                        matchColors || coloredHands ? "fill-destructive" : "fill-foreground"
+                        matchColors || coloredHands ? "fill-destructive" : "fill-foreground",
+                        onHourClick && "cursor-pointer hover:opacity-70 transition-opacity"
                     )}
+                    onClick={() => onHourClick?.(num)}
                     >
                     {num}
                     </text>
