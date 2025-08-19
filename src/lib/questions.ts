@@ -1,11 +1,5 @@
 
 
-
-
-
-
-
-
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -14,7 +8,7 @@ export type CurrencyItem = {
 };
 
 export interface Question {
-  type: 'qcm' | 'compose-sum' | 'select-multiple';
+  type: 'qcm' | 'compose-sum' | 'select-multiple' | 'set-time';
   question: string;
   // For QCM
   options?: string[];
@@ -22,6 +16,7 @@ export interface Question {
   images?: { src: string; alt: string, hint?: string }[];
   image?: string | null;
   hint?: string;
+  // For time questions (QCM and set-time)
   hour?: number;
   minute?: number;
   timeSettings?: TimeSettings;
@@ -73,77 +68,91 @@ const writingQuestions: Omit<Question, 'question' | 'type'>[] = [
 function generateTimeQuestion(settings: TimeSettings): Question {
     const { difficulty } = settings;
     let hour: number;
-    let answerHour: number;
-    let minute = Math.floor(Math.random() * 12) * 5;
-
-    // Levels 3 and 4 have afternoon hours (mixed with morning)
-    if (difficulty >= 2) { 
-        if(Math.random() > 0.5) {
-            hour = Math.floor(Math.random() * 11) + 13; // 13h to 23h
-        } else {
-             hour = Math.floor(Math.random() * 13); // 0h to 12h
-        }
-        answerHour = hour;
-    } else { // Levels 1 and 2 only have morning hours
-        hour = Math.floor(Math.random() * 13); // 0h to 12h
-        answerHour = hour;
-    }
+    let minute: number;
     
-    // For clock display, we always want a 1-12 hour format.
-    let displayHour = hour >= 12 ? hour - 12 : hour;
-    if (displayHour === 0) displayHour = 12; // Handle midnight/noon case for display
+    const questionTypeRandomizer = Math.random();
 
-    const answer = `${answerHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    const options = new Set<string>([answer]);
+    // Generate time based on difficulty
+    switch (difficulty) {
+        case 0: // Level 1: heures pile et demi-heures
+            hour = Math.floor(Math.random() * 13);
+            minute = Math.random() < 0.5 ? 0 : 30;
+            break;
+        case 1: // Level 2: pile, 15, 30 et 45
+            hour = Math.floor(Math.random() * 13);
+            minute = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
+            break;
+        case 2: // Level 3: Multiples de 5
+            hour = Math.random() < 0.5 ? Math.floor(Math.random() * 13) : Math.floor(Math.random() * 11) + 13;
+            minute = Math.floor(Math.random() * 12) * 5;
+            break;
+        case 3: // Level 4: heure et minutes précises
+        default:
+            hour = Math.random() < 0.5 ? Math.floor(Math.random() * 13) : Math.floor(Math.random() * 11) + 13;
+            minute = Math.floor(Math.random() * 60);
+            break;
+    }
 
-    // For levels 2, 3 and 4 add a trap answer
-    if (difficulty >= 1) {
-        // Simple inversion trap: 10:05 -> 01:50 or 05:10
-        // We make sure the inverted time is plausible
-        if (minute / 5 > 0 && minute / 5 <= 12 && displayHour <= 12 && displayHour > 0) {
-            let trapHour = minute / 5;
-            const trapMinute = displayHour * 5;
+    // Determine question type: 50% QCM, 50% set-time
+    if (questionTypeRandomizer < 0.5) {
+        // QCM Question
+        const answerHour = hour;
+        let displayHour = hour % 12;
+        if (displayHour === 0) displayHour = 12; // Handle midnight/noon for display
+        if (hour === 12) displayHour = 12; // Ensure 12 PM is 12, not 0
 
-            // If we are in afternoon hours, try to make the trap afternoon too
-            if (hour > 12 && trapHour < 12) {
-                 trapHour += 12;
+        const answer = `${answerHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const options = new Set<string>([answer]);
+
+        // Add trap answer for levels 2, 3, 4
+        if (difficulty >= 1) {
+            if (minute / 5 > 0 && minute / 5 <= 12 && displayHour <= 12 && displayHour > 0) {
+                let trapHour = minute / 5;
+                const trapMinute = displayHour * 5;
+                if (hour > 12 && trapHour < 12) {
+                     trapHour += 12;
+                }
+                const trapOption = `${trapHour.toString().padStart(2, '0')}:${trapMinute.toString().padStart(2, '0')}`;
+                if (trapOption !== answer) {
+                    options.add(trapOption);
+                }
             }
+        }
+
+        while (options.size < 4) {
+            let wrongHour: number;
+             if (difficulty >= 2) { 
+                 wrongHour = Math.floor(Math.random() * 24);
+            } else {
+                 wrongHour = Math.floor(Math.random() * 13);
+            }
+            const wrongMinute = Math.floor(Math.random() * 12) * 5;
+            const wrongOption = `${wrongHour.toString().padStart(2, '0')}:${wrongMinute.toString().padStart(2, '0')}`;
             
-            const trapOption = `${trapHour.toString().padStart(2, '0')}:${trapMinute.toString().padStart(2, '0')}`;
-            if (trapOption !== answer) {
-                options.add(trapOption);
+            if (wrongOption !== answer) {
+                options.add(wrongOption);
             }
         }
-    }
 
-    while (options.size < 4) {
-        let wrongHour: number;
-         if (difficulty >= 2) { // AM/PM hours
-             if(Math.random() > 0.5) {
-                wrongHour = Math.floor(Math.random() * 11) + 13;
-             } else {
-                wrongHour = Math.floor(Math.random() * 13);
-             }
-        } else { // Only AM hours
-             wrongHour = Math.floor(Math.random() * 13);
-        }
-        const wrongMinute = Math.floor(Math.random() * 12) * 5;
-        const wrongOption = `${wrongHour.toString().padStart(2, '0')}:${wrongMinute.toString().padStart(2, '0')}`;
-        
-        if (wrongOption !== answer) {
-            options.add(wrongOption);
+        return {
+            type: 'qcm',
+            question: 'Quelle heure est-il sur l\'horloge ?',
+            hour: displayHour,
+            minute,
+            options: Array.from(options).sort(() => Math.random() - 0.5),
+            answer,
+            timeSettings: settings
+        };
+    } else {
+        // Set-Time Question
+        return {
+            type: 'set-time',
+            question: `Réglez l'horloge sur ${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`,
+            hour: hour, // The target hour to set
+            minute: minute, // The target minute to set
+            timeSettings: settings
         }
     }
-
-    return {
-        type: 'qcm',
-        question: 'Quelle heure est-il sur l\'horloge ?',
-        hour: displayHour,
-        minute,
-        options: Array.from(options).sort(() => Math.random() - 0.5),
-        answer,
-        timeSettings: settings
-    };
 }
 
 export const currency: CurrencyItem[] = [
