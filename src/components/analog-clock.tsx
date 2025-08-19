@@ -25,34 +25,9 @@ export const AnalogClock = React.forwardRef<SVGSVGElement, AnalogClockProps>(
     return (
         <div className="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto my-4">
             <svg ref={ref} viewBox="0 0 200 200" className="w-full h-full" {...props}>
-                <defs>
-                    <filter id="neumorphic-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                        <feOffset dx="5" dy="5" in="SourceAlpha" result="shadow-offset"/>
-                        <feGaussianBlur stdDeviation="8" in="shadow-offset" result="shadow-blur"/>
-                        <feColorMatrix type="matrix" in="shadow-blur" result="shadow-color"
-                            values="0 0 0 0 0
-                                    0 0 0 0 0
-                                    0 0 0 0 0
-                                    0 0 0 0.1 0"/>
-                        
-                        <feOffset dx="-5" dy="-5" in="SourceAlpha" result="light-offset"/>
-                        <feGaussianBlur stdDeviation="8" in="light-offset" result="light-blur"/>
-                        <feColorMatrix type="matrix" in="light-blur" result="light-color"
-                            values="1 0 0 0 0
-                                    0 1 0 0 0
-                                    0 1 0 0 0
-                                    0 0 0 0.7 0"/>
-
-                        <feMerge>
-                            <feMergeNode in="shadow-color"/>
-                            <feMergeNode in="light-color"/>
-                            <feMergeNode in="SourceGraphic"/>
-                        </feMerge>
-                    </filter>
-                </defs>
                 
                 {/* Main clock face */}
-                <circle cx="100" cy="100" r="98" fill="hsl(var(--card))" filter="url(#neumorphic-shadow)" />
+                <circle cx="100" cy="100" r="98" fill="hsl(var(--card))" />
 
                 {/* Backgrounds */}
                 {matchColors && (
