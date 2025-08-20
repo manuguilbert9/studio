@@ -8,7 +8,7 @@ const separators = "-'’";
 // Sounds that are treated as a single vowel sound (digraphs, trigraphs)
 const vowelGroups = ['au', 'eau', 'ou', 'oi', 'oeu', 'œu', 'ain', 'ein', 'oin', 'an', 'en', 'on', 'un', 'in', 'ai', 'ei', 'eu', 'œ'];
 // Sounds that are treated as a single consonant sound
-const consonantGroups = ['ch', 'ph', 'gn', 'th', 'rh', 'sc'];
+const consonantGroups = ['ch', 'ph', 'gn', 'th', 'rh', 'sc', 'qu', 'gu'];
 
 // Function to split a word into phonetic groups (approximated)
 function toPhoneticGroups(word: string): string[] {
@@ -46,6 +46,9 @@ function isVowel(group: string): boolean {
     
     // Check if the whole group is a vowel group
     if (vowelGroups.includes(lowerGroup)) return true;
+
+    // A group like 'ch' is a consonant, not a vowel
+    if (consonantGroups.includes(lowerGroup)) return false;
 
     const firstChar = lowerGroup.charAt(0);
     // Handle 'y' as a vowel unless it's followed by another vowel
@@ -113,17 +116,12 @@ export function syllabify(word: string): string[] {
         }
         // Rule V-C-C-V: cut between consonants (e.g., par-tir)
         // Exception: consonant groups like 'ch', 'ph' are not split
-        else if (isVowel(group) && isConsonant(nextGroup) && isConsonant(nextNextGroup) && isVowel(groups[i + 3])) {
+        else if (isVowel(group) && isConsonant(nextGroup) && isConsonant(nextNextGroup) && (isVowel(groups[i + 3]) || !groups[i+3])) {
             currentSyllable += nextGroup;
             syllables.push(currentSyllable);
             currentSyllable = "";
             i++; // consume nextGroup
         }
-        // Rule C-V: continue building syllable
-        else if (isConsonant(group) && isVowel(nextGroup)) {
-             // Let it continue to the next group
-        }
-
 
         i++;
     }
@@ -133,31 +131,25 @@ export function syllabify(word: string): string[] {
     }
 
     // --- Post-processing ---
+    // If we only have one syllable, just return the word
+    if (syllables.length === 1) {
+        return [cleanedWord];
+    }
 
-    // Merge a trailing lone consonant
+
+    // Merge a trailing lone consonant or silent 'e'/'es'
     if (syllables.length > 1) {
         const last = syllables[syllables.length - 1];
-        if (isConsonant(last) && !isVowel(last)) {
+        const lastIsSilentE = last.toLowerCase() === 'e' || last.toLowerCase() === 'es';
+        const lastIsConsonant = isConsonant(last) && !isVowel(last);
+        
+        if (lastIsSilentE || lastIsConsonant) {
             syllables[syllables.length - 2] += last;
             syllables.pop();
         }
     }
     
-    // Merge a trailing silent 'e' or 'es'
-    if (syllables.length > 1) {
-        const last = syllables[syllables.length - 1];
-        if (last.toLowerCase() === 'e' || last.toLowerCase() === 'es') {
-             const prev = syllables[syllables.length-2];
-             const lastCharOfPrev = prev.slice(-1).toLowerCase();
-             // Check if the previous syllable ends with a consonant
-             if (consonants.includes(lastCharOfPrev)) {
-                syllables[syllables.length - 2] += last;
-                syllables.pop();
-             }
-        }
-    }
-    
-    // If the whole word is one syllable, return it
+    // If the processing resulted in an empty array or something strange, fallback to the original word.
     if (syllables.join('').length !== cleanedWord.length) {
         return [cleanedWord];
     }

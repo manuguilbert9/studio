@@ -82,8 +82,8 @@ export function FluencyExercise() {
       setTimeout(() => {
           const words = textContent.split(/(\s+)/); // Split by space but keep them
           const processedWords = words.map(word => {
-            if (/\s+/.test(word)) {
-              return word; // It's a space, keep it as is
+            if (/\s+/.test(word) || word.length === 0) {
+              return word; // It's a space or empty, keep it as is
             }
             const syllables = syllabify(word);
             if (syllables.length <= 1) return word;
@@ -115,29 +115,11 @@ export function FluencyExercise() {
     if (!isRunning && wordIndex === 0) {
       resetStopwatch();
       startStopwatch();
-      setWordCount(1);
+      setWordCount(1); // Start with the first word
     } else if (isRunning) {
       stopStopwatch();
-      if (useSyllableHelp) {
-        const syllableElements = document.querySelectorAll('#syllabified-text .syllable-a, #syllabified-text .syllable-b');
-        const words = new Set();
-        let currentWord = '';
-        syllableElements.forEach(el => {
-            const parent = el.parentElement;
-            if (parent?.dataset.word) {
-                words.add(parent.dataset.word);
-            }
-        });
-
-        // This is a rough approximation. A better way would be to count word boundaries.
-        const plainTextForCount = textContent.trim().split(/\s+/);
-        setWordCount(Math.min(plainTextForCount.length, wordIndex + 1));
-
-
-      } else {
-        const words = textContent.trim().split(/\s+/);
-        setWordCount(Math.min(words.length, wordIndex + 1));
-      }
+      const words = textContent.trim().split(/\s+/);
+      setWordCount(Math.min(words.length, wordIndex + 1));
       setShowResults(true);
     }
   };
@@ -150,20 +132,27 @@ export function FluencyExercise() {
     if (useSyllableHelp) {
       if (isSyllabifying) {
         return (
-          <div className="space-y-2">
+          <div className="space-y-2 p-6">
             <Skeleton className="h-6 w-3/4" />
             <Skeleton className="h-6 w-full" />
             <Skeleton className="h-6 w-1/2" />
           </div>
         );
       }
-      // Since we can't make syllables clickable easily without complex logic,
-      // we make the whole text block clickable to stop the timer.
+      // When syllabified, we can't easily click on "words", so we treat the whole block as one.
+      // Click anywhere to start, click again to stop.
       return (
         <div
-          id="syllabified-text"
           className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
-          onClick={() => handleWordClick(Infinity)} // Click anywhere to stop
+          onClick={() => {
+              if (!isRunning) {
+                  handleWordClick(0); // Start timer
+              } else {
+                  // Stop timer, count all words as read
+                  const totalWords = textContent.trim().split(/\s+/).length;
+                  handleWordClick(totalWords - 1);
+              }
+          }}
           dangerouslySetInnerHTML={{ __html: syllabifiedContent.replace(/\n/g, '<br/>') }}
         />
       );
@@ -171,15 +160,21 @@ export function FluencyExercise() {
 
     return (
       <p className="p-6 text-2xl leading-relaxed font-serif">
-        {textContent.split(/\s+/).filter(Boolean).map((word, index) => (
-          <span
-            key={index}
-            onClick={() => handleWordClick(index)}
-            className="cursor-pointer hover:bg-yellow-200 rounded-md p-1 transition-colors"
-          >
-            {word}{' '}
-          </span>
-        ))}
+        {textContent.split(/(\s+)/).map((segment, index) => {
+          if (/\s+/.test(segment)) {
+            return <span key={index}>{segment}</span>;
+          }
+          const wordIndex = Math.floor(index / 2);
+          return (
+            <span
+              key={index}
+              onClick={() => handleWordClick(wordIndex)}
+              className="cursor-pointer hover:bg-yellow-200 rounded-md p-1 transition-colors"
+            >
+              {segment}
+            </span>
+          );
+        })}
       </p>
     );
   };
@@ -266,7 +261,10 @@ export function FluencyExercise() {
                     {renderTextContent()}
                 </CardContent>
                  <CardFooter className="text-sm text-muted-foreground">
-                    Cliquez sur le premier mot pour démarrer le chrono. Cliquez sur le dernier mot lu pour l'arrêter.
+                    {useSyllableHelp 
+                        ? "Cliquez sur le texte pour démarrer ou arrêter le chrono."
+                        : "Cliquez sur le premier mot pour démarrer le chrono. Cliquez sur le dernier mot lu pour l'arrêter."
+                    }
                 </CardFooter>
             </Card>
 
