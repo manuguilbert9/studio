@@ -2,18 +2,25 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { getAvailableTexts, getTextContent } from '@/services/reading';
+import { syllabify } from '@/lib/syllabify';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
-import { Play, Pause, RefreshCw } from 'lucide-react';
+import { Play, Pause, RefreshCw, BrainCircuit } from 'lucide-react';
+import { Switch } from './ui/switch';
+import { Skeleton } from './ui/skeleton';
 
 
 export function FluencyExercise() {
   const [availableTexts, setAvailableTexts] = useState<string[]>([]);
   const [selectedText, setSelectedText] = useState<string>('');
-  const [textContent, setTextContent] = useState<string[]>([]);
+  const [textContent, setTextContent] = useState<string>('');
+  const [syllabifiedContent, setSyllabifiedContent] = useState<string>('');
+  
+  const [useSyllableHelp, setUseSyllableHelp] = useState(false);
+  const [isSyllabifying, setIsSyllabifying] = useState(false);
 
   const [time, setTime] = useState(0); // Time in seconds
   const [isRunning, setIsRunning] = useState(false);
@@ -50,15 +57,40 @@ export function FluencyExercise() {
   const handleSelectText = async (filename: string) => {
     if (!filename) {
       setSelectedText('');
-      setTextContent([]);
+      setTextContent('');
+      setSyllabifiedContent('');
       return;
     }
     setSelectedText(filename);
     const content = await getTextContent(filename);
-    const words = content.split(/\s+/).filter(Boolean);
-    setTextContent(words);
+    setTextContent(content);
     resetStopwatch();
   };
+
+  useEffect(() => {
+    if (useSyllableHelp && textContent) {
+      setIsSyllabifying(true);
+      // Simulate async process for consistency, though our function is sync
+      setTimeout(() => {
+          const words = textContent.split(/(\s+)/); // Split by space but keep them
+          const processedWords = words.map(word => {
+            if (/\s+/.test(word)) {
+              return word; // It's a space, keep it as is
+            }
+            const syllables = syllabify(word);
+            if (syllables.length <= 1) return word;
+
+            return syllables.map((syllable, index) => 
+                `<span class="syllable-${index % 2 === 0 ? 'a' : 'b'}">${syllable}</span>`
+            ).join('');
+          });
+          setSyllabifiedContent(processedWords.join(''));
+          setIsSyllabifying(false);
+      }, 50); // Small timeout to allow UI update
+    } else {
+        setSyllabifiedContent('');
+    }
+  }, [useSyllableHelp, textContent]);
 
   const startStopwatch = () => setIsRunning(true);
   const stopStopwatch = () => setIsRunning(false);
@@ -72,35 +104,77 @@ export function FluencyExercise() {
   };
 
   const handleWordClick = (wordIndex: number) => {
-    if (wordIndex === 0) {
+    if (!isRunning && wordIndex === 0) {
       resetStopwatch();
       startStopwatch();
-      setWordCount(1); // Start counting from the first word
-    } else {
+      setWordCount(1);
+    } else if (isRunning) {
       stopStopwatch();
-      setWordCount(wordIndex + 1);
+      if (useSyllableHelp) {
+        const syllableElements = document.querySelectorAll('#syllabified-text .syllable-a, #syllabified-text .syllable-b');
+        const words = new Set();
+        let currentWord = '';
+        syllableElements.forEach(el => {
+            const parent = el.parentElement;
+            if (parent?.dataset.word) {
+                words.add(parent.dataset.word);
+            }
+        });
+
+        // This is a rough approximation. A better way would be to count word boundaries.
+        const plainTextForCount = textContent.trim().split(/\s+/);
+        setWordCount(Math.min(plainTextForCount.length, wordIndex + 1));
+
+
+      } else {
+        const words = textContent.trim().split(/\s+/);
+        setWordCount(Math.min(words.length, wordIndex + 1));
+      }
       setShowResults(true);
     }
   };
 
+
   const wpm = wordCount > 0 && time > 0 ? Math.round((wordCount / time) * 60) : 0;
   const netWpm = wpm > 0 ? Math.max(0, wpm - errors) : 0;
 
-  const renderTextContent = () => {
+ const renderTextContent = () => {
+    if (useSyllableHelp) {
+      if (isSyllabifying) {
+        return (
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-1/2" />
+          </div>
+        );
+      }
+      // Since we can't make syllables clickable easily without complex logic,
+      // we make the whole text block clickable to stop the timer.
+      return (
+        <div
+          id="syllabified-text"
+          className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
+          onClick={() => handleWordClick(Infinity)} // Click anywhere to stop
+          dangerouslySetInnerHTML={{ __html: syllabifiedContent.replace(/\n/g, '<br/>') }}
+        />
+      );
+    }
+
     return (
-        <p className="p-6 text-2xl leading-relaxed font-serif">
-            {textContent.map((word, index) => (
-                <span
-                    key={index}
-                    onClick={() => handleWordClick(index)}
-                    className="cursor-pointer hover:bg-yellow-200 rounded-md p-1 transition-colors"
-                >
-                    {word}{' '}
-                </span>
-            ))}
-        </p>
+      <p className="p-6 text-2xl leading-relaxed font-serif">
+        {textContent.split(/\s+/).filter(Boolean).map((word, index) => (
+          <span
+            key={index}
+            onClick={() => handleWordClick(index)}
+            className="cursor-pointer hover:bg-yellow-200 rounded-md p-1 transition-colors"
+          >
+            {word}{' '}
+          </span>
+        ))}
+      </p>
     );
-  }
+  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-2xl">
@@ -108,18 +182,32 @@ export function FluencyExercise() {
         <CardTitle className="font-headline text-3xl text-center">Exercice de Fluence</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-center gap-4">
-            <Label htmlFor="text-select" className="text-lg">Choisis un texte :</Label>
-            <Select onValueChange={handleSelectText} value={selectedText}>
-              <SelectTrigger id="text-select" className="w-full sm:w-[300px]">
-                <SelectValue placeholder="Sélectionner un texte..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTexts.map(text => (
-                  <SelectItem key={text} value={text}>{text.replace('.txt', '')}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
+            <div className="flex items-center gap-4">
+                <Label htmlFor="text-select" className="text-lg">Choisis un texte :</Label>
+                <Select onValueChange={handleSelectText} value={selectedText}>
+                  <SelectTrigger id="text-select" className="w-full sm:w-[300px]">
+                    <SelectValue placeholder="Sélectionner un texte..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTexts.map(text => (
+                      <SelectItem key={text} value={text}>{text.replace('.txt', '')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+            </div>
+             {selectedText && (
+                <div className="flex items-center space-x-2">
+                    <Switch 
+                        id="syllable-help" 
+                        checked={useSyllableHelp}
+                        onCheckedChange={setUseSyllableHelp}
+                    />
+                    <Label htmlFor="syllable-help" className="flex items-center gap-2 text-lg">
+                        <BrainCircuit className="text-primary"/> Aide syllabique
+                    </Label>
+                </div>
+            )}
         </div>
         
         {selectedText && (
