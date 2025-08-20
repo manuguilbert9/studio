@@ -1,16 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound, usePathname } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
-import { getSkillBySlug, skills } from '@/lib/skills';
+import { getSkillBySlug } from '@/lib/skills';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
 import { FluencyExercise } from '@/components/fluency-exercise';
 import { Button } from '@/components/ui/button';
 
-export default function ExercisePage({ params }: { params: { skill: string } }) {
-  const skill = getSkillBySlug(params.skill);
+export default function ExercisePage() {
+  const params = useParams();
+  const skillSlug = typeof params.skill === 'string' ? params.skill : '';
+  const skill = getSkillBySlug(skillSlug);
 
   if (!skill) {
     notFound();
