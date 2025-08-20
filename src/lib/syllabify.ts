@@ -1,39 +1,49 @@
-// A simplified French syllabification algorithm inspired by the rules of LireCouleur.
-// This is not a perfect or comprehensive implementation, but it handles many common cases.
+// A French syllabification algorithm based on linguistic rules.
+// This is a progressive implementation based on detailed specifications.
 
-const vowels = 'aàâäeéèêëiîïoôöuùûüqy';
-const consonants = 'zrtpqsdfghjklmwxcvbn';
-const separators = "-'’";
+// --- Dictionaries & Constants ---
+const VOWELS = 'aàâäeéèêëiîïoôöuùûüqyœæ';
+const CONSONANTS = 'zrtpqsdfghjklmwxcvbn';
+const SEPARATORS = "-'’";
 
-// Sounds that are treated as a single vowel sound (digraphs, trigraphs)
-const vowelGroups = ['au', 'eau', 'ou', 'oi', 'oeu', 'œu', 'ain', 'ein', 'oin', 'an', 'en', 'on', 'un', 'in', 'ai', 'ei', 'eu', 'œ'];
-// Sounds that are treated as a single consonant sound
-const consonantGroups = ['ch', 'ph', 'gn', 'th', 'rh', 'sc', 'qu', 'gu'];
+// Sound groups treated as a single phonetic unit
+const VOWEL_GROUPS = ['au', 'eau', 'ou', 'oi', 'oeu', 'œu', 'ain', 'ein', 'oin', 'an', 'en', 'on', 'un', 'in', 'ai', 'ei', 'eu', 'œ'];
+const CONSONANT_GROUPS = ['ch', 'ph', 'gn', 'th', 'rh', 'sc', 'qu', 'gu'];
 
-// Function to split a word into phonetic groups (approximated)
+// Consonant clusters that can start a syllable (attaques licites)
+const ONSET_OK = new Set([
+    'pr', 'pl', 'br', 'bl', 'tr', 'dr', 'cr', 'cl', 'gr', 'gl', 'fr', 'fl', 'vr', 'vl',
+    'ch', 'ph', 'th', 'sh', 'gn', 'qu', 'gu', 'sc', 'sp', 'st', 'sk'
+]);
+
+
+// --- Helper Functions ---
+
+/**
+ * Splits a word into phonetic groups (approximated).
+ * e.g., "chateau" -> ["ch", "a", "t", "eau"]
+ */
 function toPhoneticGroups(word: string): string[] {
     const groups: string[] = [];
     let i = 0;
     const lowerWord = word.toLowerCase();
 
     while (i < lowerWord.length) {
-        // Check for 3-letter groups first
-        const threeLetters = lowerWord.substring(i, i + 3);
-        if (vowelGroups.includes(threeLetters)) {
+        // Greedy check for 3-letter groups, then 2, then 1
+        const three = lowerWord.substring(i, i + 3);
+        if (VOWEL_GROUPS.includes(three)) {
             groups.push(word.substring(i, i + 3));
             i += 3;
             continue;
         }
 
-        // Check for 2-letter groups
-        const twoLetters = lowerWord.substring(i, i + 2);
-        if (vowelGroups.includes(twoLetters) || consonantGroups.includes(twoLetters)) {
+        const two = lowerWord.substring(i, i + 2);
+        if (VOWEL_GROUPS.includes(two) || CONSONANT_GROUPS.includes(two)) {
             groups.push(word.substring(i, i + 2));
             i += 2;
             continue;
         }
 
-        // Otherwise, add the single letter
         groups.push(word.substring(i, i + 1));
         i += 1;
     }
@@ -44,116 +54,135 @@ function isVowel(group: string): boolean {
     if (!group) return false;
     const lowerGroup = group.toLowerCase();
     
-    // Check if the whole group is a vowel group
-    if (vowelGroups.includes(lowerGroup)) return true;
+    if (VOWEL_GROUPS.includes(lowerGroup)) return true;
+    if (CONSONANT_GROUPS.includes(lowerGroup)) return false;
 
-    // A group like 'ch' is a consonant, not a vowel
-    if (consonantGroups.includes(lowerGroup)) return false;
-
-    const firstChar = lowerGroup.charAt(0);
-    // Handle 'y' as a vowel unless it's followed by another vowel
-    if (firstChar === 'y' && group.length > 1 && vowels.includes(lowerGroup.charAt(1))) {
+    // 'y' is a vowel unless it acts as a consonant (e.g., "yeux")
+    if (lowerGroup.startsWith('y') && group.length > 1 && VOWELS.includes(lowerGroup[1])) {
         return false;
     }
-    return vowels.includes(firstChar);
+    return VOWELS.includes(lowerGroup[0]);
 }
 
 function isConsonant(group: string): boolean {
     if (!group) return false;
     const lowerGroup = group.toLowerCase();
     
-    if (consonantGroups.includes(lowerGroup)) return true;
+    if (CONSONANT_GROUPS.includes(lowerGroup)) return true;
+    if (VOWEL_GROUPS.includes(lowerGroup)) return false;
 
-    // A group like 'an' is a vowel, not a consonant
-    if(vowelGroups.includes(lowerGroup)) return false;
-
-    const firstChar = lowerGroup.charAt(0);
-    return consonants.includes(firstChar);
+    return CONSONANTS.includes(lowerGroup[0]);
 }
 
+// --- Core Syllabification Logic ---
+
 export function syllabify(word: string): string[] {
-    if (!word || separators.includes(word)) {
+    if (!word || SEPARATORS.includes(word)) {
         return [word];
     }
     
-    // Clean the word from common punctuation that could interfere.
     const cleanedWord = word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?]/g, "");
-    if(cleanedWord.length <= 3) {
+    if (cleanedWord.length <= 3) {
         return [cleanedWord];
     }
 
+    // Step 1: Tokenize word into phonetic groups
     const groups = toPhoneticGroups(cleanedWord);
     if (groups.length <= 1) {
         return [cleanedWord];
     }
 
+    // Step 2: Iterate through groups and apply cutting rules
     const syllables: string[] = [];
     let currentSyllable = "";
     let i = 0;
 
     while (i < groups.length) {
         const group = groups[i];
-        currentSyllable += group;
-
         const nextGroup = groups[i + 1];
         const nextNextGroup = groups[i + 2];
+        
+        currentSyllable += group;
 
-        // End of word
+        // --- Cutting logic ---
+        let shouldCut = false;
+
+        // Reached the end of the word
         if (!nextGroup) {
-            syllables.push(currentSyllable);
-            break;
+            shouldCut = true;
+        } 
+        // V-V cut
+        else if (isVowel(group) && isVowel(nextGroup)) {
+            shouldCut = true;
         }
-
-        // Rule V-V: cut between vowels (e.g., a-érien)
-        if (isVowel(group) && isVowel(nextGroup)) {
-            syllables.push(currentSyllable);
-            currentSyllable = "";
-        }
-        // Rule V-C-V: cut before the consonant (e.g., a-mour)
+        // V-C-V cut (cut before C)
         else if (isVowel(group) && isConsonant(nextGroup) && isVowel(nextNextGroup)) {
-            syllables.push(currentSyllable);
-            currentSyllable = "";
+            shouldCut = true;
         }
-        // Rule V-C-C-V: cut between consonants (e.g., par-tir)
-        // Exception: consonant groups like 'ch', 'ph' are not split
-        else if (isVowel(group) && isConsonant(nextGroup) && isConsonant(nextNextGroup) && (isVowel(groups[i + 3]) || !groups[i+3])) {
-            currentSyllable += nextGroup;
-            syllables.push(currentSyllable);
-            currentSyllable = "";
-            i++; // consume nextGroup
+        // V-CC-V cut
+        else if (isVowel(group) && isConsonant(nextGroup) && isConsonant(nextNextGroup) && (isVowel(groups[i+3]) || !groups[i+3])) {
+            // If C1+C2 is a valid onset, cut before C1 (e.g., a-pres)
+            if (ONSET_OK.has((nextGroup + nextNextGroup).toLowerCase())) {
+                 shouldCut = true;
+            } else { // Otherwise, cut between C1 and C2 (e.g., por-te)
+                currentSyllable += nextGroup;
+                shouldCut = true;
+                i++; // Consume nextGroup as it's part of the current syllable
+            }
+        }
+        // Handle 'x' as 'ks' sound, splitting it.
+        else if (group.toLowerCase() === 'x') {
+            currentSyllable = currentSyllable.slice(0, -1) + 'x'; // simplified split
+            shouldCut = true;
         }
 
+
+        if (shouldCut) {
+            syllables.push(currentSyllable);
+            currentSyllable = "";
+        }
+        
         i++;
     }
-    
-    if (currentSyllable && syllables.join('') !== cleanedWord) {
+
+    if (currentSyllable) {
         syllables.push(currentSyllable);
     }
+    
+    return postProcess(syllables, cleanedWord);
+}
 
-    // --- Post-processing ---
-    // If we only have one syllable, just return the word
-    if (syllables.length === 1) {
-        return [cleanedWord];
+
+/**
+ * Cleans up the generated syllables (merge silent 'e', etc.)
+ */
+function postProcess(syllables: string[], originalWord: string): string[] {
+    if (syllables.length === 0) {
+        return [originalWord];
     }
-
-
-    // Merge a trailing lone consonant or silent 'e'/'es'
+    
+    // Merge a trailing silent 'e' or 'es'
     if (syllables.length > 1) {
         const last = syllables[syllables.length - 1];
-        const lastIsSilentE = last.toLowerCase() === 'e' || last.toLowerCase() === 'es';
-        const lastIsConsonant = isConsonant(last) && !isVowel(last);
-        
-        if (lastIsSilentE || lastIsConsonant) {
+        if (last.toLowerCase() === 'e' || last.toLowerCase() === 'es') {
             syllables[syllables.length - 2] += last;
             syllables.pop();
         }
     }
     
-    // If the processing resulted in an empty array or something strange, fallback to the original word.
-    if (syllables.join('').length !== cleanedWord.length) {
-        return [cleanedWord];
+     // Merge a single trailing consonant
+    if (syllables.length > 1) {
+        const last = syllables[syllables.length - 1];
+        if (isConsonant(last) && last.length === 1) {
+             syllables[syllables.length - 2] += last;
+             syllables.pop();
+        }
     }
 
+    // If processing resulted in something strange, fallback to the original word.
+    if (syllables.join('') !== originalWord) {
+        return [originalWord];
+    }
 
     return syllables.filter(s => s.length > 0);
 }
