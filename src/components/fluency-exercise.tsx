@@ -16,6 +16,8 @@ export function FluencyExercise() {
   const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
   const [selectedLevel, setSelectedLevel] = useState<string>('');
   const [selectedText, setSelectedText] = useState<string>('');
+  
+  const [title, setTitle] = useState('');
   const [textContent, setTextContent] = useState<string>('');
   const [syllabifiedContent, setSyllabifiedContent] = useState<string>('');
   
@@ -58,6 +60,7 @@ export function FluencyExercise() {
     setSelectedLevel(level);
     setSelectedText('');
     setTextContent('');
+    setTitle('');
     setSyllabifiedContent('');
     resetStopwatch();
   }
@@ -66,12 +69,19 @@ export function FluencyExercise() {
     if (!filename || !selectedLevel) {
       setSelectedText('');
       setTextContent('');
+      setTitle('');
       setSyllabifiedContent('');
       return;
     }
     setSelectedText(filename);
     const content = await getTextContent(selectedLevel, filename);
-    setTextContent(content);
+    
+    const titleMatch = content.match(/<titre>(.*?)<\/titre>/s);
+    const newTitle = titleMatch ? titleMatch[1] : '';
+    const newBody = content.replace(/<titre>.*?<\/titre>\s*/, '');
+    
+    setTitle(newTitle);
+    setTextContent(newBody);
     resetStopwatch();
   };
 
@@ -169,7 +179,7 @@ export function FluencyExercise() {
             <span
               key={index}
               onClick={() => handleWordClick(wordIndex)}
-              className="cursor-pointer hover:bg-yellow-200 rounded-md p-1 transition-colors"
+              className="cursor-pointer hover:bg-primary/20 rounded-md p-1 transition-colors"
             >
               {segment}
             </span>
@@ -242,10 +252,10 @@ export function FluencyExercise() {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={startStopwatch} disabled={isRunning} aria-label="Démarrer">
+                        <Button onClick={startStopwatch} disabled={isRunning || useSyllableHelp} aria-label="Démarrer">
                             <Play className="mr-2"/> Démarrer
                         </Button>
-                        <Button onClick={stopStopwatch} disabled={!isRunning} variant="destructive" aria-label="Arrêter">
+                        <Button onClick={stopStopwatch} disabled={!isRunning || useSyllableHelp} variant="destructive" aria-label="Arrêter">
                             <Pause className="mr-2"/> Arrêter
                         </Button>
                         <Button onClick={resetStopwatch} variant="outline" aria-label="Réinitialiser">
@@ -257,6 +267,9 @@ export function FluencyExercise() {
 
             {/* Text Content */}
             <Card>
+                <CardHeader>
+                    {title && <h3 className="text-2xl font-headline text-center">{title}</h3>}
+                </CardHeader>
                 <CardContent className="p-0">
                     {renderTextContent()}
                 </CardContent>

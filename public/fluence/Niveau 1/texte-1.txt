@@ -1,10 +1,6 @@
-Le chat est sur le tapis.
-Le chien joue dans le jardin.
-La petite fille mange une pomme.
-Le garçon lit un livre.
-Le soleil brille dans le ciel.
-Maman prépare le repas.
-Papa regarde la télévision.
-Le bébé dort dans son lit.
-J'aime aller à l'école.
-Mon ami a un vélo rouge.
+<titre>Le petit chat</titre>
+Le petit chat est doux.
+Il aime jouer avec la balle.
+Le chat boit du lait.
+Il dort sur le tapis.
+J'aime mon petit chat.
