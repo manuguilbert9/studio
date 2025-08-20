@@ -45,6 +45,9 @@ const syllabifyTextFlow = ai.defineFlow(
     outputSchema: SyllabifyOutputSchema,
   },
   async (text) => {
+    if (!text) {
+      return '';
+    }
     const { output } = await syllabifyPrompt(text);
     // The output can be null, so we provide a fallback.
     return output || text;
