@@ -62,3 +62,12 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .syllable-a {
+    color: #ef4444; /* red-500 */
+  }
+  .syllable-b {
+    color: #3b82f6; /* blue-500 */
+  }
+}

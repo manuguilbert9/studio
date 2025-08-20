@@ -2,17 +2,29 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { getAvailableTexts, getTextContent } from '@/services/reading';
+import { syllabifyText } from '@/ai/flows/syllabify-text-flow';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
-import { Play, Pause, RefreshCw, Flag } from 'lucide-react';
+import { Play, Pause, RefreshCw, Flag, Loader2 } from 'lucide-react';
+import { Switch } from './ui/switch';
+import { Badge } from './ui/badge';
+
+interface SyllabifiedWord {
+  original: string;
+  syllables: string[];
+}
 
 export function FluencyExercise() {
   const [availableTexts, setAvailableTexts] = useState<string[]>([]);
   const [selectedText, setSelectedText] = useState<string>('');
   const [textContent, setTextContent] = useState<string[]>([]);
+  const [syllabifiedContent, setSyllabifiedContent] = useState<SyllabifiedWord[]>([]);
+  const [useSyllables, setUseSyllables] = useState(false);
+  const [isSyllabifying, setIsSyllabifying] = useState(false);
+
   const [time, setTime] = useState(0); // Time in seconds
   const [isRunning, setIsRunning] = useState(false);
   const [wordCount, setWordCount] = useState(0);
@@ -47,14 +59,47 @@ export function FluencyExercise() {
 
   const handleSelectText = async (filename: string) => {
     if (!filename) {
-        setSelectedText('');
-        setTextContent([]);
-        return;
+      setSelectedText('');
+      setTextContent([]);
+      setSyllabifiedContent([]);
+      return;
     }
     setSelectedText(filename);
     const content = await getTextContent(filename);
-    setTextContent(content.split(/\s+/).filter(Boolean));
+    const words = content.split(/\s+/).filter(Boolean);
+    setTextContent(words);
+    
+    if (useSyllables) {
+      handleSyllabification(words);
+    } else {
+      setSyllabifiedContent([]);
+    }
     resetStopwatch();
+  };
+
+  const handleSyllabification = async (words: string[]) => {
+      if (!words.length) return;
+      setIsSyllabifying(true);
+      try {
+        const fullText = words.join(' ');
+        const resultHtml = await syllabifyText(fullText);
+        
+        // This is a simplified parser. It might not handle all edge cases.
+        const parsedWords: SyllabifiedWord[] = resultHtml.split(' ').map(wordHtml => {
+            const original = wordHtml.replace(/<[^>]+>/g, '');
+            const syllableSpans = Array.from(wordHtml.matchAll(/<span class="syllable-[ab]">(.*?)<\/span>/g));
+            const syllables = syllableSpans.map(match => match[1]);
+            return { original, syllables };
+        });
+        setSyllabifiedContent(parsedWords);
+      } catch (error) {
+        console.error("Failed to syllabify text:", error);
+        // Fallback to non-syllabified text if AI fails
+        setUseSyllables(false);
+        setSyllabifiedContent([]);
+      } finally {
+        setIsSyllabifying(false);
+      }
   };
 
   const startStopwatch = () => setIsRunning(true);
@@ -68,20 +113,78 @@ export function FluencyExercise() {
     setErrors(0);
   };
 
-  const handleWordClick = (index: number) => {
-    if (index === 0) {
+  const handleWordClick = (wordIndex: number) => {
+    if (wordIndex === 0) {
       resetStopwatch();
       startStopwatch();
       setWordCount(1); // Start counting from the first word
     } else {
       stopStopwatch();
-      setWordCount(index + 1);
+      setWordCount(wordIndex + 1);
       setShowResults(true);
     }
   };
+
+  const handleSyllableClick = (wordIndex: number) => {
+     // The logic is the same as clicking a word for now.
+     handleWordClick(wordIndex);
+  }
+
+  const handleToggleSyllables = (checked: boolean) => {
+    setUseSyllables(checked);
+    if (checked && textContent.length > 0) {
+        handleSyllabification(textContent);
+    } else {
+        setSyllabifiedContent([]);
+    }
+  }
   
   const wpm = wordCount > 0 && time > 0 ? Math.round((wordCount / time) * 60) : 0;
   const netWpm = wpm > 0 ? Math.max(0, wpm - errors) : 0;
+
+  const renderTextContent = () => {
+    if (isSyllabifying) {
+        return (
+            <div className="flex items-center justify-center h-48">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="ml-4 text-lg text-muted-foreground">Segmentation en cours...</p>
+            </div>
+        );
+    }
+    
+    if (useSyllables && syllabifiedContent.length > 0) {
+        return (
+             <p className="p-6 text-2xl leading-relaxed font-serif">
+                {syllabifiedContent.map((word, wordIndex) => (
+                    <span key={wordIndex} className="inline-block mr-3" onClick={() => handleSyllableClick(wordIndex)}>
+                        {word.syllables.map((syllable, syllableIndex) => (
+                             <span
+                                key={syllableIndex}
+                                className={`cursor-pointer hover:bg-yellow-200 rounded-sm p-0.5 transition-colors ${syllableIndex % 2 === 0 ? 'syllable-b' : 'syllable-a'}`}
+                            >
+                                {syllable}
+                            </span>
+                        ))}
+                    </span>
+                ))}
+             </p>
+        );
+    }
+
+    return (
+        <p className="p-6 text-2xl leading-relaxed font-serif">
+            {textContent.map((word, index) => (
+                <span
+                    key={index}
+                    onClick={() => handleWordClick(index)}
+                    className="cursor-pointer hover:bg-yellow-200 rounded-md p-1 transition-colors"
+                >
+                    {word}{' '}
+                </span>
+            ))}
+        </p>
+    );
+  }
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-2xl">
@@ -101,6 +204,11 @@ export function FluencyExercise() {
                 ))}
               </SelectContent>
             </Select>
+            <div className="flex items-center space-x-2">
+                <Switch id="syllable-mode" checked={useSyllables} onCheckedChange={handleToggleSyllables} />
+                <Label htmlFor="syllable-mode">Aide syllabique</Label>
+                <Badge variant="destructive">BETA</Badge>
+            </div>
         </div>
         
         {selectedText && (
@@ -131,16 +239,8 @@ export function FluencyExercise() {
 
             {/* Text Content */}
             <Card>
-                <CardContent className="p-6 text-2xl leading-relaxed font-serif">
-                {textContent.map((word, index) => (
-                    <span
-                        key={index}
-                        onClick={() => handleWordClick(index)}
-                        className="cursor-pointer hover:bg-yellow-200 rounded-md p-1 transition-colors"
-                    >
-                        {word}{' '}
-                    </span>
-                ))}
+                <CardContent className="p-0">
+                    {renderTextContent()}
                 </CardContent>
                  <CardFooter className="text-sm text-muted-foreground">
                     Cliquez sur le premier mot pour démarrer le chrono. Cliquez sur le dernier mot lu pour l'arrêter.
