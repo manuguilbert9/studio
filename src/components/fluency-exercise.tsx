@@ -12,9 +12,9 @@ import { Play, Pause, RefreshCw, BrainCircuit } from 'lucide-react';
 import { Switch } from './ui/switch';
 import { Skeleton } from './ui/skeleton';
 
-
 export function FluencyExercise() {
-  const [availableTexts, setAvailableTexts] = useState<string[]>([]);
+  const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
+  const [selectedLevel, setSelectedLevel] = useState<string>('');
   const [selectedText, setSelectedText] = useState<string>('');
   const [textContent, setTextContent] = useState<string>('');
   const [syllabifiedContent, setSyllabifiedContent] = useState<string>('');
@@ -54,15 +54,23 @@ export function FluencyExercise() {
     };
   }, [isRunning]);
 
+  const handleSelectLevel = (level: string) => {
+    setSelectedLevel(level);
+    setSelectedText('');
+    setTextContent('');
+    setSyllabifiedContent('');
+    resetStopwatch();
+  }
+
   const handleSelectText = async (filename: string) => {
-    if (!filename) {
+    if (!filename || !selectedLevel) {
       setSelectedText('');
       setTextContent('');
       setSyllabifiedContent('');
       return;
     }
     setSelectedText(filename);
-    const content = await getTextContent(filename);
+    const content = await getTextContent(selectedLevel, filename);
     setTextContent(content);
     resetStopwatch();
   };
@@ -183,20 +191,39 @@ export function FluencyExercise() {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
-            <div className="flex items-center gap-4">
-                <Label htmlFor="text-select" className="text-lg">Choisis un texte :</Label>
-                <Select onValueChange={handleSelectText} value={selectedText}>
-                  <SelectTrigger id="text-select" className="w-full sm:w-[300px]">
-                    <SelectValue placeholder="Sélectionner un texte..." />
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+                <Label htmlFor="level-select" className="text-lg">Niveau :</Label>
+                <Select onValueChange={handleSelectLevel} value={selectedLevel}>
+                  <SelectTrigger id="level-select" className="w-full">
+                    <SelectValue placeholder="Choisir un niveau..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableTexts.map(text => (
-                      <SelectItem key={text} value={text}>{text.replace('.txt', '')}</SelectItem>
+                    {Object.keys(availableTexts).map(level => (
+                      <SelectItem key={level} value={level}>{level}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
             </div>
-             {selectedText && (
+             {selectedLevel && (
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <Label htmlFor="text-select" className="text-lg">Texte :</Label>
+                    <Select onValueChange={handleSelectText} value={selectedText} disabled={!selectedLevel}>
+                      <SelectTrigger id="text-select" className="w-full">
+                        <SelectValue placeholder="Choisir un texte..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTexts[selectedLevel]?.map(text => (
+                          <SelectItem key={text} value={text}>{text.replace('.txt', '')}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                </div>
+            )}
+        </div>
+        
+        {selectedText && (
+          <>
+            <div className="flex justify-end">
                 <div className="flex items-center space-x-2">
                     <Switch 
                         id="syllable-help" 
@@ -207,11 +234,8 @@ export function FluencyExercise() {
                         <BrainCircuit className="text-primary"/> Aide syllabique
                     </Label>
                 </div>
-            )}
-        </div>
-        
-        {selectedText && (
-          <>
+            </div>
+
             {/* Stopwatch Display and Controls */}
             <Card className="bg-muted/50 p-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
