@@ -13,7 +13,7 @@ export function FluencyExercise() {
   const [availableTexts, setAvailableTexts] = useState<string[]>([]);
   const [selectedText, setSelectedText] = useState<string>('');
   const [textContent, setTextContent] = useState<string[]>([]);
-  const [time, setTime] = useState(0);
+  const [time, setTime] = useState(0); // Time in seconds
   const [isRunning, setIsRunning] = useState(false);
   const [wordCount, setWordCount] = useState(0);
   const [errors, setErrors] = useState(0);
@@ -32,8 +32,8 @@ export function FluencyExercise() {
   useEffect(() => {
     if (isRunning) {
       timerRef.current = setInterval(() => {
-        setTime(prevTime => prevTime + 10);
-      }, 10);
+        setTime(prevTime => prevTime + 1);
+      }, 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
     }
@@ -80,7 +80,7 @@ export function FluencyExercise() {
     }
   };
   
-  const wpm = wordCount > 0 && time > 0 ? Math.round((wordCount / (time / 1000)) * 60) : 0;
+  const wpm = wordCount > 0 && time > 0 ? Math.round((wordCount / time) * 60) : 0;
   const netWpm = wpm > 0 ? Math.max(0, wpm - errors) : 0;
 
   return (
@@ -111,9 +111,8 @@ export function FluencyExercise() {
                     <div className="text-center">
                         <p className="text-sm text-muted-foreground">Chronomètre</p>
                         <p className="font-mono text-5xl font-bold text-primary">
-                          <span>{("0" + Math.floor((time / 60000) % 60)).slice(-2)}:</span>
-                          <span>{("0" + Math.floor((time / 1000) % 60)).slice(-2)}:</span>
-                          <span>{("0" + ((time / 10) % 100)).slice(-2)}</span>
+                          <span>{("0" + Math.floor(time / 60)).slice(-2)}:</span>
+                          <span>{("0" + (time % 60)).slice(-2)}</span>
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -155,7 +154,7 @@ export function FluencyExercise() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                    <div className="bg-card p-4 rounded-lg">
                         <p className="text-sm font-semibold text-muted-foreground">Temps écoulé</p>
-                        <p className="text-3xl font-bold">{(time / 1000).toFixed(2)}s</p>
+                        <p className="text-3xl font-bold">{time}s</p>
                     </div>
                      <div className="bg-card p-4 rounded-lg">
                         <p className="text-sm font-semibold text-muted-foreground">Mots lus</p>
