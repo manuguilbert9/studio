@@ -6,6 +6,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { generate } from 'genkit/generate';
 
 const SyllabifyInputSchema = z.string();
 export type SyllabifyInput = z.infer<typeof SyllabifyInputSchema>;
@@ -50,6 +51,6 @@ const syllabifyTextFlow = ai.defineFlow(
     }
     const { output } = await syllabifyPrompt(text);
     // The output can be null, so we provide a fallback.
-    return output || text;
+    return output ?? text;
   }
 );
