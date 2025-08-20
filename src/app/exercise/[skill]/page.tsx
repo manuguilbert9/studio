@@ -1,16 +1,13 @@
+'use client';
+
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, usePathname } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getSkillBySlug, skills } from '@/lib/skills';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
+import { FluencyExercise } from '@/components/fluency-exercise';
 import { Button } from '@/components/ui/button';
-
-export async function generateStaticParams() {
-  return skills.map((skill) => ({
-    skill: skill.slug,
-  }));
-}
 
 export default function ExercisePage({ params }: { params: { skill: string } }) {
   const skill = getSkillBySlug(params.skill);
@@ -18,6 +15,15 @@ export default function ExercisePage({ params }: { params: { skill: string } }) 
   if (!skill) {
     notFound();
   }
+
+  const renderExercise = () => {
+    switch (skill.slug) {
+      case 'reading':
+        return <FluencyExercise />;
+      default:
+        return <ExerciseWorkspace skill={skill} />;
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-8">
@@ -44,7 +50,7 @@ export default function ExercisePage({ params }: { params: { skill: string } }) 
         </header>
 
         <main>
-          <ExerciseWorkspace skill={skill} />
+          {renderExercise()}
         </main>
       </div>
     </div>

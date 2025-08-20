@@ -99,6 +99,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   }
 
   const exerciseData = useMemo(() => {
+    if (questions.length === 0) return null;
     return questions[currentQuestionIndex];
   }, [currentQuestionIndex, questions]);
   
@@ -134,7 +135,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   }
   
   const handleQcmAnswer = (option: string) => {
-    if (feedback || !exerciseData.answer) return;
+    if (!exerciseData || feedback || !exerciseData.answer) return;
 
     if (option === exerciseData.answer) {
       processCorrectAnswer();
@@ -144,7 +145,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   };
   
   const handleComposeSumSubmit = () => {
-    if (feedback || typeof exerciseData.targetAmount === 'undefined') return;
+    if (!exerciseData || feedback || typeof exerciseData.targetAmount === 'undefined') return;
     
     if (composedAmount === exerciseData.targetAmount) {
       processCorrectAnswer();
@@ -154,7 +155,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   }
 
   const handleSelectMultipleSubmit = () => {
-    if (feedback || !exerciseData.items || typeof exerciseData.correctValue === 'undefined') return;
+    if (!exerciseData || feedback || !exerciseData.items || typeof exerciseData.correctValue === 'undefined') return;
     
     // Find all indices of correct items
     const correctIndices = exerciseData.items.reduce((acc: number[], item, index) => {
@@ -177,7 +178,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   }
 
   const handleSetTimeSubmit = (h: number, m: number) => {
-    if (feedback) return;
+    if (!exerciseData || feedback) return;
     const { hour, minute } = exerciseData;
 
     if (h === hour && m === minute) {
@@ -287,6 +288,12 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
       if (skill.slug === 'time') {
         return <TimeSettings onStart={startTimeExercise} />;
       }
+      // For other skills like writing, this will show a loading state until questions are set.
+       return (
+            <Card className="w-full shadow-2xl p-8 text-center">
+                Chargement de l'exercice...
+            </Card>
+        );
   }
 
   if (isFinished) {

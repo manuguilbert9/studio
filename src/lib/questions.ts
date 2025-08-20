@@ -72,9 +72,9 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     const questionTypeRandomizer = Math.random();
 
     // Determine hour based on difficulty
-    if (difficulty < 2) {
+    if (difficulty < 2) { // Niveaux 1 et 2
         hour = Math.floor(Math.random() * 13); // 0-12
-    } else {
+    } else { // Niveaux 3 et 4
         hour = Math.floor(Math.random() * 24); // 0-23
     }
     
@@ -101,21 +101,28 @@ function generateTimeQuestion(settings: TimeSettings): Question {
         // QCM Question
         const answerHour = hour;
         let displayHour = hour % 12;
-        if (displayHour === 0) displayHour = 12; // Handle midnight/noon for display
-        if (hour === 12) displayHour = 12; // Ensure 12 PM is 12, not 0
+        if (displayHour === 0 && hour > 0) displayHour = 12; // Handle noon
+        if (hour === 0) displayHour = 12; // Handle midnight for display
 
         const answer = `${answerHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const options = new Set<string>([answer]);
 
         // Add trap answer for levels 2, 3, 4
         if (difficulty >= 1) {
-             if (minute > 0 && minute <= 12 * 5 && displayHour <= 12 && displayHour > 0) {
+             if (minute > 0 && minute <= 12 * 5 && displayHour > 0 && displayHour <= 12 ) {
                 let trapHour = minute / 5;
                 if(trapHour === 0) trapHour = 12;
-                const trapMinute = displayHour * 5 > 59 ? 55 : displayHour * 5;
+
+                const trapMinute = (displayHour % 12) * 5;
+                
                 if (hour >= 13 && trapHour > 0 && trapHour < 12) {
                      trapHour += 12;
                 }
+                 if(hour < 13 && trapHour === 12) {
+                    // special case for morning
+                }
+
+
                 const trapOption = `${trapHour.toString().padStart(2, '0')}:${trapMinute.toString().padStart(2, '0')}`;
                 if (trapOption !== answer) {
                     options.add(trapOption);
@@ -494,6 +501,12 @@ export function generateQuestions(skill: string, count: number, settings?: AllSe
   if (skill === 'calculation' && settings?.calculation) {
     return Array.from({ length: count }, () => generateCalculationQuestion(settings.calculation!));
   }
+  
+  if (skill === 'reading') {
+    // Reading has its own component, no questions are generated here.
+    return [];
+  }
+
 
   // Fallback for other skills for now
   return Array.from({ length: count }, () => ({
