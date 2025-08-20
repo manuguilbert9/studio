@@ -8,7 +8,7 @@ const SEPARATORS = "-'’";
 
 // Sound groups treated as a single phonetic unit
 const VOWEL_GROUPS = ['au', 'eau', 'ou', 'oi', 'oeu', 'œu', 'ain', 'ein', 'oin', 'an', 'en', 'on', 'un', 'in', 'ai', 'ei', 'eu', 'œ'];
-const CONSONANT_GROUPS = ['ch', 'ph', 'gn', 'th', 'rh', 'sc', 'qu', 'gu'];
+const CONSONANT_GROUPS = ['ch', 'ph', 'gn', 'th', 'rh', 'sc', 'qu', 'gu', 'ill'];
 
 // Consonant clusters that can start a syllable (attaques licites)
 const ONSET_OK = new Set([
@@ -31,7 +31,7 @@ function toPhoneticGroups(word: string): string[] {
     while (i < lowerWord.length) {
         // Greedy check for 3-letter groups, then 2, then 1
         const three = lowerWord.substring(i, i + 3);
-        if (VOWEL_GROUPS.includes(three)) {
+        if (VOWEL_GROUPS.includes(three) || CONSONANT_GROUPS.includes(three)) {
             groups.push(word.substring(i, i + 3));
             i += 3;
             continue;
@@ -115,19 +115,15 @@ export function syllabify(word: string): string[] {
         } else if (isVowel(g1) && isConsonant(g2) && isVowel(g3)) { // V-C-V
             shouldCut = true;
         } else if (isVowel(g1) && isConsonant(g2) && isConsonant(g3) && isVowel(g4)) { // V-CC-V
-             // Handle 'x' as 'ks' sound, splitting it.
-            if (g2.toLowerCase() === 'x') {
-                currentSyllable += 'x';
-                i++;
-            } else if (ONSET_OK.has((g2 + g3).toLowerCase())) {
+            if (ONSET_OK.has((g2 + g3).toLowerCase())) {
                  // If C1+C2 is a valid onset, cut before C1 (e.g., a-pres)
                  shouldCut = true;
             } else { 
                 // Otherwise, cut between C1 and C2 (e.g., por-te)
                 currentSyllable += g2;
                 i++;
+                shouldCut = true;
             }
-            shouldCut = true;
         } else if (isVowel(g1) && isConsonant(g2) && isConsonant(g3) && isConsonant(g4) && isVowel(groups[i+4])) { // V-CCC-V
             if(ONSET_OK.has((g3+g4).toLowerCase())) { // C2+C3 is licit onset -> C1 | C2C3V (abs-trait)
                 currentSyllable += g2;
@@ -164,7 +160,6 @@ function postProcess(syllables: string[], originalWord: string): string[] {
         return [originalWord];
     }
     
-    const result: string[] = [];
     let tempSyllables = [...syllables];
 
     // Merge a trailing silent 'e' or 'es'
@@ -183,7 +178,7 @@ function postProcess(syllables: string[], originalWord: string): string[] {
     // Merge a single trailing consonant
     if (tempSyllables.length > 1) {
         const last = tempSyllables[tempSyllables.length - 1];
-        if (isConsonant(last) && last.length === 1) {
+        if (isConsonant(last) && last.length === 1 && !isVowel(last)) {
              tempSyllables[tempSyllables.length - 2] += last;
              tempSyllables.pop();
         }
