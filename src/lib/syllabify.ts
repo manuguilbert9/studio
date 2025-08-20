@@ -13,7 +13,7 @@ const CONSONANT_GROUPS = ['ch', 'ph', 'gn', 'th', 'rh', 'sc', 'qu', 'gu'];
 // Consonant clusters that can start a syllable (attaques licites)
 const ONSET_OK = new Set([
     'pr', 'pl', 'br', 'bl', 'tr', 'dr', 'cr', 'cl', 'gr', 'gl', 'fr', 'fl', 'vr', 'vl',
-    'ch', 'ph', 'th', 'sh', 'gn', 'qu', 'gu', 'sc', 'sp', 'st', 'sk'
+    'ch', 'ph', 'th', 'sh', 'gn', 'qu', 'gu', 'sc', 'sp', 'st', 'sk', 'str'
 ]);
 
 
@@ -98,41 +98,44 @@ export function syllabify(word: string): string[] {
     let i = 0;
 
     while (i < groups.length) {
-        const group = groups[i];
-        const nextGroup = groups[i + 1];
-        const nextNextGroup = groups[i + 2];
+        const g1 = groups[i];
+        const g2 = groups[i + 1];
+        const g3 = groups[i + 2];
+        const g4 = groups[i + 3];
         
-        currentSyllable += group;
+        currentSyllable += g1;
 
-        // --- Cutting logic ---
         let shouldCut = false;
-
-        // Reached the end of the word
-        if (!nextGroup) {
+        
+        // --- Cutting logic ---
+        if (!g2) { // End of word
             shouldCut = true;
-        } 
-        // V-V cut
-        else if (isVowel(group) && isVowel(nextGroup)) {
+        } else if (isVowel(g1) && isVowel(g2)) { // V-V
             shouldCut = true;
-        }
-        // V-C-V cut (cut before C)
-        else if (isVowel(group) && isConsonant(nextGroup) && isVowel(nextNextGroup)) {
+        } else if (isVowel(g1) && isConsonant(g2) && isVowel(g3)) { // V-C-V
             shouldCut = true;
-        }
-        // V-CC-V cut
-        else if (isVowel(group) && isConsonant(nextGroup) && isConsonant(nextNextGroup) && (isVowel(groups[i+3]) || !groups[i+3])) {
-            // If C1+C2 is a valid onset, cut before C1 (e.g., a-pres)
-            if (ONSET_OK.has((nextGroup + nextNextGroup).toLowerCase())) {
+        } else if (isVowel(g1) && isConsonant(g2) && isConsonant(g3) && isVowel(g4)) { // V-CC-V
+             // Handle 'x' as 'ks' sound, splitting it.
+            if (g2.toLowerCase() === 'x') {
+                currentSyllable += 'x';
+                i++;
+            } else if (ONSET_OK.has((g2 + g3).toLowerCase())) {
+                 // If C1+C2 is a valid onset, cut before C1 (e.g., a-pres)
                  shouldCut = true;
-            } else { // Otherwise, cut between C1 and C2 (e.g., por-te)
-                currentSyllable += nextGroup;
-                shouldCut = true;
-                i++; // Consume nextGroup as it's part of the current syllable
+            } else { 
+                // Otherwise, cut between C1 and C2 (e.g., por-te)
+                currentSyllable += g2;
+                i++;
             }
-        }
-        // Handle 'x' as 'ks' sound, splitting it.
-        else if (group.toLowerCase() === 'x') {
-            currentSyllable = currentSyllable.slice(0, -1) + 'x'; // simplified split
+            shouldCut = true;
+        } else if (isVowel(g1) && isConsonant(g2) && isConsonant(g3) && isConsonant(g4) && isVowel(groups[i+4])) { // V-CCC-V
+            if(ONSET_OK.has((g3+g4).toLowerCase())) { // C2+C3 is licit onset -> C1 | C2C3V (abs-trait)
+                currentSyllable += g2;
+                i++;
+            } else { // C1C2 | C3V (arc-tique)
+                currentSyllable += g2 + g3;
+                i += 2;
+            }
             shouldCut = true;
         }
 
@@ -161,28 +164,36 @@ function postProcess(syllables: string[], originalWord: string): string[] {
         return [originalWord];
     }
     
+    const result: string[] = [];
+    let tempSyllables = [...syllables];
+
     // Merge a trailing silent 'e' or 'es'
-    if (syllables.length > 1) {
-        const last = syllables[syllables.length - 1];
+    if (tempSyllables.length > 1) {
+        const last = tempSyllables[tempSyllables.length - 1];
         if (last.toLowerCase() === 'e' || last.toLowerCase() === 'es') {
-            syllables[syllables.length - 2] += last;
-            syllables.pop();
+            const secondLast = tempSyllables[tempSyllables.length - 2];
+            // Only merge if the second to last syllable ends with a consonant
+            if (isConsonant(secondLast[secondLast.length - 1])) {
+                 tempSyllables[tempSyllables.length - 2] += last;
+                 tempSyllables.pop();
+            }
         }
     }
     
-     // Merge a single trailing consonant
-    if (syllables.length > 1) {
-        const last = syllables[syllables.length - 1];
+    // Merge a single trailing consonant
+    if (tempSyllables.length > 1) {
+        const last = tempSyllables[tempSyllables.length - 1];
         if (isConsonant(last) && last.length === 1) {
-             syllables[syllables.length - 2] += last;
-             syllables.pop();
+             tempSyllables[tempSyllables.length - 2] += last;
+             tempSyllables.pop();
         }
     }
 
     // If processing resulted in something strange, fallback to the original word.
-    if (syllables.join('') !== originalWord) {
+    if (tempSyllables.join('') !== originalWord) {
+        // This is a basic fallback. More sophisticated reconstruction might be needed.
         return [originalWord];
     }
 
-    return syllables.filter(s => s.length > 0);
+    return tempSyllables.filter(s => s.length > 0);
 }
