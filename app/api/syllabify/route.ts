@@ -18,8 +18,6 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // App Hosting provides a JWT to securely call the backend
-        Authorization: `Bearer ${await getGoogleIdToken()}`,
       },
       body: JSON.stringify(body),
     });
@@ -46,23 +44,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-async function getGoogleIdToken() {
-  const Gaxios = require('gaxios').Gaxios;
-  const gax = new Gaxios();
-  const metadataServerUrl =
-    'http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=';
-  const backendUrl = process.env.BACKEND_URL;
-  try {
-    const {data} = await gax.request<{}>({
-      url: `${metadataServerUrl}${backendUrl}`,
-      headers: {'Metadata-Flavor': 'Google'},
-    });
-    return data;
-  } catch (e) {
-    console.log('Error fetching ID token from metadata server', e);
-    return null;
-  }
-}
-
     

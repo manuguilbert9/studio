@@ -5,11 +5,10 @@
 runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
-  maxInstances: 1
+  maxInstances: 2
 backend:
   # The command to start the backend server.
   run: uvicorn wordseg_service.app:app --host 0.0.0.0 --port $PORT
   concurrency: 80
+  public: false
   healthCheck: /healthz
-
-    
