@@ -1,30 +1,43 @@
 from fastapi import FastAPI, HTTPException, Request, Depends
-from fastapi.security.api_key import APIKeyHeader
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from wordseg.syllabify import Syllabifier
 import re
 import os
-
-# --- Configuration ---
-API_KEY = os.environ.get("SERVICE_API_KEY")
-API_KEY_NAME = "x-api-key"
-
-api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+import google.oauth2.id_token
+import google.auth.transport.requests
 
 app = FastAPI(title="wordseg-service")
 
 # --- Sécurité ---
-async def get_api_key(req: Request, key: str = Depends(api_key_header)):
-    if not API_KEY:
-        # Si aucune clé n'est configurée côté serveur, on laisse passer.
-        # Idéal pour le développement local.
-        return key
+http_bearer = HTTPBearer()
 
-    if key != API_KEY:
-        raise HTTPException(
-            status_code=403, detail="Could not validate credentials"
+def verify_google_id_token(
+    token: HTTPAuthorizationCredentials = Depends(http_bearer),
+) -> dict:
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing authorization token")
+
+    # In a deployed App Hosting environment, BACKEND_URL is set automatically
+    expected_audience = os.environ.get("BACKEND_URL")
+    
+    if not expected_audience:
+        # In local dev, we don't need to validate the token
+        print("Bypassing token validation for local development.")
+        return {"email": "local-dev@example.com"}
+
+    try:
+        request = google.auth.transport.requests.Request()
+        payload = google.oauth2.id_token.verify_oauth2_token(
+            token.credentials, request, audience=expected_audience
         )
-    return key
+        return payload
+    except ValueError as e:
+        # This will be raised if the token is invalid or expired.
+        raise HTTPException(
+            status_code=401, detail=f"Invalid or expired token: {e}"
+        )
+
 
 # --- Logique de syllabification ---
 # listes FR de base (à affiner si besoin)
@@ -49,7 +62,7 @@ class SegResponse(BaseModel):
     words: list[str]
 
 # --- Route principale ---
-@app.post("/syllabify", response_model=SegResponse, dependencies=[Depends(get_api_key)])
+@app.post("/syllabify", response_model=SegResponse, dependencies=[Depends(verify_google_id_token)])
 def syllabify(req: SegRequest):
     text = req.text.strip()
     if not text:
@@ -79,6 +92,8 @@ def syllabify(req: SegRequest):
         words=segmented_words
     )
 
-@app.get("/healthz")
+@app.get("/healthz", status_code=200)
 def health_check():
     return {"status": "ok"}
+
+    

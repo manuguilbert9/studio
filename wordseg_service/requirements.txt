@@ -1,5 +1,9 @@
+
 fastapi
 uvicorn[standard]
 wordseg
 pydantic
 python-dotenv
+google-auth
+
+    

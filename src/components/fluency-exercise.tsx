@@ -21,8 +21,8 @@ interface SegResponse {
 
 async function syllabifyText(text: string): Promise<string | null> {
   try {
-    // Direct call to the backend service routed by App Hosting
-    const response = await fetch('/syllabify', {
+    // Call our own API route that will proxy to the Python backend
+    const response = await fetch('/api/syllabify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, sep: '.' }),
@@ -357,3 +357,5 @@ export function FluencyExercise() {
     </Card>
   );
 }
+
+    

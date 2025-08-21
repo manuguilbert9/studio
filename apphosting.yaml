@@ -1,3 +1,4 @@
+
 # Settings to manage and configure a Firebase App Hosting backend.
 # https://firebase.google.com/docs/app-hosting/configure
 
@@ -5,24 +6,10 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
-concurrency: 80
 backend:
   # The command to start the backend server.
-  run: uvicorn wordseg_service.main:app --host 0.0.0.0 --port $PORT
-  # The environment variables to set for the backend.
-  env:
-    - variable: WORDSEG_API_KEY
-      # This is a placeholder. You should set this to a secure value
-      # in the Google Cloud console for your App Hosting backend.
-      # DO NOT commit a real secret here.
-      availability:
-        - BUILD
-        - RUNTIME
-    - variable: SERVICE_API_KEY
-      # This is a placeholder. You should set this to a secure value
-      # in the Google Cloud console for your App Hosting backend.
-      # DO NOT commit a real secret here.
-      availability:
-        - BUILD
-        - RUNTIME
+  run: uvicorn wordseg_service.app:app --host 0.0.0.0 --port $PORT
+  concurrency: 80
   healthCheck: /healthz
+
+    
