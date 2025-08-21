@@ -32,6 +32,7 @@ async function syllabifyText(text: string): Promise<string> {
     }
 
     const data: SegResponse = await response.json();
+    // The segmented_text from the API already contains spaces and punctuation.
     return data.segmented_text;
   } catch (error) {
     console.error('Failed to fetch syllabification API:', error);
@@ -151,27 +152,29 @@ export function FluencyExercise() {
   };
   
   const renderSyllabifiedText = (text: string) => {
-    const parts = text.split(/(\s+|[.,;!?:"'()])/);
+    const elements: (string | JSX.Element)[] = [];
+    // Split the text by spaces to process word by word, but keep separators
+    const parts = text.split(/(\s+)/);
     let colorIndex = 0;
-    return parts.map((part, index) => {
-      if (part.includes('.')) {
-        const syllables = part.split('.');
-        return (
-          <span key={index}>
-            {syllables.map((syllable, sIndex) => {
-              if (syllable) {
-                const className = `syllable-${colorIndex % 2 === 0 ? 'a' : 'b'}`;
-                colorIndex++;
-                return <span key={sIndex} className={className}>{syllable}</span>;
-              }
-              return null;
-            })}
-          </span>
-        );
+  
+    parts.forEach((part, partIndex) => {
+      if (part.trim() === '') {
+        // It's a space or multiple spaces
+        elements.push(part);
       } else {
-        return <span key={index}>{part}</span>;
+        // It's a word (potentially with punctuation)
+        const syllables = part.split('.');
+        syllables.forEach((syllable, sIndex) => {
+          if (syllable) {
+            const className = `syllable-${colorIndex % 2 === 0 ? 'a' : 'b'}`;
+            elements.push(<span key={`${partIndex}-${sIndex}`} className={className}>{syllable}</span>);
+            colorIndex++;
+          }
+        });
       }
     });
+  
+    return <>{elements}</>;
   };
 
   const wpm = wordCount > 0 && time > 0 ? Math.round((wordCount / time) * 60) : 0;
@@ -268,7 +271,7 @@ export function FluencyExercise() {
                         className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
                         onClick={handleTextClick}
                       >
-                       {showSyllables ? (
+                       {showSyllables && syllabifiedContent ? (
                           renderSyllabifiedText(syllabifiedContent)
                        ) : (
                           rawTextContent.split('\n').map((line, i) => <p key={i}>{line || <>&nbsp;</>}</p>)
@@ -321,3 +324,5 @@ export function FluencyExercise() {
     </Card>
   );
 }
+
+    
