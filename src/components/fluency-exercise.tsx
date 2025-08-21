@@ -34,7 +34,7 @@ async function syllabifyText(text: string): Promise<string | null> {
       // Try to parse error if it's JSON
       try {
         const errorJson = JSON.parse(errorText);
-        return `Syllabification Error: ${errorJson.detail || errorText}`;
+        return `Syllabification Error: ${errorJson.details || errorJson.error || errorText}`;
       } catch (e) {
         return `Syllabification Error: ${errorText}`;
       }
@@ -150,7 +150,14 @@ export function FluencyExercise() {
   };
 
   const startStopwatch = () => setIsRunning(true);
-  const stopStopwatch = () => setIsRunning(false);
+  const stopStopwatch = () => {
+      if(isRunning) {
+        setIsRunning(false);
+        const words = rawTextContent.trim().split(/\s+/);
+        setWordCount(words.length);
+        setShowResults(true);
+      }
+  };
 
   const resetStopwatch = () => {
     stopStopwatch();
@@ -168,9 +175,6 @@ export function FluencyExercise() {
         startStopwatch();
     } else {
         stopStopwatch();
-        const words = rawTextContent.trim().split(/\s+/);
-        setWordCount(words.length);
-        setShowResults(true);
     }
   };
   
@@ -357,5 +361,3 @@ export function FluencyExercise() {
     </Card>
   );
 }
-
-    

@@ -14,7 +14,10 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const backendResponse = await fetch(`${backendUrl}/syllabify`, {
+    // Construct the full URL to the python service endpoint
+    const pythonServiceUrl = `${backendUrl}/syllabify`;
+
+    const backendResponse = await fetch(pythonServiceUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -44,4 +47,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-    

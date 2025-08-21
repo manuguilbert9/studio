@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from wordseg.syllabify import Syllabifier
 import re
+import os
 
 app = FastAPI(title="wordseg-service")
 
@@ -26,11 +27,11 @@ class SegResponse(BaseModel):
 
 # --- Route principale ---
 @app.post("/syllabify", response_model=SegResponse)
-def syllabify(req: SegRequest):
+def syllabify_endpoint(req: SegRequest):
     text = req.text.strip()
     if not text:
         raise HTTPException(status_code=400, detail="Empty text.")
-    if len(text) > 5000: # Sécurité de base
+    if len(text) > 10000: # Sécurité de base
         raise HTTPException(status_code=413, detail="Text is too long.")
 
     tokens = re.findall(r"[\w'-]+|[^\w\s]|\s+", text, re.UNICODE)
