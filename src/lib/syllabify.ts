@@ -1,3 +1,4 @@
+
 // utils/syllabify.ts
 export type ModeAlgo = "STD" | "LC";               // coupe entre (STD) ou après (LC) doublettes
 export type TypeSyllabes = "ECRITES" | "ORALES";       // garder/supprimer e caducs
