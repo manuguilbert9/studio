@@ -8,8 +8,37 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
-import { Play, Pause, RefreshCw } from 'lucide-react';
+import { Play, Pause, RefreshCw, Loader2 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+
+interface SegResponse {
+  original: string;
+  segmented_text: string;
+  words: string[];
+}
+
+async function syllabifyText(text: string): Promise<string> {
+  try {
+    const response = await fetch('/api/segment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, sep: '.' }),
+    });
+
+    if (!response.ok) {
+      console.error('Syllabification API error:', await response.text());
+      return text; // Return original text on error
+    }
+
+    const data: SegResponse = await response.json();
+    return data.segmented_text;
+  } catch (error) {
+    console.error('Failed to fetch syllabification API:', error);
+    return text; // Return original text on error
+  }
+}
+
 
 export function FluencyExercise() {
   const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
@@ -17,14 +46,19 @@ export function FluencyExercise() {
   const [selectedText, setSelectedText] = useState<string>('');
   
   const [title, setTitle] = useState('');
-  const [textContent, setTextContent] = useState<string>('');
+  const [rawTextContent, setRawTextContent] = useState('');
+  const [syllabifiedContent, setSyllabifiedContent] = useState('');
+  
   const [isLoading, setIsLoading] = useState(false);
+  const [isSyllabifying, setIsSyllabifying] = useState(false);
 
   const [time, setTime] = useState(0); // Time in seconds
   const [isRunning, setIsRunning] = useState(false);
   const [wordCount, setWordCount] = useState(0);
   const [errors, setErrors] = useState(0);
   const [showResults, setShowResults] = useState(false);
+
+  const [showSyllables, setShowSyllables] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -48,20 +82,32 @@ export function FluencyExercise() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isRunning]);
+  
+  useEffect(() => {
+    if (showSyllables && rawTextContent && !syllabifiedContent) {
+      setIsSyllabifying(true);
+      syllabifyText(rawTextContent).then(html => {
+        setSyllabifiedContent(html);
+        setIsSyllabifying(false);
+      });
+    }
+  }, [showSyllables, rawTextContent, syllabifiedContent]);
 
   const handleSelectLevel = (level: string) => {
     setSelectedLevel(level);
     setSelectedText('');
-    setTextContent('');
     setTitle('');
+    setRawTextContent('');
+    setSyllabifiedContent('');
     resetStopwatch();
   }
 
   const handleSelectText = async (filename: string) => {
     if (!filename || !selectedLevel) {
       setSelectedText('');
-      setTextContent('');
       setTitle('');
+      setRawTextContent('');
+      setSyllabifiedContent('');
       return;
     }
     setIsLoading(true);
@@ -73,11 +119,11 @@ export function FluencyExercise() {
     const newBody = content.replace(/<titre>.*?<\/titre>\s*/, '');
     
     setTitle(newTitle);
-    setTextContent(newBody);
+    setRawTextContent(newBody);
+    setSyllabifiedContent(''); // Reset on new text
     resetStopwatch();
     setIsLoading(false);
   };
-
 
   const startStopwatch = () => setIsRunning(true);
   const stopStopwatch = () => setIsRunning(false);
@@ -91,17 +137,41 @@ export function FluencyExercise() {
   };
 
   const handleTextClick = () => {
-    if (!textContent) return;
+    if (!rawTextContent) return;
 
     if (!isRunning) {
         resetStopwatch();
         startStopwatch();
     } else {
         stopStopwatch();
-        const words = textContent.trim().split(/\s+/);
+        const words = rawTextContent.trim().split(/\s+/);
         setWordCount(words.length);
         setShowResults(true);
     }
+  };
+  
+  const renderSyllabifiedText = (text: string) => {
+    const parts = text.split(/(\s+|[.,;!?:"'()])/);
+    let colorIndex = 0;
+    return parts.map((part, index) => {
+      if (part.includes('.')) {
+        const syllables = part.split('.');
+        return (
+          <span key={index}>
+            {syllables.map((syllable, sIndex) => {
+              if (syllable) {
+                const className = `syllable-${colorIndex % 2 === 0 ? 'a' : 'b'}`;
+                colorIndex++;
+                return <span key={sIndex} className={className}>{syllable}</span>;
+              }
+              return null;
+            })}
+          </span>
+        );
+      } else {
+        return <span key={index}>{part}</span>;
+      }
+    });
   };
 
   const wpm = wordCount > 0 && time > 0 ? Math.round((wordCount / time) * 60) : 0;
@@ -148,24 +218,30 @@ export function FluencyExercise() {
           <>
             {/* Stopwatch Display and Controls */}
             <Card className="bg-muted/50 p-4">
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Chronomètre</p>
-                        <p className="font-mono text-5xl font-bold text-primary">
-                          <span>{("0" + Math.floor(time / 60)).slice(-2)}:</span>
-                          <span>{("0" + (time % 60)).slice(-2)}</span>
-                        </p>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                     <div className="flex items-center gap-2">
+                        <Label htmlFor="syllable-switch" className="text-lg">Aide à la lecture</Label>
+                        <Switch id="syllable-switch" checked={showSyllables} onCheckedChange={setShowSyllables} />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Button onClick={startStopwatch} disabled={isRunning} aria-label="Démarrer">
-                            <Play className="mr-2"/> Démarrer
-                        </Button>
-                        <Button onClick={stopStopwatch} disabled={!isRunning} variant="destructive" aria-label="Arrêter">
-                            <Pause className="mr-2"/> Arrêter
-                        </Button>
-                        <Button onClick={resetStopwatch} variant="outline" aria-label="Réinitialiser">
-                            <RefreshCw/>
-                        </Button>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                        <div className="text-center">
+                            <p className="text-sm text-muted-foreground">Chronomètre</p>
+                            <p className="font-mono text-5xl font-bold text-primary">
+                              <span>{("0" + Math.floor(time / 60)).slice(-2)}:</span>
+                              <span>{("0" + (time % 60)).slice(-2)}</span>
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button onClick={startStopwatch} disabled={isRunning} aria-label="Démarrer">
+                                <Play className="mr-2"/> Démarrer
+                            </Button>
+                            <Button onClick={stopStopwatch} disabled={!isRunning} variant="destructive" aria-label="Arrêter">
+                                <Pause className="mr-2"/> Arrêter
+                            </Button>
+                            <Button onClick={resetStopwatch} variant="outline" aria-label="Réinitialiser">
+                                <RefreshCw/>
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </Card>
@@ -182,12 +258,21 @@ export function FluencyExercise() {
                             <Skeleton className="h-6 w-full" />
                             <Skeleton className="h-6 w-1/2" />
                         </div>
+                    ) : isSyllabifying ? (
+                         <div className="flex items-center justify-center p-10 gap-4">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <p className="text-lg text-muted-foreground">Colorisation en cours...</p>
+                        </div>
                     ) : (
                       <div 
                         className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
                         onClick={handleTextClick}
                       >
-                       {textContent.split('\n').map((line, i) => <p key={i}>{line || <>&nbsp;</>}</p>)}
+                       {showSyllables ? (
+                          renderSyllabifiedText(syllabifiedContent)
+                       ) : (
+                          rawTextContent.split('\n').map((line, i) => <p key={i}>{line || <>&nbsp;</>}</p>)
+                       )}
                       </div>
                     )}
                 </CardContent>

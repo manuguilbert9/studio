@@ -63,3 +63,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .syllable-a {
+    color: hsl(var(--foreground));
+  }
+  .syllable-b {
+    color: hsl(var(--primary));
+  }
+  .letter-muette {
+    color: hsl(var(--muted-foreground));
+    opacity: 0.7;
+  }
+}
