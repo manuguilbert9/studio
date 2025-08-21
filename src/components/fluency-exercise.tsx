@@ -1,16 +1,21 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { getAvailableTexts, getTextContent } from '@/services/reading';
-import { syllabify } from '@/lib/syllabify';
+import { segmentText, type Options, type ModeAlgo, type TypeSyllabes } from '@/lib/syllabify';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
-import { Play, Pause, RefreshCw, BrainCircuit } from 'lucide-react';
+import { Play, Pause, RefreshCw, BrainCircuit, Settings } from 'lucide-react';
 import { Switch } from './ui/switch';
 import { Skeleton } from './ui/skeleton';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { cn } from '@/lib/utils';
+
+type RenderMode = "colors" | "underline";
 
 export function FluencyExercise() {
   const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
@@ -19,10 +24,17 @@ export function FluencyExercise() {
   
   const [title, setTitle] = useState('');
   const [textContent, setTextContent] = useState<string>('');
-  const [syllabifiedContent, setSyllabifiedContent] = useState<string>('');
+  const [syllabifiedContent, setSyllabifiedContent] = useState<React.ReactNode>(null);
   
   const [useSyllableHelp, setUseSyllableHelp] = useState(false);
   const [isSyllabifying, setIsSyllabifying] = useState(false);
+
+  const [syllabifyOptions, setSyllabifyOptions] = useState<Options>({
+    modeAlgo: 'LC',
+    typeSyllabes: 'ECRITES',
+    lecteurDebutant: false,
+  });
+  const [renderMode, setRenderMode] = useState<RenderMode>('colors');
 
   const [time, setTime] = useState(0); // Time in seconds
   const [isRunning, setIsRunning] = useState(false);
@@ -61,7 +73,6 @@ export function FluencyExercise() {
     setSelectedText('');
     setTextContent('');
     setTitle('');
-    setSyllabifiedContent('');
     resetStopwatch();
   }
 
@@ -70,7 +81,6 @@ export function FluencyExercise() {
       setSelectedText('');
       setTextContent('');
       setTitle('');
-      setSyllabifiedContent('');
       return;
     }
     setSelectedText(filename);
@@ -85,30 +95,38 @@ export function FluencyExercise() {
     resetStopwatch();
   };
 
-  useEffect(() => {
+ useEffect(() => {
     if (useSyllableHelp && textContent) {
       setIsSyllabifying(true);
-      // Simulate async process for consistency, though our function is sync
-      setTimeout(() => {
-          const words = textContent.split(/(\s+)/); // Split by space but keep them
-          const processedWords = words.map(word => {
-            if (/\s+/.test(word) || word.length === 0) {
-              return word; // It's a space or empty, keep it as is
-            }
-            const syllables = syllabify(word);
-            if (syllables.length <= 1) return word;
+      
+      const segmented = segmentText(textContent, syllabifyOptions);
+      
+      const rendered = segmented.map((token, index) => {
+        if (typeof token === 'string') {
+          return <span key={index}>{token}</span>;
+        }
+        
+        // C'est un mot syllabifié (string[])
+        return (
+          <span key={index}>
+            {token.map((syllable, sIndex) => {
+              const baseClass = sIndex % 2 === 0 ? 'a' : 'b';
+              const className = renderMode === 'colors' 
+                ? `syllable-${baseClass}`
+                : `syllable-underline-${baseClass}`;
+              return <span key={sIndex} className={className}>{syllable}</span>;
+            })}
+          </span>
+        );
+      });
 
-            return syllables.map((syllable, index) => 
-                `<span class="syllable-${index % 2 === 0 ? 'a' : 'b'}">${syllable}</span>`
-            ).join('');
-          });
-          setSyllabifiedContent(processedWords.join(''));
-          setIsSyllabifying(false);
-      }, 50); // Small timeout to allow UI update
+      setSyllabifiedContent(<>{rendered}</>);
+      setIsSyllabifying(false);
     } else {
-        setSyllabifiedContent('');
+      setSyllabifiedContent(null);
     }
-  }, [useSyllableHelp, textContent]);
+  }, [useSyllableHelp, textContent, syllabifyOptions, renderMode]);
+
 
   const startStopwatch = () => setIsRunning(true);
   const stopStopwatch = () => setIsRunning(false);
@@ -134,60 +152,8 @@ export function FluencyExercise() {
     }
   };
 
-
   const wpm = wordCount > 0 && time > 0 ? Math.round((wordCount / time) * 60) : 0;
   const netWpm = wpm > 0 ? Math.max(0, wpm - errors) : 0;
-
- const renderTextContent = () => {
-    if (useSyllableHelp) {
-      if (isSyllabifying) {
-        return (
-          <div className="space-y-2 p-6">
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-6 w-full" />
-            <Skeleton className="h-6 w-1/2" />
-          </div>
-        );
-      }
-      // When syllabified, we can't easily click on "words", so we treat the whole block as one.
-      // Click anywhere to start, click again to stop.
-      return (
-        <div
-          className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
-          onClick={() => {
-              if (!isRunning) {
-                  handleWordClick(0); // Start timer
-              } else {
-                  // Stop timer, count all words as read
-                  const totalWords = textContent.trim().split(/\s+/).length;
-                  handleWordClick(totalWords - 1);
-              }
-          }}
-          dangerouslySetInnerHTML={{ __html: syllabifiedContent.replace(/\n/g, '<br/>') }}
-        />
-      );
-    }
-
-    return (
-      <p className="p-6 text-2xl leading-relaxed font-serif">
-        {textContent.split(/(\s+)/).map((segment, index) => {
-          if (/\s+/.test(segment)) {
-            return <span key={index}>{segment}</span>;
-          }
-          const wordIndex = Math.floor(index / 2);
-          return (
-            <span
-              key={index}
-              onClick={() => handleWordClick(wordIndex)}
-              className="cursor-pointer hover:bg-primary/20 rounded-md p-1 transition-colors"
-            >
-              {segment}
-            </span>
-          );
-        })}
-      </p>
-    );
-  };
 
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-2xl">
@@ -241,6 +207,82 @@ export function FluencyExercise() {
                 </div>
             </div>
 
+            <Collapsible disabled={!useSyllableHelp}>
+              <CollapsibleTrigger asChild>
+                  <Button variant="outline" className={cn("w-full", !useSyllableHelp && "hidden")}>
+                      <Settings className="mr-2"/> Options de syllabification
+                  </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                  <Card className="p-4 mt-2 space-y-4 bg-muted/50">
+                      <div className="flex items-center justify-between">
+                           <Label htmlFor="debutant-switch" className="text-base font-medium">Lecteur débutant</Label>
+                           <Switch
+                              id="debutant-switch"
+                              checked={syllabifyOptions.lecteurDebutant}
+                              onCheckedChange={(checked) => setSyllabifyOptions(o => ({...o, lecteurDebutant: checked}))}
+                           />
+                      </div>
+                      
+                      <div>
+                          <Label className="text-base font-medium">Gestion des consonnes doubles</Label>
+                          <RadioGroup 
+                              value={syllabifyOptions.modeAlgo}
+                              onValueChange={(value: ModeAlgo) => setSyllabifyOptions(o => ({...o, modeAlgo: value}))}
+                              className="flex gap-4 mt-2"
+                          >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="STD" id="mode-std" />
+                                <Label htmlFor="mode-std">Standard (ex: al-ler)</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="LC" id="mode-lc" />
+                                <Label htmlFor="mode-lc">"Legato" (ex: a-ller)</Label>
+                              </div>
+                          </RadioGroup>
+                      </div>
+
+                       <div>
+                          <Label className="text-base font-medium">Type de syllabes</Label>
+                           <RadioGroup 
+                              value={syllabifyOptions.typeSyllabes}
+                              onValueChange={(value: TypeSyllabes) => setSyllabifyOptions(o => ({...o, typeSyllabes: value}))}
+                              className="flex gap-4 mt-2"
+                          >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="ECRITES" id="type-ecrites" />
+                                <Label htmlFor="type-ecrites">Écrites (conserve les 'e' muets)</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="ORALES" id="type-orales" />
+                                <Label htmlFor="type-orales">Orales (supprime les 'e' muets)</Label>
+                              </div>
+                          </RadioGroup>
+                      </div>
+
+                       <div>
+                          <Label className="text-base font-medium">Mode de rendu</Label>
+                           <RadioGroup 
+                              value={renderMode}
+                              onValueChange={(value: RenderMode) => setRenderMode(value)}
+                              className="flex gap-4 mt-2"
+                          >
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="colors" id="render-colors" />
+                                <Label htmlFor="render-colors">Couleurs</Label>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="underline" id="render-underline" />
+                                <Label htmlFor="render-underline">Soulignement</Label>
+                              </div>
+                          </RadioGroup>
+                      </div>
+
+                  </Card>
+              </CollapsibleContent>
+            </Collapsible>
+
+
             {/* Stopwatch Display and Controls */}
             <Card className="bg-muted/50 p-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -252,10 +294,10 @@ export function FluencyExercise() {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={startStopwatch} disabled={isRunning || useSyllableHelp} aria-label="Démarrer">
+                        <Button onClick={startStopwatch} disabled={isRunning} aria-label="Démarrer">
                             <Play className="mr-2"/> Démarrer
                         </Button>
-                        <Button onClick={stopStopwatch} disabled={!isRunning || useSyllableHelp} variant="destructive" aria-label="Arrêter">
+                        <Button onClick={stopStopwatch} disabled={!isRunning} variant="destructive" aria-label="Arrêter">
                             <Pause className="mr-2"/> Arrêter
                         </Button>
                         <Button onClick={resetStopwatch} variant="outline" aria-label="Réinitialiser">
@@ -270,14 +312,37 @@ export function FluencyExercise() {
                 <CardHeader>
                     {title && <h3 className="text-2xl font-headline text-center">{title}</h3>}
                 </CardHeader>
-                <CardContent className="p-0">
-                    {renderTextContent()}
+                <CardContent>
+                    {isSyllabifying ? (
+                        <div className="space-y-2 p-6">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-6 w-full" />
+                            <Skeleton className="h-6 w-1/2" />
+                        </div>
+                    ) : (
+                      <p className="p-6 text-2xl leading-relaxed font-serif">
+                        {useSyllableHelp ? syllabifiedContent : (
+                          textContent.split(/(\s+)/).map((segment, index) => {
+                            if (/\s+/.test(segment)) {
+                              return <span key={index}>{segment}</span>;
+                            }
+                            const wordIndex = Math.floor(index / 2);
+                            return (
+                              <span
+                                key={index}
+                                onClick={() => handleWordClick(wordIndex)}
+                                className="cursor-pointer hover:bg-primary/20 rounded-md p-1 transition-colors"
+                              >
+                                {segment}
+                              </span>
+                            );
+                          })
+                        )}
+                      </p>
+                    )}
                 </CardContent>
                  <CardFooter className="text-sm text-muted-foreground">
-                    {useSyllableHelp 
-                        ? "Cliquez sur le texte pour démarrer ou arrêter le chrono."
-                        : "Cliquez sur le premier mot pour démarrer le chrono. Cliquez sur le dernier mot lu pour l'arrêter."
-                    }
+                    Cliquez sur le premier mot pour démarrer le chrono. Cliquez sur le dernier mot lu pour l'arrêter.
                 </CardFooter>
             </Card>
 
