@@ -9,5 +9,7 @@ backend:
   # The command to start the backend server.
   run: uvicorn wordseg_service.app:app --host 0.0.0.0 --port $PORT
   concurrency: 80
+  # Expose the backend only to your frontend.
   public: false
   healthCheck: /healthz
+  region: us-central1
