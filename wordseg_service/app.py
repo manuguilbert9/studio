@@ -64,13 +64,13 @@ def syllabify(req: SegRequest):
     output_parts = []
 
     for tok in tokens:
-        if re.match(r"[\w'-]+", tok): # Si c'est un mot
+        if re.match(r"[\w'-]+", tok) and not re.match(r"^\d+$", tok): # Si c'est un mot (et pas juste des chiffres)
             # wordseg traite en minuscules, on garde la casse originale pour plus tard si besoin
             syls = syllabifier(tok.lower())
             segmented_word = req.sep.join(syls)
             segmented_words.append(segmented_word)
             output_parts.append(segmented_word)
-        else: # Espace, ponctuation...
+        else: # Espace, ponctuation, nombres...
             output_parts.append(tok)
             
     return SegResponse(
