@@ -2,11 +2,13 @@
 import {NextRequest, NextResponse} from 'next/server';
 
 export async function POST(req: NextRequest) {
-  const backendUrl = process.env.BACKEND_URL;
+  // En production avec Firebase Hosting + Cloud Run, la communication est directe.
+  // En local, on utilise une variable d'environnement pour l'URL du service Python.
+  const backendUrl = process.env.WORDSEG_ENDPOINT || 'http://127.0.0.1:8000';
 
   if (!backendUrl) {
     return NextResponse.json(
-      {error: 'Backend service is not configured'},
+      {error: 'Backend service is not configured. WORDSEG_ENDPOINT is missing.'},
       {status: 500}
     );
   }
@@ -14,7 +16,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    // Construct the full URL to the python service endpoint
+    // L'URL du service Python doit inclure le chemin /syllabify
     const pythonServiceUrl = `${backendUrl}/syllabify`;
 
     const backendResponse = await fetch(pythonServiceUrl, {
