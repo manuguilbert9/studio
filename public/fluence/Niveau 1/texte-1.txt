@@ -1,6 +1,0 @@
-<titre>Le petit chat</titre>
-Le petit chat est doux.
-Il aime jouer avec la balle.
-Le chat boit du lait.
-Il dort sur le tapis.
-J'aime mon petit chat.
