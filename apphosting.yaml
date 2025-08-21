@@ -8,7 +8,7 @@ runConfig:
 concurrency: 80
 backend:
   # The command to start the backend server.
-  run: uvicorn wordseg_service.app:app --host 0.0.0.0 --port $PORT
+  run: uvicorn wordseg_service.main:app --host 0.0.0.0 --port $PORT
   # The environment variables to set for the backend.
   env:
     - variable: WORDSEG_API_KEY
@@ -25,3 +25,4 @@ backend:
       availability:
         - BUILD
         - RUNTIME
+  healthCheck: /healthz

@@ -79,6 +79,6 @@ def syllabify(req: SegRequest):
         words=segmented_words
     )
 
-@app.get("/health")
+@app.get("/healthz")
 def health_check():
     return {"status": "ok"}

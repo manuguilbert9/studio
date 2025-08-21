@@ -5,8 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const body = await req.json();
   
-  // In App Hosting, the backend is available at localhost
-  const wordsegEndpoint = `http://localhost:${process.env.PORT || 8080}/syllabify`;
+  const wordsegEndpoint = `http://0.0.0.0:${process.env.PORT || 8080}/syllabify`;
 
   try {
     const r = await fetch(wordsegEndpoint, {
