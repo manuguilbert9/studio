@@ -5,17 +5,15 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   const body = await req.json();
   
-  const wordsegEndpoint = process.env.WORDSEG_ENDPOINT;
-  if (!wordsegEndpoint) {
-    return NextResponse.json({ error: "WORDSEG_ENDPOINT is not configured." }, { status: 500 });
-  }
+  // In App Hosting, the backend is available at localhost
+  const wordsegEndpoint = `http://localhost:${process.env.PORT || 8080}/syllabify`;
 
   try {
     const r = await fetch(wordsegEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.WORDSEG_API_KEY || ""
+        "x-api-key": process.env.SERVICE_API_KEY || ""
       },
       body: JSON.stringify(body),
       cache: "no-store",
