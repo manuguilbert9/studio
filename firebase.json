@@ -6,15 +6,6 @@
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "/api/syllabify",
-        "run": {
-          "serviceId": "wordseg-service",
-          "region": "us-central1"
-        }
-      }
     ]
   },
   "firestore": {
