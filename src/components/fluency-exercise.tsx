@@ -98,7 +98,7 @@ export function FluencyExercise() {
         if (showSyllables && rawTextContent && !syllabifiedContent) {
           setIsSyllabifying(true);
           const result = await syllabifyText(rawTextContent);
-          if (result && result.startsWith('Syllabification Error:')) {
+          if (result && (result.startsWith('Syllabification Error:') || result.startsWith('Failed to connect'))) {
               toast({
                 variant: "destructive",
                 title: "Erreur de syllabification",
@@ -160,7 +160,13 @@ export function FluencyExercise() {
   };
 
   const resetStopwatch = () => {
-    stopStopwatch();
+    // Do not call stopStopwatch here as it creates results prematurely
+    if (isRunning) {
+        setIsRunning(false);
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
     setTime(0);
     setWordCount(0);
     setShowResults(false);
@@ -194,6 +200,8 @@ export function FluencyExercise() {
         const syllables = part.split('.');
         syllables.forEach((syllable, sIndex) => {
           if (syllable) {
+            // A simple heuristic for silent 'e' in French.
+            // This is not perfect but covers many cases.
             const isLastCharSilent = syllable.endsWith('e') && sIndex === syllables.length - 1 && syllables.length > 1;
             const mainSyllable = isLastCharSilent ? syllable.slice(0, -1) : syllable;
             const silentE = isLastCharSilent ? syllable.slice(-1) : '';
@@ -261,7 +269,7 @@ export function FluencyExercise() {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                      <div className="flex items-center gap-2">
                         <Label htmlFor="syllable-switch" className="text-lg">Aide à la lecture</Label>
-                        <Switch id="syllable-switch" checked={showSyllables} onCheckedChange={setShowSyllables} disabled={isSyllabifying} />
+                        <Switch id="syllable-switch" checked={showSyllables} onCheckedChange={setShowSyllables} disabled={isSyllabifying || !rawTextContent} />
                     </div>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <div className="text-center">
