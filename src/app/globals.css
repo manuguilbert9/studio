@@ -63,24 +63,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-@layer components {
-  .syllable-a {
-    @apply text-blue-600;
-  }
-  .syllable-b {
-    @apply text-red-600;
-  }
-  .dark .syllable-a {
-    @apply text-blue-400;
-  }
-  .dark .syllable-b {
-    @apply text-red-400;
-  }
-  .letter-muette {
-    @apply text-gray-400;
-  }
-  .dark .letter-muette {
-    @apply text-gray-500;
-  }
-}

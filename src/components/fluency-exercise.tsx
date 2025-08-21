@@ -8,10 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
-import { Play, Pause, RefreshCw, BrainCircuit, Settings } from 'lucide-react';
-import { Switch } from './ui/switch';
+import { Play, Pause, RefreshCw } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
-import { colorizeText } from '@/lib/coloration';
 
 export function FluencyExercise() {
   const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
@@ -20,10 +18,7 @@ export function FluencyExercise() {
   
   const [title, setTitle] = useState('');
   const [textContent, setTextContent] = useState<string>('');
-  const [renderedContent, setRenderedContent] = useState<string>('');
-  
-  const [useSyllableHelp, setUseSyllableHelp] = useState(false);
-  const [isRendering, setIsRendering] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [time, setTime] = useState(0); // Time in seconds
   const [isRunning, setIsRunning] = useState(false);
@@ -69,6 +64,7 @@ export function FluencyExercise() {
       setTitle('');
       return;
     }
+    setIsLoading(true);
     setSelectedText(filename);
     const content = await getTextContent(selectedLevel, filename);
     
@@ -79,20 +75,8 @@ export function FluencyExercise() {
     setTitle(newTitle);
     setTextContent(newBody);
     resetStopwatch();
+    setIsLoading(false);
   };
-
- useEffect(() => {
-    if (useSyllableHelp && textContent) {
-      setIsRendering(true);
-      // Use a timeout to prevent blocking the UI on very long texts
-      setTimeout(() => {
-        setRenderedContent(colorizeText(textContent));
-        setIsRendering(false);
-      }, 50);
-    } else {
-      setRenderedContent(textContent.replace(/\n/g, '<br />'));
-    }
-  }, [useSyllableHelp, textContent]);
 
 
   const startStopwatch = () => setIsRunning(true);
@@ -133,8 +117,8 @@ export function FluencyExercise() {
             <div className="flex items-center gap-4 w-full sm:w-auto">
                 <Label htmlFor="level-select" className="text-lg">Niveau :</Label>
                 <Select onValueChange={handleSelectLevel} value={selectedLevel}>
-                  <SelectTrigger id="level-select" className="w-full">
-                    <SelectValue placeholder="Choisir un niveau..." />
+                  <SelectTrigger id="level-select" className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Choisir..." />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.keys(availableTexts).map(level => (
@@ -147,8 +131,8 @@ export function FluencyExercise() {
                 <div className="flex items-center gap-4 w-full sm:w-auto">
                     <Label htmlFor="text-select" className="text-lg">Texte :</Label>
                     <Select onValueChange={handleSelectText} value={selectedText} disabled={!selectedLevel}>
-                      <SelectTrigger id="text-select" className="w-full">
-                        <SelectValue placeholder="Choisir un texte..." />
+                      <SelectTrigger id="text-select" className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Choisir..." />
                       </SelectTrigger>
                       <SelectContent>
                         {availableTexts[selectedLevel]?.map(text => (
@@ -162,19 +146,6 @@ export function FluencyExercise() {
         
         {selectedText && (
           <>
-            <div className="flex justify-end">
-                <div className="flex items-center space-x-2">
-                    <Switch 
-                        id="syllable-help" 
-                        checked={useSyllableHelp}
-                        onCheckedChange={setUseSyllableHelp}
-                    />
-                    <Label htmlFor="syllable-help" className="flex items-center gap-2 text-lg">
-                        <BrainCircuit className="text-primary"/> Aide à la lecture
-                    </Label>
-                </div>
-            </div>
-
             {/* Stopwatch Display and Controls */}
             <Card className="bg-muted/50 p-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -205,7 +176,7 @@ export function FluencyExercise() {
                     {title && <h3 className="text-2xl font-headline text-center">{title}</h3>}
                 </CardHeader>
                 <CardContent>
-                    {isRendering ? (
+                    {isLoading ? (
                         <div className="space-y-2 p-6">
                             <Skeleton className="h-6 w-3/4" />
                             <Skeleton className="h-6 w-full" />
@@ -215,8 +186,9 @@ export function FluencyExercise() {
                       <div 
                         className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
                         onClick={handleTextClick}
-                        dangerouslySetInnerHTML={{ __html: renderedContent }}
-                      />
+                      >
+                       {textContent.split('\n').map((line, i) => <p key={i}>{line || <>&nbsp;</>}</p>)}
+                      </div>
                     )}
                 </CardContent>
                  <CardFooter className="text-sm text-muted-foreground">
