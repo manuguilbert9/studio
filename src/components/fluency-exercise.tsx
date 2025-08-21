@@ -1,15 +1,17 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { getAvailableTexts, getTextContent } from '@/services/reading';
+import { syllabifyWord } from '@/lib/syllabify';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
-import { Play, Pause, RefreshCw } from 'lucide-react';
+import { Play, Pause, RefreshCw, Sparkles } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 
 export function FluencyExercise() {
   const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
@@ -27,6 +29,9 @@ export function FluencyExercise() {
   const [showResults, setShowResults] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const [useSyllableHelp, setUseSyllableHelp] = useState(false);
+  const [syllabifiedContent, setSyllabifiedContent] = useState<React.ReactNode>(null);
 
   useEffect(() => {
     async function fetchTexts() {
@@ -48,6 +53,30 @@ export function FluencyExercise() {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [isRunning]);
+
+  useEffect(() => {
+    if (useSyllableHelp && textContent) {
+      const words = textContent.split(/(\s+)/); // split by space but keep them
+      const coloredContent = words.map((word, wordIndex) => {
+        if (/\s+/.test(word) || word.length === 0) {
+          return <span key={wordIndex}>{word}</span>;
+        }
+        const syllables = syllabifyWord(word);
+        return (
+          <span key={wordIndex}>
+            {syllables.map((syllable, sylIndex) => (
+              <span key={sylIndex} className={sylIndex % 2 === 0 ? 'syllable-a' : 'syllable-b'}>
+                {syllable}
+              </span>
+            ))}
+          </span>
+        );
+      });
+      setSyllabifiedContent(<>{coloredContent}</>);
+    } else {
+      setSyllabifiedContent(null);
+    }
+  }, [useSyllableHelp, textContent]);
 
   const handleSelectLevel = (level: string) => {
     setSelectedLevel(level);
@@ -91,7 +120,7 @@ export function FluencyExercise() {
   };
 
   const handleTextClick = () => {
-    if (!textContent) return;
+    if (!textContent || useSyllableHelp) return; // Disable click when help is on
 
     if (!isRunning) {
         resetStopwatch();
@@ -146,7 +175,7 @@ export function FluencyExercise() {
         
         {selectedText && (
           <>
-            {/* Stopwatch Display and Controls */}
+            {/* Stopwatch and Help Display and Controls */}
             <Card className="bg-muted/50 p-4">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="text-center">
@@ -157,15 +186,24 @@ export function FluencyExercise() {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={startStopwatch} disabled={isRunning} aria-label="Démarrer">
+                        <Button onClick={startStopwatch} disabled={isRunning || useSyllableHelp} aria-label="Démarrer">
                             <Play className="mr-2"/> Démarrer
                         </Button>
-                        <Button onClick={stopStopwatch} disabled={!isRunning} variant="destructive" aria-label="Arrêter">
+                        <Button onClick={stopStopwatch} disabled={!isRunning || useSyllableHelp} variant="destructive" aria-label="Arrêter">
                             <Pause className="mr-2"/> Arrêter
                         </Button>
                         <Button onClick={resetStopwatch} variant="outline" aria-label="Réinitialiser">
                             <RefreshCw/>
                         </Button>
+                    </div>
+                    <div className="flex items-center space-x-2 border-l pl-4">
+                        <Sparkles className="text-accent"/>
+                        <Label htmlFor="syllable-help" className="text-lg">Aide</Label>
+                        <Switch
+                            id="syllable-help"
+                            checked={useSyllableHelp}
+                            onCheckedChange={setUseSyllableHelp}
+                        />
                     </div>
                 </div>
             </Card>
@@ -184,15 +222,16 @@ export function FluencyExercise() {
                         </div>
                     ) : (
                       <div 
-                        className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
+                        className="p-6 text-2xl leading-relaxed font-serif"
+                        style={{ cursor: useSyllableHelp ? 'default' : 'pointer' }}
                         onClick={handleTextClick}
                       >
-                       {textContent.split('\n').map((line, i) => <p key={i}>{line || <>&nbsp;</>}</p>)}
+                       {syllabifiedContent ? syllabifiedContent : textContent.split('\n').map((line, i) => <p key={i}>{line || <>&nbsp;</>}</p>)}
                       </div>
                     )}
                 </CardContent>
                  <CardFooter className="text-sm text-muted-foreground">
-                    Cliquez sur le texte pour démarrer ou arrêter le chrono.
+                    {useSyllableHelp ? "L'aide à la lecture est activée." : "Cliquez sur le texte pour démarrer ou arrêter le chrono."}
                 </CardFooter>
             </Card>
 
