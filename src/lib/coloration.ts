@@ -22,7 +22,6 @@ function markSilentLetters(word: string): string {
     
     // Rules for final letters
     const lastLetter = word[word.length - 1].toLowerCase();
-    const secondLast = word.length > 1 ? word[word.length - 2] : '';
     
     // Don't mark silent 'e' if it's part of a digraph like 'le', 'de', 'se'...
     if (word.length > 2 && lastLetter === 'e' && !'éèêë'.includes(word[word.length-1])) {
@@ -48,13 +47,13 @@ function markSilentLetters(word: string): string {
  * This is a very basic heuristic and not a full linguistic algorithm.
  */
 function syllabify(word: string): string[] {
-    if (word.length <= 3) {
-        return [word];
-    }
-    // Very simple regex-based syllabification for demonstration
-    // This is not linguistically accurate but provides a visual separation.
-    const regex = /[^aeiouyéàèùâêîôûäëïöüÿ]*[aeiouyéàèùâêîôûäëïöüÿ]+(?:[^aeiouyéàèùâêîôûäëïöüÿ]*$|[^aeiouyéàèùâêîôûäëïöüÿ](?=[^aeiouyéàèùâêîôûäëïöüÿ]))?/gi;
+    // This regex is a simplified approach to find vowel groups.
+    const regex = /[^aàâäeéèêëiîïoôöuùûüyÿœæ]*[aàâäeéèêëiîïoôöuùûüyÿœæ]+(?:[^aàâäeéèêëiîïoôöuùûüyÿœæ]*$|[^aàâäeéèêëiîïoôöuùûüyÿœæ](?=[^aàâäeéèêëiîïoôöuùûüyÿœæ]))?/gi;
     let syllables = word.match(regex);
+
+    // A real algorithm would handle digraphs like "ai", "ou" etc. here.
+    // For this demo, we'll keep the simple regex split.
+    
     return syllables || [word];
 }
 
@@ -65,36 +64,29 @@ function syllabify(word: string): string[] {
  * @returns An HTML string with styled syllables and silent letters.
  */
 export function colorizeText(text: string): string {
-    const words = text.split(/(\s+)/); // Split by whitespace, keeping delimiters
-
-    return words.map(word => {
+    return text.split(/(\s+)/).map(word => {
         if (/\s+/.test(word) || word.length === 0) {
-            // It's a whitespace, return as is
-            return word;
+            return word; // Keep whitespace as is
         }
-
-        // First, mark silent letters on the original word
-        const wordWithSilentMarks = markSilentLetters(word);
         
-        // Then, syllabify the "clean" word (without HTML marks)
         const syllables = syllabify(word);
-
-        if (syllables.length <= 1) {
-            return wordWithSilentMarks; // Return the word with just silent letters marked
+        
+        let colorizedWord;
+        if (syllables.length > 1) {
+            colorizedWord = syllables.map((syllable, index) => {
+                const className = index % 2 === 0 ? 'syllable-a' : 'syllable-b';
+                return `<span class="${className}">${syllable}</span>`;
+            }).join('');
+        } else {
+            colorizedWord = word;
         }
 
-        // Colorize syllables
-        const colorizedSyllables = syllables.map((syllable, index) => {
-            const className = index % 2 === 0 ? 'syllable-a' : 'syllable-b';
-            return `<span class="${className}">${syllable}</span>`;
-        }).join('');
-        
-        // This is a simplification. A real library would merge silent letter
-        // marks and syllable colors. For this demo, we prioritize syllable colors.
-        // If a word has syllables, we return the colorized version without silent marks.
-        // If it's one syllable, we return the version with silent marks.
-        // This avoids nested spans issues.
-        return colorizedSyllables;
+        // Apply silent letter marking on top of the (potentially) colorized word.
+        // This is tricky. A better approach would be a single pass analysis.
+        // For now, let's just mark silent letters on the whole word.
+        // We will prioritize silent letters over syllabification for simplicity to avoid nested spans.
+        return markSilentLetters(colorizedWord.includes('<span') ? word : colorizedWord);
+
 
     }).join('');
 }

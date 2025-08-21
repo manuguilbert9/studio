@@ -11,8 +11,6 @@ import { Input } from './ui/input';
 import { Play, Pause, RefreshCw, BrainCircuit, Settings } from 'lucide-react';
 import { Switch } from './ui/switch';
 import { Skeleton } from './ui/skeleton';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { cn } from '@/lib/utils';
 import { colorizeText } from '@/lib/coloration';
 
 export function FluencyExercise() {
@@ -86,13 +84,13 @@ export function FluencyExercise() {
  useEffect(() => {
     if (useSyllableHelp && textContent) {
       setIsRendering(true);
-      // Simulate async work for a better UX, as colorizeText could be heavy
+      // Use a timeout to prevent blocking the UI on very long texts
       setTimeout(() => {
         setRenderedContent(colorizeText(textContent));
         setIsRendering(false);
-      }, 100);
+      }, 50);
     } else {
-      setRenderedContent('');
+      setRenderedContent(textContent.replace(/\n/g, '<br />'));
     }
   }, [useSyllableHelp, textContent]);
 
@@ -108,17 +106,16 @@ export function FluencyExercise() {
     setErrors(0);
   };
 
-  const handleWordClick = (e: React.MouseEvent<HTMLSpanElement>) => {
-    // This function needs to be adapted to work with dangerouslySetInnerHTML
-    // A more robust solution would use a different rendering approach
-    // For now, we can count words based on the whole text.
+  const handleTextClick = () => {
+    if (!textContent) return;
+
     if (!isRunning) {
         resetStopwatch();
         startStopwatch();
     } else {
         stopStopwatch();
         const words = textContent.trim().split(/\s+/);
-        setWordCount(words.length); // Simplified: assumes they read the whole text
+        setWordCount(words.length);
         setShowResults(true);
     }
   };
@@ -216,9 +213,9 @@ export function FluencyExercise() {
                         </div>
                     ) : (
                       <div 
-                        className="p-6 text-2xl leading-relaxed font-serif"
-                        onClick={handleWordClick}
-                        dangerouslySetInnerHTML={{ __html: useSyllableHelp ? renderedContent : textContent.replace(/\n/g, '<br />') }}
+                        className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
+                        onClick={handleTextClick}
+                        dangerouslySetInnerHTML={{ __html: renderedContent }}
                       />
                     )}
                 </CardContent>
