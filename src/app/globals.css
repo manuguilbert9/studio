@@ -63,12 +63,3 @@
     @apply bg-background text-foreground;
   }
 }
-
-@layer components {
-  .syllable-a {
-    color: hsl(var(--foreground));
-  }
-  .syllable-b {
-    color: hsl(var(--primary));
-  }
-}
