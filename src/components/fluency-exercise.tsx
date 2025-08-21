@@ -11,6 +11,7 @@ import { Input } from './ui/input';
 import { Play, Pause, RefreshCw, Loader2 } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { useToast } from "@/hooks/use-toast";
 
 interface SegResponse {
   original: string;
@@ -18,30 +19,38 @@ interface SegResponse {
   words: string[];
 }
 
-async function syllabifyText(text: string): Promise<string> {
+async function syllabifyText(text: string): Promise<string | null> {
   try {
-    const response = await fetch('/api/segment', {
+    // Direct call to the backend service routed by App Hosting
+    const response = await fetch('/syllabify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, sep: '.' }),
     });
 
     if (!response.ok) {
-      console.error('Syllabification API error:', await response.text());
-      return text; // Return original text on error
+      const errorText = await response.text();
+      console.error('Syllabification API error:', errorText);
+      // Try to parse error if it's JSON
+      try {
+        const errorJson = JSON.parse(errorText);
+        return `Syllabification Error: ${errorJson.detail || errorText}`;
+      } catch (e) {
+        return `Syllabification Error: ${errorText}`;
+      }
     }
 
     const data: SegResponse = await response.json();
-    // The segmented_text from the API already contains spaces and punctuation.
     return data.segmented_text;
   } catch (error) {
     console.error('Failed to fetch syllabification API:', error);
-    return text; // Return original text on error
+    return 'Failed to connect to syllabification service.';
   }
 }
 
 
 export function FluencyExercise() {
+  const { toast } = useToast();
   const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
   const [selectedLevel, setSelectedLevel] = useState<string>('');
   const [selectedText, setSelectedText] = useState<string>('');
@@ -85,14 +94,27 @@ export function FluencyExercise() {
   }, [isRunning]);
   
   useEffect(() => {
-    if (showSyllables && rawTextContent && !syllabifiedContent) {
-      setIsSyllabifying(true);
-      syllabifyText(rawTextContent).then(html => {
-        setSyllabifiedContent(html);
-        setIsSyllabifying(false);
-      });
-    }
-  }, [showSyllables, rawTextContent, syllabifiedContent]);
+    const performSyllabification = async () => {
+        if (showSyllables && rawTextContent && !syllabifiedContent) {
+          setIsSyllabifying(true);
+          const result = await syllabifyText(rawTextContent);
+          if (result && result.startsWith('Syllabification Error:')) {
+              toast({
+                variant: "destructive",
+                title: "Erreur de syllabification",
+                description: result,
+              });
+              setSyllabifiedContent(rawTextContent); // fallback to raw text
+          } else if (result) {
+              setSyllabifiedContent(result);
+          } else {
+              setSyllabifiedContent(rawTextContent); // fallback to raw text
+          }
+          setIsSyllabifying(false);
+        }
+    };
+    performSyllabification();
+  }, [showSyllables, rawTextContent, syllabifiedContent, toast]);
 
   const handleSelectLevel = (level: string) => {
     setSelectedLevel(level);
@@ -122,6 +144,7 @@ export function FluencyExercise() {
     setTitle(newTitle);
     setRawTextContent(newBody);
     setSyllabifiedContent(''); // Reset on new text
+    setShowSyllables(false);
     resetStopwatch();
     setIsLoading(false);
   };
@@ -155,20 +178,30 @@ export function FluencyExercise() {
     const elements: (string | JSX.Element)[] = [];
     // Split the text by spaces to process word by word, but keep separators
     const parts = text.split(/(\s+)/);
-    let colorIndex = 0;
+    let colorToggle = false;
   
     parts.forEach((part, partIndex) => {
       if (part.trim() === '') {
-        // It's a space or multiple spaces
-        elements.push(part);
+        // It's a space or multiple spaces, reset color toggle
+        elements.push(<span key={`space-${partIndex}`}>{part}</span>);
+        colorToggle = false;
       } else {
         // It's a word (potentially with punctuation)
         const syllables = part.split('.');
         syllables.forEach((syllable, sIndex) => {
           if (syllable) {
-            const className = `syllable-${colorIndex % 2 === 0 ? 'a' : 'b'}`;
-            elements.push(<span key={`${partIndex}-${sIndex}`} className={className}>{syllable}</span>);
-            colorIndex++;
+            const isLastCharSilent = syllable.endsWith('e') && sIndex === syllables.length - 1 && syllables.length > 1;
+            const mainSyllable = isLastCharSilent ? syllable.slice(0, -1) : syllable;
+            const silentE = isLastCharSilent ? syllable.slice(-1) : '';
+
+            const className = `syllable-${colorToggle ? 'b' : 'a'}`;
+            elements.push(
+              <span key={`${partIndex}-${sIndex}`} className={className}>
+                {mainSyllable}
+                {silentE && <span className="letter-muette">{silentE}</span>}
+              </span>
+            );
+            colorToggle = !colorToggle;
           }
         });
       }
@@ -224,7 +257,7 @@ export function FluencyExercise() {
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                      <div className="flex items-center gap-2">
                         <Label htmlFor="syllable-switch" className="text-lg">Aide à la lecture</Label>
-                        <Switch id="syllable-switch" checked={showSyllables} onCheckedChange={setShowSyllables} />
+                        <Switch id="syllable-switch" checked={showSyllables} onCheckedChange={setShowSyllables} disabled={isSyllabifying} />
                     </div>
                     <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                         <div className="text-center">
@@ -324,5 +357,3 @@ export function FluencyExercise() {
     </Card>
   );
 }
-
-    
