@@ -21,7 +21,7 @@ export function CarryCell({ borderColor }: CarryCellProps) {
     }
   };
 
-  const handleRightClick = (e: React.MouseEvent<HTMLInputElement>) => {
+  const handleRightClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     if (value) {
       setIsCrossed(prev => !prev);
@@ -29,13 +29,15 @@ export function CarryCell({ borderColor }: CarryCellProps) {
   };
 
   return (
-    <div className="relative flex items-center justify-center w-12 h-10">
+    <div 
+        className="relative flex items-center justify-center w-12 h-10"
+        onContextMenu={handleRightClick}
+    >
        <input
         type="text"
         maxLength={1}
         value={value}
         onChange={handleChange}
-        onContextMenu={handleRightClick}
         className={cn(
             'w-8 h-8 border-2 text-center text-lg font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500',
             borderColor
