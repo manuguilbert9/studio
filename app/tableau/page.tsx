@@ -51,8 +51,6 @@ export default function TableauPage() {
     if (!activeSkill) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-center text-slate-500">
-          <h2 className="text-4xl font-headline">Bienvenue en mode tableau</h2>
-          <p className="text-2xl mt-4">Veuillez sélectionner un exercice dans le panneau de gauche pour commencer.</p>
         </div>
       );
     }
