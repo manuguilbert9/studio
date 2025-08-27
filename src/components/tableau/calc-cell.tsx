@@ -25,7 +25,7 @@ export function CalcCell({ borderColor }: CalcCellProps) {
       value={value}
       onChange={handleChange}
       className={cn(
-        'w-12 h-12 border-b-4 text-center text-3xl font-bold font-mono bg-transparent rounded-none focus:outline-none focus:bg-slate-100',
+        'w-12 h-12 border-2 text-center text-3xl font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100',
         borderColor
       )}
     />

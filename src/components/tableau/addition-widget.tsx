@@ -59,8 +59,8 @@ const ResultRow = ({ numCols }: { numCols: number }) => {
 
 const CarryRow = ({ numCols }: { numCols: number }) => {
     return (
-        <div className="flex items-center justify-end h-10 gap-2 pr-[calc(0.5rem+56px)]">
-             {[...Array(numCols -1)].map((_, i) => (
+        <div className="flex items-center justify-end h-10 gap-2 pr-2">
+             {[...Array(numCols)].map((_, i) => (
                 <CarryCell key={i} borderColor={getBorderColor(numCols - 1 - i)} />
             ))}
         </div>
@@ -132,7 +132,11 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
                 {/* Empty space to align with +/- button */}
                 <div className="h-10 w-12" /> 
 
-                <CarryRow numCols={numCols} />
+                <div className="flex justify-end h-10 gap-2 pr-[calc(1.5rem+56px)]">
+                    {[...Array(numCols - 1)].map((_, i) => (
+                        <CarryCell key={i} borderColor={getBorderColor(numCols - i -1)} />
+                    ))}
+                </div>
 
                 {[...Array(numOperands)].map((_, index) => (
                     <OperandRow 
@@ -142,16 +146,18 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
                     />
                 ))}
                 
-                <div className="h-0.5 bg-slate-800 my-1 self-stretch"></div>
+                <div className="h-0.5 bg-slate-800 my-1 self-stretch ml-12"></div>
                 
-                <div className="flex items-center justify-end">
-                     <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} className="w-10 h-12">
+                <div className="grid grid-flow-col items-center">
+                    <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} className="w-10 h-12 justify-self-start">
                         <ChevronLeft/>
                     </Button>
-                    <div className="flex-grow">
+
+                    <div className="col-span-1">
                         <ResultRow numCols={numCols} />
                     </div>
-                    <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5} className="w-10 h-12">
+
+                    <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5} className="w-10 h-12 justify-self-end">
                         <ChevronRight/>
                     </Button>
                 </div>
