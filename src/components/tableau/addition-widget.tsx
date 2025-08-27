@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useState, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { GripVertical, X, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -18,18 +19,14 @@ const colors = [
   'border-blue-500',  // Unités
   'border-red-500',   // Dizaines
   'border-green-500', // Centaines
+  'border-slate-900', // Milliers
+  'border-slate-900', // Dizaines de milliers
 ];
 
 const getBorderColor = (colIndexFromRight: number) => {
-    if (colIndexFromRight >= 3) return 'border-slate-900';
+    if (colIndexFromRight > 2) return 'border-slate-900';
     return colors[colIndexFromRight] || 'border-slate-900';
 }
-
-// The carry's color corresponds to the column it's generated FROM (the one on the right)
-const getCarryColor = (colIndexFromRight: number) => {
-    return getBorderColor(colIndexFromRight -1);
-}
-
 
 export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   const [pos, setPos] = useState(() => {
@@ -84,7 +81,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
     <Card
       ref={cardRef}
       className="absolute z-30 p-4 shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg"
-      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+      style={{ left: `${pos.x}px`, top: `${pos.y}px`, minWidth: `${numCols * 60 + 150}px` }}
       onMouseDown={handleMouseDown}
     >
       <div className="flex items-start">
@@ -92,48 +89,50 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
           <GripVertical className="h-6 w-6 text-slate-400" />
         </div>
 
-        <div className="flex flex-col items-center space-y-2">
+        <div className="flex-grow flex flex-col items-center">
             {/* Main Calculation Grid */}
             <div 
               className="grid items-center" 
               style={{ 
-                gridTemplateColumns: `auto repeat(${numCols}, 1fr)`,
-                gap: '0.5rem'
+                gridTemplateColumns: `repeat(${numCols}, 1fr) auto`,
+                columnGap: '0.5rem'
               }}>
                 
                 {/* Carry Row: aligned with operand columns */}
-                <div className="col-start-2 col-span-full grid" style={{gridTemplateColumns: `repeat(${numCols - 1}, 1fr)`}}>
+                 <div className="col-span-full grid" style={{ gridTemplateColumns: `repeat(${numCols}, 1fr)` }}>
                     {[...Array(numCols - 1)].map((_, i) => (
-                         <div key={i} className="flex justify-center">
+                        <div key={i} className="flex justify-center">
                             <CarryCell borderColor={getBorderColor(numCols - 1 - i)} />
-                         </div>
+                        </div>
                     ))}
+                    <div />
                 </div>
 
 
                 {/* Operands */}
                 {[...Array(numOperands)].map((_, rowIndex) => (
                     <React.Fragment key={rowIndex}>
-                        <div className="flex items-center justify-center h-12">
+                        {[...Array(numCols)].map((_, colIndex) => (
+                           <div key={colIndex} className="flex justify-center my-1">
+                                <CalcCell borderColor={getBorderColor(numCols - 1 - colIndex)} />
+                           </div>
+                        ))}
+                         <div className="flex items-center justify-center h-12 w-8">
                            {rowIndex === numOperands - 2 && (
                                <span className="text-slate-500 text-3xl font-light">+</span>
                            )}
                         </div>
-                        {[...Array(numCols)].map((_, colIndex) => (
-                           <div key={colIndex} className="flex justify-center">
-                                <CalcCell borderColor={getBorderColor(numCols - 1 - colIndex)} />
-                           </div>
-                        ))}
                    </React.Fragment>
                 ))}
                 
                 {/* Result Bar */}
-                <div className={cn("col-span-full h-0.5 bg-slate-800 my-1")}></div>
+                <div className={cn(`col-span-${numCols}`, "h-0.5 bg-slate-800 my-1")}></div>
+                <div />
 
                 {/* Result Row */}
-                 <div className="col-start-1 col-span-full grid" style={{gridTemplateColumns: `repeat(${numCols + 1}, 1fr)`}}>
+                 <div className="col-start-1 col-span-full grid pr-2" style={{gridTemplateColumns: `repeat(${numCols + 1}, 1fr)`}}>
                      {[...Array(numCols + 1)].map((_, i) => (
-                        <div key={i} className="flex justify-center">
+                        <div key={i} className="flex justify-center my-1">
                            <CalcCell borderColor={getBorderColor(numCols - i)} />
                         </div>
                     ))}
@@ -142,7 +141,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
             
              {/* Operand controls */}
               {numOperands < 3 && (
-                <div className="w-full flex justify-start pl-12">
+                <div className="w-full flex justify-end pr-8">
                     <Button onClick={addOperand} size="sm" variant="ghost" className="text-slate-500 hover:text-slate-800">
                         <Plus className="w-4 h-4 mr-2" /> Ajouter un nombre
                     </Button>
@@ -150,7 +149,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
             )}
             
             {/* Column controls */}
-             <div className="flex items-center justify-center w-full mt-2">
+             <div className="flex items-center justify-center w-full mt-4">
                 <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2}>
                     <ChevronLeft/>
                 </Button>
