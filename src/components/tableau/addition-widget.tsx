@@ -24,7 +24,6 @@ const colors = [
 ];
 
 const getBorderColor = (colIndexFromRight: number) => {
-    if (colIndexFromRight > 2) return 'border-slate-900';
     return colors[colIndexFromRight] || 'border-slate-900';
 }
 
@@ -76,94 +75,86 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   const expandCols = () => setNumCols(c => Math.min(c + 1, 5));
   const shrinkCols = () => setNumCols(c => Math.max(c - 1, 2));
 
-
   return (
     <Card
       ref={cardRef}
-      className="absolute z-30 p-4 shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg"
-      style={{ left: `${pos.x}px`, top: `${pos.y}px`, minWidth: `${numCols * 60 + 150}px` }}
+      className="absolute z-30 p-4 shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg flex gap-2"
+      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
       onMouseDown={handleMouseDown}
     >
-      <div className="flex items-start">
-        <div className="p-1 cursor-grab drag-handle h-full flex items-center">
-          <GripVertical className="h-6 w-6 text-slate-400" />
-        </div>
+      <div className="flex items-center h-full cursor-grab drag-handle">
+        <GripVertical className="h-6 w-6 text-slate-400" />
+      </div>
 
-        <div className="flex-grow flex flex-col items-center">
-            {/* Main Calculation Grid */}
-            <div 
-              className="grid items-center" 
-              style={{ 
-                gridTemplateColumns: `repeat(${numCols}, 1fr) auto`,
-                columnGap: '0.5rem'
-              }}>
-                
-                {/* Carry Row: aligned with operand columns */}
-                 <div className="col-span-full grid" style={{ gridTemplateColumns: `repeat(${numCols}, 1fr)` }}>
-                    {[...Array(numCols - 1)].map((_, i) => (
-                        <div key={i} className="flex justify-center">
-                            <CarryCell borderColor={getBorderColor(numCols - 1 - i)} />
-                        </div>
-                    ))}
-                    <div />
-                </div>
+      <div className="flex flex-col items-center">
+        {/* Main Calculation Grid */}
+        <div className="flex flex-col">
 
+            {/* Carry Row */}
+            <div className="flex flex-row-reverse justify-end ml-auto">
+                 {/* This div is for the result's leftmost cell */}
+                <div className="w-12 h-10 m-1" />
+                {[...Array(numCols - 1)].map((_, i) => (
+                    <div key={i} className="flex justify-center w-12 h-10 m-1">
+                        <CarryCell borderColor={getBorderColor(i + 1)} />
+                    </div>
+                ))}
+            </div>
 
-                {/* Operands */}
+            {/* Operand Rows */}
+            <div className="flex flex-col-reverse">
                 {[...Array(numOperands)].map((_, rowIndex) => (
-                    <React.Fragment key={rowIndex}>
+                    <div key={rowIndex} className="flex items-center flex-row-reverse">
+                         {rowIndex === numOperands - 2 && (
+                             <div className="flex items-center justify-center w-8 h-12 text-slate-500 text-3xl font-light">+</div>
+                         )}
+                         {rowIndex < numOperands - 2 && <div className="w-8 h-12" />}
+
                         {[...Array(numCols)].map((_, colIndex) => (
-                           <div key={colIndex} className="flex justify-center my-1">
-                                <CalcCell borderColor={getBorderColor(numCols - 1 - colIndex)} />
+                           <div key={colIndex} className="flex justify-center m-1">
+                                <CalcCell borderColor={getBorderColor(colIndex)} />
                            </div>
                         ))}
-                         <div className="flex items-center justify-center h-12 w-8">
-                           {rowIndex === numOperands - 2 && (
-                               <span className="text-slate-500 text-3xl font-light">+</span>
-                           )}
-                        </div>
-                   </React.Fragment>
+                    </div>
                 ))}
-                
-                {/* Result Bar */}
-                <div className={cn(`col-span-${numCols}`, "h-0.5 bg-slate-800 my-1")}></div>
-                <div />
-
-                {/* Result Row */}
-                 <div className="col-start-1 col-span-full grid pr-2" style={{gridTemplateColumns: `repeat(${numCols + 1}, 1fr)`}}>
-                     {[...Array(numCols + 1)].map((_, i) => (
-                        <div key={i} className="flex justify-center my-1">
-                           <CalcCell borderColor={getBorderColor(numCols - i)} />
-                        </div>
-                    ))}
-                </div>
             </div>
-            
-             {/* Operand controls */}
-              {numOperands < 3 && (
-                <div className="w-full flex justify-end pr-8">
-                    <Button onClick={addOperand} size="sm" variant="ghost" className="text-slate-500 hover:text-slate-800">
-                        <Plus className="w-4 h-4 mr-2" /> Ajouter un nombre
-                    </Button>
-                </div>
-            )}
-            
-            {/* Column controls */}
-             <div className="flex items-center justify-center w-full mt-4">
-                <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2}>
-                    <ChevronLeft/>
-                </Button>
-                <div className="flex-grow"></div>
-                <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5}>
-                    <ChevronRight/>
-                </Button>
+
+            {/* Result Bar */}
+            <div className="h-0.5 bg-slate-800 my-1 self-end" style={{width: `calc(${numCols * 3.5}rem)`}}/>
+
+            {/* Result Row */}
+            <div className="flex flex-row-reverse ml-auto">
+                {[...Array(numCols + 1)].map((_, i) => (
+                    <div key={i} className="flex justify-center m-1">
+                       <CalcCell borderColor={getBorderColor(i)} />
+                    </div>
+                ))}
             </div>
         </div>
 
-        <button onClick={onClose} className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800">
-          <X className="h-5 w-5" />
-        </button>
+        {/* --- CONTROLS --- */}
+        <div className="w-full flex justify-end pr-14 mt-1">
+            {numOperands < 3 && (
+                <Button onClick={addOperand} size="sm" variant="ghost" className="text-slate-500 hover:text-slate-800 h-8">
+                    <Plus className="w-4 h-4" />
+                </Button>
+            )}
+        </div>
+         <div className="flex items-center justify-center w-full mt-2">
+            <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2}>
+                <ChevronLeft/>
+            </Button>
+            <div className="flex-grow"></div>
+            <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5}>
+                <ChevronRight/>
+            </Button>
+        </div>
       </div>
+
+
+      <button onClick={onClose} className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800">
+        <X className="h-5 w-5" />
+      </button>
     </Card>
   );
 }
