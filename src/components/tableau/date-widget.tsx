@@ -79,7 +79,7 @@ export function DateWidget({ onClose }: DateWidgetProps) {
         onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
         minConstraints={[200, 50]}
         maxConstraints={[800, 200]}
-        handle={<span className="react-resizable-handle" />}
+        handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize" />}
       >
         <Card
           className="w-full h-full p-4 shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg flex items-center gap-2"
