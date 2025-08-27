@@ -87,18 +87,6 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
         <div className="flex flex-col items-center">
             {/* Main calculation block */}
             <div className="flex flex-row-reverse items-start">
-                {/* Addition Sign Column */}
-                <div className="flex flex-col items-center">
-                    {/* Empty spaces to align with other columns */}
-                    <div className="h-10 mb-1"></div> {/* Align with carry */}
-                    <div className="h-12"></div> {/* Align with first operand */}
-                    <div className="h-12 flex items-center">
-                        {numOperands > 1 && <span className="text-slate-500 text-3xl font-light ml-2">+</span>}
-                    </div>
-                     <div className="h-12"></div>
-                     <div className="h-12"></div>
-                </div>
-
                 {/* Calculation Columns */}
                 {[...Array(numCols)].map((_, colIndex) => {
                      const borderColor = getBorderColor(colIndex);
@@ -113,6 +101,9 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
                             {[...Array(numOperands)].map((_, rowIndex) => (
                                <div key={rowIndex} className="flex items-center h-12">
                                     <CalcCell borderColor={borderColor} />
+                                    {rowIndex === 1 && colIndex === 0 && (
+                                       <span className="text-slate-500 text-3xl font-light ml-2">+</span>
+                                    )}
                                </div>
                             ))}
                             
