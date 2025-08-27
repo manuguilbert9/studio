@@ -5,38 +5,39 @@ import { useState, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { GripVertical, X } from 'lucide-react';
 import { CalcCell } from './calc-cell';
+import { CarryCell } from './carry-cell';
 
 interface AdditionWidgetProps {
   onClose: () => void;
 }
 
 const initialPosition = {
-  x: window.innerWidth / 2 - 200,
+  x: window.innerWidth / 2 - 160,
   y: 100,
 };
 
 export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   const [position, setPosition] = useState(initialPosition);
-  const [carry, setCarry] = useState({ tens: 0, hundreds: 0 }); // 0: empty, 1: has 1, 2: crossed
   const cardRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (cardRef.current) {
-      isDragging.current = true;
-      offset.current = {
-        x: e.clientX - cardRef.current.getBoundingClientRect().left,
-        y: e.clientY - cardRef.current.getBoundingClientRect().top,
-      };
-      cardRef.current.style.cursor = 'grabbing';
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+    // Only drag if the handle is clicked
+    if (e.target instanceof HTMLElement && e.target.closest('.drag-handle')) {
+        isDragging.current = true;
+        offset.current = {
+            x: e.clientX - position.x,
+            y: e.clientY - position.y,
+        };
+        cardRef.current!.style.cursor = 'grabbing';
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
     }
   };
 
   const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging.current && cardRef.current) {
+    if (isDragging.current) {
       setPosition({
         x: e.clientX - offset.current.x,
         y: e.clientY - offset.current.y,
@@ -47,56 +48,33 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   const handleMouseUp = () => {
     isDragging.current = false;
     if (cardRef.current) {
-      cardRef.current.style.cursor = 'grab';
+        cardRef.current.style.cursor = 'default';
     }
     window.removeEventListener('mousemove', handleMouseMove);
     window.removeEventListener('mouseup', handleMouseUp);
   };
   
-  const toggleCarry = (type: 'tens' | 'hundreds') => {
-    setCarry(prev => ({
-        ...prev,
-        [type]: (prev[type] + 1) % 3
-    }));
-  }
-
-  const renderCarry = (value: number) => {
-    if (value === 1) return '1';
-    if (value === 2) return <span className="relative text-red-500">1<span className="absolute left-0 top-1/2 w-full h-0.5 bg-red-500 transform -translate-y-1/2 rotate-[-15deg]"></span></span>;
-    return '';
-  }
-
   return (
     <Card
       ref={cardRef}
       className="absolute z-30 p-4 shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg"
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
+      onMouseDown={handleMouseDown}
     >
       <div className="flex items-start gap-4">
         <div
-          className="p-1 cursor-grab"
-          onMouseDown={handleMouseDown}
+          className="p-1 cursor-grab drag-handle"
         >
           <GripVertical className="h-6 w-6 text-slate-400" />
         </div>
 
-        <div className="grid grid-cols-4 gap-x-2 items-center text-4xl font-bold font-mono">
+        <div className="grid grid-cols-4 gap-x-1 items-center text-3xl font-bold font-mono">
             {/* Empty cell for alignment */}
             <div></div>
 
             {/* Carry row */}
-            <div 
-                className="w-16 h-16 rounded-full border-4 border-green-500 flex items-center justify-center text-2xl cursor-pointer"
-                onClick={() => toggleCarry('hundreds')}
-            >
-                {renderCarry(carry.hundreds)}
-            </div>
-            <div 
-                className="w-16 h-16 rounded-full border-4 border-red-500 flex items-center justify-center text-2xl cursor-pointer"
-                onClick={() => toggleCarry('tens')}
-            >
-                {renderCarry(carry.tens)}
-            </div>
+            <CarryCell borderColor="border-green-500" />
+            <CarryCell borderColor="border-red-500" />
             <div></div>
 
             {/* First Number */}
@@ -112,7 +90,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
             <CalcCell borderColor="border-blue-500" />
             
             {/* Separator Line */}
-            <div className="col-span-4 h-1 bg-slate-800 my-2"></div>
+            <div className="col-span-4 h-0.5 bg-slate-800 my-1"></div>
             
             {/* Result */}
             <CalcCell borderColor="border-black" />
