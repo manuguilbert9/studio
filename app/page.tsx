@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { skills } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { ArrowRight, UserCog, BarChart3 } from 'lucide-react';
+import { ArrowRight, UserCog, BarChart3, Presentation } from 'lucide-react';
 
 export default function Home() {
   const [name, setName] = useState<string | null>(null);
@@ -108,6 +108,12 @@ export default function Home() {
                 <Link href="/results">
                     <BarChart3 className="mr-2" />
                     Voir les résultats
+                </Link>
+            </Button>
+             <Button asChild variant="outline" size="sm">
+                <Link href="/tableau">
+                    <Presentation className="mr-2" />
+                    Mode tableau
                 </Link>
             </Button>
         </div>

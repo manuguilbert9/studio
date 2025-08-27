@@ -1,0 +1,258 @@
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
+import { getAvailableTexts, getTextContent } from '@/services/reading';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from './ui/label';
+import { Input } from './ui/input';
+import { Play, Pause, RefreshCw } from 'lucide-react';
+import { Skeleton } from './ui/skeleton';
+import { cn } from '@/lib/utils';
+
+interface FluencyExerciseProps {
+  isTableauMode?: boolean;
+}
+
+export function FluencyExercise({ isTableauMode = false }: FluencyExerciseProps) {
+  const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
+  const [selectedLevel, setSelectedLevel] = useState<string>('');
+  const [selectedText, setSelectedText] = useState<string>('');
+  
+  const [title, setTitle] = useState('');
+  const [rawTextContent, setRawTextContent] = useState('');
+  
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [time, setTime] = useState(0); // Time in seconds
+  const [isRunning, setIsRunning] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+  const [errors, setErrors] = useState(0);
+  const [showResults, setShowResults] = useState(false);
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    async function fetchTexts() {
+      const texts = await getAvailableTexts();
+      setAvailableTexts(texts);
+    }
+    fetchTexts();
+  }, []);
+
+  useEffect(() => {
+    if (isRunning) {
+      timerRef.current = setInterval(() => {
+        setTime(prevTime => prevTime + 1);
+      }, 1000);
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isRunning]);
+
+  const handleSelectLevel = (level: string) => {
+    setSelectedLevel(level);
+    setSelectedText('');
+    setTitle('');
+    setRawTextContent('');
+    resetStopwatch();
+  }
+
+  const handleSelectText = async (filename: string) => {
+    if (!filename || !selectedLevel) {
+      setSelectedText('');
+      setTitle('');
+      setRawTextContent('');
+      return;
+    }
+    setIsLoading(true);
+    setSelectedText(filename);
+    const content = await getTextContent(selectedLevel, filename);
+    
+    const titleMatch = content.match(/<titre>(.*?)<\/titre>/s);
+    const newTitle = titleMatch ? titleMatch[1] : '';
+    const newBody = content.replace(/<titre>.*?<\/titre>\s*/, '');
+    
+    setTitle(newTitle);
+    setRawTextContent(newBody);
+    resetStopwatch();
+    setIsLoading(false);
+  };
+
+  const startStopwatch = () => setIsRunning(true);
+  const stopStopwatch = () => {
+      if(isRunning) {
+        setIsRunning(false);
+        const words = rawTextContent.trim().split(/\s+/);
+        setWordCount(words.length);
+        setShowResults(true);
+      }
+  };
+
+  const resetStopwatch = () => {
+    if (isRunning) {
+        setIsRunning(false);
+    }
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    setTime(0);
+    setWordCount(0);
+    setShowResults(false);
+    setErrors(0);
+  };
+
+  const handleTextClick = () => {
+    if (!rawTextContent) return;
+
+    if (!isRunning) {
+        resetStopwatch();
+        startStopwatch();
+    } else {
+        stopStopwatch();
+    }
+  };
+
+  const wpm = wordCount > 0 && time > 0 ? Math.round((wordCount / time) * 60) : 0;
+  const netWpm = wpm > 0 ? Math.max(0, wpm - errors) : 0;
+
+  return (
+    <Card className={cn("w-full max-w-4xl mx-auto", isTableauMode ? "shadow-none border-0 bg-transparent" : "shadow-2xl")}>
+      {!isTableauMode && (
+         <CardHeader>
+          <CardTitle className="font-headline text-3xl text-center">Exercice de Fluence</CardTitle>
+        </CardHeader>
+      )}
+      <CardContent className="space-y-6">
+        <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
+            <div className="flex items-center gap-4 w-full sm:w-auto">
+                <Label htmlFor="level-select" className="text-lg">Niveau :</Label>
+                <Select onValueChange={handleSelectLevel} value={selectedLevel}>
+                  <SelectTrigger id="level-select" className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="Choisir..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.keys(availableTexts).map(level => (
+                      <SelectItem key={level} value={level}>{level}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+            </div>
+             {selectedLevel && (
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                    <Label htmlFor="text-select" className="text-lg">Texte :</Label>
+                    <Select onValueChange={handleSelectText} value={selectedText} disabled={!selectedLevel}>
+                      <SelectTrigger id="text-select" className="w-full sm:w-[180px]">
+                        <SelectValue placeholder="Choisir..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTexts[selectedLevel]?.map(text => (
+                          <SelectItem key={text} value={text}>{text.replace('.txt', '')}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                </div>
+            )}
+        </div>
+        
+        {selectedText && (
+          <>
+            {/* Stopwatch Display and Controls */}
+            {!isTableauMode && (
+              <Card className="bg-muted/50 p-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                      <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Chronomètre</p>
+                          <p className="font-mono text-5xl font-bold text-primary">
+                            <span>{("0" + Math.floor(time / 60)).slice(-2)}:</span>
+                            <span>{("0" + (time % 60)).slice(-2)}</span>
+                          </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <Button onClick={startStopwatch} disabled={isRunning} aria-label="Démarrer">
+                              <Play className="mr-2"/> Démarrer
+                          </Button>
+                          <Button onClick={stopStopwatch} disabled={!isRunning} variant="destructive" aria-label="Arrêter">
+                              <Pause className="mr-2"/> Arrêter
+                          </Button>
+                          <Button onClick={resetStopwatch} variant="outline" aria-label="Réinitialiser">
+                              <RefreshCw/>
+                          </Button>
+                      </div>
+                  </div>
+              </Card>
+            )}
+
+
+            {/* Text Content */}
+            <Card>
+                <CardHeader>
+                    {title && <h3 className="text-2xl font-headline text-center">{title}</h3>}
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? (
+                        <div className="space-y-2 p-6">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-6 w-full" />
+                            <Skeleton className="h-6 w-1/2" />
+                        </div>
+                    ) : (
+                      <div 
+                        className={cn("p-6 font-serif cursor-pointer", isTableauMode ? "text-4xl leading-relaxed" : "text-2xl leading-relaxed")}
+                        onClick={handleTextClick}
+                      >
+                       {rawTextContent.split('\n').map((line, i) => <p key={i}>{line || <>&nbsp;</>}</p>)}
+                      </div>
+                    )}
+                </CardContent>
+                 {!isTableauMode && (
+                    <CardFooter className="text-sm text-muted-foreground">
+                        Cliquez sur le texte pour démarrer ou arrêter le chrono.
+                    </CardFooter>
+                 )}
+            </Card>
+
+            {/* Results Display */}
+            {showResults && !isTableauMode && (
+              <Card className="bg-secondary/50 p-6">
+                <CardTitle className="text-2xl mb-4 text-center">Résultats de la lecture</CardTitle>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                   <div className="bg-card p-4 rounded-lg">
+                        <p className="text-sm font-semibold text-muted-foreground">Temps écoulé</p>
+                        <p className="text-3xl font-bold">{time}s</p>
+                    </div>
+                     <div className="bg-card p-4 rounded-lg">
+                        <p className="text-sm font-semibold text-muted-foreground">Mots lus</p>
+                        <p className="text-3xl font-bold">{wordCount}</p>
+                    </div>
+                     <div className="bg-card p-4 rounded-lg">
+                        <p className="text-sm font-semibold text-muted-foreground">Mots par minute (brut)</p>
+                        <p className="text-3xl font-bold">{wpm}</p>
+                    </div>
+                </div>
+                <div className="mt-6 flex flex-col sm:flex-row items-center gap-4">
+                    <Label htmlFor="errors" className="text-lg whitespace-nowrap">Entrez le nombre d'erreurs :</Label>
+                    <Input 
+                        id="errors" 
+                        type="number" 
+                        value={errors}
+                        onChange={(e) => setErrors(Number(e.target.value))}
+                        className="w-full sm:w-32 text-lg h-12"
+                    />
+                     <div className="flex-grow bg-card p-4 rounded-lg text-center">
+                        <p className="text-sm font-semibold text-muted-foreground">Mots par minute (corrigé)</p>
+                        <p className="text-3xl font-bold text-primary">{netWpm}</p>
+                    </div>
+                </div>
+              </Card>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
