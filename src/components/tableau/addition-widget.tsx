@@ -17,18 +17,16 @@ const colors = [
   'border-blue-500',  // Unités
   'border-red-500',   // Dizaines
   'border-green-500', // Centaines
-  'border-slate-900', // Milliers (noir)
-  'border-slate-900', // Dizaines de milliers (noir)
 ];
-
 const getBorderColor = (colIndexFromRight: number) => {
-    return colors[colIndexFromRight] || colors[3];
+    if (colIndexFromRight > 2) return 'border-slate-900';
+    return colors[colIndexFromRight] || 'border-slate-900';
 }
 
 const OperandRow = ({ numCols, onAdd }: { numCols: number; onAdd?: () => void }) => {
     return (
-        <div className="flex items-center justify-end gap-2">
-            <div className="flex-shrink-0 w-10 h-12 flex items-center justify-center">
+        <div className="flex items-center justify-end">
+            <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center">
                 {onAdd ? (
                     <Button onClick={onAdd} size="icon" variant="ghost" className="h-10 w-10 text-slate-500 hover:text-slate-800">
                         <Plus className="w-6 h-6" />
@@ -37,33 +35,38 @@ const OperandRow = ({ numCols, onAdd }: { numCols: number; onAdd?: () => void })
                     <span className="text-slate-500 text-3xl">+</span>
                 )}
             </div>
-            {[...Array(numCols)].map((_, i) => (
-                <CalcCell key={i} borderColor={getBorderColor(numCols - 1 - i)} />
-            ))}
+            <div className="flex items-center gap-2">
+                {[...Array(numCols)].map((_, i) => (
+                    <CalcCell key={i} borderColor={getBorderColor(numCols - 1 - i)} />
+                ))}
+            </div>
         </div>
     );
 }
 
 const ResultRow = ({ numCols }: { numCols: number }) => {
      return (
-        <div className="flex items-center justify-end gap-2">
-            {/* Result has one extra cell for final carry */}
-            {[...Array(numCols + 1)].map((_, i) => (
-                 <CalcCell key={i} borderColor={getBorderColor(numCols - i)} />
-            ))}
+        <div className="flex items-center justify-end">
+             {/* Result has one extra cell for final carry */}
+             <div className="flex items-center gap-2">
+                {[...Array(numCols + 1)].map((_, i) => (
+                    <CalcCell key={i} borderColor={getBorderColor(numCols - i)} />
+                ))}
+            </div>
         </div>
     );
 };
 
 const CarryRow = ({ numCols }: { numCols: number }) => {
     return (
-        <div className="flex items-center justify-end h-10 gap-2 pl-[50px] pr-12">
-            {[...Array(numCols -1)].map((_, i) => (
-                <CarryCell key={i} borderColor={getBorderColor(numCols - 2 - i)} />
+        <div className="flex items-center justify-end h-10 gap-2 pr-[calc(0.5rem+56px)]">
+             {[...Array(numCols -1)].map((_, i) => (
+                <CarryCell key={i} borderColor={getBorderColor(numCols - 1 - i)} />
             ))}
         </div>
     );
 };
+
 
 export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   const [pos, setPos] = useState(() => {
@@ -120,40 +123,43 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
       style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
       onMouseDown={handleMouseDown}
     >
-      <div className="flex items-start gap-4">
-        <div className="p-1 cursor-grab drag-handle h-full">
-          <GripVertical className="h-6 w-6 text-slate-400" />
-        </div>
-
-        <div className="flex flex-col items-end">
-            <CarryRow numCols={numCols} />
-
-            {[...Array(numOperands)].map((_, index) => (
-                <OperandRow 
-                    key={index}
-                    numCols={numCols} 
-                    onAdd={index === numOperands -1 && numOperands < 3 ? addOperand : undefined}
-                />
-            ))}
-            
-            <div className="h-0.5 bg-slate-800 my-1 self-stretch"></div>
-            
-             <div className="flex items-center justify-end gap-2">
-                <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} className="w-10">
-                    <ChevronLeft/>
-                </Button>
-                <div className="flex-grow">
-                    <ResultRow numCols={numCols} />
-                </div>
-                <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5} className="w-10">
-                    <ChevronRight/>
-                </Button>
+        <div className="flex items-start">
+             <div className="p-1 cursor-grab drag-handle h-full flex items-center">
+                <GripVertical className="h-6 w-6 text-slate-400" />
             </div>
-        </div>
 
-        <button onClick={onClose} className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800">
-          <X className="h-5 w-5" />
-        </button>
+            <div className="flex flex-col items-end">
+                {/* Empty space to align with +/- button */}
+                <div className="h-10 w-12" /> 
+
+                <CarryRow numCols={numCols} />
+
+                {[...Array(numOperands)].map((_, index) => (
+                    <OperandRow 
+                        key={index}
+                        numCols={numCols} 
+                        onAdd={index === numOperands -1 && numOperands < 3 ? addOperand : undefined}
+                    />
+                ))}
+                
+                <div className="h-0.5 bg-slate-800 my-1 self-stretch"></div>
+                
+                <div className="flex items-center justify-end">
+                     <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} className="w-10 h-12">
+                        <ChevronLeft/>
+                    </Button>
+                    <div className="flex-grow">
+                        <ResultRow numCols={numCols} />
+                    </div>
+                    <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5} className="w-10 h-12">
+                        <ChevronRight/>
+                    </Button>
+                </div>
+            </div>
+
+             <button onClick={onClose} className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800">
+                <X className="h-5 w-5" />
+            </button>
       </div>
     </Card>
   );
