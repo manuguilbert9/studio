@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { GripVertical, X } from 'lucide-react';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
+import { cn } from '@/lib/utils';
 
 interface AdditionWidgetProps {
   onClose: () => void;
@@ -18,12 +19,12 @@ const initialPosition = {
 
 export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   const [position, setPosition] = useState(initialPosition);
+  const [numOperands, setNumOperands] = useState(2);
   const cardRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only drag if the handle is clicked
     if (e.target instanceof HTMLElement && e.target.closest('.drag-handle')) {
         isDragging.current = true;
         offset.current = {
@@ -54,6 +55,12 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
     window.removeEventListener('mouseup', handleMouseUp);
   };
   
+  const addOperand = () => {
+      if (numOperands < 3) {
+          setNumOperands(numOperands + 1);
+      }
+  }
+
   return (
     <Card
       ref={cardRef}
@@ -84,10 +91,29 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
             <CalcCell borderColor="border-blue-500" />
 
             {/* Second Number */}
-            <div className="text-center">+</div>
+            <button
+              onClick={addOperand}
+              className={cn(
+                'text-center text-slate-500 rounded-md',
+                numOperands < 3 ? 'cursor-pointer hover:bg-slate-200' : 'cursor-default'
+              )}
+              disabled={numOperands >= 3}
+            >
+              +
+            </button>
             <CalcCell borderColor="border-green-500" />
             <CalcCell borderColor="border-red-500" />
             <CalcCell borderColor="border-blue-500" />
+
+            {/* Third Number (optional) */}
+            {numOperands === 3 && (
+                <>
+                    <div className="text-center">+</div>
+                    <CalcCell borderColor="border-green-500" />
+                    <CalcCell borderColor="border-red-500" />
+                    <CalcCell borderColor="border-blue-500" />
+                </>
+            )}
             
             {/* Separator Line */}
             <div className="col-span-4 h-0.5 bg-slate-800 my-1"></div>
