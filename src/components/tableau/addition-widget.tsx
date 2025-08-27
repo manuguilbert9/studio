@@ -17,12 +17,12 @@ const colors = [
   'border-blue-500',  // Unités
   'border-red-500',   // Dizaines
   'border-green-500', // Centaines
-  'border-yellow-400',// Milliers
-  'border-purple-500',// Dizaines de milliers
+  'border-slate-900', // Milliers (noir)
+  'border-slate-900', // Dizaines de milliers (noir)
 ];
 
 const getBorderColor = (colIndexFromRight: number) => {
-    return colors[colIndexFromRight % colors.length];
+    return colors[colIndexFromRight] || colors[3];
 }
 
 const OperandRow = ({ numCols, onAdd }: { numCols: number; onAdd?: () => void }) => {
@@ -47,7 +47,6 @@ const OperandRow = ({ numCols, onAdd }: { numCols: number; onAdd?: () => void })
 const ResultRow = ({ numCols }: { numCols: number }) => {
      return (
         <div className="flex items-center justify-end gap-2">
-            <div className="w-10 h-12" /> {/* Spacer */}
             {/* Result has one extra cell for final carry */}
             {[...Array(numCols + 1)].map((_, i) => (
                  <CalcCell key={i} borderColor={getBorderColor(numCols - i)} />
@@ -58,16 +57,10 @@ const ResultRow = ({ numCols }: { numCols: number }) => {
 
 const CarryRow = ({ numCols }: { numCols: number }) => {
     return (
-        <div className="flex items-center justify-end h-10 gap-2 pl-[50px]">
-            {[...Array(numCols)].map((_, i) => {
-                 // No carry-over for the units column, so we add a spacer for the last item.
-                if (i === numCols - 1) {
-                    return <div key="spacer" className="w-12 h-10" />
-                }
-                return (
-                    <CarryCell key={i} borderColor={getBorderColor(numCols - 2 - i)} />
-                )
-            })}
+        <div className="flex items-center justify-end h-10 gap-2 pl-[50px] pr-12">
+            {[...Array(numCols -1)].map((_, i) => (
+                <CarryCell key={i} borderColor={getBorderColor(numCols - 2 - i)} />
+            ))}
         </div>
     );
 };
@@ -145,12 +138,14 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
             
             <div className="h-0.5 bg-slate-800 my-1 self-stretch"></div>
             
-            <div className="flex items-center justify-end gap-2">
-                 <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2}>
+             <div className="flex items-center justify-end gap-2">
+                <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} className="w-10">
                     <ChevronLeft/>
                 </Button>
-                <ResultRow numCols={numCols} />
-                 <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5}>
+                <div className="flex-grow">
+                    <ResultRow numCols={numCols} />
+                </div>
+                <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5} className="w-10">
                     <ChevronRight/>
                 </Button>
             </div>
