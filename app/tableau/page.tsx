@@ -10,6 +10,8 @@ import { ExerciseWorkspace } from '@/components/exercise-workspace';
 import { FluencyExercise } from '@/components/fluency-exercise';
 import { TimerWidget } from '@/components/tableau/timer-widget';
 import { DateWidget } from '@/components/tableau/date-widget';
+import { AdditionWidget } from '@/components/tableau/addition-widget';
+import { AdditionIcon } from '@/components/icons/addition-icon';
 
 export default function TableauPage() {
   const [activeSkill, setActiveSkill] = useState<Skill | null>(null);
@@ -17,6 +19,7 @@ export default function TableauPage() {
   
   const [showTimer, setShowTimer] = useState(false);
   const [showDate, setShowDate] = useState(false);
+  const [showAddition, setShowAddition] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -92,6 +95,9 @@ export default function TableauPage() {
             </Sheet>
 
             <div className="flex items-center gap-2">
+                 <Button variant="outline" size="sm" onClick={() => setShowAddition(p => !p)}>
+                    <AdditionIcon className="h-4 w-4 mr-2" /> Gabarit Addition
+                 </Button>
                  <Button variant="outline" size="sm" onClick={() => setShowTimer(p => !p)}>
                     <Timer className="h-4 w-4 mr-2" /> Minuteur
                  </Button>
@@ -116,6 +122,7 @@ export default function TableauPage() {
        </main>
 
         {/* WIDGETS */}
+        {showAddition && <AdditionWidget onClose={() => setShowAddition(false)} />}
         {showTimer && <TimerWidget onClose={() => setShowTimer(false)} />}
         {showDate && <DateWidget onClose={() => setShowDate(false)} />}
        
