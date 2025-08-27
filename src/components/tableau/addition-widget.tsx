@@ -19,7 +19,6 @@ const colors = [
   'border-red-500',   // Dizaines
   'border-green-500', // Centaines
   'border-slate-900', // Milliers
-  'border-slate-900', // Dizaines de milliers
 ];
 
 const getBorderColor = (colIndexFromRight: number) => {
@@ -31,7 +30,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
     if (typeof window === 'undefined') {
       return initialPosition;
     }
-    return { x: window.innerWidth / 2 - 250, y: 100 };
+    return { x: window.innerWidth / 2 - 200, y: 100 };
   });
 
   const [numOperands, setNumOperands] = useState(2);
@@ -81,68 +80,85 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
       style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
       onMouseDown={handleMouseDown}
     >
-      <div className="flex items-center h-full cursor-grab drag-handle pt-16">
-        <GripVertical className="h-6 w-6 text-slate-400" />
-      </div>
+        <div className="flex items-center h-full cursor-grab drag-handle pt-16">
+            <GripVertical className="h-6 w-6 text-slate-400" />
+        </div>
 
-      <div className="flex flex-col items-center">
-        <div className="flex flex-col">
+        <div className="flex flex-col items-center">
             {/* Main calculation block */}
-            <div className="flex flex-row-reverse">
-                {[...Array(numCols)].map((_, colIndex) => (
-                    <div key={colIndex} className="flex flex-col items-center m-1">
-                        {/* Carry cell (not for units) */}
-                        <div className="w-12 h-10 mb-1 flex items-center justify-center">
-                           {colIndex > 0 && <CarryCell borderColor={getBorderColor(colIndex)} />}
-                        </div>
-
-                        {/* Operand cells */}
-                        {[...Array(numOperands)].map((_, rowIndex) => (
-                           <div key={rowIndex} className="flex items-center">
-                                <CalcCell borderColor={getBorderColor(colIndex)} />
-                                {colIndex === 0 && rowIndex === 0 && (
-                                     <span className="text-slate-500 text-3xl font-light ml-2">+</span>
-                                )}
-                           </div>
-                        ))}
-                        
-                        {/* Result Bar (under each column) */}
-                        <div className="h-0.5 bg-slate-800 my-1 w-12"/>
-
-                        {/* Result cell */}
-                         <CalcCell borderColor={getBorderColor(colIndex)} />
+            <div className="flex flex-row-reverse items-start">
+                {/* Addition Sign Column */}
+                <div className="flex flex-col items-center">
+                    {/* Empty spaces to align with other columns */}
+                    <div className="h-10 mb-1"></div> {/* Align with carry */}
+                    <div className="h-12"></div> {/* Align with first operand */}
+                    <div className="h-12 flex items-center">
+                        {numOperands > 1 && <span className="text-slate-500 text-3xl font-light ml-2">+</span>}
                     </div>
-                ))}
-                 {/* Result cell for carry-over */}
+                     <div className="h-12"></div>
+                     <div className="h-12"></div>
+                </div>
+
+                {/* Calculation Columns */}
+                {[...Array(numCols)].map((_, colIndex) => {
+                     const borderColor = getBorderColor(colIndex);
+                     return (
+                        <div key={colIndex} className="flex flex-col items-center m-1">
+                            {/* Carry cell (not for units) */}
+                            <div className="w-12 h-10 mb-1 flex items-center justify-center">
+                               {colIndex > 0 && <CarryCell borderColor={borderColor} />}
+                            </div>
+
+                            {/* Operand cells */}
+                            {[...Array(numOperands)].map((_, rowIndex) => (
+                               <div key={rowIndex} className="flex items-center h-12">
+                                    <CalcCell borderColor={borderColor} />
+                               </div>
+                            ))}
+                            
+                            {/* Result Bar */}
+                            <div className="h-0.5 bg-slate-800 my-1 w-12"/>
+
+                            {/* Result cell */}
+                            <div className="h-12">
+                                <CalcCell borderColor={borderColor} />
+                            </div>
+                        </div>
+                     );
+                })}
+                 
+                 {/* Result cell for final carry-over */}
                  <div className="flex flex-col items-center m-1">
                       <div className="w-12 h-10 mb-1"/>
-                      {[...Array(numOperands)].map((_, rowIndex) => <div key={rowIndex} className="w-12 h-12"/>)}
+                       {[...Array(numOperands)].map((_, rowIndex) => <div key={rowIndex} className="w-12 h-12"/>)}
                       <div className="h-0.5 bg-slate-800 my-1 w-12"/>
-                      <CalcCell borderColor={getBorderColor(numCols)} />
+                       <div className="h-12">
+                           <CalcCell borderColor={getBorderColor(numCols)} />
+                       </div>
                  </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex justify-between items-center w-full mt-2 px-4">
+                <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2}>
+                    <ChevronLeft/>
+                </Button>
+                
+                {numOperands < 3 && (
+                    <Button onClick={addOperand} size="sm" variant="ghost" className="text-slate-500 hover:text-slate-800">
+                        <Plus className="w-4 h-4 mr-1" /> Ajouter nombre
+                    </Button>
+                )}
+
+                <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 4}>
+                    <ChevronRight/>
+                </Button>
             </div>
         </div>
 
-        {/* --- CONTROLS --- */}
-        <div className="flex justify-between items-center w-full mt-4">
-             <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2}>
-                <ChevronLeft/>
-             </Button>
-            {numOperands < 3 && (
-                <Button onClick={addOperand} size="icon" variant="ghost" className="text-slate-500 hover:text-slate-800">
-                    <Plus className="w-5 h-5" />
-                </Button>
-            )}
-             <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 4}>
-                <ChevronRight/>
-             </Button>
-        </div>
-      </div>
-
-
-      <button onClick={onClose} className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800">
-        <X className="h-5 w-5" />
-      </button>
+        <button onClick={onClose} className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800">
+            <X className="h-5 w-5" />
+        </button>
     </Card>
   );
 }
