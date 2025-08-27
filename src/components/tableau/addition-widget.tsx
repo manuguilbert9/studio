@@ -105,10 +105,10 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
             <div className="flex flex-col-reverse">
                 {[...Array(numOperands)].map((_, rowIndex) => (
                     <div key={rowIndex} className="flex items-center flex-row-reverse">
-                         {rowIndex === numOperands - 2 && (
-                             <div className="flex items-center justify-center w-8 h-12 text-slate-500 text-3xl font-light">+</div>
-                         )}
-                         {rowIndex < numOperands - 2 && <div className="w-8 h-12" />}
+                        {rowIndex === numOperands - 2 && (
+                            <div className="flex items-center justify-center w-8 h-12 text-slate-500 text-3xl font-light">+</div>
+                        )}
+                        {rowIndex < numOperands - 2 && <div className="w-8 h-12" />}
 
                         {[...Array(numCols)].map((_, colIndex) => (
                            <div key={colIndex} className="flex justify-center m-1">
