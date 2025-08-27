@@ -36,8 +36,7 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
   }, [isRunning]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Prevent dragging when clicking on the resize handle
-    if ((e.target as HTMLElement).classList.contains('react-resizable-handle')) {
+    if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button')) {
         return;
     }
     if (cardRef.current) {
@@ -81,7 +80,7 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
   return (
     <div
       ref={cardRef}
-      className="absolute z-30"
+      className="absolute z-30 group"
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
     >
         <ResizableBox
@@ -90,16 +89,16 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
             onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
             minConstraints={[250, 80]}
             maxConstraints={[800, 300]}
-            handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize" />}
+            handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
         >
             <Card
-                className="w-full h-full p-4 shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg flex items-center gap-4"
+                className="w-full h-full p-4 shadow-none group-hover:shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg flex items-center gap-4 border border-transparent group-hover:border-border transition-all"
+                onMouseDown={handleMouseDown}
             >
                 <div
                     className="p-1 cursor-grab self-stretch flex items-center"
-                    onMouseDown={handleMouseDown}
                 >
-                    <GripVertical className="h-6 w-6 text-slate-400" />
+                    <GripVertical className="h-6 w-6 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 
                 <div className="flex-grow text-center">
@@ -109,7 +108,7 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
                     </p>
                 </div>
 
-                <div className="flex flex-col gap-2 border-l pl-4">
+                <div className="flex flex-col gap-2 border-l pl-4 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button style={{width: buttonSize, height: buttonSize}} size="icon" onClick={() => setIsRunning(!isRunning)} variant={isRunning ? "destructive" : "default"}>
                         {isRunning ? <Pause/> : <Play/>}
                     </Button>
@@ -117,7 +116,7 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
                         <RefreshCw/>
                     </Button>
                 </div>
-                <button onClick={onClose} className="absolute top-2 right-2 bg-slate-600 text-white rounded-full p-1 hover:bg-slate-800">
+                <button onClick={onClose} className="absolute top-2 right-2 bg-slate-600 text-white rounded-full p-1 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity">
                 <X className="h-4 w-4" />
                 </button>
             </Card>

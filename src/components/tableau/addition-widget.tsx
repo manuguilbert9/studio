@@ -41,7 +41,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   const offset = useRef({ x: 0, y: 0 });
 
   const onHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).classList.contains('react-resizable-handle')) {
+    if ((e.target as HTMLElement).closest('.react-resizable-handle')) {
         return;
     }
     isDragging.current = true;
@@ -84,8 +84,9 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   return (
     <div
       ref={widgetRef}
-      className="absolute z-30"
+      className="absolute z-30 group"
       style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+      onMouseDown={onHandleMouseDown}
     >
     <ResizableBox
         width={size.width}
@@ -93,17 +94,16 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
         onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
         minConstraints={[300, 200]}
         maxConstraints={[800, 600]}
-        handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize" />}
+        handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
     >
     <Card
-      className="w-full h-full p-4 shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none"
+      className="w-full h-full p-4 shadow-none group-hover:shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none border border-transparent group-hover:border-border transition-all"
     >
       <div
-        onMouseDown={onHandleMouseDown}
         className="flex items-center h-full cursor-grab pt-16 pr-1 self-stretch"
         aria-label="Déplacer le widget"
       >
-        <GripVertical className="h-6 w-6 text-slate-400" />
+        <GripVertical className="h-6 w-6 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
 
       <div className="flex flex-col items-center flex-grow h-full justify-center">
@@ -156,7 +156,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
           })}
         </div>
 
-        <div className="flex justify-between items-center w-full mt-2 px-4">
+        <div className="flex justify-between items-center w-full mt-2 px-4 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} aria-label="Retirer une colonne">
             <ChevronLeft />
           </Button>
@@ -181,7 +181,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
 
       <button
         onClick={onClose}
-        className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800"
+        className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
         aria-label="Fermer"
       >
         <X className="h-5 w-5" />
