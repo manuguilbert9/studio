@@ -1,20 +1,21 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { ResizableBox } from 'react-resizable';
 import { Card } from '@/components/ui/card';
 import { GripVertical, X } from 'lucide-react';
-import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import 'react-resizable/css/styles.css';
 
 interface DateWidgetProps {
-  format: 'short' | 'long';
   onClose: () => void;
 }
 
-export function DateWidget({ format: initialFormat, onClose }: DateWidgetProps) {
+export function DateWidget({ onClose }: DateWidgetProps) {
   const [date, setDate] = useState(new Date());
-  const [format, setFormat] = useState(initialFormat);
-  const [position, setPosition] = useState({ x: window.innerWidth / 2 - 150, y: 100 });
+  const [dateFormat, setDateFormat] = useState<'long' | 'short'>('long');
+  const [position, setPosition] = useState({ x: window.innerWidth / 2 - 200, y: 100 });
+  const [size, setSize] = useState({ width: 450, height: 70 });
   const cardRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
@@ -23,12 +24,19 @@ export function DateWidget({ format: initialFormat, onClose }: DateWidgetProps) 
     const timer = setInterval(() => setDate(new Date()), 60000); // Update every minute
     return () => clearInterval(timer);
   }, []);
+  
+  // Dynamically calculate font size based on widget width
+  const fontSize = Math.max(12, Math.min(size.width / 15, size.height * 0.5));
 
-  const formattedDate = format === 'short'
+  const formattedDate = dateFormat === 'short'
     ? new Intl.DateTimeFormat('fr-FR').format(date)
     : new Intl.DateTimeFormat('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent dragging when clicking on the resize handle
+    if ((e.target as HTMLElement).classList.contains('react-resizable-handle')) {
+        return;
+    }
     if (cardRef.current) {
       isDragging.current = true;
       offset.current = {
@@ -60,26 +68,42 @@ export function DateWidget({ format: initialFormat, onClose }: DateWidgetProps) 
   };
 
   return (
-    <Card
+    <div
       ref={cardRef}
-      className="absolute z-30 p-4 shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg"
+      className="absolute z-30"
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
-      onDoubleClick={() => setFormat(f => f === 'short' ? 'long' : 'short')}
     >
-      <div className="flex items-center gap-2">
-        <div
-          className="p-1 cursor-grab"
-          onMouseDown={handleMouseDown}
+      <ResizableBox
+        width={size.width}
+        height={size.height}
+        onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
+        minConstraints={[200, 50]}
+        maxConstraints={[800, 200]}
+        handle={<span className="react-resizable-handle" />}
+      >
+        <Card
+          className="w-full h-full p-4 shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg flex items-center gap-2"
+          onDoubleClick={() => setDateFormat(f => f === 'short' ? 'long' : 'short')}
         >
-          <GripVertical className="h-6 w-6 text-slate-400" />
-        </div>
-        <p className="font-sans text-2xl font-semibold select-none text-slate-800">
-          {formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)}
-        </p>
-         <button onClick={onClose} className="ml-2 p-1 text-slate-400 hover:text-slate-800">
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-    </Card>
+          <div
+            className="p-1 cursor-grab self-stretch flex items-center"
+            onMouseDown={handleMouseDown}
+          >
+            <GripVertical className="h-6 w-6 text-slate-400" />
+          </div>
+          <div className="flex-grow flex items-center justify-center h-full">
+            <p
+              className="font-sans font-semibold select-none text-slate-800 text-center"
+              style={{ fontSize: `${fontSize}px` }}
+            >
+              {formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1)}
+            </p>
+          </div>
+          <button onClick={onClose} className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-800">
+            <X className="h-5 w-5" />
+          </button>
+        </Card>
+      </ResizableBox>
+    </div>
   );
 }

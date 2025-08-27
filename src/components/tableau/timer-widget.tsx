@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { ResizableBox } from 'react-resizable';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RefreshCw, GripVertical, X } from 'lucide-react';
+import 'react-resizable/css/styles.css';
 
 interface TimerWidgetProps {
     onClose: () => void;
@@ -12,7 +14,8 @@ interface TimerWidgetProps {
 export function TimerWidget({ onClose }: TimerWidgetProps) {
   const [time, setTime] = useState(0); // Time in seconds
   const [isRunning, setIsRunning] = useState(false);
-  const [position, setPosition] = useState({ x: window.innerWidth / 2 - 150, y: 150 });
+  const [position, setPosition] = useState({ x: window.innerWidth / 2 - 200, y: 150 });
+  const [size, setSize] = useState({ width: 400, height: 120 });
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -33,6 +36,10 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
   }, [isRunning]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent dragging when clicking on the resize handle
+    if ((e.target as HTMLElement).classList.contains('react-resizable-handle')) {
+        return;
+    }
     if (cardRef.current) {
       isDragging.current = true;
       offset.current = {
@@ -68,39 +75,53 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
     setTime(0);
   }
 
+  const fontSize = Math.max(24, Math.min(size.width / 7, size.height * 0.6));
+  const buttonSize = Math.max(24, Math.min(size.width / 12, size.height / 3));
+
   return (
-    <Card
+    <div
       ref={cardRef}
-      className="absolute z-30 p-4 shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg"
+      className="absolute z-30"
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
     >
-      <div className="flex items-center gap-4">
-        <div
-          className="p-1 cursor-grab"
-          onMouseDown={handleMouseDown}
+        <ResizableBox
+            width={size.width}
+            height={size.height}
+            onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
+            minConstraints={[250, 80]}
+            maxConstraints={[800, 300]}
+            handle={<span className="react-resizable-handle" />}
         >
-          <GripVertical className="h-6 w-6 text-slate-400" />
-        </div>
-        
-        <div className="text-center">
-            <p className="font-mono text-5xl font-bold text-slate-800 select-none">
-                <span>{("0" + Math.floor(time / 60)).slice(-2)}:</span>
-                <span>{("0" + (time % 60)).slice(-2)}</span>
-            </p>
-        </div>
+            <Card
+                className="w-full h-full p-4 shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg flex items-center gap-4"
+            >
+                <div
+                    className="p-1 cursor-grab self-stretch flex items-center"
+                    onMouseDown={handleMouseDown}
+                >
+                    <GripVertical className="h-6 w-6 text-slate-400" />
+                </div>
+                
+                <div className="flex-grow text-center">
+                    <p className="font-mono font-bold text-slate-800 select-none" style={{ fontSize: `${fontSize}px`}}>
+                        <span>{("0" + Math.floor(time / 60)).slice(-2)}:</span>
+                        <span>{("0" + (time % 60)).slice(-2)}</span>
+                    </p>
+                </div>
 
-        <div className="flex flex-col gap-2 border-l pl-4">
-            <Button size="icon" onClick={() => setIsRunning(!isRunning)} variant={isRunning ? "destructive" : "default"}>
-                {isRunning ? <Pause/> : <Play/>}
-            </Button>
-             <Button size="icon" onClick={resetTimer} variant="outline">
-                <RefreshCw/>
-            </Button>
-        </div>
-         <button onClick={onClose} className="absolute -top-2 -right-2 bg-slate-600 text-white rounded-full p-1 hover:bg-slate-800">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    </Card>
+                <div className="flex flex-col gap-2 border-l pl-4">
+                    <Button style={{width: buttonSize, height: buttonSize}} size="icon" onClick={() => setIsRunning(!isRunning)} variant={isRunning ? "destructive" : "default"}>
+                        {isRunning ? <Pause/> : <Play/>}
+                    </Button>
+                    <Button style={{width: buttonSize, height: buttonSize}} size="icon" onClick={resetTimer} variant="outline">
+                        <RefreshCw/>
+                    </Button>
+                </div>
+                <button onClick={onClose} className="absolute top-2 right-2 bg-slate-600 text-white rounded-full p-1 hover:bg-slate-800">
+                <X className="h-4 w-4" />
+                </button>
+            </Card>
+        </ResizableBox>
+    </div>
   );
 }
