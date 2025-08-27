@@ -16,8 +16,7 @@ export default function TableauPage() {
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   
   const [showTimer, setShowTimer] = useState(false);
-  const [showShortDate, setShowShortDate] = useState(false);
-  const [showLongDate, setShowLongDate] = useState(false);
+  const [showDate, setShowDate] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
@@ -96,11 +95,8 @@ export default function TableauPage() {
                  <Button variant="outline" size="sm" onClick={() => setShowTimer(p => !p)}>
                     <Timer className="h-4 w-4 mr-2" /> Minuteur
                  </Button>
-                 <Button variant="outline" size="sm" onClick={() => setShowShortDate(p => !p)}>
-                    <CalendarDays className="h-4 w-4 mr-2" /> Date courte
-                 </Button>
-                 <Button variant="outline" size="sm" onClick={() => setShowLongDate(p => !p)}>
-                     <CalendarDays className="h-4 w-4 mr-2" /> Date longue
+                 <Button variant="outline" size="sm" onClick={() => setShowDate(p => !p)}>
+                    <CalendarDays className="h-4 w-4 mr-2" /> Date
                  </Button>
                  <Button variant="outline" size="sm" onClick={toggleFullscreen}>
                     {isFullscreen ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
@@ -121,9 +117,8 @@ export default function TableauPage() {
 
         {/* WIDGETS */}
         {showTimer && <TimerWidget onClose={() => setShowTimer(false)} />}
-        {showShortDate && <DateWidget format="short" onClose={() => setShowShortDate(false)} />}
-        {showLongDate && <DateWidget format="long" onClose={() => setShowLongDate(false)} />}
-
+        {showDate && <DateWidget onClose={() => setShowDate(false)} />}
+       
     </div>
   );
 }

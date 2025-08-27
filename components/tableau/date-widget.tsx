@@ -7,13 +7,12 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface DateWidgetProps {
-  format: 'short' | 'long';
   onClose: () => void;
 }
 
-export function DateWidget({ format: initialFormat, onClose }: DateWidgetProps) {
+export function DateWidget({ onClose }: DateWidgetProps) {
   const [date, setDate] = useState(new Date());
-  const [format, setFormat] = useState(initialFormat);
+  const [dateFormat, setDateFormat] = useState<'long' | 'short'>('long');
   const [position, setPosition] = useState({ x: window.innerWidth / 2 - 150, y: 100 });
   const cardRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -24,7 +23,7 @@ export function DateWidget({ format: initialFormat, onClose }: DateWidgetProps) 
     return () => clearInterval(timer);
   }, []);
 
-  const formattedDate = format === 'short'
+  const formattedDate = dateFormat === 'short'
     ? new Intl.DateTimeFormat('fr-FR').format(date)
     : new Intl.DateTimeFormat('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date);
 
@@ -64,7 +63,7 @@ export function DateWidget({ format: initialFormat, onClose }: DateWidgetProps) 
       ref={cardRef}
       className="absolute z-30 p-4 shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg"
       style={{ left: `${position.x}px`, top: `${position.y}px` }}
-      onDoubleClick={() => setFormat(f => f === 'short' ? 'long' : 'short')}
+      onDoubleClick={() => setDateFormat(f => f === 'short' ? 'long' : 'short')}
     >
       <div className="flex items-center gap-2">
         <div
