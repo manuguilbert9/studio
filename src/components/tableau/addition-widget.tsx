@@ -1,9 +1,8 @@
-
 'use client';
 
 import { useState, useRef, ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
-import { GripVertical, X, Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { GripVertical, X, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
 import { cn } from '@/lib/utils';
@@ -13,10 +12,7 @@ interface AdditionWidgetProps {
   onClose: () => void;
 }
 
-const initialPosition = {
-  x: typeof window !== 'undefined' ? window.innerWidth / 2 - 200 : 200,
-  y: 100,
-};
+const initialPosition = { x: 200, y: 100 };
 
 const colors = [
   'border-blue-500',  // Unités
@@ -24,66 +20,69 @@ const colors = [
   'border-green-500', // Centaines
   'border-yellow-400',// Milliers
   'border-purple-500',// Dizaines de milliers
-  'border-orange-500',// Centaines de milliers
 ];
 
-const getBorderColor = (index: number, totalCols: number) => {
-    const colorIndex = (totalCols - 1 - index) % colors.length;
+const getBorderColor = (colIndex: number, totalCols: number) => {
+    // colIndex 0 is the rightmost column (unités)
+    const colorIndex = colIndex % colors.length;
     return colors[colorIndex];
 }
 
-const OperandRow = ({ numCols, colorOffset = 0, onAdd }: { numCols: number, colorOffset?: number, onAdd?: () => void }) => (
-    <div className="contents">
-        <div className="flex items-center justify-center">
-            {onAdd ? (
-                 <button
-                    onClick={onAdd}
-                    className="flex items-center justify-center h-10 w-10 text-center text-slate-500 rounded-md cursor-pointer hover:bg-slate-200 disabled:cursor-default disabled:opacity-50"
-                >
-                    +
-                </button>
-            ) : <div className="w-10 h-10" />}
+const OperandRow = ({ numCols, onAdd }: { numCols: number; onAdd?: () => void }) => {
+    return (
+        <div className="flex items-center justify-end gap-1">
+             {onAdd ? (
+                <Button onClick={onAdd} size="icon" variant="ghost" className="h-10 w-10 text-slate-500 text-2xl">
+                    <Plus />
+                </Button>
+             ) : (
+                <div className="w-10 h-10" />
+             )}
+            {[...Array(numCols)].map((_, i) => (
+                <CalcCell key={i} borderColor={getBorderColor(numCols - 1 - i, numCols)} />
+            ))}
         </div>
-        {[...Array(numCols)].map((_, i) => (
-            <CalcCell key={i} borderColor={getBorderColor(i + colorOffset, numCols + colorOffset)} />
-        ))}
-    </div>
-);
+    );
+}
 
-const ResultRow = ({ numCols, onExpand, onShrink }: { numCols: number, onExpand: () => void, onShrink: () => void }) => (
-     <div className="contents">
-        <div className="flex items-center justify-center">
+const ResultRow = ({ numCols, onShrink, onExpand }: { numCols: number, onShrink: () => void, onExpand: () => void }) => {
+     return (
+        <div className="flex items-center justify-end gap-1">
             <Button onClick={onShrink} size="icon" variant="ghost" className="h-10 w-10">
                 <ChevronLeft/>
             </Button>
-        </div>
-        {/* Result has one extra cell */}
-        {[...Array(numCols + 1)].map((_, i) => (
-             <CalcCell key={i} borderColor={getBorderColor(i, numCols + 1)} />
-        ))}
-         <div className="flex items-center justify-center">
+             {/* Result has one extra cell for final carry */}
+            {[...Array(numCols + 1)].map((_, i) => (
+                 <CalcCell key={i} borderColor={getBorderColor(numCols - i, numCols + 1)} />
+            ))}
             <Button onClick={onExpand} size="icon" variant="ghost" className="h-10 w-10">
                 <ChevronRight/>
             </Button>
         </div>
-    </div>
-);
+    );
+};
 
+const CarryRow = ({ numCols }: { numCols: number }) => {
+    return (
+        <div className="flex items-center justify-end h-10 gap-1 pl-[50px]">
+            {[...Array(numCols - 1)].map((_, i) => (
+                 <CarryCell key={i} borderColor={getBorderColor(numCols - 1 - i, numCols)} />
+            ))}
+            {/* Empty space to align with units column */}
+            <div className="w-12 h-10" />
+        </div>
+    );
+};
 
-const CarryRow = ({ numCols }: { numCols: number }) => (
-    <div className="contents">
-        {/* Empty cell for the operand symbol */}
-        <div /> 
-        {/* Empty cell to align with result's extra digit */}
-        <div />
-        {[...Array(numCols - 1)].map((_, i) => (
-            <CarryCell key={i} borderColor={getBorderColor(i, numCols -1)} />
-        ))}
-    </div>
-);
 
 export function AdditionWidget({ onClose }: AdditionWidgetProps) {
-  const [position, setPosition] = useState(initialPosition);
+  const [pos, setPos] = useState(() => {
+    if (typeof window === 'undefined') {
+      return initialPosition;
+    }
+    return { x: window.innerWidth / 2 - 200, y: 100 };
+  });
+
   const [numOperands, setNumOperands] = useState(2);
   const [numCols, setNumCols] = useState(3); // Start with Units, Tens, Hundreds
 
@@ -95,8 +94,8 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
     if (e.target instanceof HTMLElement && e.target.closest('.drag-handle')) {
         isDragging.current = true;
         offset.current = {
-            x: e.clientX - position.x,
-            y: e.clientY - position.y,
+            x: e.clientX - pos.x,
+            y: e.clientY - pos.y,
         };
         document.body.style.cursor = 'grabbing';
         window.addEventListener('mousemove', handleMouseMove);
@@ -106,7 +105,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (isDragging.current) {
-      setPosition({
+      setPos({
         x: e.clientX - offset.current.x,
         y: e.clientY - offset.current.y,
       });
@@ -120,36 +119,25 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
     window.removeEventListener('mouseup', handleMouseUp);
   };
   
-  const addOperand = () => {
-      if (numOperands < 3) {
-          setNumOperands(numOperands + 1);
-      }
-  }
-
-  const expandCols = () => setNumCols(c => Math.min(c + 1, 5)); // Max 5 columns for now
-  const shrinkCols = () => setNumCols(c => Math.max(c - 1, 2)); // Min 2 columns
-
-  const gridStyle = {
-      gridTemplateColumns: `auto repeat(${numCols + 1}, auto)`
-  };
+  const addOperand = () => setNumOperands(c => Math.min(c + 1, 3));
+  const expandCols = () => setNumCols(c => Math.min(c + 1, 5));
+  const shrinkCols = () => setNumCols(c => Math.max(c - 1, 2));
 
   return (
     <Card
       ref={cardRef}
       className="absolute z-30 p-4 shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg"
-      style={{ left: `${position.x}px`, top: `${position.y}px` }}
+      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
       onMouseDown={handleMouseDown}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-2">
         <div className="p-1 cursor-grab drag-handle">
           <GripVertical className="h-6 w-6 text-slate-400" />
         </div>
 
-        <div className="grid gap-x-1 gap-y-2 items-center text-3xl font-bold font-mono" style={gridStyle}>
-            {/* Carry row */}
+        <div className="flex flex-col gap-1 items-end">
             <CarryRow numCols={numCols} />
 
-            {/* Operands */}
             {[...Array(numOperands)].map((_, index) => (
                 <OperandRow 
                     key={index}
@@ -158,10 +146,8 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
                 />
             ))}
             
-            {/* Separator Line */}
-            <div className="col-span-full h-0.5 bg-slate-800 my-1"></div>
+            <div className="h-0.5 bg-slate-800 my-1 self-stretch"></div>
             
-            {/* Result */}
             <ResultRow numCols={numCols} onExpand={expandCols} onShrink={shrinkCols} />
         </div>
 

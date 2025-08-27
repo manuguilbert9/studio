@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -16,7 +15,6 @@ export function CarryCell({ borderColor }: CarryCellProps) {
     const val = e.target.value;
     if (/^\d?$/.test(val)) {
       setValue(val);
-      // Uncross when value changes
       if (isCrossed) {
         setIsCrossed(false);
       }
@@ -25,7 +23,7 @@ export function CarryCell({ borderColor }: CarryCellProps) {
 
   const handleRightClick = (e: React.MouseEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (value) { // Only allow crossing out if there is a value
+    if (value) {
       setIsCrossed(prev => !prev);
     }
   };
