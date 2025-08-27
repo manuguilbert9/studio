@@ -31,7 +31,7 @@ export function CarryCell({ borderColor }: CarryCellProps) {
   };
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center w-12 h-10">
        <input
         type="text"
         maxLength={1}
@@ -39,7 +39,7 @@ export function CarryCell({ borderColor }: CarryCellProps) {
         onChange={handleChange}
         onContextMenu={handleRightClick}
         className={cn(
-            'w-10 h-10 border-2 text-center text-xl font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500',
+            'w-8 h-8 border-2 text-center text-lg font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500',
             borderColor
         )}
         />
