@@ -7,7 +7,6 @@ import { GripVertical, X, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 interface AdditionWidgetProps {
   onClose: () => void;
@@ -86,30 +85,27 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
         <GripVertical className="h-6 w-6 text-slate-400" />
       </div>
 
-      <div className="flex flex-col items-center">
-        {/* Main Calculation Grid */}
-        <div className="flex flex-col">
-
+      <div className="flex flex-col">
+        <div className="flex flex-col items-end">
             {/* Carry Row */}
-            <div className="flex flex-row-reverse justify-end ml-auto">
-                 {/* This div is for the result's leftmost cell */}
-                <div className="w-12 h-10 m-1" />
+            <div className="flex flex-row-reverse">
                 {[...Array(numCols - 1)].map((_, i) => (
                     <div key={i} className="flex justify-center w-12 h-10 m-1">
                         <CarryCell borderColor={getBorderColor(i + 1)} />
                     </div>
                 ))}
+                {/* Spacer to align with operand rows */}
+                <div className="w-12 h-10 m-1" />
             </div>
 
             {/* Operand Rows */}
             <div className="flex flex-col-reverse">
                 {[...Array(numOperands)].map((_, rowIndex) => (
                     <div key={rowIndex} className="flex items-center flex-row-reverse">
-                        {rowIndex === numOperands - 2 && (
+                         {rowIndex === 0 && (
                             <div className="flex items-center justify-center w-8 h-12 text-slate-500 text-3xl font-light">+</div>
                         )}
-                        {rowIndex < numOperands - 2 && <div className="w-8 h-12" />}
-
+                        {rowIndex > 0 && <div className="w-8 h-12" />}
                         {[...Array(numCols)].map((_, colIndex) => (
                            <div key={colIndex} className="flex justify-center m-1">
                                 <CalcCell borderColor={getBorderColor(colIndex)} />
@@ -120,11 +116,15 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
             </div>
 
             {/* Result Bar */}
-            <div className="h-0.5 bg-slate-800 my-1 self-end" style={{width: `calc(${numCols * 3.5}rem)`}}/>
+            <div className="h-0.5 bg-slate-800 my-1" style={{width: `calc(${numCols * 3.5}rem)`}}/>
 
             {/* Result Row */}
-            <div className="flex flex-row-reverse ml-auto">
-                {[...Array(numCols + 1)].map((_, i) => (
+            <div className="flex flex-row-reverse">
+                {/* Extra cell for thousands place etc. */}
+                <div className="flex justify-center m-1">
+                    <CalcCell borderColor={getBorderColor(numCols)} />
+                </div>
+                {[...Array(numCols)].map((_, i) => (
                     <div key={i} className="flex justify-center m-1">
                        <CalcCell borderColor={getBorderColor(i)} />
                     </div>
@@ -133,21 +133,24 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
         </div>
 
         {/* --- CONTROLS --- */}
-        <div className="w-full flex justify-end pr-14 mt-1">
-            {numOperands < 3 && (
-                <Button onClick={addOperand} size="sm" variant="ghost" className="text-slate-500 hover:text-slate-800 h-8">
-                    <Plus className="w-4 h-4" />
+        <div className="flex justify-between items-center w-full mt-2 pr-4">
+             <div className="flex-1 flex justify-start">
+                <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2}>
+                    <ChevronLeft/>
                 </Button>
-            )}
-        </div>
-         <div className="flex items-center justify-center w-full mt-2">
-            <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2}>
-                <ChevronLeft/>
-            </Button>
-            <div className="flex-grow"></div>
-            <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5}>
-                <ChevronRight/>
-            </Button>
+            </div>
+             <div className="flex-1 flex justify-center">
+                {numOperands < 3 && (
+                    <Button onClick={addOperand} size="sm" variant="ghost" className="text-slate-500 hover:text-slate-800 h-8">
+                        <Plus className="w-4 h-4" />
+                    </Button>
+                )}
+            </div>
+             <div className="flex-1 flex justify-end">
+                <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 5}>
+                    <ChevronRight/>
+                </Button>
+            </div>
         </div>
       </div>
 
