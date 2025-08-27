@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, PanelLeftOpen, Timer, CalendarDays, X } from 'lucide-react';
+import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
@@ -18,7 +18,27 @@ export default function TableauPage() {
   const [showTimer, setShowTimer] = useState(false);
   const [showShortDate, setShowShortDate] = useState(false);
   const [showLongDate, setShowLongDate] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
 
   const handleSelectSkill = (skill: Skill) => {
     setActiveSkill(skill);
@@ -81,6 +101,10 @@ export default function TableauPage() {
                  </Button>
                  <Button variant="outline" size="sm" onClick={() => setShowLongDate(p => !p)}>
                      <CalendarDays className="h-4 w-4 mr-2" /> Date longue
+                 </Button>
+                 <Button variant="outline" size="sm" onClick={toggleFullscreen}>
+                    {isFullscreen ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />}
+                    Plein écran
                  </Button>
             </div>
             
