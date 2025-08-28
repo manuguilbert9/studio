@@ -97,7 +97,7 @@ export default function TableauPage() {
         setTimeout(() => setSaveStatus('idle'), 2000);
     } else {
         setSaveStatus('error');
-        console.error("Failed to save:", result.error);
+        // console.error("Failed to save:", result.error);
         setTimeout(() => setSaveStatus('idle'), 3000);
     }
   }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets]);
