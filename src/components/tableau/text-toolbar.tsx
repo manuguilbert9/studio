@@ -1,21 +1,17 @@
 
 'use client';
 
-import { AlignCenter, Type, Underline } from "lucide-react";
+import { Underline } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface TextToolbarProps {
-  setFontSize: (size: string) => void;
+  fontSize: number;
+  setFontSize: (size: number) => void;
   setColor: (color: string) => void;
   toggleUnderline: () => void;
 }
-
-const fontSizes = [
-    { name: 'S', class: 'text-sm' },
-    { name: 'M', class: 'text-base' },
-    { name: 'L', class: 'text-lg' },
-    { name: 'XL', class: 'text-2xl' },
-]
 
 const colors = [
     { name: 'Noir', class: 'text-slate-900', bg: 'bg-slate-900' },
@@ -24,14 +20,21 @@ const colors = [
     { name: 'Bleu', class: 'text-blue-600', bg: 'bg-blue-600' },
 ]
 
-export function TextToolbar({ setFontSize, setColor, toggleUnderline }: TextToolbarProps) {
+export function TextToolbar({ fontSize, setFontSize, setColor, toggleUnderline }: TextToolbarProps) {
   return (
-    <div className="flex items-center justify-start gap-1 p-1 rounded-md ml-2">
-        {fontSizes.map(size => (
-             <Button key={size.name} variant="ghost" size="sm" className="w-8 h-8 p-0" onClick={() => setFontSize(size.class)}>
-                {size.name}
-            </Button>
-        ))}
+    <div className="flex items-center justify-start gap-2 p-1 rounded-md ml-2">
+        <div className="flex items-center gap-1">
+            <Label htmlFor="font-size" className="sr-only">Taille de la police</Label>
+            <Input 
+                id="font-size"
+                type="number"
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="w-16 h-8 text-sm"
+                min={8}
+                max={128}
+            />
+        </div>
         
         <Button variant="ghost" size="icon" className="w-8 h-8" onClick={toggleUnderline}>
             <Underline className="h-4 w-4" />

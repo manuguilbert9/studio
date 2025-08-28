@@ -21,7 +21,7 @@ export function TextWidget({ onClose }: TextWidgetProps) {
   const [size, setSize] = useState({ width: 300, height: 200 });
   const [text, setText] = useState('');
   
-  const [fontSize, setFontSize] = useState('text-base');
+  const [fontSize, setFontSize] = useState(16);
   const [color, setColor] = useState('text-slate-900');
   const [isUnderlined, setIsUnderlined] = useState(false);
 
@@ -31,7 +31,7 @@ export function TextWidget({ onClose }: TextWidgetProps) {
   const offset = useRef({ x: 0, y: 0 });
 
   const onHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('textarea') || (e.target as HTMLElement).closest('button')) {
+    if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('textarea') || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
         return;
     }
     isDragging.current = true;
@@ -80,6 +80,7 @@ export function TextWidget({ onClose }: TextWidgetProps) {
           >
             <GripVertical className="h-6 w-6 text-slate-400" />
             <TextToolbar
+                fontSize={fontSize}
                 setFontSize={setFontSize}
                 setColor={setColor}
                 toggleUnderline={() => setIsUnderlined(p => !p)}
@@ -90,11 +91,11 @@ export function TextWidget({ onClose }: TextWidgetProps) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             className={cn(
-                "w-full h-full bg-transparent resize-none focus:outline-none px-2",
-                fontSize,
+                "w-full h-full bg-transparent resize-none focus:outline-none px-2 font-body",
                 color,
                 isUnderlined && 'underline'
             )}
+            style={{ fontSize: `${fontSize}px` }}
             placeholder="Écrivez ici..."
           />
           
