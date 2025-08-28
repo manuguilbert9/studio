@@ -2,8 +2,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Autorise la lecture et l'écriture pour toutes les collections,
-    // ce qui est nécessaire pour sauvegarder l'état du tableau.
+    // This rule allows anyone to read and write to the database.
+    // This is insecure and should be updated before production.
     match /{document=**} {
       allow read, write: if true;
     }
