@@ -1,26 +1,46 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ResizableBox } from 'react-resizable';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RefreshCw, GripVertical, X } from 'lucide-react';
 import 'react-resizable/css/styles.css';
+import type { TimerWidgetState, Position, Size } from '@/services/tableau';
+
 
 interface TimerWidgetProps {
+    initialState: TimerWidgetState;
+    onUpdate: (state: TimerWidgetState) => void;
     onClose: () => void;
 }
 
-export function TimerWidget({ onClose }: TimerWidgetProps) {
-  const [time, setTime] = useState(0); // Time in seconds
+export function TimerWidget({ initialState, onUpdate, onClose }: TimerWidgetProps) {
+  const [time, setTime] = useState(0); // Time is transient, not saved
   const [isRunning, setIsRunning] = useState(false);
-  const [position, setPosition] = useState({ x: window.innerWidth / 2 - 200, y: 150 });
-  const [size, setSize] = useState({ width: 400, height: 120 });
+  const [pos, setPos] = useState<Position>(initialState.pos);
+  const [size, setSize] = useState<Size>(initialState.size);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const triggerUpdate = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+        onUpdate({
+            id: initialState.id,
+            pos,
+            size,
+        });
+    }, 500); // Debounce updates
+  }, [pos, size, onUpdate, initialState.id]);
+
+  useEffect(() => {
+    triggerUpdate();
+  }, [pos, size, triggerUpdate]);
 
   useEffect(() => {
     if (isRunning) {
@@ -39,39 +59,43 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
     if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button')) {
         return;
     }
-    if (cardRef.current) {
-      isDragging.current = true;
-      offset.current = {
-        x: e.clientX - cardRef.current.getBoundingClientRect().left,
-        y: e.clientY - cardRef.current.getBoundingClientRect().top,
-      };
-      cardRef.current.style.cursor = 'grabbing';
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
+    isDragging.current = true;
+    offset.current = {
+      x: e.clientX - pos.x,
+      y: e.clientY - pos.y,
+    };
+    document.documentElement.style.cursor = 'grabbing';
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging.current && cardRef.current) {
-      setPosition({
-        x: e.clientX - offset.current.x,
-        y: e.clientY - offset.current.y,
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    isDragging.current = false;
-    if (cardRef.current) {
-      cardRef.current.style.cursor = 'grab';
-    }
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
-  };
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+        if (isDragging.current) {
+            setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y });
+        }
+    };
+    const handleMouseUp = () => {
+        if (isDragging.current) {
+            isDragging.current = false;
+            document.documentElement.style.cursor = 'default';
+            triggerUpdate();
+        }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [triggerUpdate]);
   
   const resetTimer = () => {
     setIsRunning(false);
     setTime(0);
+  }
+  
+  const handleResizeStop = (e: any, data: any) => {
+    setSize({ width: data.size.width, height: data.size.height });
+    triggerUpdate();
   }
 
   const fontSize = Math.max(24, Math.min(size.width / 7, size.height * 0.6));
@@ -79,21 +103,21 @@ export function TimerWidget({ onClose }: TimerWidgetProps) {
 
   return (
     <div
-      ref={cardRef}
+      ref={widgetRef}
       className="absolute z-30 group"
-      style={{ left: `${position.x}px`, top: `${position.y}px` }}
+      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+      onMouseDown={handleMouseDown}
     >
         <ResizableBox
             width={size.width}
             height={size.height}
-            onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
+            onResizeStop={handleResizeStop}
             minConstraints={[250, 80]}
             maxConstraints={[800, 300]}
             handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
         >
             <Card
                 className="w-full h-full p-4 shadow-none group-hover:shadow-2xl bg-white/90 backdrop-blur-sm rounded-lg flex items-center gap-4 border border-transparent group-hover:border-border transition-all"
-                onMouseDown={handleMouseDown}
             >
                 <div
                     className="p-1 cursor-grab self-stretch flex items-center"

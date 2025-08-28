@@ -1,31 +1,51 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { ResizableBox } from 'react-resizable';
 import { Card } from '@/components/ui/card';
 import { GripVertical, X } from 'lucide-react';
-import { fr } from 'date-fns/locale';
 import 'react-resizable/css/styles.css';
+import type { DateWidgetState, Position, Size } from '@/services/tableau';
+
 
 interface DateWidgetProps {
+  initialState: DateWidgetState;
+  onUpdate: (state: DateWidgetState) => void;
   onClose: () => void;
 }
 
-export function DateWidget({ onClose }: DateWidgetProps) {
+export function DateWidget({ initialState, onUpdate, onClose }: DateWidgetProps) {
   const [date, setDate] = useState(new Date());
-  const [dateFormat, setDateFormat] = useState<'long' | 'short'>('long');
-  const [position, setPosition] = useState({ x: window.innerWidth / 2 - 200, y: 100 });
-  const [size, setSize] = useState({ width: 450, height: 70 });
-  const cardRef = useRef<HTMLDivElement>(null);
+  const [dateFormat, setDateFormat] = useState<'long' | 'short'>(initialState.dateFormat);
+  const [pos, setPos] = useState<Position>(initialState.pos);
+  const [size, setSize] = useState<Size>(initialState.size);
+  
+  const widgetRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerUpdate = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+        onUpdate({
+            id: initialState.id,
+            pos,
+            size,
+            dateFormat,
+        });
+    }, 500); // Debounce updates
+  }, [pos, size, dateFormat, onUpdate, initialState.id]);
+
+  useEffect(() => {
+    triggerUpdate();
+  }, [pos, size, dateFormat, triggerUpdate]);
 
   useEffect(() => {
     const timer = setInterval(() => setDate(new Date()), 60000); // Update every minute
     return () => clearInterval(timer);
   }, []);
   
-  // Dynamically calculate font size based on widget width
   const fontSize = Math.max(12, Math.min(size.width / 15, size.height * 0.5));
 
   const formattedDate = dateFormat === 'short'
@@ -33,50 +53,54 @@ export function DateWidget({ onClose }: DateWidgetProps) {
     : new Intl.DateTimeFormat('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Prevent dragging when clicking on the resize handle
-    if ((e.target as HTMLElement).classList.contains('react-resizable-handle')) {
+    if ((e.target as HTMLElement).closest('.react-resizable-handle')) {
         return;
     }
-    if (cardRef.current) {
-      isDragging.current = true;
-      offset.current = {
-        x: e.clientX - cardRef.current.getBoundingClientRect().left,
-        y: e.clientY - cardRef.current.getBoundingClientRect().top,
-      };
-      cardRef.current.style.cursor = 'grabbing';
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-    }
+    isDragging.current = true;
+    offset.current = {
+      x: e.clientX - pos.x,
+      y: e.clientY - pos.y,
+    };
+    document.documentElement.style.cursor = 'grabbing';
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging.current && cardRef.current) {
-      setPosition({
-        x: e.clientX - offset.current.x,
-        y: e.clientY - offset.current.y,
-      });
-    }
-  };
-
-  const handleMouseUp = () => {
-    isDragging.current = false;
-    if (cardRef.current) {
-      cardRef.current.style.cursor = 'grab';
-    }
-    window.removeEventListener('mousemove', handleMouseMove);
-    window.removeEventListener('mouseup', handleMouseUp);
-  };
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+        if (isDragging.current) {
+          setPos({ x: e.clientX - offset.current.x, y: e.clientY - offset.current.y });
+        }
+    };
+    const handleMouseUp = () => {
+        if (isDragging.current) {
+            isDragging.current = false;
+            document.documentElement.style.cursor = 'default';
+            triggerUpdate();
+        }
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [triggerUpdate]);
+  
+  const handleResizeStop = (e: any, data: any) => {
+    setSize({ width: data.size.width, height: data.size.height });
+    triggerUpdate();
+  }
 
   return (
     <div
-      ref={cardRef}
+      ref={widgetRef}
       className="absolute z-30 group"
-      style={{ left: `${position.x}px`, top: `${position.y}px` }}
+      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+      onMouseDown={handleMouseDown}
     >
       <ResizableBox
         width={size.width}
         height={size.height}
-        onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
+        onResizeStop={handleResizeStop}
         minConstraints={[200, 50]}
         maxConstraints={[800, 200]}
         handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
@@ -87,7 +111,6 @@ export function DateWidget({ onClose }: DateWidgetProps) {
         >
           <div
             className="p-1 cursor-grab self-stretch flex items-center"
-            onMouseDown={handleMouseDown}
           >
             <GripVertical className="h-6 w-6 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>

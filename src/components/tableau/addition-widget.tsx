@@ -1,20 +1,22 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { ResizableBox } from 'react-resizable';
 import { Card } from '@/components/ui/card';
 import { GripVertical, X, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
 import { Button } from '@/components/ui/button';
+import type { AdditionWidgetState, Position, Size } from '@/services/tableau';
 import 'react-resizable/css/styles.css';
 
+
 interface AdditionWidgetProps {
+  initialState: AdditionWidgetState;
+  onUpdate: (state: AdditionWidgetState) => void;
   onClose: () => void;
 }
-
-const initialPosition = { x: 200, y: 100 };
 
 const colors = [
   'border-blue-500',  
@@ -26,22 +28,36 @@ const colors = [
 const getBorderColor = (colIndexFromRight: number) =>
   colors[colIndexFromRight] || 'border-slate-900';
 
-export function AdditionWidget({ onClose }: AdditionWidgetProps) {
-  const [pos, setPos] = useState(() => {
-    if (typeof window === 'undefined') return initialPosition;
-    return { x: window.innerWidth / 2 - 200, y: 100 };
-  });
-
-  const [size, setSize] = useState({ width: 450, height: 300 });
-  const [numOperands, setNumOperands] = useState(2);
-  const [numCols, setNumCols] = useState(3); 
+export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidgetProps) {
+  const [pos, setPos] = useState<Position>(initialState.pos);
+  const [size, setSize] = useState<Size>(initialState.size);
+  const [numOperands, setNumOperands] = useState(initialState.numOperands);
+  const [numCols, setNumCols] = useState(initialState.numCols); 
 
   const widgetRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const triggerUpdate = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+        onUpdate({
+            id: initialState.id,
+            pos,
+            size,
+            numOperands,
+            numCols
+        });
+    }, 500); // Debounce updates
+  }, [pos, size, numOperands, numCols, onUpdate, initialState.id]);
+
+  useEffect(() => {
+    triggerUpdate();
+  }, [pos, size, numOperands, numCols, triggerUpdate]);
 
   const onHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.react-resizable-handle')) {
+    if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
         return;
     }
     isDragging.current = true;
@@ -58,6 +74,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
       if (!isDragging.current) return;
       isDragging.current = false;
       document.documentElement.style.cursor = 'default';
+      triggerUpdate(); // Final update on drag end
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -65,7 +82,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
     };
-  }, []);
+  }, [triggerUpdate]);
 
   const addOperand = () => setNumOperands(c => Math.min(c + 1, 3));
   const expandCols = () => setNumCols(c => Math.min(c + 1, 4));
@@ -80,6 +97,11 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
   const fontSize = cellSize * 0.6;
   const carrySize = cellSize * 0.8;
   const carryFontSize = carrySize * 0.5;
+  
+  const handleResizeStop = (e: any, data: any) => {
+    setSize({ width: data.size.width, height: data.size.height });
+    triggerUpdate();
+  }
 
   return (
     <div
@@ -91,7 +113,7 @@ export function AdditionWidget({ onClose }: AdditionWidgetProps) {
     <ResizableBox
         width={size.width}
         height={size.height}
-        onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
+        onResizeStop={handleResizeStop}
         minConstraints={[300, 200]}
         maxConstraints={[800, 600]}
         handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
