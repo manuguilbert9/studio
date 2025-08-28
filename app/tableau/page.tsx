@@ -65,15 +65,34 @@ export default function TableauPage() {
 
     const fetchState = async () => {
         setIsLoading(true);
-        const loadedState = await loadTableauState(username);
-        if (loadedState) {
-            setActiveSkill(getSkillBySlug(loadedState.activeSkillSlug || ''));
-            setTextWidgets(loadedState.textWidgets || []);
-            setDateWidgets(loadedState.dateWidgets || []);
-            setTimerWidgets(loadedState.timerWidgets || []);
-            setAdditionWidgets(loadedState.additionWidgets || []);
+        try {
+            const loadedState = await loadTableauState(username);
+            if (loadedState) {
+                setActiveSkill(getSkillBySlug(loadedState.activeSkillSlug || ''));
+                setTextWidgets(loadedState.textWidgets || []);
+                setDateWidgets(loadedState.dateWidgets || []);
+                setTimerWidgets(loadedState.timerWidgets || []);
+                setAdditionWidgets(loadedState.additionWidgets || []);
+            } else {
+                // If no state is loaded, initialize with default (empty) state.
+                // This is crucial for the first save to work.
+                setActiveSkill(null);
+                setTextWidgets(defaultTableauState.textWidgets);
+                setDateWidgets(defaultTableauState.dateWidgets);
+                setTimerWidgets(defaultTableauState.timerWidgets);
+                setAdditionWidgets(defaultTableauState.additionWidgets);
+            }
+        } catch (error) {
+            console.error("Error loading state, initializing with default:", error);
+            // In case of error, also initialize with default state
+             setActiveSkill(null);
+             setTextWidgets(defaultTableauState.textWidgets);
+             setDateWidgets(defaultTableauState.dateWidgets);
+             setTimerWidgets(defaultTableauState.timerWidgets);
+             setAdditionWidgets(defaultTableauState.additionWidgets);
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
     fetchState();
   }, [username]);
