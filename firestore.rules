@@ -2,15 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow anyone to read and write to the "scores" collection
-    match /scores/{scoreId} {
-      allow read, write: if true;
-    }
-
-    // For any other collection, deny all access.
-    // This is a good security practice to avoid unintended data access.
+    // Autorise la lecture et l'écriture pour toutes les collections,
+    // ce qui est nécessaire pour sauvegarder l'état du tableau.
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if true;
     }
   }
 }
