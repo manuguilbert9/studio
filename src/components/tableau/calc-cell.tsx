@@ -5,9 +5,11 @@ import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
   borderColor: string;
+  size: number;
+  fontSize: number;
 }
 
-export function CalcCell({ borderColor }: CalcCellProps) {
+export function CalcCell({ borderColor, size, fontSize }: CalcCellProps) {
   const [value, setValue] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -25,9 +27,14 @@ export function CalcCell({ borderColor }: CalcCellProps) {
       value={value}
       onChange={handleChange}
       className={cn(
-        'w-12 h-12 border-2 text-center text-3xl font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100',
+        'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100',
         borderColor
       )}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+        fontSize: `${fontSize}px`,
+      }}
     />
   );
 }
