@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from 'react';
 import { ResizableBox } from 'react-resizable';
 import { Card } from '@/components/ui/card';
 import { GripVertical, X } from 'lucide-react';
+import { TextToolbar } from './text-toolbar';
+import { cn } from '@/lib/utils';
 import 'react-resizable/css/styles.css';
 
 interface TextWidgetProps {
@@ -18,13 +20,18 @@ export function TextWidget({ onClose }: TextWidgetProps) {
   });
   const [size, setSize] = useState({ width: 300, height: 200 });
   const [text, setText] = useState('');
+  
+  const [fontSize, setFontSize] = useState('text-base');
+  const [color, setColor] = useState('text-slate-900');
+  const [isUnderlined, setIsUnderlined] = useState(false);
+
 
   const widgetRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const offset = useRef({ x: 0, y: 0 });
 
   const onHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('textarea')) {
+    if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('textarea') || (e.target as HTMLElement).closest('button')) {
         return;
     }
     isDragging.current = true;
@@ -50,7 +57,6 @@ export function TextWidget({ onClose }: TextWidgetProps) {
     };
   }, []);
 
-  const fontSize = Math.max(12, Math.min(size.width / 15, size.height / 8));
 
   return (
     <div
@@ -63,23 +69,32 @@ export function TextWidget({ onClose }: TextWidgetProps) {
         width={size.width}
         height={size.height}
         onResizeStop={(e, data) => setSize({ width: data.size.width, height: data.size.height })}
-        minConstraints={[150, 100]}
+        minConstraints={[200, 120]}
         maxConstraints={[1000, 800]}
         handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
       >
-        <Card className="w-full h-full p-4 shadow-none group-hover:shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none border border-transparent group-hover:border-border transition-all">
+        <Card className="w-full h-full p-2 shadow-none group-hover:shadow-2xl bg-white/95 backdrop-blur-sm rounded-lg flex flex-col items-start gap-2 select-none border border-transparent group-hover:border-border transition-all">
           <div
-            className="flex items-center h-full cursor-grab pr-1 self-stretch opacity-0 group-hover:opacity-100 transition-opacity"
+            className="flex items-center w-full cursor-grab opacity-0 group-hover:opacity-100 transition-opacity"
             aria-label="Déplacer le widget"
           >
             <GripVertical className="h-6 w-6 text-slate-400" />
+            <TextToolbar
+                setFontSize={setFontSize}
+                setColor={setColor}
+                toggleUnderline={() => setIsUnderlined(p => !p)}
+            />
           </div>
 
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full h-full bg-transparent resize-none focus:outline-none"
-            style={{ fontSize: `${fontSize}px` }}
+            className={cn(
+                "w-full h-full bg-transparent resize-none focus:outline-none px-2",
+                fontSize,
+                color,
+                isUnderlined && 'underline'
+            )}
             placeholder="Écrivez ici..."
           />
           
