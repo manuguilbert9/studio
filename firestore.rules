@@ -2,7 +2,13 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
+    // This rule allows anyone to read and write to any document in your database.
+    // It's useful for getting started, but make sure to secure your data
+    // before deploying to production.
+    match /scores/{docId} {
+      allow read, write: if true;
+    }
+    match /tableauStates/{userId} {
       allow read, write: if true;
     }
   }
