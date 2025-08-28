@@ -1,3 +1,4 @@
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -52,16 +53,6 @@ export interface TableauState {
     additionWidgets: AdditionWidgetState[];
     updatedAt: Timestamp | null;
 }
-
-// Firestore strips undefined values, so we should provide a default state
-export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
-    activeSkillSlug: null,
-    textWidgets: [],
-    dateWidgets: [],
-    timerWidgets: [],
-    additionWidgets: [],
-};
-
 
 export async function saveTableauState(userId: string, state: Omit<TableauState, 'updatedAt'>): Promise<{ success: boolean; error?: string }> {
     if (!userId) {

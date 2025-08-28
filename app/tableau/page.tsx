@@ -15,11 +15,20 @@ import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { TextWidget } from '@/components/tableau/text-widget';
 import { AdditionIcon } from '@/components/icons/addition-icon';
 import { cn } from '@/lib/utils';
-import { saveTableauState, loadTableauState, type TableauState, defaultTableauState } from '@/services/tableau';
+import { saveTableauState, loadTableauState, type TableauState } from '@/services/tableau';
 import type { TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState } from '@/services/tableau';
 
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
+
+// This was moved from services/tableau.ts to fix the 'use server' export error.
+export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
+    activeSkillSlug: null,
+    textWidgets: [],
+    dateWidgets: [],
+    timerWidgets: [],
+    additionWidgets: [],
+};
 
 export default function TableauPage() {
   const [username, setUsername] = useState<string | null>(null);
@@ -243,7 +252,7 @@ export default function TableauPage() {
             <TimerWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setTimerWidgets)} onClose={() => removeWidget(setTimerWidgets, widgetState.id)} />
         ))}
         {dateWidgets.map(widgetState => (
-            <DateWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setDateWidgets)} onClose={() => removeWidget(setDateWidgets, widgetState.id)} />
+            <DateWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setDateWidgets)} onClose={() => removeWidget(dateWidgets, widgetState.id)} />
         ))}
        
     </div>
