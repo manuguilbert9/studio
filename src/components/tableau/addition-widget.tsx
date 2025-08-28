@@ -119,13 +119,13 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
         handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
     >
     <Card
-      className="w-full h-full p-4 shadow-lg bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none border group-hover:border-slate-400 transition-all"
+      className="w-full h-full p-4 bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none border border-transparent group-hover:shadow-lg group-hover:border-slate-300 transition-all"
     >
       <div
-        className="flex items-center h-full cursor-grab pt-16 pr-1 self-stretch"
+        className="flex items-center h-full cursor-grab pt-16 pr-1 self-stretch opacity-0 group-hover:opacity-100 transition-opacity"
         aria-label="Déplacer le widget"
       >
-        <GripVertical className="h-6 w-6 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <GripVertical className="h-6 w-6 text-slate-400" />
       </div>
 
       <div className="flex flex-col items-center flex-grow h-full justify-center">

@@ -106,13 +106,13 @@ export function DateWidget({ initialState, onUpdate, onClose }: DateWidgetProps)
         handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
       >
         <Card
-          className="w-full h-full p-4 shadow-lg bg-white/90 backdrop-blur-sm rounded-lg flex items-center gap-2 border group-hover:border-slate-400 transition-all"
+          className="w-full h-full p-4 bg-white/90 backdrop-blur-sm rounded-lg flex items-center gap-2 border border-transparent group-hover:shadow-lg group-hover:border-slate-300 transition-all"
           onDoubleClick={() => setDateFormat(f => f === 'short' ? 'long' : 'short')}
         >
           <div
-            className="p-1 cursor-grab self-stretch flex items-center"
+            className="p-1 cursor-grab self-stretch flex items-center opacity-0 group-hover:opacity-100 transition-opacity"
           >
-            <GripVertical className="h-6 w-6 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <GripVertical className="h-6 w-6 text-slate-400" />
           </div>
           <div className="flex-grow flex items-center justify-center h-full">
             <p
