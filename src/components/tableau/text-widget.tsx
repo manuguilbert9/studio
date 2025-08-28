@@ -7,7 +7,7 @@ import { GripVertical, X } from 'lucide-react';
 import { TextToolbar } from './text-toolbar';
 import { cn } from '@/lib/utils';
 import 'react-resizable/css/styles.css';
-import type { TextWidgetState, Position, Size } from '@/services/tableau';
+import type { TextWidgetState, Position, Size } from '@/services/tableau.types';
 
 
 interface TextWidgetProps {

@@ -5,7 +5,7 @@ import { ResizableBox } from 'react-resizable';
 import { Card } from '@/components/ui/card';
 import { GripVertical, X } from 'lucide-react';
 import 'react-resizable/css/styles.css';
-import type { DateWidgetState, Position, Size } from '@/services/tableau';
+import type { DateWidgetState, Position, Size } from '@/services/tableau.types';
 
 
 interface DateWidgetProps {

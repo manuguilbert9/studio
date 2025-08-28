@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
-import { skills, getSkillBySlug, Skill, difficultyLevelToString } from '@/lib/skills';
+import { skills, difficultyLevelToString } from '@/lib/skills';
+import type { Skill } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -14,11 +13,15 @@ import { fr } from 'date-fns/locale';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
 import { Badge } from '@/components/ui/badge';
 
+// Note: This data would typically come from a database.
+// For this example, we'll simulate fetching it.
+const MOCK_SCORES_DB = 'MOCK_SCORES_DB';
+
 interface Score {
   userId: string;
   skill: string;
   score: number;
-  createdAt: Timestamp;
+  createdAt: string; // Using ISO string for simplicity
   calculationSettings?: CalculationSettings;
   currencySettings?: CurrencySettings;
   timeSettings?: TimeSettings;
@@ -29,6 +32,18 @@ interface SkillScores {
   scores: Score[];
   latestScore: Score | null;
 }
+
+// Helper to get all scores from localStorage
+const getAllScores = (): Score[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        const scores = localStorage.getItem(MOCK_SCORES_DB);
+        return scores ? JSON.parse(scores) : [];
+    } catch (error) {
+        console.error("Failed to parse scores from localStorage", error);
+        return [];
+    }
+};
 
 export default function ResultsPage() {
   const [username, setUsername] = useState<string | null>(null);
@@ -45,20 +60,21 @@ export default function ResultsPage() {
   }, []);
 
   useEffect(() => {
-    if (!username) return;
+    if (!username) {
+        if (!isLoading) setIsLoading(false);
+        return;
+    };
 
-    const fetchScores = async () => {
+    const fetchScores = () => {
       setIsLoading(true);
       try {
-        const scoresRef = collection(db, 'scores');
-        const q = query(scoresRef, where('userId', '==', username));
-        const querySnapshot = await getDocs(q);
-        const allScores = querySnapshot.docs.map(doc => doc.data() as Score);
+        const allScores = getAllScores();
+        const userScores = allScores.filter(score => score.userId === username);
 
         const scoresBySkill = skills.map(skill => {
-          const relatedScores = allScores
+          const relatedScores = userScores
             .filter(score => score.skill === skill.slug)
-            .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           
           return {
             skill,
@@ -76,7 +92,7 @@ export default function ResultsPage() {
     };
 
     fetchScores();
-  }, [username]);
+  }, [username, isLoading]);
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-8">
@@ -120,7 +136,7 @@ export default function ResultsPage() {
                     {latestScore && (
                         <>
                             <p className="text-sm text-muted-foreground mb-4">
-                                Dernier exercice le {format(latestScore.createdAt.toDate(), 'd MMMM yyyy', { locale: fr })}
+                                Dernier exercice le {format(new Date(latestScore.createdAt), 'd MMMM yyyy', { locale: fr })}
                             </p>
                             <ScoreTube score={latestScore.score} />
                              <p className="text-lg mt-2">

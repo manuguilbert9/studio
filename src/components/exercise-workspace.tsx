@@ -9,8 +9,6 @@ import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, currency as currencyData, formatCurrency } from '@/lib/questions';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryChart } from './score-history-chart';
 import { Skeleton } from './ui/skeleton';
@@ -20,6 +18,8 @@ import { CurrencySettings } from './currency-settings';
 import { TimeSettings } from './time-settings';
 import { PriceTag } from './price-tag';
 import { InteractiveClock } from './interactive-clock';
+
+const MOCK_SCORES_DB = 'MOCK_SCORES_DB';
 
 
 const motivationalMessages = [
@@ -38,13 +38,47 @@ export interface Score {
   userId: string;
   skill: string;
   score: number;
-  createdAt: Timestamp;
+  createdAt: string; // Using ISO string for localStorage compatibility
   calculationSettings?: CalcSettings;
   currencySettings?: CurrSettings;
   timeSettings?: TimeSettingsType;
 }
 
-export function ExerciseWorkspace({ skill }: { skill: Skill }) {
+// Helper to get all scores from localStorage
+const getAllScores = (): Score[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        const scores = localStorage.getItem(MOCK_SCORES_DB);
+        return scores ? JSON.parse(scores) : [];
+    } catch (error) {
+        console.error("Failed to parse scores from localStorage", error);
+        return [];
+    }
+};
+
+// Helper to add a new score to localStorage
+const addScore = (newScore: Omit<Score, 'createdAt'>) => {
+    if (typeof window === 'undefined') return;
+    try {
+        const allScores = getAllScores();
+        const scoreWithTimestamp: Score = {
+            ...newScore,
+            createdAt: new Date().toISOString(),
+        };
+        allScores.push(scoreWithTimestamp);
+        localStorage.setItem(MOCK_SCORES_DB, JSON.stringify(allScores));
+    } catch (error) {
+        console.error("Failed to save score to localStorage", error);
+    }
+};
+
+
+interface ExerciseWorkspaceProps {
+  skill: Skill;
+  isTableauMode?: boolean;
+}
+
+export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWorkspaceProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
@@ -116,7 +150,11 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
-      setIsFinished(true);
+      if (isTableauMode) {
+        restartExercise();
+      } else {
+        setIsFinished(true);
+      }
     }
   };
   
@@ -202,60 +240,49 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
   };
   
   useEffect(() => {
-    const saveScoreAndFetchHistory = async () => {
-      if (isFinished && username && !isSaving) {
+    const saveScoreAndFetchHistory = () => {
+      if (isFinished && username && !isSaving && !isTableauMode) {
         setIsSaving(true);
         setIsLoadingHistory(true);
         
-        const newScore = (correctAnswers / NUM_QUESTIONS) * 100;
+        const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         
-        const scoreData: any = {
+        const scoreData: Omit<Score, 'createdAt'> = {
             userId: username,
             skill: skill.slug,
-            score: newScore,
-            createdAt: serverTimestamp()
+            score: newScoreValue,
         };
 
         if (skill.slug === 'calculation' && calculationSettings) {
             scoreData.calculationSettings = calculationSettings;
         }
-
         if (skill.slug === 'currency' && currencySettings) {
             scoreData.currencySettings = currencySettings;
         }
-
         if (skill.slug === 'time' && timeSettings) {
             scoreData.timeSettings = timeSettings;
         }
 
-        try {
-          await addDoc(collection(db, "scores"), scoreData);
-        } catch (e) {
-          console.error("Error adding document: ", e);
-        }
+        addScore(scoreData);
         
         try {
-          const scoresRef = collection(db, "scores");
-          const q = query(
-            scoresRef,
-            where("userId", "==", username),
-            where("skill", "==", skill.slug)
-          );
-          const querySnapshot = await getDocs(q);
-          const history = querySnapshot.docs
-            .map(doc => doc.data() as Score)
-            .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-          setScoreHistory(history);
+          const allScores = getAllScores();
+          const userSkillHistory = allScores
+            .filter(s => s.userId === username && s.skill === skill.slug)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            
+          setScoreHistory(userSkillHistory);
         } catch (e) {
           console.error("Error fetching scores: ", e);
         } finally {
             setIsLoadingHistory(false);
+            setIsSaving(false); // Allow saving again
         }
       }
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, username, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings, timeSettings]);
+  }, [isFinished, username, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -296,7 +323,7 @@ export function ExerciseWorkspace({ skill }: { skill: Skill }) {
         );
   }
 
-  if (isFinished) {
+  if (isFinished && !isTableauMode) {
     const score = (correctAnswers / NUM_QUESTIONS) * 100;
     return (
       <Card className="w-full shadow-2xl text-center p-4 sm:p-8">
@@ -521,9 +548,12 @@ const renderSetTime = () => (
 
 
   return (
-    <>
-      <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
-      <Card className="w-full shadow-2xl relative overflow-hidden">
+    <div className={cn(!isTableauMode && "w-full")}>
+      {!isTableauMode && <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />}
+      <Card className={cn(
+        "w-full relative overflow-hidden",
+        isTableauMode ? "shadow-none border-0 bg-transparent" : "shadow-2xl"
+      )}>
         {showConfetti && (
            <div className="absolute inset-0 pointer-events-none z-10">
             {[...Array(30)].map((_, i) => {
@@ -539,7 +569,10 @@ const renderSetTime = () => (
         )}
 
         <CardHeader>
-          <CardTitle className="text-3xl text-center font-body">{exerciseData.question}</CardTitle>
+          <CardTitle className={cn(
+            "text-center font-body",
+            isTableauMode ? "text-5xl" : "text-3xl"
+            )}>{exerciseData.question}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
@@ -570,6 +603,6 @@ const renderSetTime = () => (
           }
         `}</style>
       </Card>
-    </>
+    </div>
   );
 }

@@ -1,69 +1,62 @@
-
 'use server';
 
-import { db } from '@/lib/firebase';
-import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import fs from 'fs/promises';
+import path from 'path';
+import type { TableauState } from './tableau.types';
 
-export interface Position {
-    x: number;
-    y: number;
+// Defines the path to our local JSON database file.
+const dataPath = path.join(process.cwd(), 'src/data');
+const stateFilePath = path.join(dataPath, 'tableau-states.json');
+
+// This type represents the structure of our entire JSON database file.
+// It's a dictionary mapping userIds (strings) to their TableauState.
+type StateDatabase = Record<string, TableauState>;
+
+// Ensures the data directory exists. If not, it creates it.
+async function ensureDirectoryExists() {
+    try {
+        await fs.access(dataPath);
+    } catch {
+        await fs.mkdir(dataPath, { recursive: true });
+    }
 }
 
-export interface Size {
-    width: number;
-    height: number;
+// Reads the entire state database from the JSON file.
+// If the file doesn't exist, it returns an empty object.
+async function readDatabase(): Promise<StateDatabase> {
+    try {
+        await ensureDirectoryExists();
+        const fileContent = await fs.readFile(stateFilePath, 'utf-8');
+        return JSON.parse(fileContent) as StateDatabase;
+    } catch (error) {
+        // If the file doesn't exist (ENOENT) or is empty, return a blank state.
+        if (error instanceof Error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+            return {};
+        }
+        console.error("Error reading state database, returning empty state:", error);
+        return {};
+    }
 }
 
-export interface TextWidgetState {
-    id: number;
-    pos: Position;
-    size: Size;
-    text: string;
-    fontSize: number;
-    color: string;
-    isUnderlined: boolean;
+// Writes the entire state database to the JSON file.
+async function writeDatabase(data: StateDatabase): Promise<void> {
+    await ensureDirectoryExists();
+    await fs.writeFile(stateFilePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 
-export interface DateWidgetState {
-    id: number;
-    pos: Position;
-    size: Size;
-    dateFormat: 'long' | 'short';
-}
 
-export interface TimerWidgetState {
-    id: number;
-    pos: Position;
-    size: Size;
-}
-
-export interface AdditionWidgetState {
-    id: number;
-    pos: Position;
-    size: Size;
-    numOperands: number;
-    numCols: number;
-}
-
-export interface TableauState {
-    activeSkillSlug: string | null;
-    textWidgets: TextWidgetState[];
-    dateWidgets: DateWidgetState[];
-    timerWidgets: TimerWidgetState[];
-    additionWidgets: AdditionWidgetState[];
-    updatedAt: Timestamp | null;
-}
-
+// Saves the state for a specific user.
 export async function saveTableauState(userId: string, state: Omit<TableauState, 'updatedAt'>): Promise<{ success: boolean; error?: string }> {
     if (!userId) {
         return { success: false, error: 'User ID is required.' };
     }
     try {
-        const stateToSave = {
+        const db = await readDatabase();
+        db[userId] = {
             ...state,
-            updatedAt: serverTimestamp(),
+            updatedAt: new Date().toISOString(), // Use ISO string for JSON compatibility
         };
-        await setDoc(doc(db, 'tableauStates', userId), stateToSave);
+        await writeDatabase(db);
         return { success: true };
     } catch (error) {
         console.error("Error saving tableau state:", error);
@@ -74,20 +67,19 @@ export async function saveTableauState(userId: string, state: Omit<TableauState,
     }
 }
 
-
+// Loads the state for a specific user.
 export async function loadTableauState(userId: string): Promise<TableauState | null> {
     if (!userId) {
         return null;
     }
     try {
-        const docRef = doc(db, 'tableauStates', userId);
-        const docSnap = await getDoc(docRef);
+        const db = await readDatabase();
+        const userState = db[userId];
 
-        if (docSnap.exists()) {
-            // We return the data which includes the server-side timestamp
-            return docSnap.data() as TableauState;
+        if (userState) {
+            return userState;
         } else {
-            console.log("No such document for user:", userId);
+            console.log("No saved state found for user:", userId);
             return null;
         }
     } catch (error) {

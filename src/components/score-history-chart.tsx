@@ -23,7 +23,7 @@ interface ScoreHistoryChartProps {
 export function ScoreHistoryChart({ scoreHistory }: ScoreHistoryChartProps) {
   // We only show the last 5 scores for clarity
   const chartData = scoreHistory.slice(0, 5).reverse().map(item => ({
-    date: item.createdAt ? format(item.createdAt.toDate(), 'd MMM', { locale: fr }) : 'N/A',
+    date: item.createdAt ? format(new Date(item.createdAt), 'd MMM', { locale: fr }) : 'N/A',
     score: item.score,
     difficulty: difficultyLevelToString(item.skill, item.calculationSettings, item.currencySettings, item.timeSettings)
   }));

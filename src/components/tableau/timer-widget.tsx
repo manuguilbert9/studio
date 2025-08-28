@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, RefreshCw, GripVertical, X } from 'lucide-react';
 import 'react-resizable/css/styles.css';
-import type { TimerWidgetState, Position, Size } from '@/services/tableau';
+import type { TimerWidgetState, Position, Size } from '@/services/tableau.types';
 
 
 interface TimerWidgetProps {

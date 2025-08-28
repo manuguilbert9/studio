@@ -15,13 +15,12 @@ import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { TextWidget } from '@/components/tableau/text-widget';
 import { AdditionIcon } from '@/components/icons/addition-icon';
 import { cn } from '@/lib/utils';
-import { saveTableauState, loadTableauState, type TableauState } from '@/services/tableau';
-import type { TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState } from '@/services/tableau';
+import { saveTableauState, loadTableauState } from '@/services/tableau';
+import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState } from '@/services/tableau.types';
 
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
-// This was moved from services/tableau.ts to fix the 'use server' export error.
 export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
     activeSkillSlug: null,
     textWidgets: [],
@@ -51,6 +50,7 @@ export default function TableauPage() {
     if (storedName) {
       setUsername(storedName);
     } else {
+      // If no user, stop loading and potentially show a message.
       setIsLoading(false);
     }
 
@@ -59,7 +59,7 @@ export default function TableauPage() {
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Load state from DB
+  // Load state from file
   useEffect(() => {
     if (!username) return;
 
@@ -75,7 +75,7 @@ export default function TableauPage() {
                 setAdditionWidgets(loadedState.additionWidgets || []);
             } else {
                 // If no state is loaded, initialize with default (empty) state.
-                // This is crucial for the first save to work.
+                // This is crucial for the first save to work correctly.
                 setActiveSkill(null);
                 setTextWidgets(defaultTableauState.textWidgets);
                 setDateWidgets(defaultTableauState.dateWidgets);
@@ -84,7 +84,7 @@ export default function TableauPage() {
             }
         } catch (error) {
             console.error("Error loading state, initializing with default:", error);
-            // In case of error, also initialize with default state
+            // In case of error, also initialize with default state to ensure app stability.
              setActiveSkill(null);
              setTextWidgets(defaultTableauState.textWidgets);
              setDateWidgets(defaultTableauState.dateWidgets);
@@ -116,7 +116,7 @@ export default function TableauPage() {
         setTimeout(() => setSaveStatus('idle'), 2000);
     } else {
         setSaveStatus('error');
-        // console.error("Failed to save:", result.error);
+        console.error("Failed to save:", result.error);
         setTimeout(() => setSaveStatus('idle'), 3000);
     }
   }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets]);

@@ -8,7 +8,7 @@ import { GripVertical, X, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
 import { Button } from '@/components/ui/button';
-import type { AdditionWidgetState, Position, Size } from '@/services/tableau';
+import type { AdditionWidgetState, Position, Size } from '@/services/tableau.types';
 import 'react-resizable/css/styles.css';
 
 
