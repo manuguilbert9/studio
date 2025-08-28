@@ -1,3 +1,4 @@
+
 'use server';
 
 import fs from 'fs/promises';
@@ -77,7 +78,15 @@ export async function loadTableauState(userId: string): Promise<TableauState | n
         const userState = db[userId];
 
         if (userState) {
-            return userState;
+            // Ensure all widget arrays exist to prevent crashes with older state files
+            return {
+                ...userState,
+                textWidgets: userState.textWidgets || [],
+                dateWidgets: userState.dateWidgets || [],
+                timerWidgets: userState.timerWidgets || [],
+                additionWidgets: userState.additionWidgets || [],
+                imageWidgets: userState.imageWidgets || [],
+            };
         } else {
             console.log("No saved state found for user:", userId);
             return null;
@@ -87,3 +96,5 @@ export async function loadTableauState(userId: string): Promise<TableauState | n
         return null;
     }
 }
+
+    

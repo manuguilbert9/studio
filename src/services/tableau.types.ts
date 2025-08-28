@@ -40,12 +40,21 @@ export interface AdditionWidgetState {
     numCols: number;
 }
 
+export interface ImageWidgetState {
+    id: number;
+    pos: Position;
+    size: Size;
+    src: string; // Data URL
+}
+
 export interface TableauState {
     activeSkillSlug: string | null;
     textWidgets: TextWidgetState[];
     dateWidgets: DateWidgetState[];
     timerWidgets: TimerWidgetState[];
     additionWidgets: AdditionWidgetState[];
+    imageWidgets: ImageWidgetState[];
     updatedAt: string | null; // Changed to string for JSON compatibility
 }
 
+    

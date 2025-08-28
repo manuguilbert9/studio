@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle } from 'lucide-react';
+import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
@@ -13,10 +13,11 @@ import { TimerWidget } from '@/components/tableau/timer-widget';
 import { DateWidget } from '@/components/tableau/date-widget';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { TextWidget } from '@/components/tableau/text-widget';
+import { ImageWidget } from '@/components/tableau/image-widget';
 import { AdditionIcon } from '@/components/icons/addition-icon';
 import { cn } from '@/lib/utils';
 import { saveTableauState, loadTableauState } from '@/services/tableau';
-import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState } from '@/services/tableau.types';
+import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState } from '@/services/tableau.types';
 
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -27,6 +28,7 @@ export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
     dateWidgets: [],
     timerWidgets: [],
     additionWidgets: [],
+    imageWidgets: [],
 };
 
 export default function TableauPage() {
@@ -42,22 +44,66 @@ export default function TableauPage() {
   const [dateWidgets, setDateWidgets] = useState<DateWidgetState[]>([]);
   const [timerWidgets, setTimerWidgets] = useState<TimerWidgetState[]>([]);
   const [additionWidgets, setAdditionWidgets] = useState<AdditionWidgetState[]>([]);
+  const [imageWidgets, setImageWidgets] = useState<ImageWidgetState[]>([]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [lastMousePos, setLastMousePos] = useState({ x: 200, y: 150 });
   
   useEffect(() => {
     const storedName = localStorage.getItem('skillfiesta_username');
     if (storedName) {
       setUsername(storedName);
     } else {
-      // If no user, stop loading and potentially show a message.
       setIsLoading(false);
     }
 
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
+    const handleMouseMove = (e: MouseEvent) => setLastMousePos({ x: e.clientX, y: e.clientY });
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    window.addEventListener('mousemove', handleMouseMove);
+
+    return () => {
+        document.removeEventListener('fullscreenchange', handleFullscreenChange);
+        window.removeEventListener('mousemove', handleMouseMove);
+    }
   }, []);
+
+  const handlePaste = useCallback((event: ClipboardEvent) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+            const blob = items[i].getAsFile();
+            if (!blob) continue;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const src = e.target?.result as string;
+                if (src) {
+                    const newImageWidget: ImageWidgetState = {
+                        id: Date.now(),
+                        pos: { x: lastMousePos.x - 150, y: lastMousePos.y - 100 },
+                        size: { width: 300, height: 200 },
+                        src,
+                    };
+                    setImageWidgets(current => [...current, newImageWidget]);
+                }
+            };
+            reader.readAsDataURL(blob);
+            event.preventDefault(); // Prevent the default paste action
+            break; // Handle only the first image found
+        }
+    }
+  }, [lastMousePos]);
+
+  useEffect(() => {
+    window.addEventListener('paste', handlePaste);
+    return () => {
+        window.removeEventListener('paste', handlePaste);
+    };
+  }, [handlePaste]);
 
   // Load state from file
   useEffect(() => {
@@ -73,23 +119,23 @@ export default function TableauPage() {
                 setDateWidgets(loadedState.dateWidgets || []);
                 setTimerWidgets(loadedState.timerWidgets || []);
                 setAdditionWidgets(loadedState.additionWidgets || []);
+                setImageWidgets(loadedState.imageWidgets || []);
             } else {
-                // If no state is loaded, initialize with default (empty) state.
-                // This is crucial for the first save to work correctly.
                 setActiveSkill(null);
                 setTextWidgets(defaultTableauState.textWidgets);
                 setDateWidgets(defaultTableauState.dateWidgets);
                 setTimerWidgets(defaultTableauState.timerWidgets);
                 setAdditionWidgets(defaultTableauState.additionWidgets);
+                setImageWidgets(defaultTableauState.imageWidgets);
             }
         } catch (error) {
             console.error("Error loading state, initializing with default:", error);
-            // In case of error, also initialize with default state to ensure app stability.
              setActiveSkill(null);
              setTextWidgets(defaultTableauState.textWidgets);
              setDateWidgets(defaultTableauState.dateWidgets);
              setTimerWidgets(defaultTableauState.timerWidgets);
              setAdditionWidgets(defaultTableauState.additionWidgets);
+             setImageWidgets(defaultTableauState.imageWidgets);
         } finally {
             setIsLoading(false);
         }
@@ -107,6 +153,7 @@ export default function TableauPage() {
         dateWidgets,
         timerWidgets,
         additionWidgets,
+        imageWidgets,
     };
 
     const result = await saveTableauState(username, currentState);
@@ -119,7 +166,7 @@ export default function TableauPage() {
         console.error("Failed to save:", result.error);
         setTimeout(() => setSaveStatus('idle'), 3000);
     }
-  }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets]);
+  }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, imageWidgets]);
 
 
   // Widget handlers
@@ -134,19 +181,19 @@ export default function TableauPage() {
   };
 
   const handleAddTextWidget = () => {
-    addWidget(setTextWidgets, { id: Date.now(), pos: { x: 250, y: 150 }, size: { width: 300, height: 200 }, text: '', fontSize: 16, color: 'text-slate-900', isUnderlined: false });
+    addWidget(setTextWidgets, { id: Date.now(), pos: { x: lastMousePos.x, y: lastMousePos.y }, size: { width: 300, height: 200 }, text: '', fontSize: 16, color: 'text-slate-900', isUnderlined: false });
   };
 
   const handleAddDateWidget = () => {
-    addWidget(setDateWidgets, { id: Date.now(), pos: { x: 200, y: 100 }, size: { width: 450, height: 70 }, dateFormat: 'long' });
+    addWidget(setDateWidgets, { id: Date.now(), pos: { x: lastMousePos.x, y: lastMousePos.y }, size: { width: 450, height: 70 }, dateFormat: 'long' });
   };
   
   const handleAddTimerWidget = () => {
-    addWidget(setTimerWidgets, { id: Date.now(), pos: { x: 150, y: 150 }, size: { width: 400, height: 120 } });
+    addWidget(setTimerWidgets, { id: Date.now(), pos: { x: lastMousePos.x, y: lastMousePos.y }, size: { width: 400, height: 120 } });
   };
 
   const handleAddAdditionWidget = () => {
-    addWidget(setAdditionWidgets, { id: Date.now(), pos: { x: 200, y: 100 }, size: { width: 450, height: 300 }, numOperands: 2, numCols: 3 });
+    addWidget(setAdditionWidgets, { id: Date.now(), pos: { x: lastMousePos.x, y: lastMousePos.y }, size: { width: 450, height: 300 }, numOperands: 2, numCols: 3 });
   };
 
   const toggleFullscreen = () => {
@@ -220,6 +267,9 @@ export default function TableauPage() {
                         </Sheet>
 
                         <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" disabled>
+                                <ImageIcon className="h-4 w-4 mr-2" /> Coller une image (Ctrl+V)
+                            </Button>
                             <Button variant="outline" size="sm" onClick={handleAddTextWidget}>
                                 <Type className="h-4 w-4 mr-2" /> Texte
                             </Button>
@@ -261,6 +311,9 @@ export default function TableauPage() {
        </main>
 
         {/* WIDGETS */}
+        {imageWidgets.map(widgetState => (
+          <ImageWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setImageWidgets)} onClose={() => removeWidget(setImageWidgets, widgetState.id)} />
+        ))}
         {textWidgets.map(widgetState => (
           <TextWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setTextWidgets)} onClose={() => removeWidget(setTextWidgets, widgetState.id)} />
         ))}
@@ -277,3 +330,5 @@ export default function TableauPage() {
     </div>
   );
 }
+
+    
