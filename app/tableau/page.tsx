@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize } from 'lucide-react';
+import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
@@ -12,6 +12,7 @@ import { FluencyExercise } from '@/components/fluency-exercise';
 import { TimerWidget } from '@/components/tableau/timer-widget';
 import { DateWidget } from '@/components/tableau/date-widget';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
+import { TextWidget } from '@/components/tableau/text-widget';
 import { AdditionIcon } from '@/components/icons/addition-icon';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,10 @@ export default function TableauPage() {
   const [showDate, setShowDate] = useState(false);
   const [showAddition, setShowAddition] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  const [textWidgets, setTextWidgets] = useState<{ id: number }[]>([]);
+  let nextTextWidgetId = 0;
+
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -48,6 +53,15 @@ export default function TableauPage() {
     setActiveSkill(skill);
     setDrawerOpen(false);
   };
+
+  const handleAddTextWidget = () => {
+    setTextWidgets(currentWidgets => [...currentWidgets, { id: Date.now() }]);
+  };
+
+  const handleCloseTextWidget = (idToRemove: number) => {
+    setTextWidgets(currentWidgets => currentWidgets.filter(widget => widget.id !== idToRemove));
+  };
+
 
   const renderExercise = () => {
     if (!activeSkill) {
@@ -104,6 +118,9 @@ export default function TableauPage() {
                         </Sheet>
 
                         <div className="flex items-center gap-2">
+                             <Button variant="outline" size="sm" onClick={handleAddTextWidget}>
+                                <Type className="h-4 w-4 mr-2" /> Texte
+                            </Button>
                             <Button variant="outline" size="sm" onClick={() => setShowAddition(p => !p)}>
                                 <AdditionIcon className="h-4 w-4 mr-2" /> Gabarit Addition
                             </Button>
@@ -134,6 +151,9 @@ export default function TableauPage() {
        </main>
 
         {/* WIDGETS */}
+        {textWidgets.map(widget => (
+          <TextWidget key={widget.id} onClose={() => handleCloseTextWidget(widget.id)} />
+        ))}
         {showAddition && <AdditionWidget onClose={() => setShowAddition(false)} />}
         {showTimer && <TimerWidget onClose={() => setShowTimer(false)} />}
         {showDate && <DateWidget onClose={() => setShowDate(false)} />}
