@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
@@ -12,37 +11,31 @@ interface CalcCellProps {
   size: number;
   fontSize: number;
   allowCrossing?: boolean;
-  onFilled?: () => void;
   isMinuend?: boolean;
 }
 
-export function CalcCell({ id, value, onChange, borderColor, size, fontSize, allowCrossing = false, onFilled, isMinuend = false }: CalcCellProps) {
+export function CalcCell({ id, value, onChange, borderColor, size, fontSize, allowCrossing = false, isMinuend = false }: CalcCellProps) {
   const [isCrossed, setIsCrossed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const previousValue = value;
     const rawInput = e.target.value;
     const maxLength = isMinuend ? 2 : 1;
     
     // Allow only digits up to maxLength
     if (new RegExp(`^\\d{0,${maxLength}}$`).test(rawInput)) {
         const newValue = rawInput;
-        onChange(newValue);
+
+        // If the cell was empty and user types '1', it's just '1', not a borrow.
+        // The borrow '1' is only added if there's already a digit.
+        if (isMinuend && value.length === 1 && newValue.length === 2 && newValue.startsWith('1')) {
+           onChange(newValue);
+        } else {
+           onChange(newValue);
+        }
 
         if (isCrossed) {
             setIsCrossed(false);
-        }
-
-        // Auto-tab logic
-        if (onFilled) {
-            const isNormalCellFilled = !isMinuend && newValue.length === 1 && previousValue.length === 0;
-            const isMinuendFilledWithSingleDigit = isMinuend && newValue.length === 1 && previousValue.length === 0;
-            const isMinuendFilledWithTwoDigits = isMinuend && newValue.length === 2 && previousValue.length === 1;
-
-            if (isNormalCellFilled || isMinuendFilledWithSingleDigit || isMinuendFilledWithTwoDigits) {
-                onFilled();
-            }
         }
     }
   };

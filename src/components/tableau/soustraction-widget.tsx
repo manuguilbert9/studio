@@ -134,36 +134,6 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     return `sub-${initialState.id}-${type}-c${colFromRight}`;
   }
 
-  const focusNextCell = (currentStep: number) => {
-      let nextStep = currentStep + 1;
-
-      // Special conditional logic after step 5 (subtrahend units)
-      if (currentStep === 5) {
-        const minuendUnit = parseInt(grid[0][0] || '0', 10);
-        const subtrahendUnit = parseInt(grid[1][0] || '0', 10);
-
-        if (minuendUnit >= subtrahendUnit) {
-            document.getElementById(getCellId('result', 0))?.focus(); // Focus #6
-        } else {
-            document.getElementById(getCellId('carry', 1))?.focus(); // Focus #9
-        }
-        return; // Stop default flow
-      }
-
-      // Default focus flow based on step number
-      let idToFocus: string | null = null;
-      switch (nextStep) {
-          case 1: idToFocus = getCellId('minuend', numCols - 2); break; // Focus #1
-          case 2: idToFocus = getCellId('minuend', 0); break;          // Focus #2
-          case 3: idToFocus = getCellId('subtrahend', numCols - 1); break; // Focus #3
-          case 4: idToFocus = getCellId('subtrahend', numCols - 2); break; // Focus #4
-          case 5: idToFocus = getCellId('subtrahend', 0); break;          // Focus #5
-      }
-
-      if (idToFocus) {
-          document.getElementById(idToFocus)?.focus();
-      }
-  };
 
   return (
     <div
@@ -209,7 +179,6 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
               <div key={colFromRight} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
                   <CarryCell 
-                    // Case #9 is carry for tens (colFromRight=1)
                     id={getCellId('carry', colFromRight)}
                     borderColor={borderColor} 
                     size={carrySize} 
@@ -222,7 +191,6 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                 {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
                     <CalcCell 
-                        // Cases 0, 1, 2
                         id={getCellId('minuend', colFromRight)}
                         value={grid[0][colFromLeft]}
                         onChange={(val) => handleCellChange(0, colFromLeft, val)}
@@ -230,21 +198,18 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         size={cellSize} 
                         fontSize={fontSize} 
                         allowCrossing={true} 
-                        onFilled={() => focusNextCell(colFromLeft)}
                         isMinuend={true}
                     />
                 </div>
                 {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
                     <CalcCell
-                        // Cases 3, 4, 5
                         id={getCellId('subtrahend', colFromRight)}
                         value={grid[1][colFromLeft]}
                         onChange={(val) => handleCellChange(1, colFromLeft, val)}
                         borderColor={borderColor} 
                         size={cellSize} 
                         fontSize={fontSize} 
-                        onFilled={() => focusNextCell(colFromLeft + numCols)}
                     />
                 </div>
                 {/* Equals line */}
@@ -252,7 +217,6 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                 {/* Result */}
                 <div style={{height: cellSize}}>
                   <CalcCell 
-                    // Cases 8, 7, 6
                     id={getCellId('result', colFromRight)}
                     value={grid[2][colFromLeft]}
                     onChange={(val) => handleCellChange(2, colFromLeft, val)}
