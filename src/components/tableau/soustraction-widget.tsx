@@ -19,12 +19,12 @@ interface SoustractionWidgetProps {
   onClose: () => void;
 }
 
-// Green for units, Red for tens, Blue for hundreds
+// Units: Blue, Tens: Red, Hundreds: Green
 const colors = [
-  'border-green-500', 
-  'border-red-500',   
-  'border-blue-500',  
-  'border-slate-900', 
+  'border-blue-500',
+  'border-red-500',
+  'border-green-500',
+  'border-slate-900',
 ];
 
 const getBorderColor = (colIndexFromRight: number) =>

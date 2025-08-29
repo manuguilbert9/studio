@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -18,11 +19,12 @@ interface AdditionWidgetProps {
   onClose: () => void;
 }
 
+// Units: Blue, Tens: Red, Hundreds: Green
 const colors = [
-  'border-blue-500',  
-  'border-red-500',   
-  'border-green-500', 
-  'border-slate-900', 
+  'border-blue-500',
+  'border-red-500',
+  'border-green-500',
+  'border-slate-900',
 ];
 
 const getBorderColor = (colIndexFromRight: number) =>
