@@ -3,13 +3,15 @@
 
 import * as React from 'react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from '@/components/ui/button';
 import { Calculator } from 'lucide-react';
+import { AdditionIcon } from '@/components/icons/addition-icon';
+import { SoustractionIcon } from '@/components/icons/soustraction-icon';
 
 interface CalculWidgetSelectProps {
     onAddAddition: () => void;
@@ -17,25 +19,23 @@ interface CalculWidgetSelectProps {
 }
 
 export function CalculWidgetSelect({ onAddAddition, onAddSoustraction }: CalculWidgetSelectProps) {
-    
-    const handleValueChange = (value: string) => {
-        if (value === 'addition') {
-            onAddAddition();
-        } else if (value === 'soustraction') {
-            onAddSoustraction();
-        }
-    };
-
     return (
-        <Select onValueChange={handleValueChange}>
-            <SelectTrigger className="w-auto h-9 px-3 gap-2 text-sm">
-                <Calculator className="h-4 w-4" />
-                <SelectValue placeholder="Calculs" />
-            </SelectTrigger>
-            <SelectContent>
-                <SelectItem value="addition">Addition posée</SelectItem>
-                <SelectItem value="soustraction">Soustraction posée</SelectItem>
-            </SelectContent>
-        </Select>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                 <Button variant="outline" size="sm">
+                    <Calculator className="h-4 w-4 mr-2" /> Calculs
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+                <DropdownMenuItem onClick={onAddAddition}>
+                    <AdditionIcon className="h-4 w-4 mr-2" />
+                    <span>Addition posée</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onAddSoustraction}>
+                    <SoustractionIcon className="h-4 w-4 mr-2" />
+                    <span>Soustraction posée</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
