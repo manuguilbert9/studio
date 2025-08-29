@@ -2,12 +2,11 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Calculator } from 'lucide-react';
+import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
 import { FluencyExercise } from '@/components/fluency-exercise';
@@ -17,8 +16,7 @@ import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
 import { TextWidget } from '@/components/tableau/text-widget';
 import { ImageWidget } from '@/components/tableau/image-widget';
-import { AdditionIcon } from '@/components/icons/addition-icon';
-import { SoustractionIcon } from '@/components/icons/soustraction-icon';
+import { CalculWidgetSelect } from '@/components/tableau/calcul-widget-select';
 import { cn } from '@/lib/utils';
 import { saveTableauState, loadTableauState } from '@/services/tableau';
 import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState, SoustractionWidgetState } from '@/services/tableau.types';
@@ -43,7 +41,6 @@ export default function TableauPage() {
 
   const [activeSkill, setActiveSkill] = useState<Skill | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [isCalcMenuOpen, setIsCalcMenuOpen] = useState(false);
   
   // WIDGETS STATE
   const [textWidgets, setTextWidgets] = useState<TextWidgetState[]>([]);
@@ -55,7 +52,6 @@ export default function TableauPage() {
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 200, y: 150 });
-  const calcMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     const storedName = localStorage.getItem('skillfiesta_username');
@@ -130,6 +126,7 @@ export default function TableauPage() {
                 setSoustractionWidgets(loadedState.soustractionWidgets || []);
                 setImageWidgets(loadedState.imageWidgets || []);
             } else {
+                // Initialize with default state if nothing is loaded
                 setActiveSkill(null);
                 setTextWidgets(defaultTableauState.textWidgets);
                 setDateWidgets(defaultTableauState.dateWidgets);
@@ -140,6 +137,7 @@ export default function TableauPage() {
             }
         } catch (error) {
             console.error("Error loading state, initializing with default:", error);
+             // Initialize with default state on error
              setActiveSkill(null);
              setTextWidgets(defaultTableauState.textWidgets);
              setDateWidgets(defaultTableauState.dateWidgets);
@@ -225,16 +223,6 @@ export default function TableauPage() {
     setDrawerOpen(false);
   };
 
-  const handleCalcMenuEnter = () => {
-    if (calcMenuTimeoutRef.current) clearTimeout(calcMenuTimeoutRef.current);
-    setIsCalcMenuOpen(true);
-  };
-  const handleCalcMenuLeave = () => {
-    calcMenuTimeoutRef.current = setTimeout(() => {
-        setIsCalcMenuOpen(false);
-    }, 200);
-  };
-
   const renderExercise = () => {
     if (!activeSkill) {
       return (
@@ -300,25 +288,10 @@ export default function TableauPage() {
                                 <Type className="h-4 w-4 mr-2" /> Texte
                             </Button>
                             
-                            <DropdownMenu open={isCalcMenuOpen} onOpenChange={setIsCalcMenuOpen}>
-                                <div onMouseEnter={handleCalcMenuEnter} onMouseLeave={handleCalcMenuLeave}>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="outline" size="sm">
-                                            <Calculator className="h-4 w-4 mr-2" /> Calcul
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={handleAddAdditionWidget}>
-                                            <AdditionIcon className="h-4 w-4 mr-2" />
-                                            <span>Addition posée</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={handleAddSoustractionWidget}>
-                                            <SoustractionIcon className="h-4 w-4 mr-2" />
-                                            <span>Soustraction posée</span>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </div>
-                            </DropdownMenu>
+                            <CalculWidgetSelect 
+                                onAddAddition={handleAddAdditionWidget}
+                                onAddSoustraction={handleAddSoustractionWidget}
+                            />
 
                             <Button variant="outline" size="sm" onClick={handleAddTimerWidget}>
                                 <Timer className="h-4 w-4 mr-2" /> Minuteur
