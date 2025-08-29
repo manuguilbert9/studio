@@ -133,36 +133,39 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
 
   const getCellId = (type: 'minuend' | 'subtrahend' | 'result' | 'carry', col: number) => `sub-${initialState.id}-${type}-c${col}`;
 
-  const focusNextCell = (currentRow: number, currentCol: number) => {
+  const focusNextCell = (currentRow: number, currentColFromRight: number) => {
     let nextRow = currentRow;
-    let nextCol = currentCol + 1; // Move left to right
+    let nextColFromRight = currentColFromRight + 1;
 
-    // End of row, move to next row, first column
-    if (nextCol >= numCols) {
-      nextRow = currentRow + 1;
-      nextCol = 0;
+    // End of a row (moved from right to left)
+    if (nextColFromRight >= numCols) {
+        // If we just finished the minuend (row 0), move to the subtrahend's units (row 1, col 0)
+        if (currentRow === 0) {
+            nextRow = 1;
+            nextColFromRight = 0; // Start at the units of the next row
+        }
     }
     
-    // After filling subtrahend, apply smart focus logic
-    if (currentRow === 1 && currentCol === numCols - 1) {
-        const minuendUnit = parseInt(grid[0][numCols - 1] || '0', 10);
-        const subtrahendUnit = parseInt(grid[1][numCols - 1] || '0', 10);
+    // After filling the last cell of the subtrahend (top-left)
+    if (currentRow === 1 && currentColFromRight === numCols - 1) {
+        const minuendUnit = parseInt(grid[0][0] || '0', 10);
+        const subtrahendUnit = parseInt(grid[1][0] || '0', 10);
 
         if (minuendUnit >= subtrahendUnit) {
             // No borrow needed, focus on result units
-            document.getElementById(getCellId('result', numCols - 1))?.focus();
+            document.getElementById(getCellId('result', 0))?.focus();
         } else {
-            // Borrow needed, focus on tens carry
+            // Borrow needed, focus on tens carry (if it exists)
             if (numCols > 1) {
-                document.getElementById(getCellId('carry', numCols - 2))?.focus();
+                document.getElementById(getCellId('carry', 1))?.focus();
             }
         }
-        return; // Stop normal flow
+        return; // Stop normal focus flow
     }
     
-    // Normal focus flow
-    if (nextRow < 2) { // Only auto-tab for minuend and subtrahend
-        const nextCellId = getCellId(nextRow === 0 ? 'minuend' : 'subtrahend', nextCol);
+    // Normal focus flow (Minuend and Subtrahend rows)
+    if (nextRow < 2) {
+        const nextCellId = getCellId(nextRow === 0 ? 'minuend' : 'subtrahend', nextColFromRight);
         document.getElementById(nextCellId)?.focus();
     }
   };
@@ -204,7 +207,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             <div style={{height: cellSize}} />
           </div>
 
-          {colsLeftToRight.map((colFromRight, colIndex) => {
+          {colsLeftToRight.map((colFromRight) => {
             const borderColor = getBorderColor(colFromRight);
             return (
               <div key={colFromRight} className="flex flex-col items-center m-1">
@@ -229,7 +232,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         size={cellSize} 
                         fontSize={fontSize} 
                         allowCrossing={true} 
-                        onFilled={() => focusNextCell(0, colIndex)}
+                        onFilled={() => focusNextCell(0, colFromRight)}
                         isMinuend={true}
                     />
                 </div>
@@ -242,7 +245,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         borderColor={borderColor} 
                         size={cellSize} 
                         fontSize={fontSize} 
-                        onFilled={() => focusNextCell(1, colIndex)}
+                        onFilled={() => focusNextCell(1, colFromRight)}
                     />
                 </div>
                 {/* Equals line */}
