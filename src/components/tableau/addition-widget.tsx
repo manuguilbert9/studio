@@ -90,7 +90,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
   const shrinkCols = () => setNumCols(c => Math.max(c - 1, 2));
 
   const colsToRender = React.useMemo(
-    () => Array.from({ length: numCols }, (_, i) => numCols - 1 - i),
+    () => Array.from({ length: numCols }, (_, i) => i),
     [numCols]
   );
   
@@ -104,20 +104,11 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
     triggerUpdate();
   }
 
-  const getTabIndex = (row: number, colFromLeft: number) => {
-    // Determine the column for the special highest-order result cell
-    const highestOrderResultCol = 0;
-    // Determine the total number of columns in the main grid
-    const mainGridCols = numCols;
-    
-    // For the special highest-order result cell
-    if (row === numOperands && colFromLeft === -1) {
-        // This should come after all main grid cells
-        return (numOperands + 1) * mainGridCols + 1;
-    }
-    
-    // For all other cells in the grid
-    return row * mainGridCols + colFromLeft + 1;
+  const getTabIndex = (row: number, col: number) => {
+    const totalCols = numCols + 1; // +1 for the highest-order result column
+    // re-map col from left-to-right to right-to-left for tabbing
+    const tabCol = (totalCols - 1) - col;
+    return row * totalCols + tabCol + 1;
   };
   
 
@@ -174,17 +165,17 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                 borderColor={getBorderColor(numCols)} 
                 size={cellSize} 
                 fontSize={fontSize}
-                tabIndex={getTabIndex(numOperands, -1)}
+                tabIndex={getTabIndex(numOperands, 0)}
               />
             </div>
           </div>
 
           {/* Main digit columns */}
-          {colsToRender.map((colFromRight) => {
+          {colsToRender.map((col) => {
+            const colFromRight = numCols - 1 - col;
             const borderColor = getBorderColor(colFromRight);
-            const colFromLeft = numCols - 1 - colFromRight;
             return (
-              <div key={colFromRight} className="flex flex-col items-center m-1">
+              <div key={col} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
                   {colFromRight > 0 && <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} />}
                 </div>
@@ -195,7 +186,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                         borderColor={borderColor} 
                         size={cellSize} 
                         fontSize={fontSize} 
-                        tabIndex={getTabIndex(rowIndex, colFromLeft)}
+                        tabIndex={getTabIndex(rowIndex, col + 1)}
                     />
                   </div>
                 ))}
@@ -207,7 +198,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                     borderColor={borderColor} 
                     size={cellSize} 
                     fontSize={fontSize}
-                    tabIndex={getTabIndex(numOperands, colFromLeft)}
+                    tabIndex={getTabIndex(numOperands, col + 1)}
                   />
                 </div>
               </div>

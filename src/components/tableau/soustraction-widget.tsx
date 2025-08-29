@@ -87,7 +87,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
   const shrinkCols = () => setNumCols(c => Math.max(c - 1, 2));
 
   const colsToRender = React.useMemo(
-    () => Array.from({ length: numCols }, (_, i) => numCols - 1 - i),
+    () => Array.from({ length: numCols }, (_, i) => i),
     [numCols]
   );
   
@@ -101,9 +101,11 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     triggerUpdate();
   }
   
-  const getTabIndex = (row: number, colFromLeft: number) => {
-    const rowSize = numCols;
-    return row * rowSize + colFromLeft + 1; // +1 so tabIndex starts at 1
+  const getTabIndex = (row: number, col: number) => {
+      const rowSize = numCols;
+      // Re-map col from left-to-right to right-to-left for tabbing
+      const tabCol = numCols - 1 - col;
+      return row * rowSize + tabCol + 1;
   };
 
 
@@ -144,27 +146,27 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             <div style={{height: cellSize}} />
           </div>
 
-          {colsToRender.map((colFromRight, index) => {
-             const colFromLeft = numCols - 1 - colFromRight;
+          {colsToRender.map((col, index) => {
+             const colFromRight = numCols - 1 - col;
              const borderColor = getBorderColor(colFromRight);
             return (
-              <div key={colFromRight} className="flex flex-col items-center m-1">
+              <div key={col} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
                   <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} borderStyle="dotted" />
                 </div>
                 {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, colFromLeft)}/>
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, col)}/>
                 </div>
                 {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, colFromLeft)} />
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, col)} />
                 </div>
                 {/* Equals line */}
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
                 {/* Result */}
                 <div style={{height: cellSize}}>
-                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(2, colFromLeft)} />
+                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(2, col)} />
                 </div>
               </div>
             );
