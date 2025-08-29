@@ -70,9 +70,23 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
         }}
       />
       {showSmallOne && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <span className="text-sm font-bold font-mono" style={{ color: 'hsl(var(--foreground))', transform: 'translate(-50%, -50%)', position: 'absolute', top: '40%', left: '40%' }}>1</span>
-            <span style={{ fontSize: `${fontSize}px`, color: 'hsl(var(--foreground))' }} className="font-bold font-mono">{value.charAt(1)}</span>
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
+            <span 
+              className="absolute font-bold font-mono"
+              style={{
+                  fontSize: `${fontSize * 0.5}px`,
+                  top: '10%',
+                  left: '15%'
+              }}
+            >
+              1
+            </span>
+            <span 
+              className="font-bold font-mono"
+              style={{ fontSize: `${fontSize}px` }}
+            >
+              {value.charAt(1)}
+            </span>
         </div>
       )}
       {isCrossed && value && (
