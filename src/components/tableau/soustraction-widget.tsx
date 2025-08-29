@@ -104,7 +104,14 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
   const getTabIndex = (row: number, col: number): number => {
     // Correct tabbing order: left-to-right on minuend, then left-to-right on subtrahend, etc.
     const totalCols = numCols;
-    return row * totalCols + col + 1;
+    const base = row * totalCols;
+    
+    // special for carry cells
+    if (row === -1) { 
+        return col === 0 ? numCols * 3 + 1 : numCols * 3 + 2; // after result cells
+    }
+
+    return base + col + 1;
   };
 
   return (
@@ -144,7 +151,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             <div style={{height: cellSize}} />
           </div>
 
-          {colsToRender.map((col, index) => {
+          {colsToRender.map((col) => {
              const colFromRight = numCols - 1 - col;
              const borderColor = getBorderColor(colFromRight);
             return (
@@ -153,10 +160,11 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                   {/* Do not render carry cell above units column (right-most) */}
                   {colFromRight > 0 && (
                     <CarryCell 
-                        borderColor={getBorderColor(colFromRight - 1)} // Use color of the column to the right
+                        borderColor={getBorderColor(colFromRight)} // Match the column color
                         size={carrySize} 
                         fontSize={carryFontSize} 
                         borderStyle="dotted"
+                        tabIndex={getTabIndex(-1, col)}
                     />
                   )}
                 </div>

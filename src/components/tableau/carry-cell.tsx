@@ -40,6 +40,8 @@ export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', 
     >
        <input
         type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         maxLength={1}
         value={value}
         tabIndex={tabIndex}
