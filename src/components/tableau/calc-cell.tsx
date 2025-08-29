@@ -10,8 +10,8 @@ interface CalcCellProps {
   size: number;
   fontSize: number;
   allowCrossing?: boolean;
-  onFilled?: () => void;
-  isMinuend?: boolean; // New prop to identify cells in the minuend row
+  onFilled?: (value: string) => void;
+  isMinuend?: boolean;
 }
 
 export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = false, onFilled, isMinuend = false }: CalcCellProps) {
@@ -27,11 +27,12 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
       if (isCrossed) {
         setIsCrossed(false);
       }
-      if (val.length === 1 && !isMinuend && onFilled) {
-        onFilled();
-      }
-      if (val.length === 2 && isMinuend && onFilled) {
-          onFilled();
+      if (onFilled) {
+        if (!isMinuend && val.length === 1) {
+            onFilled(val);
+        } else if (isMinuend && val.length > 0) {
+            onFilled(val);
+        }
       }
     }
   };
@@ -63,7 +64,7 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
-          showSmallOne && 'text-transparent' // Hide the input text when rendering custom
+          showSmallOne && 'text-transparent'
         )}
         style={{
           fontSize: `${fontSize}px`,
@@ -74,7 +75,7 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
             <span 
               className="absolute font-bold font-mono"
               style={{
-                  fontSize: `${fontSize * 0.5}px`,
+                  fontSize: `${fontSize * 0.6}px`,
                   top: '10%',
                   left: '15%'
               }}

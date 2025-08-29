@@ -104,7 +104,12 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
 
   const getCellId = (row: number, col: number) => `sub-${initialState.id}-r${row}-c${col}`;
 
-  const focusNextCell = (currentRow: number, currentCol: number) => {
+  const focusNextCell = (currentRow: number, currentCol: number, value: string) => {
+    // If minuend and value is only '1', don't jump yet, wait for second digit.
+    if (currentRow === 0 && value === '1') {
+        return;
+    }
+
     let nextRow = currentRow;
     let nextCol = currentCol - 1;
 
@@ -119,6 +124,10 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     if (nextRow < totalRows) {
         const nextCellId = getCellId(nextRow, nextCol);
         document.getElementById(nextCellId)?.focus();
+    } else {
+        // After result row, focus on first cell of minuend
+        const firstCellId = getCellId(0, numCols - 1);
+        document.getElementById(firstCellId)?.focus();
     }
   };
 
@@ -177,7 +186,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         size={cellSize} 
                         fontSize={fontSize} 
                         allowCrossing={true} 
-                        onFilled={() => focusNextCell(0, colFromRight)}
+                        onFilled={(value) => focusNextCell(0, colFromRight, value)}
                         isMinuend={true}
                     />
                 </div>
@@ -188,7 +197,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         borderColor={borderColor} 
                         size={cellSize} 
                         fontSize={fontSize} 
-                        onFilled={() => focusNextCell(1, colFromRight)}
+                        onFilled={(value) => focusNextCell(1, colFromRight, value)}
                     />
                 </div>
                 {/* Equals line */}
@@ -200,7 +209,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                     borderColor={borderColor} 
                     size={cellSize} 
                     fontSize={fontSize} 
-                    onFilled={() => focusNextCell(2, colFromRight)}
+                    onFilled={(value) => focusNextCell(2, colFromRight, value)}
                   />
                 </div>
               </div>

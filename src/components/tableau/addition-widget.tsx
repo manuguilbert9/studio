@@ -111,17 +111,25 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
     let nextRow = currentRow;
     let nextCol = currentCol - 1;
 
-    // End of row, move to next row
     if (nextCol < 0) {
       nextRow = currentRow + 1;
       nextCol = numCols -1;
     }
     
-    // Check if next row is valid (operands or result row)
     const totalRows = numOperands + 1; // operands + result
     if (nextRow < totalRows) {
-        const nextCellId = getCellId(nextRow, nextCol);
-        document.getElementById(nextCellId)?.focus();
+        // Special case: skip the highest order result cell if it's outside the main grid
+        if (nextCol === numCols) {
+            const nextCellId = getCellId(nextRow, nextCol - 1);
+            document.getElementById(nextCellId)?.focus();
+        } else {
+            const nextCellId = getCellId(nextRow, nextCol);
+            document.getElementById(nextCellId)?.focus();
+        }
+    } else {
+         // If at the end of result row, maybe focus the first operand of first column?
+         const firstCellId = getCellId(0, numCols - 1);
+         document.getElementById(firstCellId)?.focus();
     }
   };
 
