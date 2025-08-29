@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -7,9 +8,10 @@ interface CarryCellProps {
     borderColor: string;
     size: number;
     fontSize: number;
+    borderStyle?: 'solid' | 'dotted';
 }
 
-export function CarryCell({ borderColor, size, fontSize }: CarryCellProps) {
+export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid' }: CarryCellProps) {
   const [value, setValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
 
@@ -43,7 +45,8 @@ export function CarryCell({ borderColor, size, fontSize }: CarryCellProps) {
         onChange={handleChange}
         className={cn(
             'border text-center font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500',
-            borderColor
+            borderColor,
+            borderStyle === 'dotted' && 'border-dotted'
         )}
         style={{
             width: `${size}px`,

@@ -1,4 +1,5 @@
 
+
 export interface Position {
     x: number;
     y: number;
@@ -40,6 +41,13 @@ export interface AdditionWidgetState {
     numCols: number;
 }
 
+export interface SoustractionWidgetState {
+    id: number;
+    pos: Position;
+    size: Size;
+    numCols: number;
+}
+
 export interface ImageWidgetState {
     id: number;
     pos: Position;
@@ -53,6 +61,7 @@ export interface TableauState {
     dateWidgets: DateWidgetState[];
     timerWidgets: TimerWidgetState[];
     additionWidgets: AdditionWidgetState[];
+    soustractionWidgets: SoustractionWidgetState[];
     imageWidgets: ImageWidgetState[];
     updatedAt: string | null; // Changed to string for JSON compatibility
 }

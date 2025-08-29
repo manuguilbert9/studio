@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import fs from 'fs/promises';
@@ -85,6 +86,7 @@ export async function loadTableauState(userId: string): Promise<TableauState | n
                 dateWidgets: userState.dateWidgets || [],
                 timerWidgets: userState.timerWidgets || [],
                 additionWidgets: userState.additionWidgets || [],
+                soustractionWidgets: userState.soustractionWidgets || [],
                 imageWidgets: userState.imageWidgets || [],
             };
         } else {

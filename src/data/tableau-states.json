@@ -1,40 +1,11 @@
 {
   "Manu": {
     "activeSkillSlug": null,
-    "textWidgets": [
-      {
-        "id": 1756380238819,
-        "pos": {
-          "x": 63,
-          "y": 61
-        },
-        "size": {
-          "width": 393,
-          "height": 300
-        },
-        "text": "pppppppppapa<3",
-        "fontSize": 22,
-        "color": "text-blue-600",
-        "isUnderlined": false
-      }
-    ],
+    "textWidgets": [],
     "dateWidgets": [],
     "timerWidgets": [],
-    "additionWidgets": [
-      {
-        "id": 1756380461589,
-        "pos": {
-          "x": 756,
-          "y": 27
-        },
-        "size": {
-          "width": 450,
-          "height": 300
-        },
-        "numOperands": 2,
-        "numCols": 3
-      }
-    ],
-    "updatedAt": "2025-08-28T11:27:47.793Z"
+    "additionWidgets": [],
+    "imageWidgets": [],
+    "updatedAt": "2025-08-29T08:13:22.677Z"
   }
 }
