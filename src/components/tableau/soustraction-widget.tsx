@@ -19,10 +19,11 @@ interface SoustractionWidgetProps {
   onClose: () => void;
 }
 
+// Green for units, Red for tens, Blue for hundreds
 const colors = [
-  'border-blue-500',  
-  'border-red-500',   
   'border-green-500', 
+  'border-red-500',   
+  'border-blue-500',  
   'border-slate-900', 
 ];
 
@@ -141,18 +142,18 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             <div style={{height: cellSize}} />
           </div>
 
-          {[...colsLeftToRight].reverse().map((colFromRight) => {
+          {colsLeftToRight.map((colFromRight) => {
             const borderColor = getBorderColor(colFromRight);
             return (
               <div key={colFromRight} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
                   <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} borderStyle="dotted" />
                 </div>
-                {/* Top operand */}
+                {/* Top operand (Minuend) */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} />
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} />
                 </div>
-                {/* Bottom operand */}
+                {/* Bottom operand (Subtrahend) */}
                 <div className="flex items-center" style={{height: cellSize}}>
                     <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} />
                 </div>
