@@ -103,11 +103,12 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
   }
 
   const getCellId = (row: number, col: number) => `sub-${initialState.id}-r${row}-c${col}`;
+  const getTabIndex = (row: number, colFromLeft: number) => row * numCols + colFromLeft + 1;
 
   const focusNextCell = (currentRow: number, currentCol: number, value: string) => {
-    // If minuend and value is only '1', don't jump yet, wait for second digit.
-    if (currentRow === 0 && value === '1') {
-        return;
+    // For minuend, only jump if the value is a single digit or not starting with '1'
+    if (currentRow === 0 && value.length === 1 && value.startsWith('1')) {
+        return; 
     }
 
     let nextRow = currentRow;
@@ -171,7 +172,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             <div style={{height: cellSize}} />
           </div>
 
-          {colsLeftToRight.map((colFromRight) => {
+          {colsLeftToRight.map((colFromRight, colIndex) => {
             const borderColor = getBorderColor(colFromRight);
             return (
               <div key={colFromRight} className="flex flex-col items-center m-1">
@@ -188,6 +189,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         allowCrossing={true} 
                         onFilled={(value) => focusNextCell(0, colFromRight, value)}
                         isMinuend={true}
+                        tabIndex={getTabIndex(0, colIndex)}
                     />
                 </div>
                 {/* Bottom operand (Subtrahend) */}
@@ -198,6 +200,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         size={cellSize} 
                         fontSize={fontSize} 
                         onFilled={(value) => focusNextCell(1, colFromRight, value)}
+                        tabIndex={getTabIndex(1, colIndex)}
                     />
                 </div>
                 {/* Equals line */}
@@ -210,6 +213,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                     size={cellSize} 
                     fontSize={fontSize} 
                     onFilled={(value) => focusNextCell(2, colFromRight, value)}
+                    tabIndex={getTabIndex(2, colIndex)}
                   />
                 </div>
               </div>

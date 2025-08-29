@@ -106,6 +106,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
   }
 
   const getCellId = (row: number, col: number) => `add-${initialState.id}-r${row}-c${col}`;
+  const getTabIndex = (row: number, colFromLeft: number) => row * numCols + colFromLeft + 1;
 
   const focusNextCell = (currentRow: number, currentCol: number) => {
     let nextRow = currentRow;
@@ -187,12 +188,13 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                 borderColor={getBorderColor(numCols)} 
                 size={cellSize} 
                 fontSize={fontSize}
+                tabIndex={getTabIndex(numOperands, -1)}
               />
             </div>
           </div>
 
           {/* Main digit columns */}
-          {colsLeftToRight.map((colFromRight) => {
+          {colsLeftToRight.map((colFromRight, colIndex) => {
             const borderColor = getBorderColor(colFromRight);
             return (
               <div key={colFromRight} className="flex flex-col items-center m-1">
@@ -208,6 +210,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                         size={cellSize} 
                         fontSize={fontSize} 
                         onFilled={() => focusNextCell(rowIndex, colFromRight)}
+                        tabIndex={getTabIndex(rowIndex, colIndex + 1)}
                     />
                   </div>
                 ))}
@@ -221,6 +224,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                     size={cellSize} 
                     fontSize={fontSize}
                     onFilled={() => focusNextCell(numOperands, colFromRight)}
+                    tabIndex={getTabIndex(numOperands, colIndex + 1)}
                   />
                 </div>
               </div>
@@ -263,3 +267,4 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
     </div>
   );
 }
+
