@@ -5,20 +5,22 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CarryCellProps {
+    id: string;
+    value: string;
+    onChange: (value: string) => void;
     borderColor: string;
     size: number;
     fontSize: number;
     borderStyle?: 'solid' | 'dotted';
 }
 
-export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid' }: CarryCellProps) {
-  const [value, setValue] = useState('');
+export function CarryCell({ id, value, onChange, borderColor, size, fontSize, borderStyle = 'solid' }: CarryCellProps) {
   const [isCrossed, setIsCrossed] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     if (/^\d?$/.test(val)) {
-      setValue(val);
+      onChange(val);
       if (isCrossed) {
         setIsCrossed(false);
       }
@@ -39,6 +41,7 @@ export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid' }
         onContextMenu={handleRightClick}
     >
        <input
+        id={id}
         type="text"
         maxLength={1}
         value={value}

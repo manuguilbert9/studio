@@ -6,17 +6,17 @@ import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
   id: string;
+  value: string;
+  onChange: (value: string) => void;
   borderColor: string;
   size: number;
   fontSize: number;
   allowCrossing?: boolean;
-  onFilled?: (value: string) => void;
+  onFilled?: () => void;
   isMinuend?: boolean;
-  tabIndex?: number;
 }
 
-export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = false, onFilled, isMinuend = false, tabIndex }: CalcCellProps) {
-  const [value, setValue] = useState('');
+export function CalcCell({ id, value, onChange, borderColor, size, fontSize, allowCrossing = false, onFilled, isMinuend = false }: CalcCellProps) {
   const [isCrossed, setIsCrossed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -28,25 +28,20 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
     // Allow only digits up to maxLength
     if (new RegExp(`^\\d{0,${maxLength}}$`).test(rawInput)) {
         const newValue = rawInput;
-        setValue(newValue);
+        onChange(newValue);
 
         if (isCrossed) {
             setIsCrossed(false);
         }
 
+        // Auto-tab logic
         if (onFilled) {
-            // When does the cell count as "filled" for auto-tabbing?
-            // 1. If it's a normal cell and length becomes 1.
             const isNormalCellFilled = !isMinuend && newValue.length === 1 && previousValue.length === 0;
-            // 2. If it's a minuend cell, and...
-            const isMinuendFilled = isMinuend && 
-                // ...it's a single digit entry (e.g. typing '5')
-                (newValue.length === 1 && previousValue.length === 0) || 
-                // ...it's a two-digit entry (e.g. typing '2' after '1' to make '12')
-                (newValue.length === 2 && previousValue.length === 1);
+            const isMinuendFilledWithSingleDigit = isMinuend && newValue.length === 1 && previousValue.length === 0;
+            const isMinuendFilledWithTwoDigits = isMinuend && newValue.length === 2 && previousValue.length === 1;
 
-            if (isNormalCellFilled || isMinuendFilled) {
-                onFilled(newValue);
+            if (isNormalCellFilled || isMinuendFilledWithSingleDigit || isMinuendFilledWithTwoDigits) {
+                onFilled();
             }
         }
     }
@@ -78,7 +73,6 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
         maxLength={isMinuend ? 2 : 1}
         value={value}
         onChange={handleChange}
-        tabIndex={tabIndex}
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,

@@ -33,7 +33,12 @@ const getBorderColor = (colIndexFromRight: number) =>
 export function SoustractionWidget({ initialState, onUpdate, onClose }: SoustractionWidgetProps) {
   const [pos, setPos] = useState<Position>(initialState.pos);
   const [size, setSize] = useState<Size>(initialState.size);
-  const [numCols, setNumCols] = useState(initialState.numCols); 
+  const [numCols, setNumCols] = useState(initialState.numCols);
+  
+  // Centralized state for all cell values
+  const [grid, setGrid] = useState<string[][]>(() => Array(3).fill(null).map(() => Array(numCols).fill('')));
+  const [carries, setCarries] = useState<string[]>(() => Array(numCols).fill(''));
+
 
   const widgetRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -55,6 +60,18 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
   useEffect(() => {
     triggerUpdate();
   }, [pos, size, numCols, triggerUpdate]);
+  
+  const handleCellChange = (row: number, col: number, value: string) => {
+    const newGrid = [...grid];
+    newGrid[row][col] = value;
+    setGrid(newGrid);
+  };
+  
+  const handleCarryChange = (col: number, value: string) => {
+    const newCarries = [...carries];
+    newCarries[col] = value;
+    setCarries(newCarries);
+  }
 
   const onHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
@@ -84,8 +101,20 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     };
   }, [triggerUpdate]);
 
-  const expandCols = () => setNumCols(c => Math.min(c + 1, 4));
-  const shrinkCols = () => setNumCols(c => Math.max(c - 1, 2));
+  const expandCols = () => {
+    if (numCols < 4) {
+        setNumCols(c => c + 1);
+        setGrid(g => g.map(row => [...row, '']));
+        setCarries(c => [...c, '']);
+    }
+  };
+  const shrinkCols = () => {
+    if (numCols > 2) {
+        setNumCols(c => c - 1);
+        setGrid(g => g.map(row => row.slice(0, numCols - 1)));
+        setCarries(c => c.slice(0, numCols - 1));
+    }
+  };
 
   const colsLeftToRight = React.useMemo(
     () => Array.from({ length: numCols }, (_, i) => numCols - 1 - i),
@@ -102,33 +131,39 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     triggerUpdate();
   }
 
-  const getCellId = (row: number, col: number) => `sub-${initialState.id}-r${row}-c${col}`;
-  const getTabIndex = (row: number, colFromLeft: number) => row * numCols + colFromLeft + 1;
+  const getCellId = (type: 'minuend' | 'subtrahend' | 'result' | 'carry', col: number) => `sub-${initialState.id}-${type}-c${col}`;
 
-  const focusNextCell = (currentRow: number, currentCol: number, value: string) => {
-    // For minuend, only jump if the value is a single digit or not starting with '1'
-    if (currentRow === 0 && value.length === 1 && value.startsWith('1')) {
-        return; 
-    }
-
+  const focusNextCell = (currentRow: number, currentCol: number) => {
     let nextRow = currentRow;
-    let nextCol = currentCol - 1;
+    let nextCol = currentCol + 1; // Move left to right
 
-    // End of row, move to next row
-    if (nextCol < 0) {
+    // End of row, move to next row, first column
+    if (nextCol >= numCols) {
       nextRow = currentRow + 1;
-      nextCol = numCols - 1;
+      nextCol = 0;
     }
     
-    // Check if next row is valid (top, bottom, or result)
-    const totalRows = 3;
-    if (nextRow < totalRows) {
-        const nextCellId = getCellId(nextRow, nextCol);
+    // After filling subtrahend, apply smart focus logic
+    if (currentRow === 1 && currentCol === numCols - 1) {
+        const minuendUnit = parseInt(grid[0][numCols - 1] || '0', 10);
+        const subtrahendUnit = parseInt(grid[1][numCols - 1] || '0', 10);
+
+        if (minuendUnit >= subtrahendUnit) {
+            // No borrow needed, focus on result units
+            document.getElementById(getCellId('result', numCols - 1))?.focus();
+        } else {
+            // Borrow needed, focus on tens carry
+            if (numCols > 1) {
+                document.getElementById(getCellId('carry', numCols - 2))?.focus();
+            }
+        }
+        return; // Stop normal flow
+    }
+    
+    // Normal focus flow
+    if (nextRow < 2) { // Only auto-tab for minuend and subtrahend
+        const nextCellId = getCellId(nextRow === 0 ? 'minuend' : 'subtrahend', nextCol);
         document.getElementById(nextCellId)?.focus();
-    } else {
-        // After result row, focus on first cell of minuend
-        const firstCellId = getCellId(0, numCols - 1);
-        document.getElementById(firstCellId)?.focus();
     }
   };
 
@@ -161,14 +196,11 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
         <div className="flex items-start">
           <div className="flex flex-col items-center m-1">
             <div style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}} />
-            {/* Top operand */}
             <div style={{height: cellSize}} /> 
-             {/* Bottom operand */}
             <div className="flex items-center justify-center" style={{height: cellSize}}>
                 <span className="text-slate-500 font-light" style={{fontSize: `${fontSize}px`}}>-</span>
             </div>
             <div className="my-1" style={{ height: '2px', width: '100%', opacity: 0 }} />
-            {/* Result */}
             <div style={{height: cellSize}} />
           </div>
 
@@ -177,30 +209,40 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             return (
               <div key={colFromRight} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
-                  <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} borderStyle="dotted" />
+                  <CarryCell 
+                    id={getCellId('carry', colFromRight)}
+                    borderColor={borderColor} 
+                    size={carrySize} 
+                    fontSize={carryFontSize} 
+                    borderStyle="dotted" 
+                    value={carries[colFromRight]}
+                    onChange={(val) => handleCarryChange(colFromRight, val)}
+                  />
                 </div>
-                {/* Top operand (Minuend) */}
+                {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
                     <CalcCell 
-                        id={getCellId(0, colFromRight)}
+                        id={getCellId('minuend', colFromRight)}
+                        value={grid[0][colFromRight]}
+                        onChange={(val) => handleCellChange(0, colFromRight, val)}
                         borderColor={borderColor} 
                         size={cellSize} 
                         fontSize={fontSize} 
                         allowCrossing={true} 
-                        onFilled={(value) => focusNextCell(0, colFromRight, value)}
+                        onFilled={() => focusNextCell(0, colIndex)}
                         isMinuend={true}
-                        tabIndex={getTabIndex(0, colIndex)}
                     />
                 </div>
-                {/* Bottom operand (Subtrahend) */}
+                {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell 
-                        id={getCellId(1, colFromRight)}
+                    <CalcCell
+                        id={getCellId('subtrahend', colFromRight)} 
+                        value={grid[1][colFromRight]}
+                        onChange={(val) => handleCellChange(1, colFromRight, val)}
                         borderColor={borderColor} 
                         size={cellSize} 
                         fontSize={fontSize} 
-                        onFilled={(value) => focusNextCell(1, colFromRight, value)}
-                        tabIndex={getTabIndex(1, colIndex)}
+                        onFilled={() => focusNextCell(1, colIndex)}
                     />
                 </div>
                 {/* Equals line */}
@@ -208,12 +250,12 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                 {/* Result */}
                 <div style={{height: cellSize}}>
                   <CalcCell 
-                    id={getCellId(2, colFromRight)}
+                    id={getCellId('result', colFromRight)}
+                    value={grid[2][colFromRight]}
+                    onChange={(val) => handleCellChange(2, colFromRight, val)}
                     borderColor={borderColor} 
                     size={cellSize} 
                     fontSize={fontSize} 
-                    onFilled={(value) => focusNextCell(2, colFromRight, value)}
-                    tabIndex={getTabIndex(2, colIndex)}
                   />
                 </div>
               </div>
