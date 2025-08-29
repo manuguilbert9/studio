@@ -17,9 +17,10 @@ export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    if (/^\d?$/.test(val)) {
+     // Allow up to two digits, to handle "1" for borrowing
+    if (/^\d{0,2}$/.test(val)) {
       setValue(val);
-      if (isCrossed) {
+       if (isCrossed) {
         setIsCrossed(false);
       }
     }
@@ -32,6 +33,10 @@ export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', 
     }
   };
 
+  // Logic to display number with borrowed '1'
+  const hasBorrowedOne = value.length === 2 && value.startsWith('1');
+  const displayValue = hasBorrowedOne ? value.substring(1) : value;
+
   return (
     <div 
         className="relative flex items-center justify-center"
@@ -42,22 +47,41 @@ export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', 
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
-        maxLength={1}
+        maxLength={2}
         value={value}
         tabIndex={tabIndex}
         onChange={handleChange}
         className={cn(
-            'border text-center font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500',
+            'border text-center font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 w-full h-full p-0',
             borderColor,
-            borderStyle === 'dotted' && 'border-dotted'
+            borderStyle === 'dotted' && 'border-dotted',
+            hasBorrowedOne && 'text-transparent'
         )}
         style={{
-            width: `${size}px`,
-            height: `${size}px`,
             fontSize: `${fontSize}px`
         }}
         />
-        {isCrossed && value && (
+        {hasBorrowedOne && (
+         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
+            <span 
+              className="absolute font-bold font-mono"
+              style={{
+                  fontSize: `${fontSize * 0.6}px`,
+                  top: '10%',
+                  left: '15%'
+              }}
+            >
+              1
+            </span>
+            <span 
+              className="font-bold font-mono"
+              style={{ fontSize: `${fontSize}px` }}
+            >
+              {displayValue}
+            </span>
+        </div>
+      )}
+        {isCrossed && value && !hasBorrowedOne && (
             <span className="absolute left-0 top-1/2 w-full h-0.5 bg-slate-700 transform -translate-y-1/2 rotate-[-20deg] pointer-events-none"></span>
         )}
     </div>
