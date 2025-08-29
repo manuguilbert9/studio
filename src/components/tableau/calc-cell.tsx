@@ -5,13 +5,15 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
+  id: string;
   borderColor: string;
   size: number;
   fontSize: number;
   allowCrossing?: boolean;
+  onFilled?: () => void;
 }
 
-export function CalcCell({ borderColor, size, fontSize, allowCrossing = false }: CalcCellProps) {
+export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = false, onFilled }: CalcCellProps) {
   const [value, setValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
 
@@ -22,6 +24,10 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false }:
       setValue(val);
       if (isCrossed) {
         setIsCrossed(false); // Remove cross-out when value changes
+      }
+      // If a single digit was entered, call the onFilled callback
+      if (val && onFilled) {
+        onFilled();
       }
     }
   };
@@ -41,7 +47,10 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false }:
       onContextMenu={handleRightClick}
     >
       <input
+        id={id}
         type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
         maxLength={1}
         value={value}
         onChange={handleChange}

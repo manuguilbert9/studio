@@ -92,7 +92,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     [numCols]
   );
   
-  const cellSize = Math.max(20, Math.min(size.width / (numCols + 3), size.height / 5));
+  const cellSize = Math.max(20, Math.min(size.width / (numCols + 2), size.height / 5));
   const fontSize = cellSize * 0.6;
   const carrySize = cellSize * 0.8;
   const carryFontSize = carrySize * 0.5;
@@ -101,6 +101,26 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     setSize({ width: data.size.width, height: data.size.height });
     triggerUpdate();
   }
+
+  const getCellId = (row: number, col: number) => `sub-${initialState.id}-r${row}-c${col}`;
+
+  const focusNextCell = (currentRow: number, currentCol: number) => {
+    let nextRow = currentRow;
+    let nextCol = currentCol - 1;
+
+    // End of row, move to next row
+    if (nextCol < 0) {
+      nextRow = currentRow + 1;
+      nextCol = numCols - 1;
+    }
+    
+    // Check if next row is valid (top, bottom, or result)
+    const totalRows = 3;
+    if (nextRow < totalRows) {
+        const nextCellId = getCellId(nextRow, nextCol);
+        document.getElementById(nextCellId)?.focus();
+    }
+  };
 
   return (
     <div
@@ -137,7 +157,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             <div className="flex items-center justify-center" style={{height: cellSize}}>
                 <span className="text-slate-500 font-light" style={{fontSize: `${fontSize}px`}}>-</span>
             </div>
-            <div className="my-1" style={{ height: '2px', width: cellSize, opacity: 0 }} />
+            <div className="my-1" style={{ height: '2px', width: '100%', opacity: 0 }} />
             {/* Result */}
             <div style={{height: cellSize}} />
           </div>
@@ -151,17 +171,36 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                 </div>
                 {/* Top operand (Minuend) */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} />
+                    <CalcCell 
+                        id={getCellId(0, colFromRight)}
+                        borderColor={borderColor} 
+                        size={cellSize} 
+                        fontSize={fontSize} 
+                        allowCrossing={true} 
+                        onFilled={() => focusNextCell(0, colFromRight)}
+                    />
                 </div>
                 {/* Bottom operand (Subtrahend) */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} />
+                    <CalcCell 
+                        id={getCellId(1, colFromRight)}
+                        borderColor={borderColor} 
+                        size={cellSize} 
+                        fontSize={fontSize} 
+                        onFilled={() => focusNextCell(1, colFromRight)}
+                    />
                 </div>
                 {/* Equals line */}
-                <div className="bg-slate-800 my-1" style={{height: '2px', width: cellSize}} />
+                <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
                 {/* Result */}
                 <div style={{height: cellSize}}>
-                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} />
+                  <CalcCell 
+                    id={getCellId(2, colFromRight)}
+                    borderColor={borderColor} 
+                    size={cellSize} 
+                    fontSize={fontSize} 
+                    onFilled={() => focusNextCell(2, colFromRight)}
+                  />
                 </div>
               </div>
             );

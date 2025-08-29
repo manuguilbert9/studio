@@ -105,6 +105,26 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
     triggerUpdate();
   }
 
+  const getCellId = (row: number, col: number) => `add-${initialState.id}-r${row}-c${col}`;
+
+  const focusNextCell = (currentRow: number, currentCol: number) => {
+    let nextRow = currentRow;
+    let nextCol = currentCol - 1;
+
+    // End of row, move to next row
+    if (nextCol < 0) {
+      nextRow = currentRow + 1;
+      nextCol = numCols -1;
+    }
+    
+    // Check if next row is valid (operands or result row)
+    const totalRows = numOperands + 1; // operands + result
+    if (nextRow < totalRows) {
+        const nextCellId = getCellId(nextRow, nextCol);
+        document.getElementById(nextCellId)?.focus();
+    }
+  };
+
   return (
     <div
       ref={widgetRef}
@@ -132,6 +152,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
 
       <div className="flex flex-col items-center flex-grow h-full justify-center">
         <div className="flex items-start">
+          {/* Left-most column with symbols */}
           <div className="flex flex-col items-center m-1">
             <div style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}} />
             {[...Array(numOperands)].map((_, rowIndex) => (
@@ -141,21 +162,28 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                 )}
               </div>
             ))}
-            <div className="my-1" style={{ height: '2px', width: cellSize, opacity: 0 }} />
+            <div className="my-1" style={{ height: '2px', width: '100%', opacity: 0 }} />
             <div style={{height: cellSize}} />
           </div>
 
+          {/* Special column for highest-order result (e.g., thousands) */}
           <div className="flex flex-col items-center m-1">
              <div style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}} />
             {[...Array(numOperands)].map((_, i) => (
               <div key={i} style={{width: cellSize, height: cellSize}} />
             ))}
-            <div className="bg-slate-800 my-1" style={{height: '2px', width: cellSize}} />
+            <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
             <div style={{height: cellSize}}>
-              <CalcCell borderColor={getBorderColor(numCols)} size={cellSize} fontSize={fontSize}/>
+              <CalcCell 
+                id={getCellId(numOperands, numCols)}
+                borderColor={getBorderColor(numCols)} 
+                size={cellSize} 
+                fontSize={fontSize}
+              />
             </div>
           </div>
 
+          {/* Main digit columns */}
           {colsLeftToRight.map((colFromRight) => {
             const borderColor = getBorderColor(colFromRight);
             return (
@@ -166,14 +194,26 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
 
                 {[...Array(numOperands)].map((_, rowIndex) => (
                   <div key={rowIndex} className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} />
+                    <CalcCell 
+                        id={getCellId(rowIndex, colFromRight)}
+                        borderColor={borderColor} 
+                        size={cellSize} 
+                        fontSize={fontSize} 
+                        onFilled={() => focusNextCell(rowIndex, colFromRight)}
+                    />
                   </div>
                 ))}
 
-                <div className="bg-slate-800 my-1" style={{height: '2px', width: cellSize}} />
+                <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
 
                 <div style={{height: cellSize}}>
-                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} />
+                  <CalcCell 
+                    id={getCellId(numOperands, colFromRight)}
+                    borderColor={borderColor} 
+                    size={cellSize} 
+                    fontSize={fontSize}
+                    onFilled={() => focusNextCell(numOperands, colFromRight)}
+                  />
                 </div>
               </div>
             );
