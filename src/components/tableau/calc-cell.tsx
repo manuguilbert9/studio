@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
@@ -17,23 +17,30 @@ interface CalcCellProps {
 export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = false, onFilled, isMinuend = false }: CalcCellProps) {
   const [value, setValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
+    const previousValue = value;
+    const rawInput = e.target.value;
     const maxLength = isMinuend ? 2 : 1;
     
-    if (new RegExp(`^\\d{0,${maxLength}}$`).test(val)) {
-      setValue(val);
-      if (isCrossed) {
-        setIsCrossed(false);
-      }
-      if (onFilled) {
-        if (!isMinuend && val.length === 1) {
-            onFilled(val);
-        } else if (isMinuend && val.length > 0) {
-            onFilled(val);
+    // Allow only digits up to maxLength
+    if (new RegExp(`^\\d{0,${maxLength}}$`).test(rawInput)) {
+        const newValue = rawInput;
+        setValue(newValue);
+
+        if (isCrossed) {
+            setIsCrossed(false);
         }
-      }
+
+        if (onFilled) {
+            const isSingleDigitEntry = newValue.length === 1 && previousValue.length === 0;
+            const isMinuendCompleting = isMinuend && newValue.length > 0 && newValue.startsWith('1') && newValue.length === 2;
+
+            if (isSingleDigitEntry || isMinuendCompleting) {
+                onFilled(newValue);
+            }
+        }
     }
   };
 
@@ -45,6 +52,7 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
     }
   };
   
+  // Show special styling for minuend borrow case (e.g., '12' becomes a small 1 and a big 2)
   const showSmallOne = isMinuend && value.length === 2 && value.startsWith('1');
 
   return (
@@ -54,6 +62,7 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
       onContextMenu={handleRightClick}
     >
       <input
+        ref={inputRef}
         id={id}
         type="text"
         inputMode="numeric"
@@ -64,7 +73,7 @@ export function CalcCell({ id, borderColor, size, fontSize, allowCrossing = fals
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
-          showSmallOne && 'text-transparent'
+          showSmallOne && 'text-transparent' // Hide the raw '12' text
         )}
         style={{
           fontSize: `${fontSize}px`,
