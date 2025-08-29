@@ -33,11 +33,6 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
   const [pos, setPos] = useState<Position>(initialState.pos);
   const [size, setSize] = useState<Size>(initialState.size);
   const [numCols, setNumCols] = useState(initialState.numCols);
-  
-  // Centralized state for all cell values
-  const [grid, setGrid] = useState<string[][]>(() => Array(3).fill(null).map(() => Array(numCols).fill('')));
-  const [carries, setCarries] = useState<string[]>(() => Array(numCols).fill(''));
-
 
   const widgetRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
@@ -59,18 +54,6 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
   useEffect(() => {
     triggerUpdate();
   }, [pos, size, numCols, triggerUpdate]);
-  
-  const handleCellChange = (row: number, col: number, value: string) => {
-    const newGrid = [...grid];
-    newGrid[row][col] = value;
-    setGrid(newGrid);
-  };
-  
-  const handleCarryChange = (col: number, value: string) => {
-    const newCarries = [...carries];
-    newCarries[col] = value;
-    setCarries(newCarries);
-  }
 
   const onHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
@@ -100,22 +83,10 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     };
   }, [triggerUpdate]);
 
-  const expandCols = () => {
-    if (numCols < 4) {
-        setNumCols(c => c + 1);
-        setGrid(g => g.map(row => ['', ...row]));
-        setCarries(c => ['', ...c]);
-    }
-  };
-  const shrinkCols = () => {
-    if (numCols > 2) {
-        setNumCols(c => c - 1);
-        setGrid(g => g.map(row => row.slice(1)));
-        setCarries(c => c.slice(1));
-    }
-  };
+  const expandCols = () => setNumCols(c => Math.min(c + 1, 4));
+  const shrinkCols = () => setNumCols(c => Math.max(c - 1, 2));
 
-  const colsLeftToRight = React.useMemo(
+  const colsToRender = React.useMemo(
     () => Array.from({ length: numCols }, (_, i) => numCols - 1 - i),
     [numCols]
   );
@@ -129,10 +100,11 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     setSize({ width: data.size.width, height: data.size.height });
     triggerUpdate();
   }
-
-  const getCellId = (type: 'minuend' | 'subtrahend' | 'result' | 'carry', colFromRight: number) => {
-    return `sub-${initialState.id}-${type}-c${colFromRight}`;
-  }
+  
+  const getTabIndex = (row: number, colFromLeft: number) => {
+    const rowSize = numCols;
+    return row * rowSize + colFromLeft + 1; // +1 so tabIndex starts at 1
+  };
 
 
   return (
@@ -172,58 +144,27 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             <div style={{height: cellSize}} />
           </div>
 
-          {colsLeftToRight.map((colFromRight, index) => {
-             const colFromLeft = numCols - 1 - index;
+          {colsToRender.map((colFromRight, index) => {
+             const colFromLeft = numCols - 1 - colFromRight;
              const borderColor = getBorderColor(colFromRight);
             return (
               <div key={colFromRight} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
-                  <CarryCell 
-                    id={getCellId('carry', colFromRight)}
-                    borderColor={borderColor} 
-                    size={carrySize} 
-                    fontSize={carryFontSize} 
-                    borderStyle="dotted" 
-                    value={carries[colFromLeft]}
-                    onChange={(val) => handleCarryChange(colFromLeft, val)}
-                  />
+                  <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} borderStyle="dotted" />
                 </div>
                 {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell 
-                        id={getCellId('minuend', colFromRight)}
-                        value={grid[0][colFromLeft]}
-                        onChange={(val) => handleCellChange(0, colFromLeft, val)}
-                        borderColor={borderColor} 
-                        size={cellSize} 
-                        fontSize={fontSize} 
-                        allowCrossing={true} 
-                        isMinuend={true}
-                    />
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, colFromLeft)}/>
                 </div>
                 {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell
-                        id={getCellId('subtrahend', colFromRight)}
-                        value={grid[1][colFromLeft]}
-                        onChange={(val) => handleCellChange(1, colFromLeft, val)}
-                        borderColor={borderColor} 
-                        size={cellSize} 
-                        fontSize={fontSize} 
-                    />
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, colFromLeft)} />
                 </div>
                 {/* Equals line */}
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
                 {/* Result */}
                 <div style={{height: cellSize}}>
-                  <CalcCell 
-                    id={getCellId('result', colFromRight)}
-                    value={grid[2][colFromLeft]}
-                    onChange={(val) => handleCellChange(2, colFromLeft, val)}
-                    borderColor={borderColor} 
-                    size={cellSize} 
-                    fontSize={fontSize} 
-                  />
+                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(2, colFromLeft)} />
                 </div>
               </div>
             );

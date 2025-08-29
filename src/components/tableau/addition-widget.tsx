@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -90,7 +89,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
   const expandCols = () => setNumCols(c => Math.min(c + 1, 4));
   const shrinkCols = () => setNumCols(c => Math.max(c - 1, 2));
 
-  const colsLeftToRight = React.useMemo(
+  const colsToRender = React.useMemo(
     () => Array.from({ length: numCols }, (_, i) => numCols - 1 - i),
     [numCols]
   );
@@ -105,34 +104,22 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
     triggerUpdate();
   }
 
-  const getCellId = (row: number, col: number) => `add-${initialState.id}-r${row}-c${col}`;
-  const getTabIndex = (row: number, colFromLeft: number) => row * numCols + colFromLeft + 1;
-
-  const focusNextCell = (currentRow: number, currentCol: number) => {
-    let nextRow = currentRow;
-    let nextCol = currentCol - 1;
-
-    if (nextCol < 0) {
-      nextRow = currentRow + 1;
-      nextCol = numCols -1;
+  const getTabIndex = (row: number, colFromLeft: number) => {
+    // Determine the column for the special highest-order result cell
+    const highestOrderResultCol = 0;
+    // Determine the total number of columns in the main grid
+    const mainGridCols = numCols;
+    
+    // For the special highest-order result cell
+    if (row === numOperands && colFromLeft === -1) {
+        // This should come after all main grid cells
+        return (numOperands + 1) * mainGridCols + 1;
     }
     
-    const totalRows = numOperands + 1; // operands + result
-    if (nextRow < totalRows) {
-        // Special case: skip the highest order result cell if it's outside the main grid
-        if (nextCol === numCols) {
-            const nextCellId = getCellId(nextRow, nextCol - 1);
-            document.getElementById(nextCellId)?.focus();
-        } else {
-            const nextCellId = getCellId(nextRow, nextCol);
-            document.getElementById(nextCellId)?.focus();
-        }
-    } else {
-         // If at the end of result row, maybe focus the first operand of first column?
-         const firstCellId = getCellId(0, numCols - 1);
-         document.getElementById(firstCellId)?.focus();
-    }
+    // For all other cells in the grid
+    return row * mainGridCols + colFromLeft + 1;
   };
+  
 
   return (
     <div
@@ -184,7 +171,6 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
             <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
             <div style={{height: cellSize}}>
               <CalcCell 
-                id={getCellId(numOperands, numCols)}
                 borderColor={getBorderColor(numCols)} 
                 size={cellSize} 
                 fontSize={fontSize}
@@ -194,8 +180,9 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
           </div>
 
           {/* Main digit columns */}
-          {colsLeftToRight.map((colFromRight, colIndex) => {
+          {colsToRender.map((colFromRight) => {
             const borderColor = getBorderColor(colFromRight);
+            const colFromLeft = numCols - 1 - colFromRight;
             return (
               <div key={colFromRight} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
@@ -205,12 +192,10 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                 {[...Array(numOperands)].map((_, rowIndex) => (
                   <div key={rowIndex} className="flex items-center" style={{height: cellSize}}>
                     <CalcCell 
-                        id={getCellId(rowIndex, colFromRight)}
                         borderColor={borderColor} 
                         size={cellSize} 
                         fontSize={fontSize} 
-                        onFilled={() => focusNextCell(rowIndex, colFromRight)}
-                        tabIndex={getTabIndex(rowIndex, colIndex + 1)}
+                        tabIndex={getTabIndex(rowIndex, colFromLeft)}
                     />
                   </div>
                 ))}
@@ -219,12 +204,10 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
 
                 <div style={{height: cellSize}}>
                   <CalcCell 
-                    id={getCellId(numOperands, colFromRight)}
                     borderColor={borderColor} 
                     size={cellSize} 
                     fontSize={fontSize}
-                    onFilled={() => focusNextCell(numOperands, colFromRight)}
-                    tabIndex={getTabIndex(numOperands, colIndex + 1)}
+                    tabIndex={getTabIndex(numOperands, colFromLeft)}
                   />
                 </div>
               </div>
@@ -267,4 +250,3 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
     </div>
   );
 }
-

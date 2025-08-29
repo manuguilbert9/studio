@@ -4,17 +4,16 @@ import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
-  id: string;
-  value: string;
-  onChange: (value: string) => void;
   borderColor: string;
   size: number;
   fontSize: number;
   allowCrossing?: boolean;
   isMinuend?: boolean;
+  tabIndex?: number;
 }
 
-export function CalcCell({ id, value, onChange, borderColor, size, fontSize, allowCrossing = false, isMinuend = false }: CalcCellProps) {
+export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, isMinuend = false, tabIndex }: CalcCellProps) {
+  const [value, setValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -29,9 +28,9 @@ export function CalcCell({ id, value, onChange, borderColor, size, fontSize, all
         // If the cell was empty and user types '1', it's just '1', not a borrow.
         // The borrow '1' is only added if there's already a digit.
         if (isMinuend && value.length === 1 && newValue.length === 2 && newValue.startsWith('1')) {
-           onChange(newValue);
+           setValue(newValue);
         } else {
-           onChange(newValue);
+           setValue(newValue);
         }
 
         if (isCrossed) {
@@ -59,13 +58,13 @@ export function CalcCell({ id, value, onChange, borderColor, size, fontSize, all
     >
       <input
         ref={inputRef}
-        id={id}
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
         maxLength={isMinuend ? 2 : 1}
         value={value}
         onChange={handleChange}
+        tabIndex={tabIndex}
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
