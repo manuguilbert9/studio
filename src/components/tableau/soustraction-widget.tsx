@@ -178,6 +178,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         fontSize={fontSize} 
                         allowCrossing={true} 
                         onFilled={() => focusNextCell(0, colFromRight)}
+                        isMinuend={true}
                     />
                 </div>
                 {/* Bottom operand (Subtrahend) */}
