@@ -15,16 +15,15 @@ interface CalcCellProps {
 export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, isMinuend = false, tabIndex }: CalcCellProps) {
   const [value, setValue] = useState('');
   const [crossedValue, setCrossedValue] = useState<string | null>(null);
-  const [hasBorrowedOne, setHasBorrowedOne] = useState(false); // New state for the small '1'
-
+  
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
-    // Allow only single digits
-    if (/^\d?$/.test(rawInput)) {
+    // Allow up to two digits, to handle "1" for borrowing
+    if (/^\d{0,2}$/.test(rawInput)) {
       setValue(rawInput);
-      setCrossedValue(null); // Clear crossing when value changes
+      setCrossedValue(null);
     }
   };
 
@@ -41,14 +40,9 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
     }
   };
   
-  // This is a simplified example. A real implementation would need to coordinate state with parent.
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (e.key === 'b' && value) { // "b" for "borrow"
-          e.preventDefault();
-          setHasBorrowedOne(prev => !prev);
-      }
-  }
-
+  // Logic to display number with borrowed '1'
+  const hasBorrowedOne = value.length === 2 && value.startsWith('1');
+  const displayValue = hasBorrowedOne ? value.substring(1) : value;
 
   return (
     <div
@@ -61,21 +55,22 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
-        maxLength={1}
+        maxLength={2}
         value={value}
         onChange={handleChange}
-        onKeyDown={handleKeyDown}
         tabIndex={tabIndex}
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
+          // Hide the raw text input if we are using the special borrowed one display
+          hasBorrowedOne && 'text-transparent'
         )}
         style={{
           fontSize: `${fontSize}px`,
-          color: hasBorrowedOne ? 'transparent' : 'inherit' // Hide the number if '1' is shown
         }}
       />
-      {/* Borrowed '1' display */}
+      
+      {/* Special display for borrowed '1' */}
       {hasBorrowedOne && (
          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
             <span 
@@ -92,7 +87,7 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
               className="font-bold font-mono"
               style={{ fontSize: `${fontSize}px` }}
             >
-              {value}
+              {displayValue}
             </span>
         </div>
       )}
