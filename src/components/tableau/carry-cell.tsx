@@ -8,9 +8,10 @@ interface CarryCellProps {
     size: number;
     fontSize: number;
     borderStyle?: 'solid' | 'dotted';
+    tabIndex?: number;
 }
 
-export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid' }: CarryCellProps) {
+export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', tabIndex }: CarryCellProps) {
   const [value, setValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
 
@@ -41,6 +42,7 @@ export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid' }
         type="text"
         maxLength={1}
         value={value}
+        tabIndex={tabIndex}
         onChange={handleChange}
         className={cn(
             'border text-center font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500',

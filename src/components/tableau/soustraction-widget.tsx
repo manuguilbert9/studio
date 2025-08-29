@@ -101,13 +101,13 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
     triggerUpdate();
   }
   
-  const getTabIndex = (row: number, col: number) => {
-      const rowSize = numCols;
-      // Re-map col from left-to-right to right-to-left for tabbing
-      const tabCol = numCols - 1 - col;
-      return row * rowSize + tabCol + 1;
+  const getTabIndex = (row: number, col: number): number => {
+    // Treat carry row as row -1
+    const totalRows = 4; // carry, minuend, subtrahend, result
+    const totalCols = numCols;
+    const mappedRow = row + 1; // map -1..2 to 0..3
+    return mappedRow * totalCols + (totalCols - 1 - col) + 1;
   };
-
 
   return (
     <div
@@ -149,10 +149,19 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
           {colsToRender.map((col, index) => {
              const colFromRight = numCols - 1 - col;
              const borderColor = getBorderColor(colFromRight);
+             const isLastCol = col === 0;
             return (
               <div key={col} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
-                  <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} borderStyle="dotted" />
+                  {!isLastCol && (
+                    <CarryCell 
+                        borderColor={borderColor} 
+                        size={carrySize} 
+                        fontSize={carryFontSize} 
+                        borderStyle="dotted" 
+                        tabIndex={getTabIndex(-1, col)}
+                    />
+                  )}
                 </div>
                 {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
