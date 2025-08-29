@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
@@ -14,41 +14,41 @@ interface CalcCellProps {
 
 export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, isMinuend = false, tabIndex }: CalcCellProps) {
   const [value, setValue] = useState('');
-  const [isCrossed, setIsCrossed] = useState(false);
+  const [crossedValue, setCrossedValue] = useState<string | null>(null);
+  const [hasBorrowedOne, setHasBorrowedOne] = useState(false); // New state for the small '1'
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawInput = e.target.value;
-    const maxLength = isMinuend ? 2 : 1;
-    
-    // Allow only digits up to maxLength
-    if (new RegExp(`^\\d{0,${maxLength}}$`).test(rawInput)) {
-        const newValue = rawInput;
-
-        // If the cell was empty and user types '1', it's just '1', not a borrow.
-        // The borrow '1' is only added if there's already a digit.
-        if (isMinuend && value.length === 1 && newValue.length === 2 && newValue.startsWith('1')) {
-           setValue(newValue);
-        } else {
-           setValue(newValue);
-        }
-
-        if (isCrossed) {
-            setIsCrossed(false);
-        }
+    // Allow only single digits
+    if (/^\d?$/.test(rawInput)) {
+      setValue(rawInput);
+      setCrossedValue(null); // Clear crossing when value changes
     }
   };
 
   const handleRightClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!allowCrossing) return;
+    if (!allowCrossing || !value) return;
     e.preventDefault();
-    if (value) {
-      setIsCrossed(prev => !prev);
+    if (!crossedValue) {
+        setCrossedValue(value);
+        setValue(''); // Clear the main value to type the new one
+    } else {
+        // Reset
+        setValue(crossedValue);
+        setCrossedValue(null);
     }
   };
   
-  // Show special styling for minuend borrow case (e.g., '12' becomes a small 1 and a big 2)
-  const showSmallOne = isMinuend && value.length === 2 && value.startsWith('1');
+  // This is a simplified example. A real implementation would need to coordinate state with parent.
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'b' && value) { // "b" for "borrow"
+          e.preventDefault();
+          setHasBorrowedOne(prev => !prev);
+      }
+  }
+
 
   return (
     <div
@@ -61,21 +61,23 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
-        maxLength={isMinuend ? 2 : 1}
+        maxLength={1}
         value={value}
         onChange={handleChange}
+        onKeyDown={handleKeyDown}
         tabIndex={tabIndex}
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
-          showSmallOne && 'text-transparent' // Hide the raw '12' text
         )}
         style={{
           fontSize: `${fontSize}px`,
+          color: hasBorrowedOne ? 'transparent' : 'inherit' // Hide the number if '1' is shown
         }}
       />
-      {showSmallOne && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
+      {/* Borrowed '1' display */}
+      {hasBorrowedOne && (
+         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
             <span 
               className="absolute font-bold font-mono"
               style={{
@@ -90,12 +92,24 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
               className="font-bold font-mono"
               style={{ fontSize: `${fontSize}px` }}
             >
-              {value.charAt(1)}
+              {value}
             </span>
         </div>
       )}
-      {isCrossed && value && (
-         <span className="absolute left-0 top-1/2 w-full h-0.5 bg-slate-700 transform -translate-y-1/2 rotate-[-20deg] pointer-events-none"></span>
+
+      {/* Crossed value display */}
+      {crossedValue && (
+         <>
+            <span 
+                className="absolute text-slate-500 font-bold font-mono pointer-events-none"
+                style={{ fontSize: `${fontSize}px` }}
+            >
+                {crossedValue}
+            </span>
+            <span 
+                className="absolute left-0 top-1/2 w-full h-0.5 bg-slate-700 transform -translate-y-1/2 rotate-[-20deg] pointer-events-none"
+            ></span>
+         </>
       )}
     </div>
   );
