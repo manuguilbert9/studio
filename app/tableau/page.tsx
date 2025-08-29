@@ -1,23 +1,27 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon } from 'lucide-react';
+import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Calculator } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
 import { FluencyExercise } from '@/components/fluency-exercise';
 import { TimerWidget } from '@/components/tableau/timer-widget';
 import { DateWidget } from '@/components/tableau/date-widget';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
+import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
 import { TextWidget } from '@/components/tableau/text-widget';
 import { ImageWidget } from '@/components/tableau/image-widget';
 import { AdditionIcon } from '@/components/icons/addition-icon';
+import { SoustractionIcon } from '@/components/icons/soustraction-icon';
 import { cn } from '@/lib/utils';
 import { saveTableauState, loadTableauState } from '@/services/tableau';
-import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState } from '@/services/tableau.types';
+import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState, SoustractionWidgetState } from '@/services/tableau.types';
 
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -28,6 +32,7 @@ export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
     dateWidgets: [],
     timerWidgets: [],
     additionWidgets: [],
+    soustractionWidgets: [],
     imageWidgets: [],
 };
 
@@ -44,6 +49,7 @@ export default function TableauPage() {
   const [dateWidgets, setDateWidgets] = useState<DateWidgetState[]>([]);
   const [timerWidgets, setTimerWidgets] = useState<TimerWidgetState[]>([]);
   const [additionWidgets, setAdditionWidgets] = useState<AdditionWidgetState[]>([]);
+  const [soustractionWidgets, setSoustractionWidgets] = useState<SoustractionWidgetState[]>([]);
   const [imageWidgets, setImageWidgets] = useState<ImageWidgetState[]>([]);
 
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -119,6 +125,7 @@ export default function TableauPage() {
                 setDateWidgets(loadedState.dateWidgets || []);
                 setTimerWidgets(loadedState.timerWidgets || []);
                 setAdditionWidgets(loadedState.additionWidgets || []);
+                setSoustractionWidgets(loadedState.soustractionWidgets || []);
                 setImageWidgets(loadedState.imageWidgets || []);
             } else {
                 setActiveSkill(null);
@@ -126,6 +133,7 @@ export default function TableauPage() {
                 setDateWidgets(defaultTableauState.dateWidgets);
                 setTimerWidgets(defaultTableauState.timerWidgets);
                 setAdditionWidgets(defaultTableauState.additionWidgets);
+                setSoustractionWidgets(defaultTableauState.soustractionWidgets);
                 setImageWidgets(defaultTableauState.imageWidgets);
             }
         } catch (error) {
@@ -135,6 +143,7 @@ export default function TableauPage() {
              setDateWidgets(defaultTableauState.dateWidgets);
              setTimerWidgets(defaultTableauState.timerWidgets);
              setAdditionWidgets(defaultTableauState.additionWidgets);
+             setSoustractionWidgets(defaultTableauState.soustractionWidgets);
              setImageWidgets(defaultTableauState.imageWidgets);
         } finally {
             setIsLoading(false);
@@ -153,6 +162,7 @@ export default function TableauPage() {
         dateWidgets,
         timerWidgets,
         additionWidgets,
+        soustractionWidgets,
         imageWidgets,
     };
 
@@ -166,7 +176,7 @@ export default function TableauPage() {
         console.error("Failed to save:", result.error);
         setTimeout(() => setSaveStatus('idle'), 3000);
     }
-  }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, imageWidgets]);
+  }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, soustractionWidgets, imageWidgets]);
 
 
   // Widget handlers
@@ -194,6 +204,10 @@ export default function TableauPage() {
 
   const handleAddAdditionWidget = () => {
     addWidget(setAdditionWidgets, { id: Date.now(), pos: { x: lastMousePos.x, y: lastMousePos.y }, size: { width: 450, height: 300 }, numOperands: 2, numCols: 3 });
+  };
+  
+  const handleAddSoustractionWidget = () => {
+    addWidget(setSoustractionWidgets, { id: Date.now(), pos: { x: lastMousePos.x, y: lastMousePos.y }, size: { width: 450, height: 300 }, numCols: 3 });
   };
 
   const toggleFullscreen = () => {
@@ -273,9 +287,25 @@ export default function TableauPage() {
                             <Button variant="outline" size="sm" onClick={handleAddTextWidget}>
                                 <Type className="h-4 w-4 mr-2" /> Texte
                             </Button>
-                            <Button variant="outline" size="sm" onClick={handleAddAdditionWidget}>
-                                <AdditionIcon className="h-4 w-4 mr-2" /> Gabarit Addition
-                            </Button>
+                            
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Calculator className="h-4 w-4 mr-2" /> Gabarits Calcul
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={handleAddAdditionWidget}>
+                                        <AdditionIcon className="h-4 w-4 mr-2" />
+                                        <span>Addition posée</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleAddSoustractionWidget}>
+                                        <SoustractionIcon className="h-4 w-4 mr-2" />
+                                        <span>Soustraction posée</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
                             <Button variant="outline" size="sm" onClick={handleAddTimerWidget}>
                                 <Timer className="h-4 w-4 mr-2" /> Minuteur
                             </Button>
@@ -319,6 +349,9 @@ export default function TableauPage() {
         ))}
         {additionWidgets.map(widgetState => (
             <AdditionWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setAdditionWidgets)} onClose={() => removeWidget(setAdditionWidgets, widgetState.id)} />
+        ))}
+        {soustractionWidgets.map(widgetState => (
+            <SoustractionWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setSoustractionWidgets)} onClose={() => removeWidget(setSoustractionWidgets, widgetState.id)} />
         ))}
         {timerWidgets.map(widgetState => (
             <TimerWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setTimerWidgets)} onClose={() => removeWidget(setTimerWidgets, widgetState.id)} />
