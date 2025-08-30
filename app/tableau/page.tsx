@@ -281,9 +281,6 @@ export default function TableauPage() {
                         </Sheet>
 
                         <div className="flex items-center gap-2">
-                            <Button variant="outline" size="sm" disabled>
-                                <ImageIcon className="h-4 w-4 mr-2" /> Coller une image (Ctrl+V)
-                            </Button>
                             <Button variant="outline" size="sm" onClick={handleAddTextWidget}>
                                 <Type className="h-4 w-4 mr-2" /> Texte
                             </Button>
@@ -291,7 +288,7 @@ export default function TableauPage() {
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="outline" size="sm">
-                                        <Calculator className="h-4 w-4 mr-2" /> Gabarits Calcul
+                                        <Calculator className="h-4 w-4 mr-2" /> Calculs
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
