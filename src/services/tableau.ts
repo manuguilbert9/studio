@@ -88,6 +88,7 @@ export async function loadTableauState(userId: string): Promise<TableauState | n
                 additionWidgets: userState.additionWidgets || [],
                 soustractionWidgets: userState.soustractionWidgets || [],
                 imageWidgets: userState.imageWidgets || [],
+                drawingWidgets: userState.drawingWidgets || [],
             };
         } else {
             console.log("No saved state found for user:", userId);
@@ -98,5 +99,3 @@ export async function loadTableauState(userId: string): Promise<TableauState | n
         return null;
     }
 }
-
-    

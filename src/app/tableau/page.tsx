@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Menu, Calculator } from 'lucide-react';
+import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Menu, Calculator, Brush } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
@@ -17,9 +17,10 @@ import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
 import { TextWidget } from '@/components/tableau/text-widget';
 import { ImageWidget } from '@/components/tableau/image-widget';
+import { DrawingWidget } from '@/components/tableau/drawing-widget';
 import { cn } from '@/lib/utils';
 import { saveTableauState, loadTableauState } from '@/services/tableau';
-import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState, SoustractionWidgetState } from '@/services/tableau.types';
+import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState, SoustractionWidgetState, DrawingWidgetState } from '@/services/tableau.types';
 import { AdditionIcon } from '@/components/icons/addition-icon';
 import { SoustractionIcon } from '@/components/icons/soustraction-icon';
 
@@ -34,6 +35,7 @@ export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
     additionWidgets: [],
     soustractionWidgets: [],
     imageWidgets: [],
+    drawingWidgets: [],
 };
 
 export default function TableauPage() {
@@ -51,6 +53,8 @@ export default function TableauPage() {
   const [additionWidgets, setAdditionWidgets] = useState<AdditionWidgetState[]>([]);
   const [soustractionWidgets, setSoustractionWidgets] = useState<SoustractionWidgetState[]>([]);
   const [imageWidgets, setImageWidgets] = useState<ImageWidgetState[]>([]);
+  const [drawingWidgets, setDrawingWidgets] = useState<DrawingWidgetState[]>([]);
+
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 200, y: 150 });
@@ -127,6 +131,7 @@ export default function TableauPage() {
                 setAdditionWidgets(loadedState.additionWidgets || []);
                 setSoustractionWidgets(loadedState.soustractionWidgets || []);
                 setImageWidgets(loadedState.imageWidgets || []);
+                setDrawingWidgets(loadedState.drawingWidgets || []);
             } else {
                 setActiveSkill(null);
                 setTextWidgets(defaultTableauState.textWidgets);
@@ -135,6 +140,7 @@ export default function TableauPage() {
                 setAdditionWidgets(defaultTableauState.additionWidgets);
                 setSoustractionWidgets(defaultTableauState.soustractionWidgets);
                 setImageWidgets(defaultTableauState.imageWidgets);
+                setDrawingWidgets(defaultTableauState.drawingWidgets);
             }
         } catch (error) {
             console.error("Error loading state, initializing with default:", error);
@@ -145,6 +151,7 @@ export default function TableauPage() {
              setAdditionWidgets(defaultTableauState.additionWidgets);
              setSoustractionWidgets(defaultTableauState.soustractionWidgets);
              setImageWidgets(defaultTableauState.imageWidgets);
+             setDrawingWidgets(defaultTableauState.drawingWidgets);
         } finally {
             setIsLoading(false);
         }
@@ -164,6 +171,7 @@ export default function TableauPage() {
         additionWidgets,
         soustractionWidgets,
         imageWidgets,
+        drawingWidgets,
     };
 
     const result = await saveTableauState(username, currentState);
@@ -176,7 +184,7 @@ export default function TableauPage() {
         console.error("Failed to save:", result.error);
         setTimeout(() => setSaveStatus('idle'), 3000);
     }
-  }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, soustractionWidgets, imageWidgets]);
+  }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, soustractionWidgets, imageWidgets, drawingWidgets]);
 
 
   // Widget handlers
@@ -208,6 +216,16 @@ export default function TableauPage() {
   
   const handleAddSoustractionWidget = () => {
     addWidget(setSoustractionWidgets, { id: Date.now(), pos: { x: lastMousePos.x, y: lastMousePos.y }, size: { width: 450, height: 300 }, numCols: 3 });
+  };
+  
+  const handleAddDrawingWidget = () => {
+    const newWidget: DrawingWidgetState = {
+        id: Date.now(),
+        pos: { x: lastMousePos.x - 250, y: lastMousePos.y - 150 },
+        size: { width: 500, height: 400 },
+        drawingData: '', // Empty canvas initially
+    };
+    setDrawingWidgets(current => [...current, newWidget]);
   };
 
   const toggleFullscreen = () => {
@@ -281,6 +299,9 @@ export default function TableauPage() {
                         </Sheet>
 
                         <div className="flex items-center gap-2">
+                             <Button variant="outline" size="sm" onClick={handleAddDrawingWidget}>
+                                <Brush className="h-4 w-4 mr-2" /> Dessin
+                            </Button>
                             <Button variant="outline" size="sm" onClick={handleAddTextWidget}>
                                 <Type className="h-4 w-4 mr-2" /> Texte
                             </Button>
@@ -333,11 +354,14 @@ export default function TableauPage() {
         </div>
 
 
-       <main className="flex-1 w-full p-4 sm:p-6 md:p-8 pt-12">
+       <main className="flex-1 w-full p-4 sm-p-6 md:p-8 pt-12">
             {renderExercise()}
        </main>
 
         {/* WIDGETS */}
+        {drawingWidgets.map(widgetState => (
+          <DrawingWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setDrawingWidgets)} onClose={() => removeWidget(setDrawingWidgets, widgetState.id)} />
+        ))}
         {imageWidgets.map(widgetState => (
           <ImageWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setImageWidgets)} onClose={() => removeWidget(setImageWidgets, widgetState.id)} />
         ))}
@@ -360,5 +384,3 @@ export default function TableauPage() {
     </div>
   );
 }
-
-    

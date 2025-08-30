@@ -55,6 +55,13 @@ export interface ImageWidgetState {
     src: string; // Data URL
 }
 
+export interface DrawingWidgetState {
+    id: number;
+    pos: Position;
+    size: Size;
+    drawingData: string; // Data URL of the canvas state
+}
+
 export interface TableauState {
     activeSkillSlug: string | null;
     textWidgets: TextWidgetState[];
@@ -63,7 +70,6 @@ export interface TableauState {
     additionWidgets: AdditionWidgetState[];
     soustractionWidgets: SoustractionWidgetState[];
     imageWidgets: ImageWidgetState[];
+    drawingWidgets: DrawingWidgetState[];
     updatedAt: string | null; // Changed to string for JSON compatibility
 }
-
-    
