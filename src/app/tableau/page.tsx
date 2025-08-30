@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -15,10 +16,11 @@ import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
 import { TextWidget } from '@/components/tableau/text-widget';
 import { ImageWidget } from '@/components/tableau/image-widget';
-import { CalculWidgetSelect } from '@/components/tableau/calcul-widget-select';
 import { cn } from '@/lib/utils';
 import { saveTableauState, loadTableauState } from '@/services/tableau';
 import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState, SoustractionWidgetState } from '@/services/tableau.types';
+import { AdditionIcon } from '@/components/icons/addition-icon';
+import { SoustractionIcon } from '@/components/icons/soustraction-icon';
 
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -281,10 +283,13 @@ export default function TableauPage() {
                             <Type className="h-4 w-4 mr-2" /> Texte
                         </Button>
                         
-                        <CalculWidgetSelect 
-                            onAddAddition={handleAddAdditionWidget}
-                            onAddSoustraction={handleAddSoustractionWidget}
-                        />
+                        <Button variant="outline" size="sm" onClick={handleAddAdditionWidget}>
+                            <AdditionIcon className="h-4 w-4 mr-2" /> Addition posée
+                        </Button>
+
+                        <Button variant="outline" size="sm" onClick={handleAddSoustractionWidget}>
+                            <SoustractionIcon className="h-4 w-4 mr-2" /> Soustraction posée
+                        </Button>
 
                         <Button variant="outline" size="sm" onClick={handleAddTimerWidget}>
                             <Timer className="h-4 w-4 mr-2" /> Minuteur
@@ -352,4 +357,5 @@ export default function TableauPage() {
     </div>
   );
 }
+
 
