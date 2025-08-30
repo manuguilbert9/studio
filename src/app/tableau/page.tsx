@@ -5,8 +5,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Menu } from 'lucide-react';
+import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Menu, Calculator } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
 import { FluencyExercise } from '@/components/fluency-exercise';
@@ -39,7 +40,6 @@ export default function TableauPage() {
   const [username, setUsername] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
-  const [isToolbarOpen, setIsToolbarOpen] = useState(true);
 
   const [activeSkill, setActiveSkill] = useState<Skill | null>(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
@@ -249,88 +249,91 @@ export default function TableauPage() {
   return (
     <div className="min-h-screen w-full bg-white text-slate-900 relative flex flex-col">
        
-        <header className={cn("fixed top-0 left-0 right-0 z-20 transition-transform duration-300 ease-in-out", isToolbarOpen ? 'translate-y-0' : '-translate-y-full')}>
-            <div className="flex h-16 items-center justify-between border-b bg-slate-100/80 px-4 sm:px-6 backdrop-blur-sm shadow-md">
-                    <Sheet open={isDrawerOpen} onOpenChange={setDrawerOpen}>
-                        <SheetTrigger asChild>
-                            <Button variant="outline" size="icon">
-                                <PanelLeftOpen className="h-5 w-5" />
-                                <span className="sr-only">Ouvrir le tiroir des exercices</span>
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left" className="sm:max-w-xs">
-                            <SheetHeader>
-                                <SheetTitle className="font-headline text-2xl">Choisir un exercice</SheetTitle>
-                            </SheetHeader>
-                            <div className="flex flex-col space-y-2 mt-4">
-                                {skills.map((skill) => (
-                                <Button
-                                    key={skill.slug}
-                                    variant={activeSkill?.slug === skill.slug ? 'default' : 'ghost'}
-                                    className="justify-start text-lg h-12"
-                                    onClick={() => handleSelectSkill(skill)}
-                                >
-                                    <span className="mr-4 text-primary">{skill.icon}</span>
-                                    {skill.name}
+       <div className="group fixed top-0 left-0 right-0 z-20">
+            <div className="h-8 w-full bg-transparent"></div>
+            <header className={cn("absolute top-0 left-0 right-0 z-20 transition-transform duration-300 ease-in-out -translate-y-full group-hover:translate-y-0")}>
+                <div className="flex h-16 items-center justify-between border-b bg-slate-100/80 px-4 sm:px-6 backdrop-blur-sm shadow-md">
+                        <Sheet open={isDrawerOpen} onOpenChange={setDrawerOpen}>
+                            <SheetTrigger asChild>
+                                <Button variant="outline" size="icon">
+                                    <PanelLeftOpen className="h-5 w-5" />
+                                    <span className="sr-only">Ouvrir le tiroir des exercices</span>
                                 </Button>
-                                ))}
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+                            </SheetTrigger>
+                            <SheetContent side="left" className="sm:max-w-xs">
+                                <SheetHeader>
+                                    <SheetTitle className="font-headline text-2xl">Choisir un exercice</SheetTitle>
+                                </SheetHeader>
+                                <div className="flex flex-col space-y-2 mt-4">
+                                    {skills.map((skill) => (
+                                    <Button
+                                        key={skill.slug}
+                                        variant={activeSkill?.slug === skill.slug ? 'default' : 'ghost'}
+                                        className="justify-start text-lg h-12"
+                                        onClick={() => handleSelectSkill(skill)}
+                                    >
+                                        <span className="mr-4 text-primary">{skill.icon}</span>
+                                        {skill.name}
+                                    </Button>
+                                    ))}
+                                </div>
+                            </SheetContent>
+                        </Sheet>
 
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handleAddTextWidget}>
-                            <Type className="h-4 w-4 mr-2" /> Texte
-                        </Button>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={handleAddTextWidget}>
+                                <Type className="h-4 w-4 mr-2" /> Texte
+                            </Button>
+                            
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Calculator className="h-4 w-4 mr-2" /> Calculs
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={handleAddAdditionWidget}>
+                                        <AdditionIcon className="h-4 w-4 mr-2" />
+                                        <span>Addition posée</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleAddSoustractionWidget}>
+                                        <SoustractionIcon className="h-4 w-4 mr-2" />
+                                        <span>Soustraction posée</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+
+                            <Button variant="outline" size="sm" onClick={handleAddTimerWidget}>
+                                <Timer className="h-4 w-4 mr-2" /> Minuteur
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={handleAddDateWidget}>
+                                <CalendarDays className="h-4 w-4 mr-2" /> Date
+                            </Button>
+                             <Button variant="outline" size="sm" onClick={toggleFullscreen}>
+                                {isFullscreen ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />} Plein écran
+                            </Button>
+                        </div>
                         
-                        <Button variant="outline" size="sm" onClick={handleAddAdditionWidget}>
-                            <AdditionIcon className="h-4 w-4 mr-2" /> Addition posée
-                        </Button>
-
-                        <Button variant="outline" size="sm" onClick={handleAddSoustractionWidget}>
-                            <SoustractionIcon className="h-4 w-4 mr-2" /> Soustraction posée
-                        </Button>
-
-                        <Button variant="outline" size="sm" onClick={handleAddTimerWidget}>
-                            <Timer className="h-4 w-4 mr-2" /> Minuteur
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={handleAddDateWidget}>
-                            <CalendarDays className="h-4 w-4 mr-2" /> Date
-                        </Button>
-                         <Button variant="outline" size="sm" onClick={toggleFullscreen}>
-                            {isFullscreen ? <Minimize className="h-4 w-4 mr-2" /> : <Maximize className="h-4 w-4 mr-2" />} Plein écran
-                        </Button>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                         <Button variant="outline" size="sm" onClick={handleSaveState} disabled={saveStatus === 'saving' || saveStatus === 'saved'}>
-                            {saveStatus === 'saving' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                            {saveStatus === 'saved' && <CheckCircle className="h-4 w-4 mr-2 text-green-500" />}
-                            {saveStatus === 'error' && <X className="h-4 w-4 mr-2 text-red-500" />}
-                            {saveStatus === 'idle' && <Save className="h-4 w-4 mr-2" />}
-                            {saveStatus === 'saving' ? 'Enregistrement...' : saveStatus === 'saved' ? 'Enregistré' : 'Sauvegarder'}
-                        </Button>
-                        <Button asChild variant="outline">
-                            <Link href="/">
-                            <Home className="h-4 w-4 mr-2" /> Quitter
-                            </Link>
-                        </Button>
-                    </div>
-            </div>
-        </header>
-        
-        <Button 
-            variant="outline"
-            size="icon"
-            className="fixed top-20 right-4 z-30 rounded-full shadow-lg"
-            onClick={() => setIsToolbarOpen(!isToolbarOpen)}
-            aria-label="Afficher/Masquer la barre d'outils"
-        >
-            <Menu className="h-5 w-5" />
-        </Button>
+                        <div className="flex items-center gap-2">
+                             <Button variant="outline" size="sm" onClick={handleSaveState} disabled={saveStatus === 'saving' || saveStatus === 'saved'}>
+                                {saveStatus === 'saving' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                {saveStatus === 'saved' && <CheckCircle className="h-4 w-4 mr-2 text-green-500" />}
+                                {saveStatus === 'error' && <X className="h-4 w-4 mr-2 text-red-500" />}
+                                {saveStatus === 'idle' && <Save className="h-4 w-4 mr-2" />}
+                                {saveStatus === 'saving' ? 'Enregistrement...' : saveStatus === 'saved' ? 'Enregistré' : 'Sauvegarder'}
+                            </Button>
+                            <Button asChild variant="outline">
+                                <Link href="/">
+                                <Home className="h-4 w-4 mr-2" /> Quitter
+                                </Link>
+                            </Button>
+                        </div>
+                </div>
+            </header>
+        </div>
 
 
-       <main className="flex-1 w-full p-4 sm:p-6 md:p-8 pt-20">
+       <main className="flex-1 w-full p-4 sm:p-6 md:p-8 pt-12">
             {renderExercise()}
        </main>
 
@@ -358,4 +361,4 @@ export default function TableauPage() {
   );
 }
 
-
+    
