@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Loader2, Home, CheckCircle, Star } from 'lucide-react';
+import { Loader2, Home, CheckCircle, Star, FileText } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getSpellingLists, getSpellingProgress, SpellingList } from '@/services/spelling';
 import { getCurrentSpellingListId } from '@/services/teacher';
@@ -115,7 +115,15 @@ function DevoirsList() {
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle className="font-headline text-3xl sm:text-4xl text-center">Devoirs d'Orthographe</CardTitle>
+        <div className="flex justify-between items-center">
+            <CardTitle className="font-headline text-3xl sm:text-4xl text-center flex-grow">Devoirs d'Orthographe</CardTitle>
+             <Button asChild variant="outline">
+                <Link href="/orthographe/mots.pptx" target="_blank">
+                    <FileText className="mr-2" />
+                    Consulter les listes de mots
+                </Link>
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         {typeof sortedLists === 'object' && sortedLists.current ? (
