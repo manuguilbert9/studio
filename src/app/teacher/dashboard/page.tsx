@@ -71,6 +71,16 @@ export default function TeacherDashboardPage() {
     loadData();
   }, [router, toast]);
 
+  const studentProgressMap = useMemo(() => {
+    const map = new Map<string, Record<string, SpellingResult>>();
+    if (allSpellingProgress) {
+        allSpellingProgress.forEach(progressItem => {
+            map.set(progressItem.userId, progressItem.progress);
+        });
+    }
+    return map;
+  }, [allSpellingProgress]);
+
   const handleLogout = () => {
     sessionStorage.removeItem('teacher_authenticated');
     router.push('/');
@@ -99,18 +109,7 @@ export default function TeacherDashboardPage() {
         setIsCreatingStudent(false);
     }
   }
-
-  // Memoize the progress map to avoid re-calculating on every render.
-  const studentProgressMap = useMemo(() => {
-    const map = new Map<string, Record<string, SpellingResult>>();
-    if (allSpellingProgress) {
-        allSpellingProgress.forEach(progressItem => {
-            map.set(progressItem.userId, progressItem.progress);
-        });
-    }
-    return map;
-  }, [allSpellingProgress]);
-
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -237,6 +236,29 @@ export default function TeacherDashboardPage() {
                   </TableBody>
                 </Table>
                 </div>
+                 <div className="mt-8 p-4 border rounded-md bg-muted/50">
+                    <h4 className="font-bold text-lg mb-2">Données de débogage</h4>
+                    <div className="space-y-4">
+                        <div>
+                            <h5 className="font-semibold">Données brutes de `allSpellingProgress` (max 5)</h5>
+                            <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto">
+                                {JSON.stringify(allSpellingProgress.slice(0,5), null, 2)}
+                            </pre>
+                        </div>
+                        <div>
+                            <h5 className="font-semibold">Données de `studentProgressMap` (max 5 entrées)</h5>
+                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto">
+                                {JSON.stringify(Array.from(studentProgressMap.entries()).slice(0,5), null, 2)}
+                            </pre>
+                        </div>
+                         <div>
+                            <h5 className="font-semibold">Liste des élèves (`students`)</h5>
+                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto">
+                                {JSON.stringify(students, null, 2)}
+                            </pre>
+                        </div>
+                    </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -284,3 +306,5 @@ export default function TeacherDashboardPage() {
     </main>
   );
 }
+
+    
