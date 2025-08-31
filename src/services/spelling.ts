@@ -4,7 +4,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
 
 
 export interface SpellingList {
