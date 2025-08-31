@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent, useMemo } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -58,10 +58,10 @@ export default function TeacherDashboardPage() {
         setSpellingLists(listsData);
         setStudents(studentListData);
         
-        // Build the progress map directly here
         const newMap = new Map<string, Record<string, SpellingResult>>();
         if (progressData) {
             progressData.forEach(progressItem => {
+                // The doc ID is the userId, and the data is the progress map
                 newMap.set(progressItem.userId, progressItem.progress);
             });
         }
@@ -246,7 +246,7 @@ export default function TeacherDashboardPage() {
               <CardHeader>
                 <CardTitle>Résultats des exercices "En classe"</CardTitle>
                 <CardDescription>Voici les derniers scores enregistrés pour tous les élèves.</CardDescription>
-              </Header>
+              </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
