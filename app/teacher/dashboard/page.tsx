@@ -26,7 +26,7 @@ export default function TeacherDashboardPage() {
   
   // Data states
   const [allScores, setAllScores] = useState<Score[]>([]);
-  const [allSpellingProgress, setAllSpellingProgress] = useState<Map<string, SpellingProgress['progress']>>(new Map());
+  const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   
@@ -50,12 +50,8 @@ export default function TeacherDashboardPage() {
         getStudents(),
       ]);
       
-      // Create a Map for quick lookup: studentId -> progress object
-      const progressMap = new Map<string, SpellingProgress['progress']>();
-      progressData.forEach(p => progressMap.set(p.userId, p.progress));
-
       setAllScores(scores);
-      setAllSpellingProgress(progressMap);
+      setAllSpellingProgress(progressData);
       setSpellingLists(lists);
       setStudents(studentList);
 
@@ -193,27 +189,29 @@ export default function TeacherDashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {students.map(student => (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-semibold sticky left-0 bg-background">{student.name}</TableCell>
-                        {spellingLists.flatMap(list => [
-                          `${list.id}-lundi`,
-                          `${list.id}-jeudi`
-                        ]).map(exerciseId => {
-                          const studentProgress = allSpellingProgress.get(student.id);
-                          const isCompleted = studentProgress?.[exerciseId.toLowerCase()];
-                          return (
-                            <TableCell key={exerciseId} className="text-center">
-                              {isCompleted ? (
-                                <CheckCircle className="text-green-500 mx-auto" />
-                              ) : (
-                                <XCircle className="text-muted-foreground/50 mx-auto" />
-                              )}
-                            </TableCell>
-                          )
-                        })}
-                      </TableRow>
-                    ))}
+                    {students.map(student => {
+                        const studentProgress = allSpellingProgress.find(p => p.userId === student.id);
+                        return (
+                          <TableRow key={student.id}>
+                            <TableCell className="font-semibold sticky left-0 bg-background">{student.name}</TableCell>
+                            {spellingLists.flatMap(list => [
+                              `${list.id}-lundi`,
+                              `${list.id}-jeudi`
+                            ]).map(exerciseId => {
+                              const isCompleted = studentProgress?.progress?.[exerciseId.toLowerCase()];
+                              return (
+                                <TableCell key={exerciseId} className="text-center">
+                                  {isCompleted ? (
+                                    <CheckCircle className="text-green-500 mx-auto" />
+                                  ) : (
+                                    <XCircle className="text-muted-foreground/50 mx-auto" />
+                                  )}
+                                </TableCell>
+                              )
+                            })}
+                          </TableRow>
+                        )
+                    })}
                   </TableBody>
                 </Table>
                 </div>
