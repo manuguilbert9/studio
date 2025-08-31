@@ -16,15 +16,15 @@ function DevoirsList() {
   const [lists, setLists] = useState<SpellingList[]>([]);
   const [progress, setProgress] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const { username, isLoading: isUserLoading } = useContext(UserContext);
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
 
   useEffect(() => {
     async function loadData() {
       setIsLoading(true);
       const spellingLists = await getSpellingLists();
       setLists(spellingLists);
-      if (username) {
-        const userProgress = await getSpellingProgress(username);
+      if (student && student.id) {
+        const userProgress = await getSpellingProgress(student.id);
         setProgress(userProgress);
       }
       setIsLoading(false);
@@ -33,7 +33,7 @@ function DevoirsList() {
     if (!isUserLoading) {
       loadData();
     }
-  }, [username, isUserLoading]);
+  }, [student, isUserLoading]);
 
   if (isLoading || isUserLoading) {
     return (
@@ -44,7 +44,7 @@ function DevoirsList() {
     );
   }
   
-  if (!username) {
+  if (!student) {
     return (
       <Card className="w-full text-center p-8">
         <CardTitle>Veuillez vous connecter</CardTitle>
@@ -73,7 +73,7 @@ function DevoirsList() {
                   { session: 'Lundi', exerciseId: `${list.id}-lundi` },
                   { session: 'Jeudi', exerciseId: `${list.id}-jeudi` }
                 ].map(({ session, exerciseId }) => {
-                   const isCompleted = progress[exerciseId] || false;
+                   const isCompleted = progress[exerciseId.toLowerCase()] || false;
                    return (
                       <Button 
                         key={exerciseId} 

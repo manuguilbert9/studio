@@ -29,7 +29,6 @@ export default function TeacherDashboardPage() {
   const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [allStudentNames, setAllStudentNames] = useState<string[]>([]);
   
   // New student form state
   const [newStudentName, setNewStudentName] = useState('');
@@ -55,9 +54,6 @@ export default function TeacherDashboardPage() {
       setAllSpellingProgress(progress);
       setSpellingLists(lists);
       setStudents(studentList);
-
-      const uniqueStudents = new Set([...scores.map(s => s.userId), ...progress.map(p => p.userId)]);
-      setAllStudentNames(Array.from(uniqueStudents).sort());
 
       setIsLoading(false);
     }
@@ -96,7 +92,8 @@ export default function TeacherDashboardPage() {
 
   const getStudentProgress = (studentId: string, exerciseId: string) => {
     const studentProgress = allSpellingProgress.find(p => p.userId === studentId);
-    return studentProgress?.progress[exerciseId.toLowerCase()] !== undefined;
+    if (!studentProgress) return false;
+    return studentProgress.progress[exerciseId.toLowerCase()] !== undefined;
   }
 
   if (isLoading) {

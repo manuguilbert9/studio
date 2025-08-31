@@ -20,7 +20,7 @@ export default function SpellingExercisePage() {
   const router = useRouter();
   const params = useParams();
   const { exerciseId } = params as { exerciseId: string };
-  const { username, isLoading: isUserLoading } = useContext(UserContext);
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
   
   const [list, setList] = useState<SpellingList | null>(null);
   const [words, setWords] = useState<string[]>([]);
@@ -108,8 +108,8 @@ export default function SpellingExercisePage() {
     if (currentWordIndex < words.length - 1) {
       setCurrentWordIndex(prev => prev + 1);
     } else {
-      if (username && exerciseId) {
-        await saveSpellingResult(username, exerciseId, errors);
+      if (student && student.id && exerciseId) {
+        await saveSpellingResult(student.id, exerciseId, errors);
       }
       setIsFinished(true);
     }
@@ -127,7 +127,7 @@ export default function SpellingExercisePage() {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
   }
   
-  if (!username) {
+  if (!student) {
      return (
         <main className="flex min-h-screen w-full flex-col items-center justify-center p-4">
             <Card className="p-8 text-center">
