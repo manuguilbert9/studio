@@ -239,19 +239,6 @@ export default function TeacherDashboardPage() {
                 </div>
               </CardContent>
             </Card>
-             <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>Données brutes (pour débogage)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="p-4 bg-muted rounded-md text-xs font-mono overflow-auto max-h-96">
-                    <h3 className="font-bold mb-2">`allSpellingProgress` (depuis Firestore)</h3>
-                    <pre>{JSON.stringify(allSpellingProgress, null, 2)}</pre>
-                    <h3 className="font-bold mt-4 mb-2">`studentProgressMap` (données transformées)</h3>
-                    <pre>{JSON.stringify(Object.fromEntries(studentProgressMap.entries()), null, 2)}</pre>
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="class-results">

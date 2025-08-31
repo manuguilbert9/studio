@@ -1,13 +1,13 @@
 
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
+import { useContext } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { skills } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { ArrowRight, BarChart3, Home, Presentation } from 'lucide-react';
+import { BarChart3, Home, Presentation } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 

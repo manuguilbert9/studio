@@ -47,7 +47,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [showConfetti, setShowConfetti] = useState(false);
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   
   const { student, isLoading: isUserLoading } = useContext(UserContext);
 
@@ -200,13 +199,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
-      if (isFinished && student && student.id && !isTableauMode) {
-        setIsSaving(true);
+      if (isFinished && student && !isTableauMode) {
         setIsLoadingHistory(true);
         
         const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         
-        const scoreData: Omit<Score, 'createdAt' | 'id'> = {
+        const scoreData: Omit<Score, 'id' | 'createdAt'> = {
             userId: student.id,
             skill: skill.slug,
             score: newScoreValue,
@@ -231,7 +229,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           console.error("Error fetching scores: ", e);
         } finally {
             setIsLoadingHistory(false);
-            setIsSaving(false); // Allow saving again
         }
       }
     };
@@ -248,7 +245,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setShowConfetti(false);
     setScoreHistory([]);
     setIsLoadingHistory(true);
-    setIsSaving(false);
     setIsReadyToStart(false);
     setCalculationSettings(null);
     setCurrencySettings(null);
@@ -259,6 +255,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       setIsReadyToStart(true);
     }
   };
+
+  if (isUserLoading) {
+     return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'utilisateur...</Card>;
+  }
 
   if (!isReadyToStart) {
       if (skill.slug === 'calculation') {
