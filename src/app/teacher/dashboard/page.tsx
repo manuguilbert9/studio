@@ -44,23 +44,32 @@ export default function TeacherDashboardPage() {
 
     async function loadData() {
       setIsLoading(true);
-      const [scores, progressData, lists, studentList] = await Promise.all([
-        getAllScores(),
-        getAllSpellingProgress(),
-        getSpellingLists(),
-        getStudents(),
-      ]);
-      
-      setAllScores(scores);
-      setAllSpellingProgress(progressData);
-      setSpellingLists(lists);
-      setStudents(studentList);
-
-      setIsLoading(false);
+      try {
+        const [scores, progressData, lists, studentList] = await Promise.all([
+          getAllScores(),
+          getAllSpellingProgress(),
+          getSpellingLists(),
+          getStudents(),
+        ]);
+        
+        setAllScores(scores);
+        setAllSpellingProgress(progressData);
+        setSpellingLists(lists);
+        setStudents(studentList);
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+        toast({
+          variant: 'destructive',
+          title: "Erreur de chargement",
+          description: "Impossible de charger les données du tableau de bord.",
+        });
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     loadData();
-  }, [router]);
+  }, [router, toast]);
 
   const handleLogout = () => {
     sessionStorage.removeItem('teacher_authenticated');
@@ -93,11 +102,13 @@ export default function TeacherDashboardPage() {
 
   // Memoize the progress map to avoid re-calculating on every render.
   const studentProgressMap = useMemo(() => {
-      const map = new Map<string, Record<string, SpellingResult>>();
-      allSpellingProgress.forEach(progressItem => {
-          map.set(progressItem.userId, progressItem.progress);
-      });
-      return map;
+    const map = new Map<string, Record<string, SpellingResult>>();
+    if (allSpellingProgress) {
+        allSpellingProgress.forEach(progressItem => {
+            map.set(progressItem.userId, progressItem.progress);
+        });
+    }
+    return map;
   }, [allSpellingProgress]);
 
   if (isLoading) {
@@ -200,13 +211,12 @@ export default function TeacherDashboardPage() {
                   </TableHeader>
                   <TableBody>
                     {students.map(student => {
-                      const studentProgress = studentProgressMap.get(student.id);
-                      return (
+                        const studentProgress = studentProgressMap.get(student.id);
+                        return (
                         <TableRow key={student.id}>
                             <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
                             {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
                                 const result = studentProgress?.[exerciseId.toLowerCase()];
-
                                 return (
                                     <TableCell key={exerciseId} className="text-center">
                                         {!result ? (
@@ -229,7 +239,7 @@ export default function TeacherDashboardPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="mt-4">
+             <Card className="mt-4">
               <CardHeader>
                 <CardTitle>Données brutes (pour débogage)</CardTitle>
               </CardHeader>
@@ -238,7 +248,7 @@ export default function TeacherDashboardPage() {
                     <h3 className="font-bold mb-2">`allSpellingProgress` (depuis Firestore)</h3>
                     <pre>{JSON.stringify(allSpellingProgress, null, 2)}</pre>
                     <h3 className="font-bold mt-4 mb-2">`studentProgressMap` (données transformées)</h3>
-                    <pre>{JSON.stringify(Object.fromEntries(studentProgressMap), null, 2)}</pre>
+                    <pre>{JSON.stringify(Object.fromEntries(studentProgressMap.entries()), null, 2)}</pre>
                 </div>
               </CardContent>
             </Card>
