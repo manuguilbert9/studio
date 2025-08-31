@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 export default function WordListsPage() {
+  // Note: The PDF file name has spaces, which need to be URL-encoded (%20) to work reliably in a URL.
+  const pdfPath = "/orthographe/listes%20de%20mots.pdf";
+
   return (
     <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
         <div className="w-full max-w-5xl">
@@ -17,12 +20,12 @@ export default function WordListsPage() {
                 <h1 className="font-headline text-2xl sm:text-3xl text-center flex-grow">
                     Listes de mots d'orthographe
                 </h1>
-                <div className="w-[180px]"></div>
+                <div className="w-auto sm:w-[180px]"></div>
             </header>
             
             <div className="w-full h-[calc(100vh-150px)] rounded-lg overflow-hidden border">
                  <iframe 
-                    src="/orthographe/mots.pdf"
+                    src={pdfPath}
                     className="w-full h-full"
                     title="Listes de mots d'orthographe"
                 />

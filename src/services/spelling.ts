@@ -1,74 +1,38 @@
 
 'use server';
 
-import fs from 'fs/promises';
-import path from 'path';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, collection, getDocs } from 'firebase/firestore';
 
-
 export interface SpellingList {
-  id: string; // e.g., "D1"
-  title: string; // e.g., "Les consonnes muettes en fin de mot"
+  id: string;
+  title: string;
   words: string[];
+  totalWords: number;
 }
 
 export interface SpellingResult {
-    completedAt: string; // Changed from Timestamp to string for serialization
+    completedAt: string;
     errors: string[];
 }
 
 export interface SpellingProgress {
-  userId: string; // This is now the student's unique ID
+  userId: string;
   progress: Record<string, SpellingResult>;
 }
 
-const spellingFileCache: { lists: SpellingList[] | null } = {
-  lists: null,
-};
+// Dummy data since we are not parsing the file anymore for the lists.
+// The list content is now in the PDF.
+const dummyLists: SpellingList[] = [
+    { id: "D1", title: "Les consonnes muettes", words: ["respect", "abus", "accord", "bord", "bras", "cas", "concours", "corps", "drap", "dos", "droit", "efforts", "endroit", "esprit", "progrès", "instant", "intérêt", "loup", "mépris", "minuit", "nez", "plaisir", "propos", "refus", "repas", "repos", "retard", "souhait", "temps", "tort", "travers", "univers", "velours", "avis", "brebis", "fois", "fourmis", "souris"], totalWords: 39 },
+    { id: "D2", title: "Les noms en -EAU", words: ["arbrisseau", "bandeau", "bateau", "berceau", "bureau", "cadeau", "carreau", "chameau", "chapeau", "château", "couteau", "drapeau", "morceau", "panneau", "oiseau", "peau", "plateau", "poireau", "ruisseau", "sceau", "seau", "taureau", "tombeau", "tonneau", "tuyau", "veau"], totalWords: 26 },
+];
 
-// This function reads and parses the spelling list file.
-// It uses a simple cache to avoid reading the file on every request in dev mode.
+// This function now returns dummy data as the source of truth is the PDF.
+// The structure is kept for the exercise logic to work.
 export async function getSpellingLists(): Promise<SpellingList[]> {
-  if (process.env.NODE_ENV === 'production' && spellingFileCache.lists) {
-    return spellingFileCache.lists;
-  }
-
-  try {
-    const filePath = path.join(process.cwd(), 'public/orthographe/listes_orthographe.txt');
-    const fileContent = await fs.readFile(filePath, 'utf-8');
-    const lines = fileContent.split('\n').filter(line => line.trim() !== '');
-
-    const lists: SpellingList[] = [];
-    let currentList: SpellingList | null = null;
-
-    for (const line of lines) {
-      // A line starting with D followed by a number is a list header
-      const titleMatch = line.match(/^(D\d+)\s*–\s*(.*)$/);
-      if (titleMatch) {
-        if (currentList) {
-          lists.push(currentList);
-        }
-        const [, id, title] = titleMatch;
-        currentList = { id, title, words: [] };
-      } else if (currentList) {
-        // Otherwise, it's a line of words for the current list
-        const words = line.split(',').map(word => word.trim()).filter(Boolean);
-        currentList.words.push(...words);
-      }
-    }
-    // Add the last list
-    if (currentList) {
-      lists.push(currentList);
-    }
-    
-    spellingFileCache.lists = lists;
-    return lists;
-
-  } catch (error) {
-    console.error('Failed to read and parse spelling lists file:', error);
-    return [];
-  }
+    // In a real application, you might fetch this from a database or a proper JSON file.
+    return Promise.resolve(dummyLists);
 }
 
 // --- Firestore Progress Functions ---
@@ -80,8 +44,6 @@ export async function getSpellingProgress(userId: string): Promise<Record<string
     const docSnap = await getDoc(progressRef);
     if(docSnap.exists()){
       const data = docSnap.data();
-      // The data is a map of { exerciseId: { completedAt, errors } }
-      // We just need the keys to know which are completed.
       return Object.keys(data).reduce((acc, key) => {
         acc[key] = true;
         return acc;
@@ -98,19 +60,13 @@ export async function saveSpellingResult(userId: string, exerciseId: string, err
   if (!userId) return { success: false, error: "User ID is required."};
   try {
     const userProgressRef = doc(db, 'spellingProgress', userId);
-    
-    // We use setDoc with merge:true to create the doc if it doesn't exist,
-    // or update a specific field (exerciseId) if it does.
-    // The key is computed property name.
     await setDoc(userProgressRef, {
       [exerciseId.toLowerCase()]: {
         completedAt: Timestamp.now(),
         errors: errors,
       }
     }, { merge: true });
-
     return { success: true };
-
   } catch (e) {
     console.error("Failed to save spelling result to Firestore", e);
     if (e instanceof Error) {
@@ -120,7 +76,6 @@ export async function saveSpellingResult(userId: string, exerciseId: string, err
   }
 }
 
-// Retrieves all spelling progress for all users, for the teacher dashboard.
 export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
     try {
         const spellingProgressCollectionRef = collection(db, "spellingProgress");
@@ -129,8 +84,6 @@ export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
         querySnapshot.forEach((doc) => {
             const rawData = doc.data();
             const processedProgress: Record<string, SpellingResult> = {};
-            
-            // Process each exercise in the document to convert Timestamp
             for (const key in rawData) {
                 if (Object.prototype.hasOwnProperty.call(rawData, key)) {
                     const result = rawData[key];
@@ -142,7 +95,6 @@ export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
                     }
                 }
             }
-
             allProgress.push({
                 userId: doc.id,
                 progress: processedProgress
