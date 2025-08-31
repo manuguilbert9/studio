@@ -126,6 +126,8 @@ export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
         const querySnapshot = await getDocs(q);
         const allProgress: SpellingProgress[] = [];
         querySnapshot.forEach((doc) => {
+            // The document ID is the userId
+            // The document data is the progress map
             allProgress.push({
                 userId: doc.id,
                 progress: doc.data() as Record<string, SpellingResult>
