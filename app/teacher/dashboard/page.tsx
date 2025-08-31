@@ -8,20 +8,31 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star, Check, X, Pencil } from 'lucide-react';
+import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star, Check, X, Pencil, SlidersHorizontal } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getAllScores, Score } from '@/services/scores';
 import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress, SpellingResult } from '@/services/spelling';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { difficultyLevelToString } from '@/lib/skills';
-import { createStudent, getStudents, type Student, updateStudentCode } from '@/services/students';
+import { difficultyLevelToString, skills as availableSkills } from '@/lib/skills';
+import { createStudent, getStudents, type Student, updateStudentCode, updateStudentLevels, SkillLevel } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { getCurrentSpellingListId, setCurrentSpellingList } from '@/services/teacher';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+
+const skillLevels: { value: SkillLevel, label: string }[] = [
+    { value: 'A', label: 'A - Maternelle' },
+    { value: 'B', label: 'B - CP/CE1' },
+    { value: 'C', label: 'C - CE2/CM1' },
+    { value: 'D', label: 'D - CM2/6ème' },
+];
+
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -35,14 +46,15 @@ export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [currentListId, setCurrentListId] = useState<string | null>(null);
 
-  // New student form state
+  // Form states
   const [newStudentName, setNewStudentName] = useState('');
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
-
-  // Edit student code state
   const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
   const [newCode, setNewCode] = useState('');
   const [isUpdatingCode, setIsUpdatingCode] = useState(false);
+  const [editingLevelsStudent, setEditingLevelsStudent] = useState<Student | null>(null);
+  const [currentLevels, setCurrentLevels] = useState<Record<string, SkillLevel>>({});
+  const [isUpdatingLevels, setIsUpdatingLevels] = useState(false);
   
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
@@ -178,7 +190,38 @@ export default function TeacherDashboardPage() {
         description: result.error || "Impossible de mettre à jour le code.",
       });
     }
-  }
+  };
+
+  const handleOpenLevelsModal = (student: Student) => {
+    setEditingLevelsStudent(student);
+    setCurrentLevels(student.levels || {});
+  };
+
+  const handleLevelChange = (skillSlug: string, level: SkillLevel) => {
+    setCurrentLevels(prev => ({ ...prev, [skillSlug]: level }));
+  };
+
+  const handleUpdateLevels = async () => {
+    if (!editingLevelsStudent) return;
+    setIsUpdatingLevels(true);
+    const result = await updateStudentLevels(editingLevelsStudent.id, currentLevels);
+    setIsUpdatingLevels(false);
+
+    if (result.success) {
+      setStudents(prev => prev.map(s => s.id === editingLevelsStudent.id ? { ...s, levels: currentLevels } : s));
+      toast({
+        title: "Niveaux mis à jour",
+        description: `Les niveaux de compétence de ${editingLevelsStudent.name} ont été enregistrés.`,
+      });
+      setEditingLevelsStudent(null);
+    } else {
+      toast({
+        variant: 'destructive',
+        title: "Erreur",
+        description: result.error || "Impossible de mettre à jour les niveaux.",
+      });
+    }
+  };
   
   if (isLoading) {
     return (
@@ -204,7 +247,7 @@ export default function TeacherDashboardPage() {
         </header>
 
         <div className="max-w-7xl mx-auto">
-          <Tabs defaultValue="homework">
+          <Tabs defaultValue="students">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="students"><Users className="mr-2"/> Gestion des élèves</TabsTrigger>
               <TabsTrigger value="homework"><BookOpen className="mr-2"/> Suivi des devoirs</TabsTrigger>
@@ -212,7 +255,7 @@ export default function TeacherDashboardPage() {
             </TabsList>
 
             <TabsContent value="students">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-4">
                   <Card>
                       <CardHeader>
                           <CardTitle>Créer un nouvel élève</CardTitle>
@@ -235,14 +278,15 @@ export default function TeacherDashboardPage() {
                   <Card>
                       <CardHeader>
                           <CardTitle>Liste des élèves</CardTitle>
-                          <CardDescription>Voici la liste de tous les élèves et de leurs codes secrets.</CardDescription>
+                          <CardDescription>Consultez la liste des élèves, leurs codes et leurs niveaux.</CardDescription>
                       </CardHeader>
                       <CardContent>
                           <Table>
                               <TableHeader>
                                   <TableRow>
                                       <TableHead>Prénom</TableHead>
-                                      <TableHead className="text-right">Code Secret</TableHead>
+                                      <TableHead>Code Secret</TableHead>
+                                      <TableHead>Niveaux</TableHead>
                                       <TableHead className="w-[120px] text-right">Actions</TableHead>
                                   </TableRow>
                               </TableHeader>
@@ -250,7 +294,7 @@ export default function TeacherDashboardPage() {
                                   {students.map(student => (
                                       <TableRow key={student.id}>
                                           <TableCell className="font-medium">{student.name}</TableCell>
-                                           <TableCell className="text-right font-mono font-bold">
+                                           <TableCell className="font-mono font-bold">
                                               {editingStudentId === student.id ? (
                                                   <Input 
                                                       type="text" 
@@ -264,9 +308,27 @@ export default function TeacherDashboardPage() {
                                                   <span>{student.code}</span>
                                               )}
                                           </TableCell>
+                                           <TableCell>
+                                                <div className="flex gap-1">
+                                                {student.levels && Object.entries(student.levels).length > 0 ? (
+                                                    Object.entries(student.levels).map(([skill, level]) => (
+                                                        <Tooltip key={skill}>
+                                                            <TooltipTrigger>
+                                                                <Badge variant="secondary">{level}</Badge>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>{availableSkills.find(s => s.slug === skill)?.name || skill}</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-muted-foreground text-xs">Aucun</span>
+                                                )}
+                                                </div>
+                                          </TableCell>
                                            <TableCell className="text-right">
                                               {editingStudentId === student.id ? (
-                                                  <div className="flex gap-2 justify-end">
+                                                  <div className="flex gap-1 justify-end">
                                                       <Button size="icon" className="h-8 w-8" onClick={() => handleUpdateCode(student.id)} disabled={isUpdatingCode}>
                                                           {isUpdatingCode ? <Loader2 className="animate-spin" /> : <Check />}
                                                       </Button>
@@ -275,9 +337,14 @@ export default function TeacherDashboardPage() {
                                                       </Button>
                                                   </div>
                                               ) : (
-                                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditCode(student)}>
-                                                      <Pencil />
-                                                  </Button>
+                                                <div className="flex gap-1 justify-end">
+                                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleOpenLevelsModal(student)}>
+                                                        <SlidersHorizontal />
+                                                    </Button>
+                                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditCode(student)}>
+                                                        <Pencil />
+                                                    </Button>
+                                                </div>
                                               )}
                                           </TableCell>
                                       </TableRow>
@@ -421,6 +488,51 @@ export default function TeacherDashboardPage() {
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Dialog for editing levels */}
+        <Dialog open={!!editingLevelsStudent} onOpenChange={(isOpen) => !isOpen && setEditingLevelsStudent(null)}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Gérer les niveaux de {editingLevelsStudent?.name}</DialogTitle>
+                    <DialogDescription>
+                       Définissez le niveau de compétence pour chaque matière.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    {availableSkills.map(skill => (
+                        <div key={skill.slug} className="grid grid-cols-3 items-center gap-4">
+                             <Label htmlFor={`level-${skill.slug}`} className="text-right font-semibold">
+                                {skill.name}
+                            </Label>
+                            <Select 
+                                value={currentLevels[skill.slug]} 
+                                onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
+                            >
+                                <SelectTrigger className="col-span-2">
+                                    <SelectValue placeholder="Choisir un niveau..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {skillLevels.map(level => (
+                                        <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    ))}
+                </div>
+                 <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="secondary">Annuler</Button>
+                    </DialogClose>
+                    <Button onClick={handleUpdateLevels} disabled={isUpdatingLevels}>
+                        {isUpdatingLevels && <Loader2 className="animate-spin" />}
+                        Enregistrer
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+
       </main>
     </TooltipProvider>
   );
