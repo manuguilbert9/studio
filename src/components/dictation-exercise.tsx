@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, X, RefreshCw, Volume2, Send, Loader2 } from 'lucide-react';
+import { Check, X, RefreshCw, Volume2, Send, Loader2, Settings } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { getSpellingLists, SpellingList } from '@/services/spelling';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -15,6 +15,9 @@ import { addScore } from '@/services/scores';
 import { UserContext } from '@/context/user-context';
 import { ScoreTube } from './score-tube';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
+import { Slider } from './ui/slider';
+
 
 interface DictationExerciseProps {
   isTableauMode?: boolean;
@@ -25,8 +28,6 @@ type DictationResult = {
   userAnswer: string;
   isCorrect: boolean;
 };
-
-const REPEAT_INTERVAL_MS = 5000;
 
 export function DictationExercise({ isTableauMode = false }: DictationExerciseProps) {
   const { student } = useContext(UserContext);
@@ -42,6 +43,10 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
   const [isFinished, setIsFinished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Settings states
+  const [repeatInterval, setRepeatInterval] = useState(5000); // Default 5s
+  const [speechRate, setSpeechRate] = useState(0.8); // Default 0.8x speed
+
   const repeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -53,16 +58,26 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
       setIsLoadingLists(false);
     }
     loadLists();
+
+     try {
+        const savedInterval = localStorage.getItem('dictation_repeat_interval');
+        if (savedInterval) setRepeatInterval(JSON.parse(savedInterval));
+
+        const savedRate = localStorage.getItem('dictation_speech_rate');
+        if (savedRate) setSpeechRate(JSON.parse(savedRate));
+    } catch (error) {
+        console.error("Could not retrieve settings from localStorage", error);
+    }
   }, []);
 
   const handleSpeak = useCallback((word: string) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(word);
       utterance.lang = 'fr-FR';
-      utterance.rate = 0.8; // A bit slower
+      utterance.rate = speechRate; 
       window.speechSynthesis.speak(utterance);
     }
-  }, []);
+  }, [speechRate]);
 
   useEffect(() => {
     // Cleanup interval on component unmount
@@ -78,6 +93,7 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
     if (!list) return;
 
     setSelectedList(list);
+    // This logic is correct now, it just removes the syllable markers
     const cleanedWords = list.words.map(word => 
         word.replace(/\|.+$/, '').replace(/[\(\)]/g, '').trim()
     );
@@ -87,7 +103,7 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
     setIsFinished(false);
     handleSpeak(cleanedWords[0]);
     if (repeatIntervalRef.current) clearInterval(repeatIntervalRef.current);
-    repeatIntervalRef.current = setInterval(() => handleSpeak(cleanedWords[currentWordIndex]), REPEAT_INTERVAL_MS);
+    repeatIntervalRef.current = setInterval(() => handleSpeak(cleanedWords[currentWordIndex]), repeatInterval);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
   
@@ -96,10 +112,10 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
         if (repeatIntervalRef.current) clearInterval(repeatIntervalRef.current);
         const currentWord = words[currentWordIndex];
         handleSpeak(currentWord); // Speak immediately
-        repeatIntervalRef.current = setInterval(() => handleSpeak(currentWord), REPEAT_INTERVAL_MS);
+        repeatIntervalRef.current = setInterval(() => handleSpeak(currentWord), repeatInterval);
          setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [currentWordIndex, words, isFinished, handleSpeak]);
+  }, [currentWordIndex, words, isFinished, handleSpeak, repeatInterval]);
 
 
   const handleSubmit = async () => {
@@ -144,6 +160,24 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
     setResults([]);
     setIsFinished(false);
   };
+
+  const handleIntervalChange = (value: number[]) => {
+    setRepeatInterval(value[0]);
+     try {
+      localStorage.setItem('dictation_repeat_interval', JSON.stringify(value[0]));
+    } catch (error) {
+      console.error("Could not save repeat interval to localStorage", error);
+    }
+  }
+
+  const handleRateChange = (value: number[]) => {
+    setSpeechRate(value[0]);
+     try {
+      localStorage.setItem('dictation_speech_rate', JSON.stringify(value[0]));
+    } catch (error) {
+      console.error("Could not save speech rate to localStorage", error);
+    }
+  }
   
   if (isLoadingLists) {
     return <Card className="w-full shadow-2xl p-8 text-center">Chargement des listes de dictée...</Card>;
@@ -227,9 +261,60 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
         isTableauMode ? "shadow-none border-0 bg-transparent" : "shadow-2xl"
       )}>
         <CardHeader>
-          <CardTitle className="text-center font-body text-2xl">
-            Écoute bien et écris le mot
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <div className="w-10"></div> {/* Spacer */}
+            <CardTitle className="text-center font-body text-2xl flex-grow">
+              Écoute bien et écris le mot
+            </CardTitle>
+             <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="w-10">
+                        <Settings className="h-5 w-5" />
+                        <span className="sr-only">Réglages</span>
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                    <div className="grid gap-4">
+                        <div className="space-y-2">
+                            <h4 className="font-medium leading-none">Réglages de la dictée</h4>
+                            <p className="text-sm text-muted-foreground">
+                               Personnalisez votre exercice.
+                            </p>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="repeat-interval">Vitesse de répétition</Label>
+                            <Slider 
+                                id="repeat-interval"
+                                min={2000} 
+                                max={10000} 
+                                step={500} 
+                                value={[repeatInterval]}
+                                onValueChange={handleIntervalChange}
+                            />
+                             <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Toutes les {repeatInterval / 1000}s</span>
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="speech-rate">Vitesse de lecture</Label>
+                            <Slider 
+                                id="speech-rate"
+                                min={0.5} 
+                                max={1.5} 
+                                step={0.1} 
+                                value={[speechRate]}
+                                onValueChange={handleRateChange}
+                            />
+                             <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>Lente</span>
+                                <span>{speechRate.toFixed(1)}x</span>
+                                <span>Rapide</span>
+                            </div>
+                        </div>
+                    </div>
+                </PopoverContent>
+            </Popover>
+          </div>
           <CardDescription className="text-center">
             Mot {currentWordIndex + 1} sur {words.length}
           </CardDescription>
