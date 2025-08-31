@@ -1,0 +1,78 @@
+
+D1 – Les consonnes muettes en fin de mot
+trot, biscuit, amoureux, fruit, vieux, robot, gigot, bras, époux, cadenas, jaloux, port, mort, souris, renard, tapis, canard, sport, enfant, trois, grand, bois, chaud, éléphant
+
+D2 – Le son [ã] et variations (an/en/em/…)
+maman, chanter, temps, jambe, ensemble, emmener, ampoule, ambiance, client, vent, quand, an, danser, entre, avant, banc, grand, dent, gant, tante, camp, chambre, rampe, lampe
+
+D3 – Le son [ɛ̃] et variations (in/im/ain/ein/…)
+matin, impossible, pain, peinture, copain, important, simple, main, train, plein, chemin, fin, jardin, sapin, magasin, dessin, timbre, peinture, faim, demain, grain, frein
+
+D4 – Le son [ɔ̃] et variations (on/om)
+bonbon, pont, bombe, pompier, oncle, long, rond, non, son, ton, mon, nom, prénom, maison, front, fond, conte, compte, mouton, bouton, salon, pantalon, marron
+
+D5 – Le son [o] et variations (o/au/eau)
+moto, auto, bateau, beau, pot, mot, aussi, autre, faute, jaune, tableau, cadeau, gâteau, marteau, chapeau, seau, taureau, agneau, veau, eau, oiseau, faux, gauche
+
+D6 – Le son [k] et variations (c/qu/k)
+coq, question, kiosque, quand, qui, que, quoi, col, cou, avec, sac, parc, classe, école, quatre, cinq, casquette, képi, kangourou, kimono, chèque, orchestre, chorale
+
+D7 – Le son [s] et variations (s/ss/c/ç/t)
+sel, classe, citron, garçon, addition, son, sur, sous, dans, passer, glisser, poisson, tasse, boisson, balançoire, façade, leçon, science, piscine, patience, récréation, attention
+
+D8 – Le son [g] et variations (g/gu)
+gant, guitare, guide, langue, bague, vague, gaz, gorille, garage, figure, guêpe, guerre, guirlande, magasin, guichet, déguisement, fatigue, algue, mangue, guépard
+
+D9 – Le son [ʒ] et variations (g/ge)
+girafe, pigeon, gymnase, genou, gens, orange, rouge, sage, image, page, cage, rage, large, manger, bouger, changer, nager, plonger, gilet, tige, magie, logique
+
+D10 – Le son [ɛ] et variations (è/ê/ei/ai/et)
+mère, fête, reine, maison, secret, père, frère, tête, fenêtre, neige, seize, treize, balai, lait, mais, jamais, robinet, jouet, bonnet, chalet, forêt, arrêt
+
+D11 – Le son [e] et variations (é/er/ez/et)
+été, parler, nez, et, vélo, fée, café, téléphone, rocher, panier, vous chantez, chez, cahier, pied, clé, boulanger, boucher, épicier, fermier, escalier
+
+D12 – Les sons « ou » et « oi »
+loup, voir, jour, soir, nous, trois, vous, roi, fourmi, voiture, bouche, noir, genou, pourquoi, couloir, mouchoir, roue, poule, boule, rouge, douze, vouloir, pouvoir
+
+D13 – Les sons « eu » et « œu »
+deux, pneu, cœur, œuf, fleur, neuf, jeu, feu, bleu, cheveux, jeune, seul, beurre, heure, sœur, facteur, docteur, aspirateur, couleur, chanteur, danseur, voyageur
+
+D14 – Le son [j] et variations (ill/y/i)
+fille, papillon, yeux, yaourt, lion, famille, gorille, grille, billet, cheville, paille, feuille, grenouille, réveil, soleil, travail, merveille, abeille, oreille, bouteille
+
+D15 – Le son [ɲ] (gn)
+montagne, vigne, champignon, cygne, signature, magnifique, peigne, chignon, oignon, soigner, gagner, grogner, grignoter, mignon, campagne, araignée, poignée, baignoire
+
+D16 – Le son [wa] et variations (oi/oy)
+trois, oiseau, nettoyer, joie, moi, toi, soi, roi, loi, fois, bois, noix, poire, soir, voir, devoir, pouvoir, vouloir, croire, boire, miroir, trottoir, mouchoir, couloir
+
+D17 – Les valeurs de la lettre H (muet ou aspiré)
+huit, haricot, hibou, héros, haut, homme, heure, histoire, habiter, hiver, hélicoptère, hôpital, hôtel, herbe, hasard, hérisson, hangar, habit, humain, humble
+
+D18 – Le pluriel des noms en -s et -x
+chaises, tables, amis, cadeaux, cheveux, jeux, un cheval / des chevaux, un journal / des journaux, un animal / des animaux, un canal / des canaux, un bocal / des bocaux, un travail / des travaux
+
+D19 – Le féminin des noms et des adjectifs
+grand/grande, petit/petite, joli/jolie, content/contente, ami/amie, marchand/marchande, chanteur/chanteuse, danseur/danseuse, acteur/actrice, directeur/directrice, heureux/heureuse
+
+D20 – L’accord dans le groupe nominal
+un grand garçon, une grande fille, des grands garçons, des grandes filles, le beau château, les beaux châteaux, un nouveau livre, une nouvelle robe, de nouveaux livres, de nouvelles robes
+
+D21 – L’accord du verbe avec le sujet
+le chat miaule, les chats miaulent, je chante, nous chantons, tu danses, vous dansez, il/elle joue, ils/elles jouent, l'oiseau vole, les oiseaux volent, la voiture roule, les voitures roulent
+
+D22 – Le verbe être au présent et à l'imparfait
+je suis, tu es, il est, nous sommes, vous êtes, ils sont, j'étais, tu étais, il était, nous étions, vous étiez, ils étaient, un garçon, une fille, le maître, la maîtresse
+
+D23 – Le verbe avoir au présent et à l'imparfait
+j'ai, tu as, il a, nous avons, vous avez, ils ont, j'avais, tu avais, il avait, nous avions, vous aviez, ils avaient, un livre, une trousse, des crayons, des amis
+
+D24 – Les verbes du 1er groupe au présent et à l'imparfait
+je chante, tu chantes, il chante, nous chantons, vous chantez, ils chantent, je chantais, tu chantais, il chantait, nous chantions, vous chantiez, ils chantaient, parler, danser, jouer, regarder
+
+D25 – Les mots invariables
+ici, là, maintenant, demain, hier, aujourd'hui, toujours, jamais, souvent, parfois, beaucoup, peu, assez, trop, très, bien, mal, comment, pourquoi, quand, où, avec, sans, dans, sur, sous, devant, derrière, entre
+
+D26 – Les homophones (a/à, et/est, on/ont, son/sont)
+il a un vélo / il va à l'école, un chat et un chien / il est grand, on va jouer / ils ont faim, son cartable / ils sont contents, la mer / la mère / le maire, ce / se, ces / ses, c'est / s'est
