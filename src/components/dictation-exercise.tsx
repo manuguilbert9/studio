@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, X, RefreshCw, Volume2, Send, Loader2, Settings } from 'lucide-react';
+import { Check, X, RefreshCw, Volume2, Send, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { getSpellingLists, SpellingList } from '@/services/spelling';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -15,7 +15,6 @@ import { addScore } from '@/services/scores';
 import { UserContext } from '@/context/user-context';
 import { ScoreTube } from './score-tube';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Popover, PopoverTrigger, PopoverContent } from './ui/popover';
 import { Slider } from './ui/slider';
 
 
@@ -72,6 +71,7 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
 
   const handleSpeak = useCallback((word: string) => {
     if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel(); // Cancel any ongoing speech
       const utterance = new SpeechSynthesisUtterance(word);
       utterance.lang = 'fr-FR';
       utterance.rate = speechRate; 
@@ -85,27 +85,11 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
       if (repeatIntervalRef.current) {
         clearInterval(repeatIntervalRef.current);
       }
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
     };
   }, []);
-
-  const startExercise = (listId: string) => {
-    const list = availableLists.find(l => l.id === listId);
-    if (!list) return;
-
-    setSelectedList(list);
-    // This logic is correct now, it just removes the syllable markers
-    const cleanedWords = list.words.map(word => 
-        word.replace(/\|.+$/, '').replace(/[\(\)]/g, '').trim()
-    );
-    setWords(cleanedWords);
-    setCurrentWordIndex(0);
-    setResults([]);
-    setIsFinished(false);
-    handleSpeak(cleanedWords[0]);
-    if (repeatIntervalRef.current) clearInterval(repeatIntervalRef.current);
-    repeatIntervalRef.current = setInterval(() => handleSpeak(cleanedWords[currentWordIndex]), repeatInterval);
-    setTimeout(() => inputRef.current?.focus(), 100);
-  };
   
   useEffect(() => {
     if (words.length > 0 && !isFinished) {
@@ -254,67 +238,16 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
   }
 
   return (
-    <div className={cn(!isTableauMode && "w-full")}>
-      <Progress value={((currentWordIndex + 1) / words.length) * 100} className="w-full mb-4" />
+    <div className={cn(!isTableauMode && "w-full space-y-6")}>
+      <Progress value={((currentWordIndex + 1) / words.length) * 100} className="w-full" />
       <Card className={cn(
         "w-full relative overflow-hidden",
         isTableauMode ? "shadow-none border-0 bg-transparent" : "shadow-2xl"
       )}>
         <CardHeader>
-          <div className="flex justify-between items-center">
-            <div className="w-10"></div> {/* Spacer */}
-            <CardTitle className="text-center font-body text-2xl flex-grow">
-              Écoute bien et écris le mot
-            </CardTitle>
-             <Popover>
-                <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="w-10">
-                        <Settings className="h-5 w-5" />
-                        <span className="sr-only">Réglages</span>
-                    </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                    <div className="grid gap-4">
-                        <div className="space-y-2">
-                            <h4 className="font-medium leading-none">Réglages de la dictée</h4>
-                            <p className="text-sm text-muted-foreground">
-                               Personnalisez votre exercice.
-                            </p>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="repeat-interval">Vitesse de répétition</Label>
-                            <Slider 
-                                id="repeat-interval"
-                                min={2000} 
-                                max={10000} 
-                                step={500} 
-                                value={[repeatInterval]}
-                                onValueChange={handleIntervalChange}
-                            />
-                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Toutes les {repeatInterval / 1000}s</span>
-                            </div>
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="speech-rate">Vitesse de lecture</Label>
-                            <Slider 
-                                id="speech-rate"
-                                min={0.5} 
-                                max={1.5} 
-                                step={0.1} 
-                                value={[speechRate]}
-                                onValueChange={handleRateChange}
-                            />
-                             <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>Lente</span>
-                                <span>{speechRate.toFixed(1)}x</span>
-                                <span>Rapide</span>
-                            </div>
-                        </div>
-                    </div>
-                </PopoverContent>
-            </Popover>
-          </div>
+          <CardTitle className="text-center font-body text-2xl flex-grow">
+            Écoute bien et écris le mot
+          </CardTitle>
           <CardDescription className="text-center">
             Mot {currentWordIndex + 1} sur {words.length}
           </CardDescription>
@@ -337,6 +270,44 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
               <Send />
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card className={cn(isTableauMode ? "bg-transparent border-0 shadow-none" : "bg-muted/50")}>
+        <CardHeader>
+            <CardTitle className="text-xl">Réglages de la dictée</CardTitle>
+        </CardHeader>
+        <CardContent className="grid sm:grid-cols-2 gap-6">
+            <div className="grid gap-2">
+                <Label htmlFor="repeat-interval">Vitesse de répétition</Label>
+                <Slider 
+                    id="repeat-interval"
+                    min={2000} 
+                    max={10000} 
+                    step={500} 
+                    value={[repeatInterval]}
+                    onValueChange={handleIntervalChange}
+                />
+                 <div className="text-sm text-muted-foreground text-center">
+                    Toutes les {repeatInterval / 1000} secondes
+                </div>
+            </div>
+            <div className="grid gap-2">
+                <Label htmlFor="speech-rate">Vitesse de lecture</Label>
+                <Slider 
+                    id="speech-rate"
+                    min={0.5} 
+                    max={1.5} 
+                    step={0.1} 
+                    value={[speechRate]}
+                    onValueChange={handleRateChange}
+                />
+                 <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Lente</span>
+                    <span>{speechRate.toFixed(1)}x</span>
+                    <span>Rapide</span>
+                </div>
+            </div>
         </CardContent>
       </Card>
     </div>
