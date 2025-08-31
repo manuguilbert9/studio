@@ -75,7 +75,6 @@ export default function TeacherDashboardPage() {
     const map = new Map<string, Record<string, SpellingResult>>();
     if (allSpellingProgress) {
         allSpellingProgress.forEach(progressItem => {
-            // The doc ID is the userId, and the data is the progress map
             map.set(progressItem.userId, progressItem.progress);
         });
     }
