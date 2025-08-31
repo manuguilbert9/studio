@@ -19,6 +19,8 @@ export interface Skill {
   icon: ReactElement;
 }
 
+export type SkillLevel = 'A' | 'B' | 'C' | 'D';
+
 export const skills: Skill[] = [
   {
     name: 'Dictée',
@@ -79,4 +81,5 @@ export function difficultyLevelToString(
     }
     return null;
 }
+
 

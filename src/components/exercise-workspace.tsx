@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Skill } from '@/lib/skills.tsx';
+import type { Skill, SkillLevel } from '@/lib/skills.tsx';
 import { useState, useMemo, useEffect, useContext } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
@@ -34,6 +34,26 @@ const icons = [
 
 const NUM_QUESTIONS = 10;
 
+// Mapping from Student Level to Exercise Difficulty
+const levelToCalcSettings: Record<SkillLevel, CalcSettings> = {
+    A: { operations: 0, numberSize: 0, complexity: 0 }, // Additions, 0-10, immédiat
+    B: { operations: 1, numberSize: 2, complexity: 1 }, // Add/Sub, 0-100, sans retenue
+    C: { operations: 2, numberSize: 3, complexity: 2 }, // Add/Sub/Mul, 0-500, avec retenue
+    D: { operations: 4, numberSize: 4, complexity: 2 }, // Toutes, 0-1000, avec retenue
+};
+const levelToCurrencySettings: Record<SkillLevel, CurrSettings> = {
+    A: { difficulty: 0 },
+    B: { difficulty: 1 },
+    C: { difficulty: 2 },
+    D: { difficulty: 3 },
+};
+const levelToTimeSettings: Record<SkillLevel, TimeSettingsType> = {
+    A: { difficulty: 0, showMinuteCircle: true, matchColors: true, coloredHands: true },
+    B: { difficulty: 1, showMinuteCircle: true, matchColors: false, coloredHands: true },
+    C: { difficulty: 2, showMinuteCircle: true, matchColors: false, coloredHands: false },
+    D: { difficulty: 3, showMinuteCircle: false, matchColors: false, coloredHands: false },
+};
+
 interface ExerciseWorkspaceProps {
   skill: Skill;
   isTableauMode?: boolean;
@@ -65,12 +85,31 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
 
-  useEffect(() => {
-    if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
-      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-      setIsReadyToStart(true);
+ useEffect(() => {
+    if (isUserLoading || isTableauMode) return;
+
+    const studentLevel = student?.levels?.[skill.slug];
+
+    if (studentLevel) {
+      if (skill.slug === 'calculation') {
+        startCalculationExercise(levelToCalcSettings[studentLevel]);
+      } else if (skill.slug === 'currency') {
+        startCurrencyExercise(levelToCurrencySettings[studentLevel]);
+      } else if (skill.slug === 'time') {
+        startTimeExercise(levelToTimeSettings[studentLevel]);
+      } else {
+        // For other skills that don't have settings pages
+        setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+        setIsReadyToStart(true);
+      }
+    } else {
+       if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+            setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+            setIsReadyToStart(true);
+        }
     }
-  }, [skill.slug]);
+  }, [skill.slug, student, isUserLoading, isTableauMode]);
+
   
   const startCalculationExercise = (settings: CalcSettings) => {
     setCalculationSettings(settings);
@@ -250,17 +289,40 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setCurrencySettings(null);
     setTimeSettings(null);
     resetInteractiveStates();
-     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
-      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-      setIsReadyToStart(true);
+    
+    // Re-trigger the initial effect to check for student level again
+    const studentLevel = student?.levels?.[skill.slug];
+     if (studentLevel) {
+      if (skill.slug === 'calculation') {
+        startCalculationExercise(levelToCalcSettings[studentLevel]);
+      } else if (skill.slug === 'currency') {
+        startCurrencyExercise(levelToCurrencySettings[studentLevel]);
+      } else if (skill.slug === 'time') {
+        startTimeExercise(levelToTimeSettings[studentLevel]);
+      } else {
+        setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+        setIsReadyToStart(true);
+      }
+    } else {
+       if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+            setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+            setIsReadyToStart(true);
+        }
     }
   };
 
-  if (isUserLoading) {
+  if (isUserLoading && !student) {
      return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'utilisateur...</Card>;
   }
 
   if (!isReadyToStart) {
+      const studentLevel = student?.levels?.[skill.slug];
+      // If level is defined, we are in an auto-starting process, show a loader
+      if (studentLevel) {
+          return <Card className="w-full shadow-2xl p-8 text-center">Préparation de votre exercice personnalisé...</Card>;
+      }
+      
+      // Otherwise, show settings screen
       if (skill.slug === 'calculation') {
         return <CalculationSettings onStart={startCalculationExercise} />;
       }
@@ -270,7 +332,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       if (skill.slug === 'time') {
         return <TimeSettings onStart={startTimeExercise} />;
       }
-      // For other skills like writing, this will show a loading state until questions are set.
+      // Fallback for skills that should have autostarted but didn't
        return (
             <Card className="w-full shadow-2xl p-8 text-center">
                 Chargement de l'exercice...
