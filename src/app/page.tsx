@@ -87,11 +87,11 @@ export default function ModeSelectionPage() {
                     <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                     <Input
                       id="code"
-                      type="password"
+                      type="text"
                       placeholder="Ton code à 4 chiffres"
                       value={code}
-                      onChange={(e) => setCode(e.target.value)}
-                      className="text-base h-12 pl-10"
+                      onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
+                      className="text-base h-12 pl-10 font-mono tracking-[0.5em]"
                       required
                       maxLength={4}
                       aria-label="Code secret"
