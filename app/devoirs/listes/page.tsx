@@ -4,8 +4,8 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 export default function WordListsPage() {
-  // Note: The PDF file name has spaces, which need to be URL-encoded (%20) to work reliably in a URL.
-  const pdfPath = "/orthographe/listes%20de%20mots.pdf";
+  // Use the correct filename with underscores.
+  const pdfPath = "/orthographe/listes_de_mots.pdf";
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
