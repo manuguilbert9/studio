@@ -5,7 +5,7 @@ export function Logo() {
     <div className="flex items-center justify-center gap-2">
       <Sparkles className="h-8 w-8 text-primary" />
       <h1 className="text-3xl font-headline font-bold text-foreground tracking-wide">
-        SkillFiesta
+        Classe Magique
       </h1>
     </div>
   );

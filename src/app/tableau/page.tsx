@@ -306,23 +306,12 @@ export default function TableauPage() {
                                 <Type className="h-4 w-4 mr-2" /> Texte
                             </Button>
                             
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm">
-                                        <Calculator className="h-4 w-4 mr-2" /> Calculs
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                    <DropdownMenuItem onClick={handleAddAdditionWidget}>
-                                        <AdditionIcon className="h-4 w-4 mr-2" />
-                                        <span>Addition posée</span>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={handleAddSoustractionWidget}>
-                                        <SoustractionIcon className="h-4 w-4 mr-2" />
-                                        <span>Soustraction posée</span>
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                             <Button variant="outline" size="sm" onClick={handleAddAdditionWidget}>
+                                <AdditionIcon className="h-4 w-4 mr-2" /> Addition posée
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={handleAddSoustractionWidget}>
+                                <SoustractionIcon className="h-4 w-4 mr-2" /> Soustraction posée
+                            </Button>
 
                             <Button variant="outline" size="sm" onClick={handleAddTimerWidget}>
                                 <Timer className="h-4 w-4 mr-2" /> Minuteur

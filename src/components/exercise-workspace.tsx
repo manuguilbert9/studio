@@ -108,7 +108,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
-    const storedName = localStorage.getItem('skillfiesta_username');
+    const storedName = localStorage.getItem('classemagique_username');
     if (storedName) {
       setUsername(storedName);
     }
