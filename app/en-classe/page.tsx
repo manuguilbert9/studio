@@ -1,20 +1,20 @@
 
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
+import { useContext } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { skills } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { ArrowRight, BarChart3, Home, Presentation } from 'lucide-react';
+import { BarChart3, Home, Presentation } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 
 export default function EnClassePage() {
-  const { username, isLoading } = useContext(UserContext);
+  const { student, isLoading } = useContext(UserContext);
 
-  if (isLoading || !username) {
+  if (isLoading || !student) {
     return (
         <main className="container mx-auto px-4 py-8">
             <header className="mb-12 text-center space-y-4">
@@ -47,7 +47,7 @@ export default function EnClassePage() {
             </Button>
         </div>
         <Logo />
-        <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {username}!</h2>
+        <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
         <p className="text-lg sm:text-xl text-muted-foreground">Que voudriez-vous pratiquer aujourd'hui ?</p>
          <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
             <Button asChild variant="outline" size="sm">

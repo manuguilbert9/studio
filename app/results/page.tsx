@@ -25,13 +25,13 @@ interface SkillScores {
 
 
 export default function ResultsPage() {
-  const { username, isLoading: isUserLoading } = useContext(UserContext);
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [skillScores, setSkillScores] = useState<SkillScores[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (isUserLoading) return;
-    if (!username) {
+    if (!student) {
         setIsLoading(false);
         return;
     };
@@ -39,7 +39,7 @@ export default function ResultsPage() {
     const fetchScores = async () => {
       setIsLoading(true);
       try {
-        const userScores = await getScoresForUser(username);
+        const userScores = await getScoresForUser(student.id);
 
         const scoresBySkill = skills.map(skill => {
           const relatedScores = userScores
@@ -62,7 +62,7 @@ export default function ResultsPage() {
     };
 
     fetchScores();
-  }, [username, isUserLoading]);
+  }, [student, isUserLoading]);
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-8">
@@ -71,13 +71,13 @@ export default function ResultsPage() {
           <Button asChild variant="ghost">
             <Link href="/en-classe">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour à l'accueil
+              Retour aux exercices
             </Link>
           </Button>
           <h1 className="text-4xl font-headline text-center flex-grow">
             Mes Résultats
           </h1>
-          <div className="w-[150px]"></div>
+          <div className="w-auto sm:w-[190px]"></div>
         </header>
 
         <main>
@@ -85,9 +85,9 @@ export default function ResultsPage() {
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
             </div>
-          ) : !username ? (
+          ) : !student ? (
             <Card className="text-center p-8">
-              <CardTitle>Aucun utilisateur connecté</CardTitle>
+              <CardTitle>Aucun élève connecté</CardTitle>
               <CardDescription className="mt-2">Veuillez vous connecter pour voir vos résultats.</CardDescription>
                <Button asChild className="mt-4">
                 <Link href="/">Se connecter</Link>

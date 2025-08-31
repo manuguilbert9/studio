@@ -39,7 +39,7 @@ export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
 };
 
 export default function TableauPage() {
-  const { username, isLoading: isUserLoading } = useContext(UserContext);
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
@@ -110,7 +110,7 @@ export default function TableauPage() {
 
   // Load state from file
   useEffect(() => {
-    if (!username) {
+    if (!student) {
         if(!isUserLoading) setIsLoading(false);
         return;
     }
@@ -118,7 +118,7 @@ export default function TableauPage() {
     const fetchState = async () => {
         setIsLoading(true);
         try {
-            const loadedState = await loadTableauState(username);
+            const loadedState = await loadTableauState(student.id);
             if (loadedState) {
                 setActiveSkill(getSkillBySlug(loadedState.activeSkillSlug || ''));
                 setTextWidgets(loadedState.textWidgets || []);
@@ -153,10 +153,10 @@ export default function TableauPage() {
         }
     };
     fetchState();
-  }, [username, isUserLoading]);
+  }, [student, isUserLoading]);
 
   const handleSaveState = useCallback(async () => {
-    if (!username) return;
+    if (!student) return;
     setSaveStatus('saving');
     
     const currentState: Omit<TableauState, 'updatedAt'> = {
@@ -170,7 +170,7 @@ export default function TableauPage() {
         drawingWidgets,
     };
 
-    const result = await saveTableauState(username, currentState);
+    const result = await saveTableauState(student.id, currentState);
 
     if (result.success) {
         setSaveStatus('saved');
@@ -180,7 +180,7 @@ export default function TableauPage() {
         console.error("Failed to save:", result.error);
         setTimeout(() => setSaveStatus('idle'), 3000);
     }
-  }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, soustractionWidgets, imageWidgets, drawingWidgets]);
+  }, [student, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, soustractionWidgets, imageWidgets, drawingWidgets]);
 
 
   // Widget handlers
@@ -260,7 +260,7 @@ export default function TableauPage() {
     );
   }
   
-  if (!username) {
+  if (!student) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-white text-slate-900">
             <h1 className='text-2xl font-headline'>Veuillez vous connecter pour utiliser le tableau.</h1>
