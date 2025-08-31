@@ -3,6 +3,9 @@
 
 import fs from 'fs/promises';
 import path from 'path';
+import { db } from '@/lib/firebase';
+import { collection, query, where, getDocs, setDoc, doc, getDoc } from 'firebase/firestore';
+
 
 export interface SpellingList {
   id: string; // e.g., "D1"
@@ -57,54 +60,43 @@ export async function getSpellingLists(): Promise<SpellingList[]> {
   }
 }
 
-// --- LocalStorage Progress Functions ---
-
-const SPELLING_PROGRESS_DB = 'SPELLING_PROGRESS_DB';
-
-interface SpellingProgress {
-  [userId: string]: {
-    [exerciseId: string]: {
-      completedAt: string;
-      errors: string[];
-    };
-  };
-}
+// --- Firestore Progress Functions ---
 
 export async function getSpellingProgress(userId: string): Promise<Record<string, boolean>> {
-  if (typeof window === 'undefined') return {};
+  if (!userId) return {};
   try {
-    const db = localStorage.getItem(SPELLING_PROGRESS_DB);
-    if (!db) return {};
-    const parsedDb: SpellingProgress = JSON.parse(db);
-    const userProgress = parsedDb[userId] || {};
-    // Return a simple map of exerciseId to completion status
-    return Object.keys(userProgress).reduce((acc, key) => {
+    const progressRef = doc(db, 'spellingProgress', userId);
+    const docSnap = await getDoc(progressRef);
+    if(docSnap.exists()){
+      // The data is a map of { exerciseId: { completedAt, errors } }
+      // We just need the keys to know which are completed.
+      return Object.keys(docSnap.data()).reduce((acc, key) => {
         acc[key] = true;
         return acc;
-    }, {} as Record<string, boolean>);
+      }, {} as Record<string, boolean>);
+    }
+    return {};
   } catch (e) {
-    console.error("Failed to get spelling progress", e);
+    console.error("Failed to get spelling progress from Firestore", e);
     return {};
   }
 }
 
 export async function saveSpellingResult(userId: string, exerciseId: string, errors: string[]) {
-  if (typeof window === 'undefined') return;
+  if (!userId) return;
   try {
-    const dbString = localStorage.getItem(SPELLING_PROGRESS_DB);
-    const db: SpellingProgress = dbString ? JSON.parse(dbString) : {};
+    const userProgressRef = doc(db, 'spellingProgress', userId);
     
-    if (!db[userId]) {
-        db[userId] = {};
-    }
-
-    db[userId][exerciseId] = {
+    // We use setDoc with merge:true to create the doc if it doesn't exist,
+    // or update a specific field (exerciseId) if it does.
+    await setDoc(userProgressRef, {
+      [exerciseId]: {
         completedAt: new Date().toISOString(),
         errors: errors,
-    };
+      }
+    }, { merge: true });
 
-    localStorage.setItem(SPELLING_PROGRESS_DB, JSON.stringify(db));
   } catch (e) {
-    console.error("Failed to save spelling result", e);
+    console.error("Failed to save spelling result to Firestore", e);
   }
 }

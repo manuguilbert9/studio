@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { skills, difficultyLevelToString } from '@/lib/skills';
 import type { Skill } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
@@ -12,20 +13,9 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
 import { Badge } from '@/components/ui/badge';
+import { UserContext } from '@/context/user-context';
+import { getScoresForUser, Score } from '@/services/scores';
 
-// Note: This data would typically come from a database.
-// For this example, we'll simulate fetching it.
-const MOCK_SCORES_DB = 'MOCK_SCORES_DB';
-
-interface Score {
-  userId: string;
-  skill: string;
-  score: number;
-  createdAt: string; // Using ISO string for simplicity
-  calculationSettings?: CalculationSettings;
-  currencySettings?: CurrencySettings;
-  timeSettings?: TimeSettings;
-}
 
 interface SkillScores {
   skill: Skill;
@@ -33,43 +23,23 @@ interface SkillScores {
   latestScore: Score | null;
 }
 
-// Helper to get all scores from localStorage
-const getAllScores = (): Score[] => {
-    if (typeof window === 'undefined') return [];
-    try {
-        const scores = localStorage.getItem(MOCK_SCORES_DB);
-        return scores ? JSON.parse(scores) : [];
-    } catch (error) {
-        console.error("Failed to parse scores from localStorage", error);
-        return [];
-    }
-};
 
 export default function ResultsPage() {
-  const [username, setUsername] = useState<string | null>(null);
+  const { username, isLoading: isUserLoading } = useContext(UserContext);
   const [skillScores, setSkillScores] = useState<SkillScores[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedName = localStorage.getItem('classemagique_username');
-    if (storedName) {
-      setUsername(storedName);
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
+    if (isUserLoading) return;
     if (!username) {
-        if (!isLoading) setIsLoading(false);
+        setIsLoading(false);
         return;
     };
 
-    const fetchScores = () => {
+    const fetchScores = async () => {
       setIsLoading(true);
       try {
-        const allScores = getAllScores();
-        const userScores = allScores.filter(score => score.userId === username);
+        const userScores = await getScoresForUser(username);
 
         const scoresBySkill = skills.map(skill => {
           const relatedScores = userScores
@@ -92,7 +62,7 @@ export default function ResultsPage() {
     };
 
     fetchScores();
-  }, [username, isLoading]);
+  }, [username, isUserLoading]);
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-8">
@@ -111,7 +81,7 @@ export default function ResultsPage() {
         </header>
 
         <main>
-          {isLoading ? (
+          {isLoading || isUserLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
             </div>
@@ -119,6 +89,9 @@ export default function ResultsPage() {
             <Card className="text-center p-8">
               <CardTitle>Aucun utilisateur connecté</CardTitle>
               <CardDescription className="mt-2">Veuillez vous connecter pour voir vos résultats.</CardDescription>
+               <Button asChild className="mt-4">
+                <Link href="/">Se connecter</Link>
+              </Button>
             </Card>
           ) : skillScores.length === 0 ? (
             <Card className="text-center p-8">
@@ -127,7 +100,7 @@ export default function ResultsPage() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {skillScores.map(({ skill, latestScore }) => (
+              {skillScores.map(({ skill, latestScore, scores }) => (
                 <Card key={skill.slug} className="flex flex-col items-center p-6 text-center">
                     <div className="text-primary [&>svg]:h-16 [&>svg]:w-16">
                         {skill.icon}
@@ -140,7 +113,7 @@ export default function ResultsPage() {
                             </p>
                             <ScoreTube score={latestScore.score} />
                              <p className="text-lg mt-2">
-                                Total exercices : <span className="font-bold">{skillScores.find(s => s.skill.slug === skill.slug)?.scores.length}</span>
+                                Total exercices : <span className="font-bold">{scores.length}</span>
                             </p>
                              <Badge variant="secondary" className="mt-2">
                                 {difficultyLevelToString(latestScore.skill, latestScore.calculationSettings, latestScore.currencySettings, latestScore.timeSettings) || "Niveau Standard"}

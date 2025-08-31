@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, FormEvent, useContext } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
@@ -10,51 +9,29 @@ import { Book, Users, LogOut, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { UserContext } from '@/context/user-context';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ModeSelectionPage() {
-  const [username, setUsername] = useState<string | null>(null);
+  const { username, setUsername, isLoading } = useContext(UserContext);
   const [inputValue, setInputValue] = useState('');
-  const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-    try {
-      const storedName = localStorage.getItem('classemagique_username');
-      if (storedName) {
-        setUsername(storedName);
-      }
-    } catch (error) {
-      console.error("Could not access localStorage", error);
-    }
-  }, []);
-
-  const handleUserChange = () => {
-    try {
-      localStorage.removeItem('classemagique_username');
-      setUsername(null);
-      window.location.reload();
-    } catch (error) {
-      console.error("Could not access localStorage", error);
-    }
+  const handleLogout = () => {
+    setUsername(null);
+    setInputValue('');
   };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
-      const trimmedName = inputValue.trim();
-      try {
-        localStorage.setItem('classemagique_username', trimmedName);
-        setUsername(trimmedName);
-      } catch (error) {
-        console.error("Could not access localStorage", error);
-      }
+      setUsername(inputValue.trim());
     }
   };
   
-  if (!isClient) {
+  if (isLoading) {
       return (
          <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background">
-             {/* Render a skeleton or loading state */}
+             <Skeleton className="h-12 w-1/2" />
          </main>
       )
   }
@@ -135,7 +112,7 @@ export default function ModeSelectionPage() {
         </Link>
       </div>
         <div className="mt-12">
-            <Button onClick={handleUserChange} variant="outline" size="lg">
+            <Button onClick={handleLogout} variant="outline" size="lg">
                 <LogOut className="mr-2" />
                 Déconnexion
             </Button>

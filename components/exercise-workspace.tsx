@@ -2,7 +2,7 @@
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useContext } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
@@ -18,8 +18,8 @@ import { CurrencySettings } from './currency-settings';
 import { TimeSettings } from './time-settings';
 import { PriceTag } from './price-tag';
 import { InteractiveClock } from './interactive-clock';
-
-const MOCK_SCORES_DB = 'MOCK_SCORES_DB';
+import { UserContext } from '@/context/user-context';
+import { addScore, getScoresForUser, Score } from '@/services/scores';
 
 
 const motivationalMessages = [
@@ -33,45 +33,6 @@ const icons = [
 ];
 
 const NUM_QUESTIONS = 10;
-
-export interface Score {
-  userId: string;
-  skill: string;
-  score: number;
-  createdAt: string; // Using ISO string for localStorage compatibility
-  calculationSettings?: CalcSettings;
-  currencySettings?: CurrSettings;
-  timeSettings?: TimeSettingsType;
-}
-
-// Helper to get all scores from localStorage
-const getAllScores = (): Score[] => {
-    if (typeof window === 'undefined') return [];
-    try {
-        const scores = localStorage.getItem(MOCK_SCORES_DB);
-        return scores ? JSON.parse(scores) : [];
-    } catch (error) {
-        console.error("Failed to parse scores from localStorage", error);
-        return [];
-    }
-};
-
-// Helper to add a new score to localStorage
-const addScore = (newScore: Omit<Score, 'createdAt'>) => {
-    if (typeof window === 'undefined') return;
-    try {
-        const allScores = getAllScores();
-        const scoreWithTimestamp: Score = {
-            ...newScore,
-            createdAt: new Date().toISOString(),
-        };
-        allScores.push(scoreWithTimestamp);
-        localStorage.setItem(MOCK_SCORES_DB, JSON.stringify(allScores));
-    } catch (error) {
-        console.error("Failed to save score to localStorage", error);
-    }
-};
-
 
 interface ExerciseWorkspaceProps {
   skill: Skill;
@@ -87,7 +48,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [username, setUsername] = useState<string | null>(null);
+  
+  const { username, isLoading: isUserLoading } = useContext(UserContext);
+
   const [scoreHistory, setScoreHistory] = useState<Score[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [calculationSettings, setCalculationSettings] = useState<CalcSettings | null>(null);
@@ -107,10 +70,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
-    }
-    const storedName = localStorage.getItem('classemagique_username');
-    if (storedName) {
-      setUsername(storedName);
     }
   }, [skill.slug]);
   
@@ -240,14 +199,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   };
   
   useEffect(() => {
-    const saveScoreAndFetchHistory = () => {
+    const saveScoreAndFetchHistory = async () => {
       if (isFinished && username && !isSaving && !isTableauMode) {
         setIsSaving(true);
         setIsLoadingHistory(true);
         
         const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         
-        const scoreData: Omit<Score, 'createdAt'> = {
+        const scoreData: Omit<Score, 'createdAt' | 'id'> = {
             userId: username,
             skill: skill.slug,
             score: newScoreValue,
@@ -263,14 +222,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             scoreData.timeSettings = timeSettings;
         }
 
-        addScore(scoreData);
+        await addScore(scoreData);
         
         try {
-          const allScores = getAllScores();
-          const userSkillHistory = allScores
-            .filter(s => s.userId === username && s.skill === skill.slug)
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            
+          const userSkillHistory = await getScoresForUser(username, skill.slug);
           setScoreHistory(userSkillHistory);
         } catch (e) {
           console.error("Error fetching scores: ", e);

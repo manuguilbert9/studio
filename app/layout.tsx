@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import { UserProvider } from '@/context/user-context';
 
 export const metadata: Metadata = {
   title: 'Classe Magique',
@@ -20,8 +21,10 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400..900;1,400..900&family=Belleza&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        {children}
-        <Toaster />
+        <UserProvider>
+          {children}
+          <Toaster />
+        </UserProvider>
       </body>
     </html>
   );

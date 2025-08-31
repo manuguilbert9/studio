@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -9,36 +9,51 @@ import { Loader2, Home, CheckCircle } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getSpellingLists, getSpellingProgress, SpellingList } from '@/services/spelling';
 import { SpellingExercise } from '@/components/spelling-exercise';
+import { UserContext } from '@/context/user-context';
 
 function DevoirsList({ onSelectExercise }: { onSelectExercise: (id: string) => void }) {
   const [lists, setLists] = useState<SpellingList[]>([]);
   const [progress, setProgress] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
-  const [username, setUsername] = useState<string | null>(null);
+  const { username, isLoading: isUserLoading } = useContext(UserContext);
 
   useEffect(() => {
-    const storedName = localStorage.getItem('classemagique_username');
-    setUsername(storedName);
-
     async function loadData() {
       setIsLoading(true);
       const spellingLists = await getSpellingLists();
       setLists(spellingLists);
-      if (storedName) {
-        const userProgress = await getSpellingProgress(storedName);
+      if (username) {
+        const userProgress = await getSpellingProgress(username);
         setProgress(userProgress);
       }
       setIsLoading(false);
     }
-    loadData();
-  }, []);
+    
+    if (!isUserLoading) {
+      loadData();
+    }
+  }, [username, isUserLoading]);
 
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
         <p className="mt-4 text-muted-foreground">Chargement des listes de devoirs...</p>
       </div>
+    );
+  }
+  
+  if (!username) {
+    return (
+      <Card className="w-full text-center p-8">
+        <CardTitle>Veuillez vous connecter</CardTitle>
+        <CardContent>
+          <p className='mt-4'>Vous devez être connecté pour voir les devoirs.</p>
+          <Button asChild className="mt-4">
+            <Link href="/">Retour à l'accueil</Link>
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 

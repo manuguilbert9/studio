@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Calculator, Brush } from 'lucide-react';
@@ -21,6 +22,7 @@ import { saveTableauState, loadTableauState } from '@/services/tableau';
 import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState, SoustractionWidgetState, DrawingWidgetState } from '@/services/tableau.types';
 import { AdditionIcon } from '@/components/icons/addition-icon';
 import { SoustractionIcon } from '@/components/icons/soustraction-icon';
+import { UserContext } from '@/context/user-context';
 
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -37,7 +39,7 @@ export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
 };
 
 export default function TableauPage() {
-  const [username, setUsername] = useState<string | null>(null);
+  const { username, isLoading: isUserLoading } = useContext(UserContext);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
@@ -58,13 +60,6 @@ export default function TableauPage() {
   const [lastMousePos, setLastMousePos] = useState({ x: 200, y: 150 });
   
   useEffect(() => {
-    const storedName = localStorage.getItem('skillfiesta_username');
-    if (storedName) {
-      setUsername(storedName);
-    } else {
-      setIsLoading(false);
-    }
-
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     const handleMouseMove = (e: MouseEvent) => setLastMousePos({ x: e.clientX, y: e.clientY });
 
@@ -115,7 +110,10 @@ export default function TableauPage() {
 
   // Load state from file
   useEffect(() => {
-    if (!username) return;
+    if (!username) {
+        if(!isUserLoading) setIsLoading(false);
+        return;
+    }
 
     const fetchState = async () => {
         setIsLoading(true);
@@ -155,7 +153,7 @@ export default function TableauPage() {
         }
     };
     fetchState();
-  }, [username]);
+  }, [username, isUserLoading]);
 
   const handleSaveState = useCallback(async () => {
     if (!username) return;
@@ -254,12 +252,25 @@ export default function TableauPage() {
     }
   };
 
-  if (isLoading) {
+  if (isUserLoading || isLoading) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-white">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </div>
     );
+  }
+  
+  if (!username) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white text-slate-900">
+            <h1 className='text-2xl font-headline'>Veuillez vous connecter pour utiliser le tableau.</h1>
+             <Button asChild variant="outline" className='mt-4'>
+                <Link href="/">
+                <Home className="h-4 w-4 mr-2" /> Retour à l'accueil
+                </Link>
+            </Button>
+        </div>
+    )
   }
 
   return (
@@ -376,7 +387,7 @@ export default function TableauPage() {
             <TimerWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setTimerWidgets)} onClose={() => removeWidget(setTimerWidgets, widgetState.id)} />
         ))}
         {dateWidgets.map(widgetState => (
-            <DateWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setDateWidgets)} onClose={() => removeWidget(dateWidgets, widgetState.id)} />
+            <DateWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setDateWidgets)} onClose={() => removeWidget(setDateWidgets, widgetState.id)} />
         ))}
        
     </div>
