@@ -73,15 +73,21 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
     };
   }, []);
 
-  const startExercise = (list: SpellingList) => {
+  const startExercise = (listId: string) => {
+    const list = availableLists.find(l => l.id === listId);
+    if (!list) return;
+
     setSelectedList(list);
-    setWords(list.words);
+    const cleanedWords = list.words.map(word => 
+        word.replace(/\|.*/, '').replace(/[\(\)-]/g, '').trim()
+    );
+    setWords(cleanedWords);
     setCurrentWordIndex(0);
     setResults([]);
     setIsFinished(false);
-    handleSpeak(list.words[0]);
+    handleSpeak(cleanedWords[0]);
     if (repeatIntervalRef.current) clearInterval(repeatIntervalRef.current);
-    repeatIntervalRef.current = setInterval(() => handleSpeak(list.words[currentWordIndex]), REPEAT_INTERVAL_MS);
+    repeatIntervalRef.current = setInterval(() => handleSpeak(cleanedWords[currentWordIndex]), REPEAT_INTERVAL_MS);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
   
@@ -151,7 +157,7 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
             {availableLists.map(list => (
-                <Button key={list.id} onClick={() => startExercise(list)} variant="outline" size="lg">
+                <Button key={list.id} onClick={() => startExercise(list.id)} variant="outline" size="lg">
                     {list.id} – {list.title}
                 </Button>
             ))}
@@ -228,20 +234,19 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
             <Volume2 className="mr-4 h-8 w-8" />
             Répéter le mot
           </Button>
-          <div className="flex w-full max-w-sm items-center space-x-2">
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmit();}} className="flex w-full max-w-sm items-center space-x-2">
             <Input
               ref={inputRef}
               type="text"
               placeholder="Écris le mot ici..."
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
               className="h-14 text-2xl"
             />
-            <Button type="submit" size="icon" className="h-14 w-14" onClick={handleSubmit}>
+            <Button type="submit" size="icon" className="h-14 w-14">
               <Send />
             </Button>
-          </div>
+          </form>
         </CardContent>
       </Card>
     </div>
