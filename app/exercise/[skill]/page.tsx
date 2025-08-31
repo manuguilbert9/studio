@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
 import { FluencyExercise } from '@/components/fluency-exercise';
 import { Button } from '@/components/ui/button';
+import { DictationExercise } from '@/components/dictation-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -22,6 +23,8 @@ export default function ExercisePage() {
     switch (skill.slug) {
       case 'reading':
         return <FluencyExercise />;
+      case 'dictation':
+        return <DictationExercise isTableauMode={false} />;
       default:
         return <ExerciseWorkspace skill={skill} />;
     }

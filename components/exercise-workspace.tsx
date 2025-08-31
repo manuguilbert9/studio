@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -270,7 +271,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       if (skill.slug === 'time') {
         return <TimeSettings onStart={startTimeExercise} />;
       }
-      // For other skills like writing, this will show a loading state until questions are set.
+      // For other skills, this will show a loading state until questions are set.
        return (
             <Card className="w-full shadow-2xl p-8 text-center">
                 Chargement de l'exercice...

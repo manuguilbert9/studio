@@ -7,6 +7,7 @@ import {
   Clock,
   FilePenLine,
   PiggyBank,
+  Ear,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from './questions';
 
@@ -20,10 +21,10 @@ export interface Skill {
 
 export const skills: Skill[] = [
   {
-    name: 'Écriture',
-    slug: 'writing',
-    description: "Pratiquez l'orthographe et la grammaire.",
-    icon: <FilePenLine />,
+    name: 'Dictée',
+    slug: 'dictation',
+    description: "Écoutez le mot et écrivez-le correctement.",
+    icon: <Ear />,
   },
   {
     name: 'L\'heure',
@@ -78,3 +79,4 @@ export function difficultyLevelToString(
     }
     return null;
 }
+

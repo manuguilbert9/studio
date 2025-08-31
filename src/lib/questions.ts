@@ -1,4 +1,5 @@
 
+
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
@@ -50,19 +51,6 @@ export interface AllSettings {
     currency?: CurrencySettings;
     time?: TimeSettings;
 }
-
-const writingQuestions: Omit<Question, 'question' | 'type'>[] = [
-    { options: ['Voiture', 'Voitrue', 'Vouature', 'Voiturre'], answer: 'Voiture', hint: 'orthographe véhicule' },
-    { options: ['Maison', 'Maizon', 'Meison', 'Maisone'], answer: 'Maison', hint: 'orthographe bâtiment' },
-    { options: ['Écolle', 'Aicole', 'École', 'Aicolle'], answer: 'École', hint: 'orthographe lieu d\'apprentissage' },
-    { options: ['Garçon', 'Garcon', 'Garscon', 'Garsons'], answer: 'Garçon', hint: 'orthographe personne' },
-    { options: ['Fille', 'Fiile', 'Fie', 'Fill'], answer: 'Fille', hint: 'orthographe personne' },
-    { options: ['Livre', 'Lievre', 'Lyvre', 'Leavre'], answer: 'Livre', hint: 'orthographe objet' },
-    { options: ['Table', 'Tabble', 'Tabel', 'Tabl'], answer: 'Table', hint: 'orthographe meuble' },
-    { options: ['Chaise', 'Chaize', 'Chèze', 'Chaisse'], answer: 'Chaise', hint: 'orthographe meuble' },
-    { options: ['Ordinater', 'Ordinateur', 'Ordinatore', 'Ordinatur'], answer: 'Ordinateur', hint: 'orthographe appareil' },
-    { options: ['Soleil', 'Solail', 'Soleille', 'Solleil'], answer: 'Soleil', hint: 'orthographe astre' },
-];
 
 function generateTimeQuestion(settings: TimeSettings): Question {
     const { difficulty } = settings;
@@ -486,14 +474,6 @@ export function generateQuestions(skill: string, count: number, settings?: AllSe
     return Array.from({ length: count }, () => generateTimeQuestion(settings.time!));
   }
   
-  if (skill === 'writing') {
-     return writingQuestions.slice(0, count).map(q => ({
-        ...q,
-        type: 'qcm',
-        question: 'Quel mot est correctement orthographié ?'
-     }));
-  }
-  
   if (skill === 'currency' && settings?.currency) {
     return Array.from({ length: count }, () => generateCurrencyQuestion(settings.currency!));
   }
@@ -502,8 +482,8 @@ export function generateQuestions(skill: string, count: number, settings?: AllSe
     return Array.from({ length: count }, () => generateCalculationQuestion(settings.calculation!));
   }
   
-  if (skill === 'reading') {
-    // Reading has its own component, no questions are generated here.
+  if (skill === 'reading' || skill === 'dictation') {
+    // These skills have their own components, no questions are generated here.
     return [];
   }
 
