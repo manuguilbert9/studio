@@ -59,7 +59,7 @@ export default function TeacherDashboardPage() {
 
   const getStudentProgress = (student: string, exerciseId: string) => {
     const studentProgress = allSpellingProgress.find(p => p.userId === student);
-    return studentProgress?.progress[exerciseId] !== undefined;
+    return studentProgress?.progress[exerciseId.toLowerCase()] !== undefined;
   }
 
   if (isLoading) {
