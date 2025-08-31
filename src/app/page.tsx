@@ -106,7 +106,7 @@ export default function ModeSelectionPage() {
             <p className="text-base sm:text-lg text-muted-foreground mt-2">Connecté en tant que <span className="font-bold">{username}</span>.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full max-w-sm md:max-w-4xl">
-        <Link href="/devoirs/" className="group" aria-label="Accéder aux devoirs">
+        <Link href="/devoirs" className="group" aria-label="Accéder aux devoirs">
           <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
             <div className="mb-6 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
               <Book />
