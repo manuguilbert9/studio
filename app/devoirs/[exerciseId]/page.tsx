@@ -274,7 +274,7 @@ export default function SpellingExercisePage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in">
-              <div className="relative w-full max-w-md">
+              <div className="relative w-full max-w-md flex items-center gap-2">
                 <Input
                   ref={inputRef}
                   value={inputValue}
@@ -289,6 +289,9 @@ export default function SpellingExercisePage() {
                 />
                  {feedback === 'correct' && <Check className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 text-green-500"/>}
                  {feedback === 'incorrect' && <X className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 text-red-500"/>}
+                  <Button onClick={handleSpeak} variant="outline" size="icon" className="h-16 w-16" aria-label="Lire le mot">
+                    <Volume2 className="h-8 w-8" />
+                  </Button>
               </div>
               
               {feedback === 'idle' && (
