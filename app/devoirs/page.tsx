@@ -118,7 +118,7 @@ function DevoirsList() {
         <div className="flex justify-between items-center">
             <CardTitle className="font-headline text-3xl sm:text-4xl text-center flex-grow">Devoirs d'Orthographe</CardTitle>
              <Button asChild variant="outline">
-                <Link href="/orthographe/mots.pptx" target="_blank">
+                <Link href="/devoirs/listes">
                     <FileText className="mr-2" />
                     Consulter les listes de mots
                 </Link>
