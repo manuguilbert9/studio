@@ -2,11 +2,12 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
-import { useParams, useRouter, notFound, Link } from 'next/navigation';
+import { useParams, useRouter, notFound } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star, Home } from 'lucide-react';
+import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { getSpellingLists, saveSpellingResult, type SpellingList } from '@/services/spelling';
 import { cn } from '@/lib/utils';

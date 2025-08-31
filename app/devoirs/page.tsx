@@ -3,15 +3,16 @@
 
 import { useState, useEffect, useContext } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Loader2, Home, CheckCircle } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getSpellingLists, getSpellingProgress, SpellingList } from '@/services/spelling';
-import { SpellingExercise } from '@/components/spelling-exercise';
 import { UserContext } from '@/context/user-context';
 
-function DevoirsList({ onSelectExercise }: { onSelectExercise: (id: string) => void }) {
+function DevoirsList() {
+  const router = useRouter();
   const [lists, setLists] = useState<SpellingList[]>([]);
   const [progress, setProgress] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -78,7 +79,7 @@ function DevoirsList({ onSelectExercise }: { onSelectExercise: (id: string) => v
                         key={exerciseId} 
                         variant={isCompleted ? "secondary" : "default"} 
                         className="h-14 text-base justify-between"
-                        onClick={() => onSelectExercise(exerciseId)}
+                        onClick={() => router.push(`/devoirs/${exerciseId}`)}
                       >
                         <span>{list.id} : {session}</span>
                         {isCompleted && <CheckCircle className="text-green-500"/>}
@@ -96,16 +97,6 @@ function DevoirsList({ onSelectExercise }: { onSelectExercise: (id: string) => v
 
 
 export default function DevoirsPage() {
-    const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
-
-    const handleBackToList = () => {
-        setSelectedExerciseId(null);
-    }
-    
-    if (selectedExerciseId) {
-        return <SpellingExercise exerciseId={selectedExerciseId} onFinish={handleBackToList} />;
-    }
-
     return (
         <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
             <div className="w-full max-w-4xl">
@@ -126,7 +117,7 @@ export default function DevoirsPage() {
                     </div>
                     <div className="w-10 sm:w-[150px]"></div>
                 </header>
-                <DevoirsList onSelectExercise={setSelectedExerciseId} />
+                <DevoirsList />
             </div>
         </main>
     );

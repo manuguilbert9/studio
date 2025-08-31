@@ -4,7 +4,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, setDoc, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 
 export interface SpellingList {
@@ -82,8 +82,8 @@ export async function getSpellingProgress(userId: string): Promise<Record<string
   }
 }
 
-export async function saveSpellingResult(userId: string, exerciseId: string, errors: string[]) {
-  if (!userId) return;
+export async function saveSpellingResult(userId: string, exerciseId: string, errors: string[]): Promise<{success: boolean, error?: string}> {
+  if (!userId) return { success: false, error: "User ID is required."};
   try {
     const userProgressRef = doc(db, 'spellingProgress', userId);
     
@@ -96,7 +96,13 @@ export async function saveSpellingResult(userId: string, exerciseId: string, err
       }
     }, { merge: true });
 
+    return { success: true };
+
   } catch (e) {
     console.error("Failed to save spelling result to Firestore", e);
+    if (e instanceof Error) {
+        return { success: false, error: e.message };
+    }
+    return { success: false, error: "An unknown error occurred."};
   }
 }
