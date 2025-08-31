@@ -94,9 +94,11 @@ export default function TeacherDashboardPage() {
   // Memoize the progress map to avoid re-calculating on every render.
   const studentProgressMap = useMemo(() => {
       const map = new Map<string, Record<string, SpellingResult>>();
-      allSpellingProgress.forEach(progressItem => {
-          map.set(progressItem.userId, progressItem.progress);
-      });
+      if (allSpellingProgress) {
+        allSpellingProgress.forEach(progressItem => {
+            map.set(progressItem.userId, progressItem.progress);
+        });
+      }
       return map;
   }, [allSpellingProgress]);
 
@@ -199,11 +201,12 @@ export default function TeacherDashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {students.map(student => (
+                    {students.map(student => {
+                        const studentProgress = studentProgressMap.get(student.id);
+                        return (
                         <TableRow key={student.id}>
                             <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
                             {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
-                                const studentProgress = studentProgressMap.get(student.id);
                                 const result = studentProgress?.[exerciseId.toLowerCase()];
 
                                 return (
@@ -222,9 +225,22 @@ export default function TeacherDashboardPage() {
                                 );
                             })}
                         </TableRow>
-                    ))}
+                    )})}
                   </TableBody>
                 </Table>
+                </div>
+              </CardContent>
+            </Card>
+             <Card className="mt-4">
+              <CardHeader>
+                <CardTitle>Données brutes (pour débogage)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="p-4 bg-muted rounded-md text-xs font-mono overflow-auto max-h-96">
+                    <h3 className="font-bold mb-2">`allSpellingProgress` (depuis Firestore)</h3>
+                    <pre>{JSON.stringify(allSpellingProgress, null, 2)}</pre>
+                    <h3 className="font-bold mt-4 mb-2">`studentProgressMap` (données transformées)</h3>
+                    <pre>{JSON.stringify(Object.fromEntries(studentProgressMap), null, 2)}</pre>
                 </div>
               </CardContent>
             </Card>
@@ -273,3 +289,5 @@ export default function TeacherDashboardPage() {
     </main>
   );
 }
+
+    
