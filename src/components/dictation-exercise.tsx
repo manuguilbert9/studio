@@ -136,6 +136,19 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
       }
     }
   };
+  
+  const startExercise = (listId: string) => {
+    const list = availableLists.find(l => l.id === listId);
+    if (list) {
+      const cleanedWords = list.words
+        .map(word => word.replace(/\|.*?\|/g, '')) // Remove syllable markers like |...|
+        .map(word => word.replace(/\(.*?\)/g, '')) // Remove parenthesized parts
+        .map(word => word.trim()) // Trim whitespace
+        .filter(Boolean); // Remove any empty strings
+      setSelectedList(list);
+      setWords(cleanedWords);
+    }
+  };
 
   const restartExercise = () => {
     setSelectedList(null);
