@@ -2,18 +2,10 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /tableaux/{userId} {
-      // Allow the user to read and write to their own document
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    match /scores/{docId} {
-      allow read: if true; // Or more restrictive rules
-      allow create: if request.auth != null; // Anyone authenticated can create
-    }
-    match /spellingProgress/{userId} {
-       allow read: if request.auth != null && request.auth.uid == userId;
-       // Allow creating a new progress doc and updating an existing one
-       allow create, update: if request.auth != null && request.auth.uid == userId;
+    // WARNING: Insecure rules, for development only.
+    // This allows anyone to read and write to your entire database.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
