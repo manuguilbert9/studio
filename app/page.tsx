@@ -12,7 +12,6 @@ export default function ModeSelectionPage() {
         <Logo />
       </div>
       <div className="text-center mb-12">
-        <h2 className="font-headline text-5xl">Bienvenue sur SkillFiesta</h2>
         <p className="text-xl text-muted-foreground mt-2">Veuillez choisir votre mode d'utilisation.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-4xl">

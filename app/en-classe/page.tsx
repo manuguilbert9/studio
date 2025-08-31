@@ -18,7 +18,7 @@ export default function EnClassePage() {
   useEffect(() => {
     setIsClient(true);
     try {
-      const storedName = localStorage.getItem('skillfiesta_username');
+      const storedName = localStorage.getItem('classemagique_username');
       if (storedName) {
         setName(storedName);
       }
@@ -33,7 +33,7 @@ export default function EnClassePage() {
       const trimmedName = inputValue.trim();
       setName(trimmedName);
       try {
-        localStorage.setItem('skillfiesta_username', trimmedName);
+        localStorage.setItem('classemagique_username', trimmedName);
         setInputValue('');
       } catch (error) {
         console.error("Could not access localStorage", error);
@@ -43,7 +43,7 @@ export default function EnClassePage() {
   
   const handleUserChange = () => {
     try {
-      localStorage.removeItem('skillfiesta_username');
+      localStorage.removeItem('classemagique_username');
       setName(null);
     } catch (error) {
       console.error("Could not access localStorage", error);

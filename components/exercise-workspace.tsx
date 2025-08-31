@@ -9,8 +9,6 @@ import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, currency as currencyData, formatCurrency } from '@/lib/questions';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryChart } from './score-history-chart';
 import { Skeleton } from './ui/skeleton';
@@ -20,6 +18,8 @@ import { CurrencySettings } from './currency-settings';
 import { TimeSettings } from './time-settings';
 import { PriceTag } from './price-tag';
 import { InteractiveClock } from './interactive-clock';
+
+const MOCK_SCORES_DB = 'MOCK_SCORES_DB';
 
 
 const motivationalMessages = [
@@ -38,11 +38,40 @@ export interface Score {
   userId: string;
   skill: string;
   score: number;
-  createdAt: Timestamp;
+  createdAt: string; // Using ISO string for localStorage compatibility
   calculationSettings?: CalcSettings;
   currencySettings?: CurrSettings;
   timeSettings?: TimeSettingsType;
 }
+
+// Helper to get all scores from localStorage
+const getAllScores = (): Score[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        const scores = localStorage.getItem(MOCK_SCORES_DB);
+        return scores ? JSON.parse(scores) : [];
+    } catch (error) {
+        console.error("Failed to parse scores from localStorage", error);
+        return [];
+    }
+};
+
+// Helper to add a new score to localStorage
+const addScore = (newScore: Omit<Score, 'createdAt'>) => {
+    if (typeof window === 'undefined') return;
+    try {
+        const allScores = getAllScores();
+        const scoreWithTimestamp: Score = {
+            ...newScore,
+            createdAt: new Date().toISOString(),
+        };
+        allScores.push(scoreWithTimestamp);
+        localStorage.setItem(MOCK_SCORES_DB, JSON.stringify(allScores));
+    } catch (error) {
+        console.error("Failed to save score to localStorage", error);
+    }
+};
+
 
 interface ExerciseWorkspaceProps {
   skill: Skill;
@@ -79,7 +108,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
-    const storedName = localStorage.getItem('skillfiesta_username');
+    const storedName = localStorage.getItem('classemagique_username');
     if (storedName) {
       setUsername(storedName);
     }
@@ -211,54 +240,43 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   };
   
   useEffect(() => {
-    const saveScoreAndFetchHistory = async () => {
+    const saveScoreAndFetchHistory = () => {
       if (isFinished && username && !isSaving && !isTableauMode) {
         setIsSaving(true);
         setIsLoadingHistory(true);
         
-        const newScore = (correctAnswers / NUM_QUESTIONS) * 100;
+        const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         
-        const scoreData: any = {
+        const scoreData: Omit<Score, 'createdAt'> = {
             userId: username,
             skill: skill.slug,
-            score: newScore,
-            createdAt: serverTimestamp()
+            score: newScoreValue,
         };
 
         if (skill.slug === 'calculation' && calculationSettings) {
             scoreData.calculationSettings = calculationSettings;
         }
-
         if (skill.slug === 'currency' && currencySettings) {
             scoreData.currencySettings = currencySettings;
         }
-
         if (skill.slug === 'time' && timeSettings) {
             scoreData.timeSettings = timeSettings;
         }
 
-        try {
-          await addDoc(collection(db, "scores"), scoreData);
-        } catch (e) {
-          console.error("Error adding document: ", e);
-        }
+        addScore(scoreData);
         
         try {
-          const scoresRef = collection(db, "scores");
-          const q = query(
-            scoresRef,
-            where("userId", "==", username),
-            where("skill", "==", skill.slug)
-          );
-          const querySnapshot = await getDocs(q);
-          const history = querySnapshot.docs
-            .map(doc => doc.data() as Score)
-            .sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-          setScoreHistory(history);
+          const allScores = getAllScores();
+          const userSkillHistory = allScores
+            .filter(s => s.userId === username && s.skill === skill.slug)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            
+          setScoreHistory(userSkillHistory);
         } catch (e) {
           console.error("Error fetching scores: ", e);
         } finally {
             setIsLoadingHistory(false);
+            setIsSaving(false); // Allow saving again
         }
       }
     };

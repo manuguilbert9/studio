@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'SkillFiesta',
+  title: 'Classe Magique',
   description: 'Des exercices amusants et engageants pour développer vos compétences !',
 };
 

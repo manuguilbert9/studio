@@ -51,7 +51,7 @@ export default function ResultsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedName = localStorage.getItem('skillfiesta_username');
+    const storedName = localStorage.getItem('classemagique_username');
     if (storedName) {
       setUsername(storedName);
     } else {

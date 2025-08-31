@@ -60,7 +60,7 @@ export default function TableauPage() {
   const [lastMousePos, setLastMousePos] = useState({ x: 200, y: 150 });
   
   useEffect(() => {
-    const storedName = localStorage.getItem('skillfiesta_username');
+    const storedName = localStorage.getItem('classemagique_username');
     if (storedName) {
       setUsername(storedName);
     } else {
@@ -354,7 +354,7 @@ export default function TableauPage() {
         </div>
 
 
-       <main className="flex-1 w-full p-4 sm-p-6 md:p-8 pt-12">
+       <main className="flex-1 w-full p-4 sm:p-6 md:p-8 pt-12">
             {renderExercise()}
        </main>
 
@@ -378,7 +378,7 @@ export default function TableauPage() {
             <TimerWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setTimerWidgets)} onClose={() => removeWidget(setTimerWidgets, widgetState.id)} />
         ))}
         {dateWidgets.map(widgetState => (
-            <DateWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setDateWidgets)} onClose={() => removeWidget(dateWidgets, widgetState.id)} />
+            <DateWidget key={widgetState.id} initialState={widgetState} onUpdate={updateWidget.bind(null, setDateWidgets)} onClose={() => removeWidget(setDateWidgets, widgetState.id)} />
         ))}
        
     </div>
