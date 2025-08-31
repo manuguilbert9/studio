@@ -4,7 +4,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, addDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
 
 
 export interface SpellingList {
@@ -91,7 +91,7 @@ export async function saveSpellingResult(userId: string, exerciseId: string, err
     // or update a specific field (exerciseId) if it does.
     await setDoc(userProgressRef, {
       [exerciseId]: {
-        completedAt: new Date().toISOString(),
+        completedAt: Timestamp.now(),
         errors: errors,
       }
     }, { merge: true });
