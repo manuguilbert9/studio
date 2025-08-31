@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, type FormEvent, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { skills } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { ArrowRight, UserCog, BarChart3, Presentation } from 'lucide-react';
+import { ArrowRight, BarChart3, Home, Presentation } from 'lucide-react';
 
 export default function EnClassePage() {
   const [name, setName] = useState<string | null>(null);
@@ -40,15 +41,6 @@ export default function EnClassePage() {
       }
     }
   };
-  
-  const handleUserChange = () => {
-    try {
-      localStorage.removeItem('classemagique_username');
-      setName(null);
-    } catch (error) {
-      console.error("Could not access localStorage", error);
-    }
-  };
 
   if (!isClient) {
     return null; // Or a loading spinner
@@ -57,13 +49,13 @@ export default function EnClassePage() {
   if (!name) {
     return (
       <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 bg-background">
-        <div className="absolute top-8 left-8">
+        <div className="absolute top-8 left-1/2 -translate-x-1/2">
           <Logo />
         </div>
         <Card className="w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
           <CardHeader className="text-center">
-            <CardTitle className="font-headline text-4xl">Bienvenue !</CardTitle>
-            <CardDescription className="text-lg">
+            <CardTitle className="font-headline text-3xl sm:text-4xl">Bienvenue !</CardTitle>
+            <CardDescription className="text-base sm:text-lg">
               Commençons. Comment devrions-nous vous appeler ?
             </CardDescription>
           </CardHeader>
@@ -88,6 +80,12 @@ export default function EnClassePage() {
               </Button>
             </CardFooter>
           </form>
+           <Button asChild variant="link" className="mt-4">
+                <Link href="/">
+                    <Home className="mr-2"/>
+                    Retour à l'accueil
+                </Link>
+            </Button>
         </Card>
       </main>
     );
@@ -96,37 +94,41 @@ export default function EnClassePage() {
   return (
     <main className="container mx-auto px-4 py-8">
        <header className="mb-12 text-center space-y-4 relative">
-        <Logo />
-        <h2 className="font-headline text-5xl">Bonjour, {name}!</h2>
-        <p className="text-xl text-muted-foreground">Que voudriez-vous pratiquer aujourd'hui ?</p>
-         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
-            <Button onClick={handleUserChange} variant="outline" size="sm">
-                <UserCog className="mr-2" />
-                Changer d'utilisateur
+        <div className="absolute top-0 left-0">
+             <Button asChild variant="outline" size="sm">
+                <Link href="/">
+                    <Home className="mr-2" />
+                    Accueil
+                </Link>
             </Button>
+        </div>
+        <Logo />
+        <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {name}!</h2>
+        <p className="text-lg sm:text-xl text-muted-foreground">Que voudriez-vous pratiquer aujourd'hui ?</p>
+         <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
             <Button asChild variant="outline" size="sm">
                 <Link href="/results">
                     <BarChart3 className="mr-2" />
-                    Voir les résultats
+                    Résultats
                 </Link>
             </Button>
              <Button asChild variant="outline" size="sm">
                 <Link href="/tableau">
                     <Presentation className="mr-2" />
-                    Mode tableau
+                    Tableau
                 </Link>
             </Button>
         </div>
       </header>
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
         {skills.map((skill) => (
           <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
-            <Card className="flex h-full flex-col items-center justify-center p-8 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
-              <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-20 [&>svg]:w-20">
+            <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
+              <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
                 {skill.icon}
               </div>
-              <h3 className="font-headline text-3xl mb-2">{skill.name}</h3>
-              <p className="text-muted-foreground">{skill.description}</p>
+              <h3 className="font-headline text-2xl sm:text-3xl mb-2">{skill.name}</h3>
+              <p className="text-muted-foreground text-sm sm:text-base">{skill.description}</p>
             </Card>
           </Link>
         ))}
