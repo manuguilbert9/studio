@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
 
-const WORD_DISPLAY_TIME_MS = 6000;
+const WORD_DISPLAY_TIME_MS = 500;
 
 export default function SpellingExercisePage() {
   const router = useRouter();
