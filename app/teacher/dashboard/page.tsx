@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, XCircle, UserPlus, Users } from 'lucide-react';
+import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getAllScores, Score } from '@/services/scores';
 import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress } from '@/services/spelling';
@@ -18,6 +18,7 @@ import { difficultyLevelToString } from '@/lib/skills';
 import { createStudent, getStudents, type Student } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -90,8 +91,8 @@ export default function TeacherDashboardPage() {
     }
   }
 
-  // Create a map for quick progress lookup
-  const studentProgressMap: Record<string, SpellingProgress> = allSpellingProgress.reduce((acc, progress) => {
+  // Create a map for quick progress lookup. This is the robust way to handle this.
+  const studentProgressMap = allSpellingProgress.reduce((acc, progress) => {
       acc[progress.userId] = progress;
       return acc;
   }, {} as Record<string, SpellingProgress>);
@@ -127,7 +128,7 @@ export default function TeacherDashboardPage() {
           </TabsList>
 
           <TabsContent value="students">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
                 <Card>
                     <CardHeader>
                         <CardTitle>Créer un nouvel élève</CardTitle>
@@ -175,7 +176,7 @@ export default function TeacherDashboardPage() {
           </TabsContent>
 
           <TabsContent value="homework">
-            <Card>
+            <Card className="mt-4">
               <CardHeader>
                 <CardTitle>Suivi des devoirs d'orthographe</CardTitle>
                 <CardDescription>Consultez la progression des élèves pour chaque liste de devoirs.</CardDescription>
@@ -185,7 +186,7 @@ export default function TeacherDashboardPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="font-bold sticky left-0 bg-background">Élève</TableHead>
+                      <TableHead className="font-bold sticky left-0 bg-background z-10">Élève</TableHead>
                       {spellingLists.flatMap(list => [
                         { session: 'Lundi', exerciseId: `${list.id}-lundi` },
                         { session: 'Jeudi', exerciseId: `${list.id}-jeudi` }
@@ -195,29 +196,30 @@ export default function TeacherDashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {students.map(student => {
-                        const studentProgress = studentProgressMap[student.id];
-                        return (
-                          <TableRow key={student.id}>
-                            <TableCell className="font-semibold sticky left-0 bg-background">{student.name}</TableCell>
-                            {spellingLists.flatMap(list => [
-                              `${list.id}-lundi`,
-                              `${list.id}-jeudi`
-                            ]).map(exerciseId => {
-                              const isCompleted = studentProgress?.progress?.[exerciseId.toLowerCase()];
-                              return (
-                                <TableCell key={exerciseId} className="text-center">
-                                  {isCompleted ? (
-                                    <CheckCircle className="text-green-500 mx-auto" />
-                                  ) : (
-                                    <XCircle className="text-muted-foreground/50 mx-auto" />
-                                  )}
-                                </TableCell>
-                              )
+                    {students.map(student => (
+                        <TableRow key={student.id}>
+                            <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
+                            {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
+                                const studentProgress = studentProgressMap[student.id];
+                                const result = studentProgress?.progress?.[exerciseId.toLowerCase()];
+
+                                return (
+                                    <TableCell key={exerciseId} className="text-center">
+                                        {!result ? (
+                                            <Circle className="text-muted-foreground/30 mx-auto" />
+                                        ) : result.errors.length === 0 ? (
+                                            <CheckCircle className="text-green-500 mx-auto" />
+                                        ) : (
+                                            <div className="flex items-center justify-center gap-1.5 text-amber-600 font-bold">
+                                                <AlertTriangle className="h-4 w-4" />
+                                                <span>{result.errors.length}</span>
+                                            </div>
+                                        )}
+                                    </TableCell>
+                                );
                             })}
-                          </TableRow>
-                        )
-                    })}
+                        </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
                 </div>
@@ -226,7 +228,7 @@ export default function TeacherDashboardPage() {
           </TabsContent>
 
           <TabsContent value="class-results">
-            <Card>
+            <Card className="mt-4">
               <CardHeader>
                 <CardTitle>Résultats des exercices "En classe"</CardTitle>
                 <CardDescription>Voici les derniers scores enregistrés pour tous les élèves.</CardDescription>
@@ -250,7 +252,11 @@ export default function TeacherDashboardPage() {
                         <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
                         <TableCell className="font-medium">{studentName}</TableCell>
                         <TableCell>{score.skill}</TableCell>
-                        <TableCell>{difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard'}</TableCell>
+                        <TableCell>
+                           <Badge variant="outline">
+                            {difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard'}
+                           </Badge>
+                        </TableCell>
                         <TableCell className="text-right font-bold text-primary">{score.score.toFixed(0)}%</TableCell>
                       </TableRow>
                     )})}
@@ -264,4 +270,3 @@ export default function TeacherDashboardPage() {
     </main>
   );
 }
-
