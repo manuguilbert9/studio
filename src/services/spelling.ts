@@ -30,34 +30,31 @@ async function parseSpellingFile(): Promise<SpellingList[]> {
     
     try {
         const fileContent = await fs.readFile(filePath, 'utf-8');
-        const lines = fileContent.split('\n');
+        const lines = fileContent.split('\n').filter(line => line.trim() !== ''); // Ignore empty lines
 
-        let currentList: SpellingList | null = null;
-
-        for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine) continue; // Skip empty lines
-
-            if (trimmedLine.startsWith('#')) {
-                if (currentList) {
-                    currentList.totalWords = currentList.words.length;
-                    lists.push(currentList);
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            // Check if the line is a list header (e.g., "D1 – ...")
+            if (/^D\d+\s*–/.test(line)) {
+                const titleParts = line.split('–');
+                const listId = titleParts[0].trim();
+                const listTitle = titleParts.slice(1).join('–').trim();
+                
+                // The words are expected on the next line
+                if (i + 1 < lines.length) {
+                    const wordsLine = lines[i + 1].trim();
+                    const words = wordsLine.split(',').map(word => word.trim()).filter(Boolean);
+                    
+                    lists.push({
+                        id: listId,
+                        title: listTitle,
+                        words: words,
+                        totalWords: words.length
+                    });
+                    // Skip the next line since we've already processed it
+                    i++; 
                 }
-                const parts = trimmedLine.substring(1).trim().split('–');
-                currentList = {
-                    id: parts[0].trim(),
-                    title: parts[1] ? parts[1].trim() : '',
-                    words: [],
-                    totalWords: 0
-                };
-            } else if (currentList) {
-                 const words = trimmedLine.split(/\s+/).filter(Boolean);
-                 currentList.words.push(...words);
             }
-        }
-        if (currentList) {
-            currentList.totalWords = currentList.words.length;
-            lists.push(currentList);
         }
     } catch(error) {
         console.error("Could not read or parse spelling file:", error);
