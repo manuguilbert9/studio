@@ -90,6 +90,12 @@ export default function TeacherDashboardPage() {
     }
   }
 
+  // Create a map for quick progress lookup
+  const studentProgressMap: Record<string, SpellingProgress> = allSpellingProgress.reduce((acc, progress) => {
+      acc[progress.userId] = progress;
+      return acc;
+  }, {} as Record<string, SpellingProgress>);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -190,7 +196,7 @@ export default function TeacherDashboardPage() {
                   </TableHeader>
                   <TableBody>
                     {students.map(student => {
-                        const studentProgress = allSpellingProgress.find(p => p.userId === student.id);
+                        const studentProgress = studentProgressMap[student.id];
                         return (
                           <TableRow key={student.id}>
                             <TableCell className="font-semibold sticky left-0 bg-background">{student.name}</TableCell>
@@ -258,3 +264,4 @@ export default function TeacherDashboardPage() {
     </main>
   );
 }
+
