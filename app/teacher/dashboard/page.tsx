@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getAllScores, Score } from '@/services/scores';
-import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress } from '@/services/spelling';
+import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress, SpellingResult } from '@/services/spelling';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { difficultyLevelToString } from '@/lib/skills';
@@ -91,11 +91,14 @@ export default function TeacherDashboardPage() {
     }
   }
 
-  // Create a map for quick progress lookup. This is the robust way to handle this.
-  const studentProgressMap = allSpellingProgress.reduce((acc, progress) => {
-      acc[progress.userId] = progress;
-      return acc;
-  }, {} as Record<string, SpellingProgress>);
+  // Memoize the progress map to avoid re-calculating on every render.
+  const studentProgressMap = useMemo(() => {
+      const map = new Map<string, Record<string, SpellingResult>>();
+      allSpellingProgress.forEach(progressItem => {
+          map.set(progressItem.userId, progressItem.progress);
+      });
+      return map;
+  }, [allSpellingProgress]);
 
   if (isLoading) {
     return (
@@ -200,8 +203,8 @@ export default function TeacherDashboardPage() {
                         <TableRow key={student.id}>
                             <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
                             {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
-                                const studentProgress = studentProgressMap[student.id];
-                                const result = studentProgress?.progress?.[exerciseId.toLowerCase()];
+                                const studentProgress = studentProgressMap.get(student.id);
+                                const result = studentProgress?.[exerciseId.toLowerCase()];
 
                                 return (
                                     <TableCell key={exerciseId} className="text-center">
