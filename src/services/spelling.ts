@@ -36,6 +36,8 @@ async function parseSpellingFile(): Promise<SpellingList[]> {
 
         for (const line of lines) {
             const trimmedLine = line.trim();
+            if (!trimmedLine) continue; // Skip empty lines
+
             if (trimmedLine.startsWith('#')) {
                 if (currentList) {
                     currentList.totalWords = currentList.words.length;
@@ -48,7 +50,7 @@ async function parseSpellingFile(): Promise<SpellingList[]> {
                     words: [],
                     totalWords: 0
                 };
-            } else if (currentList && trimmedLine) {
+            } else if (currentList) {
                  const words = trimmedLine.split(/\s+/).filter(Boolean);
                  currentList.words.push(...words);
             }
@@ -59,7 +61,6 @@ async function parseSpellingFile(): Promise<SpellingList[]> {
         }
     } catch(error) {
         console.error("Could not read or parse spelling file:", error);
-        // In case of error, return empty list to avoid breaking the app
         return [];
     }
 
@@ -67,8 +68,6 @@ async function parseSpellingFile(): Promise<SpellingList[]> {
 }
 
 
-// This function now returns dummy data as the source of truth is the PDF.
-// The structure is kept for the exercise logic to work.
 export async function getSpellingLists(): Promise<SpellingList[]> {
     return parseSpellingFile();
 }

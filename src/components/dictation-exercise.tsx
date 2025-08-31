@@ -79,7 +79,7 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
 
     setSelectedList(list);
     const cleanedWords = list.words.map(word => 
-        word.replace(/\|.*/, '').replace(/[\(\)-]/g, '').trim()
+        word.replace(/\|.+$/, '').replace(/[\(\)]/g, '').trim()
     );
     setWords(cleanedWords);
     setCurrentWordIndex(0);
@@ -154,6 +154,11 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
       <Card className="w-full max-w-lg mx-auto shadow-2xl">
         <CardHeader>
           <CardTitle className="font-headline text-2xl text-center">Choisir une liste de dictée</CardTitle>
+           {availableLists.length === 0 && (
+            <CardDescription className="text-destructive text-center">
+              Aucune liste de dictée n'a été trouvée.
+            </CardDescription>
+           )}
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
             {availableLists.map(list => (
