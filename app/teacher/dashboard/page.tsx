@@ -1,14 +1,14 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent, useMemo } from 'react';
+import { useEffect, useState, FormEvent, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle } from 'lucide-react';
+import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getAllScores, Score } from '@/services/scores';
 import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress, SpellingResult } from '@/services/spelling';
@@ -20,6 +20,8 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getCurrentSpellingListId, setCurrentSpellingList } from '@/services/teacher';
+import { cn } from '@/lib/utils';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -31,32 +33,28 @@ export default function TeacherDashboardPage() {
   const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  
+  const [currentListId, setCurrentListId] = useState<string | null>(null);
+
   // New student form state
   const [newStudentName, setNewStudentName] = useState('');
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
-
-  useEffect(() => {
-    const isAuthenticated = sessionStorage.getItem('teacher_authenticated') === 'true';
-    if (!isAuthenticated) {
-      router.replace('/teacher/login');
-      return;
-    }
-
-    async function loadData() {
-      setIsLoading(true);
+  
+  const loadDashboardData = useCallback(async () => {
+    setIsLoading(true);
       try {
-        const [scoresData, progressData, listsData, studentListData] = await Promise.all([
+        const [scoresData, progressData, listsData, studentListData, currentId] = await Promise.all([
           getAllScores(),
           getAllSpellingProgress(),
           getSpellingLists(),
           getStudents(),
+          getCurrentSpellingListId(),
         ]);
         
         setAllScores(scoresData);
         setAllSpellingProgress(progressData);
         setSpellingLists(listsData);
         setStudents(studentListData);
+        setCurrentListId(currentId);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast({
@@ -67,10 +65,16 @@ export default function TeacherDashboardPage() {
       } finally {
         setIsLoading(false);
       }
-    }
+  }, [toast]);
 
-    loadData();
-  }, [router, toast]);
+  useEffect(() => {
+    const isAuthenticated = sessionStorage.getItem('teacher_authenticated') === 'true';
+    if (!isAuthenticated) {
+      router.replace('/teacher/login');
+      return;
+    }
+    loadDashboardData();
+  }, [router, loadDashboardData]);
   
   const studentProgressMap = useMemo(() => {
     const map = new Map<string, Record<string, SpellingResult>>();
@@ -81,6 +85,23 @@ export default function TeacherDashboardPage() {
     }
     return map;
   }, [allSpellingProgress]);
+
+  const handleSetCurrentList = async (listId: string) => {
+    const result = await setCurrentSpellingList(listId);
+    if (result.success) {
+      setCurrentListId(listId);
+      toast({
+        title: "Liste actuelle mise à jour",
+        description: `La liste ${listId} est maintenant la liste de travail.`,
+      });
+    } else {
+       toast({
+        variant: 'destructive',
+        title: "Erreur",
+        description: "Impossible de définir la liste actuelle.",
+      });
+    }
+  };
 
 
   const handleLogout = () => {
@@ -195,7 +216,7 @@ export default function TeacherDashboardPage() {
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle>Suivi des devoirs d'orthographe</CardTitle>
-                  <CardDescription>Consultez la progression des élèves pour chaque liste de devoirs.</CardDescription>
+                  <CardDescription>Consultez la progression des élèves pour chaque liste de devoirs. Vous pouvez définir la liste actuelle en cliquant sur l'étoile.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -213,6 +234,7 @@ export default function TeacherDashboardPage() {
 
                           return (
                             <TableHead key={exerciseId} className="text-center">
+                               <div className="flex items-center justify-center gap-2">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <span className="cursor-help underline-dashed">{exerciseId.split('-')[0]}<br/>{session}</span>
@@ -221,6 +243,10 @@ export default function TeacherDashboardPage() {
                                         <p className="font-normal text-sm text-popover-foreground">{wordListString}</p>
                                     </TooltipContent>
                                 </Tooltip>
+                                <button onClick={() => handleSetCurrentList(listData.id)}>
+                                    <Star className={cn("h-4 w-4 text-muted-foreground/30 hover:text-yellow-400", currentListId === listData.id && "text-yellow-400 fill-yellow-400")}/>
+                                </button>
+                               </div>
                             </TableHead>
                           )
                         })}
