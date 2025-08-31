@@ -14,7 +14,7 @@ export interface SpellingList {
 }
 
 export interface SpellingProgress {
-  userId: string;
+  userId: string; // This is now the student's unique ID
   progress: Record<string, { completedAt: Timestamp; errors: string[] }>;
 }
 
@@ -73,9 +73,10 @@ export async function getSpellingProgress(userId: string): Promise<Record<string
     const progressRef = doc(db, 'spellingProgress', userId);
     const docSnap = await getDoc(progressRef);
     if(docSnap.exists()){
+      const data = docSnap.data();
       // The data is a map of { exerciseId: { completedAt, errors } }
       // We just need the keys to know which are completed.
-      return Object.keys(docSnap.data()).reduce((acc, key) => {
+      return Object.keys(data).reduce((acc, key) => {
         acc[key] = true;
         return acc;
       }, {} as Record<string, boolean>);
@@ -94,8 +95,9 @@ export async function saveSpellingResult(userId: string, exerciseId: string, err
     
     // We use setDoc with merge:true to create the doc if it doesn't exist,
     // or update a specific field (exerciseId) if it does.
+    // The key is computed property name.
     await setDoc(userProgressRef, {
-      [exerciseId]: {
+      [exerciseId.toLowerCase()]: {
         completedAt: Timestamp.now(),
         errors: errors,
       }
@@ -120,7 +122,7 @@ export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
         const allProgress: SpellingProgress[] = [];
         querySnapshot.forEach((doc) => {
             allProgress.push({
-                userId: doc.id,
+                userId: doc.id, // The document ID is the student's unique ID
                 progress: doc.data() as Record<string, { completedAt: Timestamp; errors: string[] }>
             });
         });

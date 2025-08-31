@@ -1,23 +1,26 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter, notFound, Link } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback, useContext } from 'react';
+import { useParams, useRouter, notFound } from 'next/navigation';
+import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star, Home } from 'lucide-react';
+import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { getSpellingLists, saveSpellingResult, type SpellingList } from '@/services/spelling';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
+import { UserContext } from '@/context/user-context';
 
-const WORD_DISPLAY_TIME_MS = 6000;
+const WORD_DISPLAY_TIME_MS = 500;
 
 export default function SpellingExercisePage() {
   const router = useRouter();
   const params = useParams();
   const { exerciseId } = params as { exerciseId: string };
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
   
   const [list, setList] = useState<SpellingList | null>(null);
   const [words, setWords] = useState<string[]>([]);
@@ -28,15 +31,11 @@ export default function SpellingExercisePage() {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'idle' | 'showing'>('showing');
   const [isFinished, setIsFinished] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const [username, setUsername] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const storedName = localStorage.getItem('classemagique_username');
-    setUsername(storedName);
-
     async function loadExercise() {
       if (!exerciseId) return;
       
@@ -54,7 +53,12 @@ export default function SpellingExercisePage() {
       setList(foundList);
       const half = Math.ceil(foundList.words.length / 2);
       const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
-      setWords(sessionWords);
+      
+      // Duplicate each word and shuffle the list
+      const duplicatedWords = sessionWords.flatMap(word => [word, word]);
+      const shuffledWords = duplicatedWords.sort(() => Math.random() - 0.5);
+
+      setWords(shuffledWords);
       setIsLoading(false);
     }
     loadExercise();
@@ -100,12 +104,12 @@ export default function SpellingExercisePage() {
     showWord();
   };
 
-  const handleNextWord = () => {
+  const handleNextWord = async () => {
     if (currentWordIndex < words.length - 1) {
       setCurrentWordIndex(prev => prev + 1);
     } else {
-      if (username && exerciseId) {
-        saveSpellingResult(username, exerciseId, errors);
+      if (student && student.id && exerciseId) {
+        await saveSpellingResult(student.id, exerciseId, errors);
       }
       setIsFinished(true);
     }
@@ -119,8 +123,25 @@ export default function SpellingExercisePage() {
     }
   };
   
-  if (isLoading) {
+  if (isLoading || isUserLoading) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
+  }
+  
+  if (!student) {
+     return (
+        <main className="flex min-h-screen w-full flex-col items-center justify-center p-4">
+            <Card className="p-8 text-center">
+                <h2 className="text-xl font-semibold text-destructive">Erreur</h2>
+                <p className="text-muted-foreground mt-2">Vous devez être connecté pour faire un exercice.</p>
+                <Button asChild onClick={() => router.push('/devoirs')} className="mt-4">
+                    <Link href="/devoirs">
+                     <ArrowLeft className="mr-2 h-4 w-4" />
+                     Retour à la liste
+                    </Link>
+                </Button>
+            </Card>
+        </main>
+    )
   }
 
   if (!list || words.length === 0) {

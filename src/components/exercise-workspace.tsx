@@ -49,7 +49,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [isFinished, setIsFinished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  const { username, isLoading: isUserLoading } = useContext(UserContext);
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
 
   const [scoreHistory, setScoreHistory] = useState<Score[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
@@ -200,14 +200,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
-      if (isFinished && username && !isSaving && !isTableauMode) {
+      if (isFinished && student && student.id && !isTableauMode) {
         setIsSaving(true);
         setIsLoadingHistory(true);
         
         const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         
         const scoreData: Omit<Score, 'createdAt' | 'id'> = {
-            userId: username,
+            userId: student.id,
             skill: skill.slug,
             score: newScoreValue,
         };
@@ -225,7 +225,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         await addScore(scoreData);
         
         try {
-          const userSkillHistory = await getScoresForUser(username, skill.slug);
+          const userSkillHistory = await getScoresForUser(student.id, skill.slug);
           setScoreHistory(userSkillHistory);
         } catch (e) {
           console.error("Error fetching scores: ", e);
@@ -237,7 +237,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, username, skill.slug, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode]);
+  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode]);
   
   const restartExercise = () => {
     setQuestions([]);

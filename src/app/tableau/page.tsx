@@ -1,11 +1,10 @@
 
-
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Menu, Calculator, Brush } from 'lucide-react';
+import { Home, PanelLeftOpen, Timer, CalendarDays, X, Maximize, Minimize, Type, Save, Loader2, CheckCircle, Image as ImageIcon, Calculator, Brush } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
@@ -23,6 +22,7 @@ import { saveTableauState, loadTableauState } from '@/services/tableau';
 import type { TableauState, TextWidgetState, DateWidgetState, TimerWidgetState, AdditionWidgetState, ImageWidgetState, SoustractionWidgetState, DrawingWidgetState } from '@/services/tableau.types';
 import { AdditionIcon } from '@/components/icons/addition-icon';
 import { SoustractionIcon } from '@/components/icons/soustraction-icon';
+import { UserContext } from '@/context/user-context';
 
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -39,7 +39,7 @@ export const defaultTableauState: Omit<TableauState, 'updatedAt'> = {
 };
 
 export default function TableauPage() {
-  const [username, setUsername] = useState<string | null>(null);
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
 
@@ -60,13 +60,6 @@ export default function TableauPage() {
   const [lastMousePos, setLastMousePos] = useState({ x: 200, y: 150 });
   
   useEffect(() => {
-    const storedName = localStorage.getItem('classemagique_username');
-    if (storedName) {
-      setUsername(storedName);
-    } else {
-      setIsLoading(false);
-    }
-
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement);
     const handleMouseMove = (e: MouseEvent) => setLastMousePos({ x: e.clientX, y: e.clientY });
 
@@ -117,12 +110,15 @@ export default function TableauPage() {
 
   // Load state from file
   useEffect(() => {
-    if (!username) return;
+    if (!student) {
+        if(!isUserLoading) setIsLoading(false);
+        return;
+    }
 
     const fetchState = async () => {
         setIsLoading(true);
         try {
-            const loadedState = await loadTableauState(username);
+            const loadedState = await loadTableauState(student.id);
             if (loadedState) {
                 setActiveSkill(getSkillBySlug(loadedState.activeSkillSlug || ''));
                 setTextWidgets(loadedState.textWidgets || []);
@@ -157,10 +153,10 @@ export default function TableauPage() {
         }
     };
     fetchState();
-  }, [username]);
+  }, [student, isUserLoading]);
 
   const handleSaveState = useCallback(async () => {
-    if (!username) return;
+    if (!student) return;
     setSaveStatus('saving');
     
     const currentState: Omit<TableauState, 'updatedAt'> = {
@@ -174,7 +170,7 @@ export default function TableauPage() {
         drawingWidgets,
     };
 
-    const result = await saveTableauState(username, currentState);
+    const result = await saveTableauState(student.id, currentState);
 
     if (result.success) {
         setSaveStatus('saved');
@@ -184,7 +180,7 @@ export default function TableauPage() {
         console.error("Failed to save:", result.error);
         setTimeout(() => setSaveStatus('idle'), 3000);
     }
-  }, [username, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, soustractionWidgets, imageWidgets, drawingWidgets]);
+  }, [student, activeSkill, textWidgets, dateWidgets, timerWidgets, additionWidgets, soustractionWidgets, imageWidgets, drawingWidgets]);
 
 
   // Widget handlers
@@ -256,12 +252,25 @@ export default function TableauPage() {
     }
   };
 
-  if (isLoading) {
+  if (isUserLoading || isLoading) {
     return (
         <div className="flex items-center justify-center min-h-screen bg-white">
             <Loader2 className="h-16 w-16 animate-spin text-primary" />
         </div>
     );
+  }
+  
+  if (!student) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-white text-slate-900">
+            <h1 className='text-2xl font-headline'>Veuillez vous connecter pour utiliser le tableau.</h1>
+             <Button asChild variant="outline" className='mt-4'>
+                <Link href="/">
+                <Home className="h-4 w-4 mr-2" /> Retour à l'accueil
+                </Link>
+            </Button>
+        </div>
+    )
   }
 
   return (
@@ -306,12 +315,23 @@ export default function TableauPage() {
                                 <Type className="h-4 w-4 mr-2" /> Texte
                             </Button>
                             
-                             <Button variant="outline" size="sm" onClick={handleAddAdditionWidget}>
-                                <AdditionIcon className="h-4 w-4 mr-2" /> Addition posée
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={handleAddSoustractionWidget}>
-                                <SoustractionIcon className="h-4 w-4 mr-2" /> Soustraction posée
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                        <Calculator className="h-4 w-4 mr-2" /> Calculs
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                    <DropdownMenuItem onClick={handleAddAdditionWidget}>
+                                        <AdditionIcon className="h-4 w-4 mr-2" />
+                                        <span>Addition posée</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={handleAddSoustractionWidget}>
+                                        <SoustractionIcon className="h-4 w-4 mr-2" />
+                                        <span>Soustraction posée</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
                             <Button variant="outline" size="sm" onClick={handleAddTimerWidget}>
                                 <Timer className="h-4 w-4 mr-2" /> Minuteur

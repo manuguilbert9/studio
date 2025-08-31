@@ -4,10 +4,11 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp } from "firebase/firestore"; 
 import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
+import { getStudents } from './students';
 
 export interface Score {
     id: string;
-    userId: string;
+    userId: string; // This is now the student's unique ID
     skill: string;
     score: number;
     createdAt: string; 
@@ -72,6 +73,7 @@ export async function getAllScores(): Promise<Score[]> {
         const q = query(collection(db, "scores"), orderBy("createdAt", "desc"), limit(100));
         const querySnapshot = await getDocs(q);
         const scores: Score[] = [];
+        
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             scores.push({
@@ -80,6 +82,7 @@ export async function getAllScores(): Promise<Score[]> {
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
             } as Score);
         });
+        
         return scores;
     } catch (error) {
         console.error("Error loading all scores from Firestore:", error);

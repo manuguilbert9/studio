@@ -1,0 +1,123 @@
+
+'use server';
+
+import { db } from '@/lib/firebase';
+import { collection, addDoc, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+
+export interface Student {
+    id: string;
+    name: string;
+    code: string;
+}
+
+// Generates a random 4-digit code as a string.
+function generateCode(): string {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+}
+
+/**
+ * Creates a new student with a unique 4-digit code.
+ * @param name The name of the student.
+ * @returns The newly created student object including the code.
+ */
+export async function createStudent(name: string): Promise<Student> {
+    const code = generateCode();
+    
+    const docRef = await addDoc(collection(db, 'students'), {
+        name: name.trim(),
+        code: code,
+    });
+
+    return {
+        id: docRef.id,
+        name: name.trim(),
+        code: code,
+    };
+}
+
+
+/**
+ * Retrieves all students from the database.
+ * @returns A promise that resolves to an array of Student objects.
+ */
+export async function getStudents(): Promise<Student[]> {
+     try {
+        const q = query(collection(db, "students"));
+        const querySnapshot = await getDocs(q);
+        const students: Student[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            students.push({
+                id: doc.id,
+                name: data.name,
+                code: data.code,
+            });
+        });
+        return students.sort((a,b) => a.name.localeCompare(b.name));
+    } catch (error) {
+        console.error("Error loading students from Firestore:", error);
+        return [];
+    }
+}
+
+
+/**
+ * Attempts to log in a student using their name and a 4-digit code.
+ * The name check is case-insensitive.
+ * @param name The student's name.
+ * @param code The 4-digit code.
+ * @returns The student object if login is successful, otherwise null.
+ */
+export async function loginStudent(name: string, code: string): Promise<Student | null> {
+    try {
+        const q = query(collection(db, 'students'), where('code', '==', code));
+        const querySnapshot = await getDocs(q);
+        
+        if (querySnapshot.empty) {
+            return null; // No student found with this code
+        }
+
+        // Since codes are unique, we expect at most one doc.
+        // Now, we find the one that matches the name case-insensitively.
+        for (const doc of querySnapshot.docs) {
+            const studentData = doc.data();
+            if (studentData.name.toLowerCase() === name.trim().toLowerCase()) {
+                return {
+                    id: doc.id,
+                    name: studentData.name,
+                    code: studentData.code
+                };
+            }
+        }
+
+        return null; // Code was correct, but name didn't match
+    } catch (error) {
+        console.error("Error during student login:", error);
+        return null;
+    }
+}
+
+/**
+ * Gets a specific student by their ID.
+ * @param studentId The unique ID of the student.
+ * @returns The student object or null if not found.
+ */
+export async function getStudentById(studentId: string): Promise<Student | null> {
+    try {
+        const docRef = doc(db, 'students', studentId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            return {
+                id: docSnap.id,
+                name: data.name,
+                code: data.code,
+            };
+        }
+        return null;
+    } catch (error) {
+        console.error("Error getting student by ID:", error);
+        return null;
+    }
+}
