@@ -26,7 +26,7 @@ export default function TeacherDashboardPage() {
   
   // Data states
   const [allScores, setAllScores] = useState<Score[]>([]);
-  const [allSpellingProgress, setAllSpellingProgress] = useState<Map<string, SpellingProgress>>(new Map());
+  const [allSpellingProgress, setAllSpellingProgress] = useState<Map<string, SpellingProgress['progress']>>(new Map());
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   
@@ -50,8 +50,9 @@ export default function TeacherDashboardPage() {
         getStudents(),
       ]);
       
-      const progressMap = new Map<string, SpellingProgress>();
-      progressData.forEach(p => progressMap.set(p.userId, p));
+      // Create a Map for quick lookup: studentId -> progress object
+      const progressMap = new Map<string, SpellingProgress['progress']>();
+      progressData.forEach(p => progressMap.set(p.userId, p.progress));
 
       setAllScores(scores);
       setAllSpellingProgress(progressMap);
@@ -200,7 +201,7 @@ export default function TeacherDashboardPage() {
                           `${list.id}-jeudi`
                         ]).map(exerciseId => {
                           const studentProgress = allSpellingProgress.get(student.id);
-                          const isCompleted = studentProgress?.progress?.[exerciseId.toLowerCase()];
+                          const isCompleted = studentProgress?.[exerciseId.toLowerCase()];
                           return (
                             <TableCell key={exerciseId} className="text-center">
                               {isCompleted ? (
