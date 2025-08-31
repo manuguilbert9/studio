@@ -32,13 +32,13 @@ export default function ExercisePage() {
       <div className="w-full max-w-4xl">
         <header className="relative flex items-center justify-between mb-8">
            <Button asChild variant="ghost" className="hidden sm:inline-flex">
-            <Link href="/">
+            <Link href="/en-classe">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour aux compétences
             </Link>
           </Button>
            <Button asChild variant="ghost" size="icon" className="sm:hidden">
-            <Link href="/" aria-label="Retour aux compétences">
+            <Link href="/en-classe" aria-label="Retour aux compétences">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>

@@ -99,7 +99,7 @@ export default function ResultsPage() {
       <div className="w-full max-w-5xl">
         <header className="relative flex items-center justify-between mb-8">
           <Button asChild variant="ghost">
-            <Link href="/">
+            <Link href="/en-classe">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour à l'accueil
             </Link>
