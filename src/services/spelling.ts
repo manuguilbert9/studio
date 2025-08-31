@@ -11,7 +11,6 @@ export interface SpellingList {
   id: string; // e.g., "D1"
   title: string; // e.g., "Les consonnes muettes en fin de mot"
   words: string[];
-  totalWords: number;
 }
 
 export interface SpellingResult {
@@ -31,7 +30,7 @@ const spellingFileCache: { lists: SpellingList[] | null } = {
 // This function reads and parses the spelling list file.
 // It uses a simple cache to avoid reading the file on every request in dev mode.
 export async function getSpellingLists(): Promise<SpellingList[]> {
-  if (spellingFileCache.lists) {
+  if (process.env.NODE_ENV === 'production' && spellingFileCache.lists) {
     return spellingFileCache.lists;
   }
 
@@ -41,15 +40,16 @@ export async function getSpellingLists(): Promise<SpellingList[]> {
     const lines = fileContent.split('\n').filter(line => line.trim() !== '');
 
     const lists: SpellingList[] = [];
-    let currentList: Omit<SpellingList, 'totalWords'> | null = null;
+    let currentList: SpellingList | null = null;
 
     for (const line of lines) {
       // A line starting with D followed by a number is a list header
-      if (line.match(/^D\d+\s*–/)) {
+      const titleMatch = line.match(/^(D\d+)\s*–\s*(.*)$/);
+      if (titleMatch) {
         if (currentList) {
-          lists.push({ ...currentList, totalWords: currentList.words.length });
+          lists.push(currentList);
         }
-        const [id, title] = line.split('–').map(s => s.trim());
+        const [, id, title] = titleMatch;
         currentList = { id, title, words: [] };
       } else if (currentList) {
         // Otherwise, it's a line of words for the current list
@@ -59,7 +59,7 @@ export async function getSpellingLists(): Promise<SpellingList[]> {
     }
     // Add the last list
     if (currentList) {
-      lists.push({ ...currentList, totalWords: currentList.words.length });
+      lists.push(currentList);
     }
     
     spellingFileCache.lists = lists;
