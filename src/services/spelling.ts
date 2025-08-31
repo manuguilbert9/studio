@@ -3,6 +3,8 @@
 
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, collection, getDocs } from 'firebase/firestore';
+import fs from 'fs/promises';
+import path from 'path';
 
 export interface SpellingList {
   id: string;
@@ -21,18 +23,54 @@ export interface SpellingProgress {
   progress: Record<string, SpellingResult>;
 }
 
-// Dummy data since we are not parsing the file anymore for the lists.
-// The list content is now in the PDF.
-const dummyLists: SpellingList[] = [
-    { id: "D1", title: "Les consonnes muettes", words: ["respect", "abus", "accord", "bord", "bras", "cas", "concours", "corps", "drap", "dos", "droit", "efforts", "endroit", "esprit", "progrès", "instant", "intérêt", "loup", "mépris", "minuit", "nez", "plaisir", "propos", "refus", "repas", "repos", "retard", "souhait", "temps", "tort", "travers", "univers", "velours", "avis", "brebis", "fois", "fourmis", "souris"], totalWords: 39 },
-    { id: "D2", title: "Les noms en -EAU", words: ["arbrisseau", "bandeau", "bateau", "berceau", "bureau", "cadeau", "carreau", "chameau", "chapeau", "château", "couteau", "drapeau", "morceau", "panneau", "oiseau", "peau", "plateau", "poireau", "ruisseau", "sceau", "seau", "taureau", "tombeau", "tonneau", "tuyau", "veau"], totalWords: 26 },
-];
+
+async function parseSpellingFile(): Promise<SpellingList[]> {
+    const filePath = path.join(process.cwd(), 'public', 'orthographe', 'listes_orthographe.txt');
+    const lists: SpellingList[] = [];
+    
+    try {
+        const fileContent = await fs.readFile(filePath, 'utf-8');
+        const lines = fileContent.split('\n');
+
+        let currentList: SpellingList | null = null;
+
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (trimmedLine.startsWith('#')) {
+                if (currentList) {
+                    currentList.totalWords = currentList.words.length;
+                    lists.push(currentList);
+                }
+                const parts = trimmedLine.substring(1).trim().split('–');
+                currentList = {
+                    id: parts[0].trim(),
+                    title: parts[1] ? parts[1].trim() : '',
+                    words: [],
+                    totalWords: 0
+                };
+            } else if (currentList && trimmedLine) {
+                 const words = trimmedLine.split(/\s+/).filter(Boolean);
+                 currentList.words.push(...words);
+            }
+        }
+        if (currentList) {
+            currentList.totalWords = currentList.words.length;
+            lists.push(currentList);
+        }
+    } catch(error) {
+        console.error("Could not read or parse spelling file:", error);
+        // In case of error, return empty list to avoid breaking the app
+        return [];
+    }
+
+    return lists;
+}
+
 
 // This function now returns dummy data as the source of truth is the PDF.
 // The structure is kept for the exercise logic to work.
 export async function getSpellingLists(): Promise<SpellingList[]> {
-    // In a real application, you might fetch this from a database or a proper JSON file.
-    return Promise.resolve(dummyLists);
+    return parseSpellingFile();
 }
 
 // --- Firestore Progress Functions ---
@@ -44,10 +82,16 @@ export async function getSpellingProgress(userId: string): Promise<Record<string
     const docSnap = await getDoc(progressRef);
     if(docSnap.exists()){
       const data = docSnap.data();
-      return Object.keys(data).reduce((acc, key) => {
-        acc[key] = true;
-        return acc;
-      }, {} as Record<string, boolean>);
+      // Ensure data is not null and is an object before processing
+      if(data && typeof data === 'object'){
+        const progress: Record<string, boolean> = {};
+        for(const key in data){
+            if (Object.prototype.hasOwnProperty.call(data, key)) {
+                progress[key] = true;
+            }
+        }
+        return progress;
+      }
     }
     return {};
   } catch (e) {
@@ -84,16 +128,19 @@ export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
         querySnapshot.forEach((doc) => {
             const rawData = doc.data();
             const processedProgress: Record<string, SpellingResult> = {};
-            for (const key in rawData) {
-                if (Object.prototype.hasOwnProperty.call(rawData, key)) {
-                    const result = rawData[key];
-                    if (result.completedAt instanceof Timestamp) {
-                         processedProgress[key] = {
-                            completedAt: result.completedAt.toDate().toISOString(),
-                            errors: result.errors
-                         };
-                    }
-                }
+            // Ensure rawData is not null and is an object
+            if (rawData && typeof rawData === 'object') {
+              for (const key in rawData) {
+                  if (Object.prototype.hasOwnProperty.call(rawData, key)) {
+                      const result = rawData[key];
+                      if (result && result.completedAt instanceof Timestamp) {
+                           processedProgress[key] = {
+                              completedAt: result.completedAt.toDate().toISOString(),
+                              errors: result.errors || []
+                           };
+                      }
+                  }
+              }
             }
             allProgress.push({
                 userId: doc.id,
