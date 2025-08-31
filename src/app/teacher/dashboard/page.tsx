@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -91,11 +91,14 @@ export default function TeacherDashboardPage() {
     }
   }
 
-  // Create a map for quick progress lookup. This is the robust way to handle this.
-  const studentProgressMap = new Map<string, Record<string, SpellingResult>>();
-    allSpellingProgress.forEach(progressItem => {
-        studentProgressMap.set(progressItem.userId, progressItem.progress);
-    });
+  // Memoize the progress map to avoid re-calculating on every render.
+  const studentProgressMap = useMemo(() => {
+      const map = new Map<string, Record<string, SpellingResult>>();
+      allSpellingProgress.forEach(progressItem => {
+          map.set(progressItem.userId, progressItem.progress);
+      });
+      return map;
+  }, [allSpellingProgress]);
 
   if (isLoading) {
     return (
