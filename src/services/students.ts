@@ -70,15 +70,17 @@ export async function getStudents(): Promise<Student[]> {
  */
 export async function loginStudent(name: string, code: string): Promise<Student | null> {
     try {
-        const q = query(collection(db, 'students'), where('code', '==', code));
+        const studentsRef = collection(db, 'students');
+        const q = query(studentsRef, where('code', '==', code));
         const querySnapshot = await getDocs(q);
-        
+
         if (querySnapshot.empty) {
             return null; // No student found with this code
         }
 
-        // Since codes are unique, we expect at most one doc.
-        // Now, we find the one that matches the name case-insensitively.
+        // Since code might not be unique (though unlikely with 4 digits for a class),
+        // we iterate through results to find a case-insensitive name match.
+        // In a real-world scenario, you'd enforce code uniqueness.
         for (const doc of querySnapshot.docs) {
             const studentData = doc.data();
             if (studentData.name.toLowerCase() === name.trim().toLowerCase()) {
@@ -89,8 +91,8 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                 };
             }
         }
-
-        return null; // Code was correct, but name didn't match
+        
+        return null; // Code was correct, but name did not match
     } catch (error) {
         console.error("Error during student login:", error);
         return null;
