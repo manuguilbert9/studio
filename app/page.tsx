@@ -28,6 +28,8 @@ export default function ModeSelectionPage() {
     try {
       localStorage.removeItem('classemagique_username');
       setUsername(null);
+      // Force a reload to ensure all components re-check localStorage
+      window.location.reload();
     } catch (error) {
       console.error("Could not access localStorage", error);
     }
