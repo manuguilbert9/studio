@@ -14,7 +14,7 @@ export interface SpellingList {
 }
 
 export interface SpellingResult {
-    completedAt: Timestamp;
+    completedAt: string; // Changed from Timestamp to string for serialization
     errors: string[];
 }
 
@@ -126,11 +126,28 @@ export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
         const querySnapshot = await getDocs(spellingProgressCollectionRef);
         const allProgress: SpellingProgress[] = [];
         querySnapshot.forEach((doc) => {
-            // The document ID is the userId
-            // The document data is the progress map
+            const rawData = doc.data();
+            const processedProgress: Record<string, SpellingResult> = {};
+            
+            // Process each exercise in the document to convert Timestamp
+            for (const key in rawData) {
+                if (Object.prototype.hasOwnProperty.call(rawData, key)) {
+                    const result = rawData[key];
+                    if (result.completedAt instanceof Timestamp) {
+                         processedProgress[key] = {
+                            completedAt: result.completedAt.toDate().toISOString(),
+                            errors: result.errors
+                         };
+                    } else {
+                        // If it's not a timestamp, keep the original data (for safety)
+                        processedProgress[key] = result;
+                    }
+                }
+            }
+
             allProgress.push({
                 userId: doc.id,
-                progress: doc.data() as Record<string, SpellingResult>
+                progress: processedProgress
             });
         });
         return allProgress;
