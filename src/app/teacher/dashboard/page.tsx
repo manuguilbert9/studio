@@ -45,17 +45,17 @@ export default function TeacherDashboardPage() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scores, progressData, lists, studentList] = await Promise.all([
+        const [scoresData, progressData, listsData, studentListData] = await Promise.all([
           getAllScores(),
           getAllSpellingProgress(),
           getSpellingLists(),
           getStudents(),
         ]);
         
-        setAllScores(scores);
+        setAllScores(scoresData);
         setAllSpellingProgress(progressData);
-        setSpellingLists(lists);
-        setStudents(studentList);
+        setSpellingLists(listsData);
+        setStudents(studentListData);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast({
@@ -75,6 +75,7 @@ export default function TeacherDashboardPage() {
     const map = new Map<string, Record<string, SpellingResult>>();
     if (allSpellingProgress) {
         allSpellingProgress.forEach(progressItem => {
+            // The doc ID is the userId, and the data is the progress map
             map.set(progressItem.userId, progressItem.progress);
         });
     }
@@ -240,20 +241,20 @@ export default function TeacherDashboardPage() {
                     <h4 className="font-bold text-lg mb-2">Données de débogage</h4>
                     <div className="space-y-4">
                         <div>
-                            <h5 className="font-semibold">Données brutes de `allSpellingProgress` (max 5)</h5>
-                            <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto">
-                                {JSON.stringify(allSpellingProgress.slice(0,5), null, 2)}
+                            <h5 className="font-semibold">Données brutes de `allSpellingProgress` ({allSpellingProgress.length} enregistrements)</h5>
+                            <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
+                                {JSON.stringify(allSpellingProgress, null, 2)}
                             </pre>
                         </div>
                         <div>
-                            <h5 className="font-semibold">Données de `studentProgressMap` (max 5 entrées)</h5>
-                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto">
-                                {JSON.stringify(Array.from(studentProgressMap.entries()).slice(0,5), null, 2)}
+                            <h5 className="font-semibold">Données de `studentProgressMap` ({studentProgressMap.size} entrées)</h5>
+                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
+                                {JSON.stringify(Array.from(studentProgressMap.entries()), null, 2)}
                             </pre>
                         </div>
                          <div>
-                            <h5 className="font-semibold">Liste des élèves (`students`)</h5>
-                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto">
+                            <h5 className="font-semibold">Liste des élèves (`students`, {students.length} élèves)</h5>
+                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
                                 {JSON.stringify(students, null, 2)}
                             </pre>
                         </div>
@@ -306,5 +307,3 @@ export default function TeacherDashboardPage() {
     </main>
   );
 }
-
-    
