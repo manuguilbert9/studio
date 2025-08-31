@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent, useMemo } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ export default function TeacherDashboardPage() {
   const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [studentProgressMap, setStudentProgressMap] = useState<Map<string, Record<string, SpellingResult>>>(new Map());
   
   // New student form state
   const [newStudentName, setNewStudentName] = useState('');
@@ -45,17 +46,27 @@ export default function TeacherDashboardPage() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scores, progressData, lists, studentList] = await Promise.all([
+        const [scoresData, progressData, listsData, studentListData] = await Promise.all([
           getAllScores(),
           getAllSpellingProgress(),
           getSpellingLists(),
           getStudents(),
         ]);
         
-        setAllScores(scores);
-        setAllSpellingProgress(progressData);
-        setSpellingLists(lists);
-        setStudents(studentList);
+        setAllScores(scoresData);
+        setAllSpellingProgress(progressData); // For debug display
+        setSpellingLists(listsData);
+        setStudents(studentListData);
+        
+        // Create the progress map here, once data is loaded
+        const newMap = new Map<string, Record<string, SpellingResult>>();
+        if (progressData) {
+            progressData.forEach(progressItem => {
+                newMap.set(progressItem.userId, progressItem.progress);
+            });
+        }
+        setStudentProgressMap(newMap);
+
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast({
@@ -99,18 +110,7 @@ export default function TeacherDashboardPage() {
         setIsCreatingStudent(false);
     }
   }
-
-  // Memoize the progress map to avoid re-calculating on every render.
-  const studentProgressMap = useMemo(() => {
-    const map = new Map<string, Record<string, SpellingResult>>();
-    if (allSpellingProgress) {
-        allSpellingProgress.forEach(progressItem => {
-            map.set(progressItem.userId, progressItem.progress);
-        });
-    }
-    return map;
-  }, [allSpellingProgress]);
-
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -238,6 +238,25 @@ export default function TeacherDashboardPage() {
                 </Table>
                 </div>
               </CardContent>
+            </Card>
+            <Card className="mt-4">
+                <CardHeader>
+                    <CardTitle>Données brutes de débogage</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div>
+                        <h3 className="font-bold">allSpellingProgress (données de Firestore)</h3>
+                        <pre className="bg-muted p-2 rounded-md text-xs overflow-auto">
+                            {JSON.stringify(allSpellingProgress, null, 2)}
+                        </pre>
+                    </div>
+                    <div>
+                        <h3 className="font-bold">studentProgressMap (données transformées)</h3>
+                        <pre className="bg-muted p-2 rounded-md text-xs overflow-auto">
+                           {JSON.stringify(Array.from(studentProgressMap.entries()), null, 2)}
+                        </pre>
+                    </div>
+                </CardContent>
             </Card>
           </TabsContent>
 
