@@ -2,12 +2,15 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
+
+export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export interface Student {
     id: string;
     name: string;
     code: string;
+    levels?: Record<string, SkillLevel>;
 }
 
 // Generates a random 4-digit code as a string.
@@ -26,12 +29,14 @@ export async function createStudent(name: string): Promise<Student> {
     const docRef = await addDoc(collection(db, 'students'), {
         name: name.trim(),
         code: code,
+        levels: {} // Initialize with empty levels
     });
 
     return {
         id: docRef.id,
         name: name.trim(),
         code: code,
+        levels: {}
     };
 }
 
@@ -64,6 +69,30 @@ export async function updateStudentCode(studentId: string, newCode: string): Pro
     }
 }
 
+/**
+ * Updates the skill levels for a specific student.
+ * @param studentId The ID of the student to update.
+ * @param levels The object containing the new skill levels.
+ * @returns A promise that resolves to an object indicating success or failure.
+ */
+export async function updateStudentLevels(studentId: string, levels: Record<string, SkillLevel>): Promise<{ success: boolean; error?: string }> {
+    if (!studentId) {
+        return { success: false, error: 'Student ID is required.' };
+    }
+
+    try {
+        const studentDocRef = doc(db, 'students', studentId);
+        await setDoc(studentDocRef, { levels }, { merge: true });
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating student levels in Firestore:", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: 'An unknown error occurred.' };
+    }
+}
+
 
 /**
  * Retrieves all students from the database.
@@ -80,6 +109,7 @@ export async function getStudents(): Promise<Student[]> {
                 id: doc.id,
                 name: data.name,
                 code: data.code,
+                levels: data.levels || {}
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -107,7 +137,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
             return null; // No student found with this code
         }
 
-        // Since code might not be unique (though unlikely with 4 digits for a class),
+        // Since code might not be unique (though unlikely with a class),
         // we iterate through results to find a case-insensitive name match.
         // In a real-world scenario, you'd enforce code uniqueness.
         for (const doc of querySnapshot.docs) {
@@ -116,7 +146,8 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                 return {
                     id: doc.id,
                     name: studentData.name,
-                    code: studentData.code
+                    code: studentData.code,
+                    levels: studentData.levels || {}
                 };
             }
         }
@@ -144,6 +175,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 id: docSnap.id,
                 name: data.name,
                 code: data.code,
+                levels: data.levels || {}
             };
         }
         return null;
