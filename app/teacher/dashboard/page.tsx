@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,6 @@ export default function TeacherDashboardPage() {
   const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [studentProgressMap, setStudentProgressMap] = useState<Map<string, Record<string, SpellingResult>>>(new Map());
   
   // New student form state
   const [newStudentName, setNewStudentName] = useState('');
@@ -57,16 +56,6 @@ export default function TeacherDashboardPage() {
         setAllSpellingProgress(progressData);
         setSpellingLists(listsData);
         setStudents(studentListData);
-        
-        const newMap = new Map<string, Record<string, SpellingResult>>();
-        if (progressData) {
-            progressData.forEach(progressItem => {
-                // The doc ID is the userId, and the data is the progress map
-                newMap.set(progressItem.userId, progressItem.progress);
-            });
-        }
-        setStudentProgressMap(newMap);
-
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast({
@@ -81,6 +70,17 @@ export default function TeacherDashboardPage() {
 
     loadData();
   }, [router, toast]);
+  
+  const studentProgressMap = useMemo(() => {
+    const map = new Map<string, Record<string, SpellingResult>>();
+    if (allSpellingProgress) {
+        allSpellingProgress.forEach(progressItem => {
+            map.set(progressItem.userId, progressItem.progress);
+        });
+    }
+    return map;
+  }, [allSpellingProgress]);
+
 
   const handleLogout = () => {
     sessionStorage.removeItem('teacher_authenticated');
@@ -237,6 +237,31 @@ export default function TeacherDashboardPage() {
                   </TableBody>
                 </Table>
                 </div>
+                {/* --- START DEBUG --- */}
+                <div className="mt-8 p-4 border rounded-md bg-muted/50">
+                    <h4 className="font-bold text-lg mb-2">Données de débogage</h4>
+                    <div className="space-y-4">
+                        <div>
+                            <h5 className="font-semibold">`students` ({students.length} élèves)</h5>
+                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
+                                {JSON.stringify(students, null, 2)}
+                            </pre>
+                        </div>
+                        <div>
+                            <h5 className="font-semibold">`allSpellingProgress` ({allSpellingProgress.length} enregistrements)</h5>
+                            <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
+                                {JSON.stringify(allSpellingProgress, null, 2)}
+                            </pre>
+                        </div>
+                        <div>
+                            <h5 className="font-semibold">`studentProgressMap` ({studentProgressMap.size} entrées)</h5>
+                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
+                                {JSON.stringify(Array.from(studentProgressMap.entries()), null, 2)}
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+                {/* --- END DEBUG --- */}
               </CardContent>
             </Card>
           </TabsContent>
