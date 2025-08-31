@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent } from 'react';
+import { useEffect, useState, FormEvent, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -54,11 +54,11 @@ export default function TeacherDashboardPage() {
         ]);
         
         setAllScores(scoresData);
-        setAllSpellingProgress(progressData); // For debug display
+        setAllSpellingProgress(progressData);
         setSpellingLists(listsData);
         setStudents(studentListData);
         
-        // Create the progress map here, once data is loaded
+        // Build the progress map directly here
         const newMap = new Map<string, Record<string, SpellingResult>>();
         if (progressData) {
             progressData.forEach(progressItem => {
@@ -239,25 +239,6 @@ export default function TeacherDashboardPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="mt-4">
-                <CardHeader>
-                    <CardTitle>Données brutes de débogage</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div>
-                        <h3 className="font-bold">allSpellingProgress (données de Firestore)</h3>
-                        <pre className="bg-muted p-2 rounded-md text-xs overflow-auto">
-                            {JSON.stringify(allSpellingProgress, null, 2)}
-                        </pre>
-                    </div>
-                    <div>
-                        <h3 className="font-bold">studentProgressMap (données transformées)</h3>
-                        <pre className="bg-muted p-2 rounded-md text-xs overflow-auto">
-                           {JSON.stringify(Array.from(studentProgressMap.entries()), null, 2)}
-                        </pre>
-                    </div>
-                </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="class-results">
@@ -265,7 +246,7 @@ export default function TeacherDashboardPage() {
               <CardHeader>
                 <CardTitle>Résultats des exercices "En classe"</CardTitle>
                 <CardDescription>Voici les derniers scores enregistrés pour tous les élèves.</CardDescription>
-              </CardHeader>
+              </Header>
               <CardContent>
                 <Table>
                   <TableHeader>
