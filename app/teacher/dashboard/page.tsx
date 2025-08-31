@@ -45,12 +45,10 @@ export default function TeacherDashboardPage() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const [scoresData, progressData, listsData, studentListData] = await Promise.all([
-          getAllScores(),
-          getAllSpellingProgress(),
-          getSpellingLists(),
-          getStudents(),
-        ]);
+        const scoresData = await getAllScores();
+        const progressData = await getAllSpellingProgress();
+        const listsData = await getSpellingLists();
+        const studentListData = await getStudents();
         
         setAllScores(scoresData);
         setAllSpellingProgress(progressData);
@@ -237,7 +235,6 @@ export default function TeacherDashboardPage() {
                   </TableBody>
                 </Table>
                 </div>
-                 {/* --- START DEBUG --- */}
                 <div className="mt-8 p-4 border rounded-md bg-muted/50">
                     <h4 className="font-bold text-lg mb-2">Données de débogage</h4>
                     <div className="space-y-4">
@@ -261,7 +258,6 @@ export default function TeacherDashboardPage() {
                         </div>
                     </div>
                 </div>
-                {/* --- END DEBUG --- */}
               </CardContent>
             </Card>
           </TabsContent>

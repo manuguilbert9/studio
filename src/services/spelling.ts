@@ -122,8 +122,8 @@ export async function saveSpellingResult(userId: string, exerciseId: string, err
 // Retrieves all spelling progress for all users, for the teacher dashboard.
 export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
     try {
-        const q = query(collection(db, "spellingProgress"));
-        const querySnapshot = await getDocs(q);
+        const spellingProgressCollectionRef = collection(db, "spellingProgress");
+        const querySnapshot = await getDocs(spellingProgressCollectionRef);
         const allProgress: SpellingProgress[] = [];
         querySnapshot.forEach((doc) => {
             // The document ID is the userId
