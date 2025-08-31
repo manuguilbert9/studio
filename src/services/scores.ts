@@ -64,3 +64,25 @@ export async function getScoresForUser(userId: string, skillSlug?: string): Prom
         return [];
     }
 }
+
+
+// Retrieves all scores for all users, for the teacher dashboard.
+export async function getAllScores(): Promise<Score[]> {
+    try {
+        const q = query(collection(db, "scores"), orderBy("createdAt", "desc"), limit(100));
+        const querySnapshot = await getDocs(q);
+        const scores: Score[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            scores.push({
+                id: doc.id,
+                ...data,
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+            } as Score);
+        });
+        return scores;
+    } catch (error) {
+        console.error("Error loading all scores from Firestore:", error);
+        return [];
+    }
+}

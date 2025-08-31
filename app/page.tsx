@@ -5,7 +5,7 @@ import { useState, FormEvent, useContext } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { Book, Users, LogOut, ArrowRight } from 'lucide-react';
+import { Book, Users, LogOut, ArrowRight, School } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,7 +38,7 @@ export default function ModeSelectionPage() {
 
   if (!username) {
     return (
-      <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 bg-background">
+      <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 bg-background relative">
         <div className="absolute top-8 left-1/2 -translate-x-1/2">
           <Logo />
         </div>
@@ -71,6 +71,14 @@ export default function ModeSelectionPage() {
             </CardFooter>
           </form>
         </Card>
+        <div className="absolute bottom-4 right-4">
+             <Button asChild variant="ghost" size="sm">
+                <Link href="/teacher/login">
+                    <School className="mr-2"/>
+                    Accès enseignant
+                </Link>
+            </Button>
+        </div>
       </main>
     );
   }

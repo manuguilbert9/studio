@@ -4,13 +4,18 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, collection, getDocs } from 'firebase/firestore';
 
 
 export interface SpellingList {
   id: string; // e.g., "D1"
   title: string; // e.g., "Les consonnes muettes en fin de mot"
   words: string[];
+}
+
+export interface SpellingProgress {
+  userId: string;
+  progress: Record<string, { completedAt: Timestamp; errors: string[] }>;
 }
 
 const spellingFileCache: { lists: SpellingList[] | null } = {
@@ -105,4 +110,23 @@ export async function saveSpellingResult(userId: string, exerciseId: string, err
     }
     return { success: false, error: "An unknown error occurred."};
   }
+}
+
+// Retrieves all spelling progress for all users, for the teacher dashboard.
+export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
+    try {
+        const q = query(collection(db, "spellingProgress"));
+        const querySnapshot = await getDocs(q);
+        const allProgress: SpellingProgress[] = [];
+        querySnapshot.forEach((doc) => {
+            allProgress.push({
+                userId: doc.id,
+                progress: doc.data() as Record<string, { completedAt: Timestamp; errors: string[] }>
+            });
+        });
+        return allProgress;
+    } catch (error) {
+        console.error("Error loading all spelling progress from Firestore:", error);
+        return [];
+    }
 }
