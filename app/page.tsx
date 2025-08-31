@@ -5,26 +5,41 @@ import { useState, FormEvent, useContext } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { Book, Users, LogOut, ArrowRight, School } from 'lucide-react';
+import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { UserContext } from '@/context/user-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { loginStudent } from '@/services/students';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ModeSelectionPage() {
-  const { username, setUsername, isLoading } = useContext(UserContext);
-  const [inputValue, setInputValue] = useState('');
+  const { student, setStudent, isLoading } = useContext(UserContext);
+  const [name, setName] = useState('');
+  const [code, setCode] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const { toast } = useToast();
 
   const handleLogout = () => {
-    setUsername(null);
-    setInputValue('');
+    setStudent(null);
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (inputValue.trim()) {
-      setUsername(inputValue.trim());
+    if (name.trim() && code.trim()) {
+      setIsLoggingIn(true);
+      const loggedInStudent = await loginStudent(name, code);
+      setIsLoggingIn(false);
+      if (loggedInStudent) {
+        setStudent(loggedInStudent);
+      } else {
+        toast({
+            variant: "destructive",
+            title: "Erreur de connexion",
+            description: "Le prénom ou le code est incorrect. Veuillez réessayer.",
+        });
+      }
     }
   };
   
@@ -36,7 +51,7 @@ export default function ModeSelectionPage() {
       )
   }
 
-  if (!username) {
+  if (!student) {
     return (
       <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 bg-background relative">
         <div className="absolute top-8 left-1/2 -translate-x-1/2">
@@ -46,27 +61,48 @@ export default function ModeSelectionPage() {
           <CardHeader className="text-center">
             <CardTitle className="font-headline text-3xl sm:text-4xl">Bienvenue !</CardTitle>
             <CardDescription className="text-base sm:text-lg">
-              Commençons. Comment devrions-nous vous appeler ?
+              Connecte-toi pour commencer.
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-base">Prénom</Label>
-                <Input
-                  id="name"
-                  placeholder="Entrez votre nom..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  className="text-base h-12"
-                  required
-                  aria-label="Prénom"
-                />
+                 <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="name"
+                      placeholder="Ton prénom"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="text-base h-12 pl-10"
+                      required
+                      aria-label="Prénom"
+                    />
+                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="code" className="text-base">Code secret</Label>
+                 <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input
+                      id="code"
+                      type="text"
+                      placeholder="Ton code à 4 chiffres"
+                      value={code}
+                      onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
+                      className="text-base h-12 pl-10 font-mono tracking-[0.5em]"
+                      required
+                      maxLength={4}
+                      aria-label="Code secret"
+                    />
+                 </div>
               </div>
             </CardContent>
             <CardFooter>
-              <Button type="submit" className="w-full text-lg py-6 bg-accent text-accent-foreground hover:bg-accent/90">
-                Continuer <ArrowRight className="ml-2" />
+              <Button type="submit" className="w-full text-lg py-6 bg-accent text-accent-foreground hover:bg-accent/90" disabled={isLoggingIn}>
+                {isLoggingIn ? <Loader2 className="animate-spin" /> : "Continuer"}
+                {!isLoggingIn && <ArrowRight className="ml-2" />}
               </Button>
             </CardFooter>
           </form>
@@ -89,7 +125,7 @@ export default function ModeSelectionPage() {
         <Logo />
       </div>
        <div className="text-center mb-12">
-            <p className="text-base sm:text-lg text-muted-foreground mt-2">Connecté en tant que <span className="font-bold">{username}</span>.</p>
+            <p className="text-base sm:text-lg text-muted-foreground mt-2">Connecté en tant que <span className="font-bold">{student.name}</span>.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full max-w-sm md:max-w-4xl">
         <Link href="/devoirs" className="group" aria-label="Accéder aux devoirs">
