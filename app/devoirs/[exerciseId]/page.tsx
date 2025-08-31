@@ -53,7 +53,12 @@ export default function SpellingExercisePage() {
       setList(foundList);
       const half = Math.ceil(foundList.words.length / 2);
       const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
-      setWords(sessionWords);
+      
+      // Duplicate each word and shuffle the list
+      const duplicatedWords = sessionWords.flatMap(word => [word, word]);
+      const shuffledWords = duplicatedWords.sort(() => Math.random() - 0.5);
+
+      setWords(shuffledWords);
       setIsLoading(false);
     }
     loadExercise();
