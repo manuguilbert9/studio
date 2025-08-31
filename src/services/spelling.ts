@@ -13,9 +13,14 @@ export interface SpellingList {
   words: string[];
 }
 
+export interface SpellingResult {
+    completedAt: Timestamp;
+    errors: string[];
+}
+
 export interface SpellingProgress {
   userId: string; // This is now the student's unique ID
-  progress: Record<string, { completedAt: Timestamp; errors: string[] }>;
+  progress: Record<string, SpellingResult>;
 }
 
 const spellingFileCache: { lists: SpellingList[] | null } = {
@@ -122,8 +127,8 @@ export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
         const allProgress: SpellingProgress[] = [];
         querySnapshot.forEach((doc) => {
             allProgress.push({
-                userId: doc.id, // The document ID is the student's unique ID
-                progress: doc.data() as Record<string, { completedAt: Timestamp; errors: string[] }>
+                userId: doc.id,
+                progress: doc.data() as Record<string, SpellingResult>
             });
         });
         return allProgress;

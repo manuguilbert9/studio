@@ -91,11 +91,11 @@ export default function TeacherDashboardPage() {
     }
   }
 
-  // Create a map for quick progress lookup. This is the robust way to handle this.
   const studentProgressMap = allSpellingProgress.reduce((acc, progress) => {
-      acc[progress.userId] = progress;
+      acc[progress.userId] = progress.progress;
       return acc;
-  }, {} as Record<string, SpellingProgress>);
+  }, {} as Record<string, SpellingProgress['progress']>);
+
 
   if (isLoading) {
     return (
@@ -196,30 +196,31 @@ export default function TeacherDashboardPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {students.map(student => (
-                        <TableRow key={student.id}>
-                            <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
-                            {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
-                                const studentProgress = studentProgressMap[student.id];
-                                const result = studentProgress?.progress?.[exerciseId.toLowerCase()];
-
-                                return (
-                                    <TableCell key={exerciseId} className="text-center">
-                                        {!result ? (
-                                            <Circle className="text-muted-foreground/30 mx-auto" />
-                                        ) : result.errors.length === 0 ? (
-                                            <CheckCircle className="text-green-500 mx-auto" />
-                                        ) : (
-                                            <div className="flex items-center justify-center gap-1.5 text-amber-600 font-bold">
-                                                <AlertTriangle className="h-4 w-4" />
-                                                <span>{result.errors.length}</span>
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                );
-                            })}
-                        </TableRow>
-                    ))}
+                    {students.map(student => {
+                        const studentProgress = studentProgressMap[student.id];
+                        return (
+                            <TableRow key={student.id}>
+                                <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
+                                {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
+                                    const result = studentProgress?.[exerciseId.toLowerCase()];
+                                    return (
+                                        <TableCell key={exerciseId} className="text-center">
+                                            {!result ? (
+                                                <Circle className="text-muted-foreground/30 mx-auto" />
+                                            ) : result.errors.length === 0 ? (
+                                                <CheckCircle className="text-green-500 mx-auto" />
+                                            ) : (
+                                                <div className="flex items-center justify-center gap-1.5 text-amber-600 font-bold">
+                                                    <AlertTriangle className="h-4 w-4" />
+                                                    <span>{result.errors.length}</span>
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                    );
+                                })}
+                            </TableRow>
+                        )
+                    })}
                   </TableBody>
                 </Table>
                 </div>
@@ -270,4 +271,3 @@ export default function TeacherDashboardPage() {
     </main>
   );
 }
-
