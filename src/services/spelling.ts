@@ -11,6 +11,7 @@ export interface SpellingList {
   id: string; // e.g., "D1"
   title: string; // e.g., "Les consonnes muettes en fin de mot"
   words: string[];
+  totalWords: number;
 }
 
 export interface SpellingResult {
@@ -40,13 +41,13 @@ export async function getSpellingLists(): Promise<SpellingList[]> {
     const lines = fileContent.split('\n').filter(line => line.trim() !== '');
 
     const lists: SpellingList[] = [];
-    let currentList: SpellingList | null = null;
+    let currentList: Omit<SpellingList, 'totalWords'> | null = null;
 
     for (const line of lines) {
       // A line starting with D followed by a number is a list header
       if (line.match(/^D\d+\s*–/)) {
         if (currentList) {
-          lists.push(currentList);
+          lists.push({ ...currentList, totalWords: currentList.words.length });
         }
         const [id, title] = line.split('–').map(s => s.trim());
         currentList = { id, title, words: [] };
@@ -58,7 +59,7 @@ export async function getSpellingLists(): Promise<SpellingList[]> {
     }
     // Add the last list
     if (currentList) {
-      lists.push(currentList);
+      lists.push({ ...currentList, totalWords: currentList.words.length });
     }
     
     spellingFileCache.lists = lists;
@@ -138,9 +139,6 @@ export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
                             completedAt: result.completedAt.toDate().toISOString(),
                             errors: result.errors
                          };
-                    } else {
-                        // If it's not a timestamp, keep the original data (for safety)
-                        processedProgress[key] = result;
                     }
                 }
             }

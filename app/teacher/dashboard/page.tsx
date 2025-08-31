@@ -19,6 +19,7 @@ import { createStudent, getStudents, type Student } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -45,10 +46,12 @@ export default function TeacherDashboardPage() {
     async function loadData() {
       setIsLoading(true);
       try {
-        const scoresData = await getAllScores();
-        const progressData = await getAllSpellingProgress();
-        const listsData = await getSpellingLists();
-        const studentListData = await getStudents();
+        const [scoresData, progressData, listsData, studentListData] = await Promise.all([
+          getAllScores(),
+          getAllSpellingProgress(),
+          getSpellingLists(),
+          getStudents(),
+        ]);
         
         setAllScores(scoresData);
         setAllSpellingProgress(progressData);
@@ -118,190 +121,186 @@ export default function TeacherDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background p-4 sm:p-8">
-      <header className="flex items-center justify-between mb-8 max-w-7xl mx-auto">
-        <Logo />
-        <div className="flex items-center gap-4">
-            <Button asChild variant="outline">
-                <Link href="/"><Home className="mr-2"/> Accueil Principal</Link>
-            </Button>
-            <Button onClick={handleLogout} variant="destructive">
-                <LogOut className="mr-2"/> Déconnexion
-            </Button>
-        </div>
-      </header>
+    <TooltipProvider>
+      <main className="min-h-screen bg-background p-4 sm:p-8">
+        <header className="flex items-center justify-between mb-8 max-w-7xl mx-auto">
+          <Logo />
+          <div className="flex items-center gap-4">
+              <Button asChild variant="outline">
+                  <Link href="/"><Home className="mr-2"/> Accueil Principal</Link>
+              </Button>
+              <Button onClick={handleLogout} variant="destructive">
+                  <LogOut className="mr-2"/> Déconnexion
+              </Button>
+          </div>
+        </header>
 
-      <div className="max-w-7xl mx-auto">
-        <Tabs defaultValue="homework">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="students"><Users className="mr-2"/> Gestion des élèves</TabsTrigger>
-            <TabsTrigger value="homework"><BookOpen className="mr-2"/> Suivi des devoirs</TabsTrigger>
-            <TabsTrigger value="class-results"><BarChart3 className="mr-2"/> Résultats "En classe"</TabsTrigger>
-          </TabsList>
+        <div className="max-w-7xl mx-auto">
+          <Tabs defaultValue="homework">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="students"><Users className="mr-2"/> Gestion des élèves</TabsTrigger>
+              <TabsTrigger value="homework"><BookOpen className="mr-2"/> Suivi des devoirs</TabsTrigger>
+              <TabsTrigger value="class-results"><BarChart3 className="mr-2"/> Résultats "En classe"</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="students">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Créer un nouvel élève</CardTitle>
-                        <CardDescription>Ajoutez un élève et un code secret lui sera automatiquement assigné.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleCreateStudent} className="flex items-center gap-4">
-                            <Input 
-                                placeholder="Prénom de l'élève" 
-                                value={newStudentName}
-                                onChange={e => setNewStudentName(e.target.value)}
-                                required
-                            />
-                            <Button type="submit" disabled={isCreatingStudent}>
-                                {isCreatingStudent ? <Loader2 className="animate-spin" /> : <UserPlus />}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Liste des élèves</CardTitle>
-                        <CardDescription>Voici la liste de tous les élèves et de leurs codes secrets.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Prénom</TableHead>
-                                    <TableHead className="text-right">Code Secret</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {students.map(student => (
-                                    <TableRow key={student.id}>
-                                        <TableCell className="font-medium">{student.name}</TableCell>
-                                        <TableCell className="text-right font-mono font-bold">{student.code}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </div>
-          </TabsContent>
+            <TabsContent value="students">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Créer un nouvel élève</CardTitle>
+                          <CardDescription>Ajoutez un élève et un code secret lui sera automatiquement assigné.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          <form onSubmit={handleCreateStudent} className="flex items-center gap-4">
+                              <Input 
+                                  placeholder="Prénom de l'élève" 
+                                  value={newStudentName}
+                                  onChange={e => setNewStudentName(e.target.value)}
+                                  required
+                              />
+                              <Button type="submit" disabled={isCreatingStudent}>
+                                  {isCreatingStudent ? <Loader2 className="animate-spin" /> : <UserPlus />}
+                              </Button>
+                          </form>
+                      </CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader>
+                          <CardTitle>Liste des élèves</CardTitle>
+                          <CardDescription>Voici la liste de tous les élèves et de leurs codes secrets.</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                          <Table>
+                              <TableHeader>
+                                  <TableRow>
+                                      <TableHead>Prénom</TableHead>
+                                      <TableHead className="text-right">Code Secret</TableHead>
+                                  </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                  {students.map(student => (
+                                      <TableRow key={student.id}>
+                                          <TableCell className="font-medium">{student.name}</TableCell>
+                                          <TableCell className="text-right font-mono font-bold">{student.code}</TableCell>
+                                      </TableRow>
+                                  ))}
+                              </TableBody>
+                          </Table>
+                      </CardContent>
+                  </Card>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="homework">
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>Suivi des devoirs d'orthographe</CardTitle>
-                <CardDescription>Consultez la progression des élèves pour chaque liste de devoirs.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="font-bold sticky left-0 bg-background z-10">Élève</TableHead>
-                      {spellingLists.flatMap(list => [
-                        { session: 'Lundi', exerciseId: `${list.id}-lundi` },
-                        { session: 'Jeudi', exerciseId: `${list.id}-jeudi` }
-                      ]).map(({ exerciseId, session }) => (
-                        <TableHead key={exerciseId} className="text-center">{exerciseId.split('-')[0]}<br/>{session}</TableHead>
-                      ))}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {students.map(student => {
-                        const studentProgress = studentProgressMap.get(student.id);
-                        return (
-                        <TableRow key={student.id}>
-                            <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
-                            {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
-                                const result = studentProgress?.[exerciseId.toLowerCase()];
-                                return (
-                                    <TableCell key={exerciseId} className="text-center">
-                                        {!result ? (
-                                            <Circle className="text-muted-foreground/30 mx-auto" />
-                                        ) : result.errors.length === 0 ? (
-                                            <CheckCircle className="text-green-500 mx-auto" />
-                                        ) : (
-                                            <div className="flex items-center justify-center gap-1.5 text-amber-600 font-bold">
-                                                <AlertTriangle className="h-4 w-4" />
-                                                <span>{result.errors.length}</span>
-                                            </div>
-                                        )}
-                                    </TableCell>
-                                );
-                            })}
-                        </TableRow>
-                    )})}
-                  </TableBody>
-                </Table>
-                </div>
-                <div className="mt-8 p-4 border rounded-md bg-muted/50">
-                    <h4 className="font-bold text-lg mb-2">Données de débogage</h4>
-                    <div className="space-y-4">
-                        <div>
-                            <h5 className="font-semibold">`students` ({students.length} élèves)</h5>
-                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
-                                {JSON.stringify(students, null, 2)}
-                            </pre>
-                        </div>
-                        <div>
-                            <h5 className="font-semibold">`allSpellingProgress` ({allSpellingProgress.length} enregistrements)</h5>
-                            <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
-                                {JSON.stringify(allSpellingProgress, null, 2)}
-                            </pre>
-                        </div>
-                        <div>
-                            <h5 className="font-semibold">`studentProgressMap` ({studentProgressMap.size} entrées)</h5>
-                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
-                                {JSON.stringify(Array.from(studentProgressMap.entries()), null, 2)}
-                            </pre>
-                        </div>
-                    </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="class-results">
-            <Card className="mt-4">
-              <CardHeader>
-                <CardTitle>Résultats des exercices "En classe"</CardTitle>
-                <CardDescription>Voici les derniers scores enregistrés pour tous les élèves.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Élève</TableHead>
-                      <TableHead>Compétence</TableHead>
-                      <TableHead>Niveau</TableHead>
-                      <TableHead className="text-right">Score</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allScores.map(score => {
-                      const studentName = students.find(s => s.id === score.userId)?.name || score.userId;
-                      return (
-                      <TableRow key={score.id}>
-                        <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
-                        <TableCell className="font-medium">{studentName}</TableCell>
-                        <TableCell>{score.skill}</TableCell>
-                        <TableCell>
-                           <Badge variant="outline">
-                            {difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard'}
-                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-bold text-primary">{score.score.toFixed(0)}%</TableCell>
+            <TabsContent value="homework">
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle>Suivi des devoirs d'orthographe</CardTitle>
+                  <CardDescription>Consultez la progression des élèves pour chaque liste de devoirs.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="font-bold sticky left-0 bg-background z-10">Élève</TableHead>
+                        {spellingLists.flatMap(list => [
+                          { session: 'Lundi', exerciseId: `${list.id}-lundi` },
+                          { session: 'Jeudi', exerciseId: `${list.id}-jeudi` }
+                        ]).map(({ exerciseId, session }) => (
+                          <TableHead key={exerciseId} className="text-center">{exerciseId.split('-')[0]}<br/>{session}</TableHead>
+                        ))}
                       </TableRow>
-                    )})}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </main>
+                    </TableHeader>
+                    <TableBody>
+                      {students.map(student => {
+                          const studentProgress = studentProgressMap.get(student.id);
+                          return (
+                          <TableRow key={student.id}>
+                              <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
+                              {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
+                                  const result = studentProgress?.[exerciseId.toLowerCase()];
+                                  const listId = exerciseId.split('-')[0];
+                                  const session = exerciseId.split('-')[1];
+                                  const listData = spellingLists.find(l => l.id === listId);
+                                  const wordCount = listData ? (session === 'lundi' ? Math.ceil(listData.totalWords / 2) : Math.floor(listData.totalWords / 2)) : 0;
+                                  
+                                  return (
+                                      <TableCell key={exerciseId} className="text-center">
+                                          {!result ? (
+                                              <Circle className="text-muted-foreground/30 mx-auto" />
+                                          ) : (
+                                            <Tooltip>
+                                              <TooltipTrigger asChild>
+                                                <div className="flex items-center justify-center cursor-help">
+                                                    {result.errors.length === 0 ? (
+                                                        <CheckCircle className="text-green-500 mx-auto" />
+                                                    ) : (
+                                                        <div className="flex items-center justify-center gap-1.5 text-amber-600 font-bold">
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                            <span>{result.errors.length}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                              </TooltipTrigger>
+                                              <TooltipContent>
+                                                <p>Fait le : {format(new Date(result.completedAt), 'd MMM yyyy, HH:mm', { locale: fr })}</p>
+                                                <p>Erreurs : {result.errors.length} / {wordCount}</p>
+                                              </TooltipContent>
+                                            </Tooltip>
+                                          )}
+                                      </TableCell>
+                                  );
+                              })}
+                          </TableRow>
+                      )})}
+                    </TableBody>
+                  </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="class-results">
+              <Card className="mt-4">
+                <CardHeader>
+                  <CardTitle>Résultats des exercices "En classe"</CardTitle>
+                  <CardDescription>Voici les derniers scores enregistrés pour tous les élèves.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Élève</TableHead>
+                        <TableHead>Compétence</TableHead>
+                        <TableHead>Niveau</TableHead>
+                        <TableHead className="text-right">Score</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allScores.map(score => {
+                        const studentName = students.find(s => s.id === score.userId)?.name || score.userId;
+                        return (
+                        <TableRow key={score.id}>
+                          <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
+                          <TableCell className="font-medium">{studentName}</TableCell>
+                          <TableCell>{score.skill}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-primary">{score.score.toFixed(0)}%</TableCell>
+                        </TableRow>
+                      )})}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </TooltipProvider>
   );
 }
