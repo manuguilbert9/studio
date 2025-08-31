@@ -3,6 +3,7 @@
 
 import { useState, type FormEvent, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +16,7 @@ export default function EnClassePage() {
   const [name, setName] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [isClient, setIsClient] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setIsClient(true);
@@ -32,10 +34,9 @@ export default function EnClassePage() {
     e.preventDefault();
     if (inputValue.trim()) {
       const trimmedName = inputValue.trim();
-      setName(trimmedName);
       try {
         localStorage.setItem('classemagique_username', trimmedName);
-        setInputValue('');
+        router.push('/');
       } catch (error) {
         console.error("Could not access localStorage", error);
       }

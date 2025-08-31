@@ -39,7 +39,6 @@ export default function ModeSelectionPage() {
         <Logo />
       </div>
       <div className="text-center mb-12">
-        <p className="text-lg sm:text-xl text-muted-foreground mt-2">Veuillez choisir votre mode d'utilisation.</p>
         {isClient && username && (
            <p className="text-base sm:text-lg text-muted-foreground mt-2">Connecté en tant que <span className="font-bold">{username}</span>.</p>
         )}
