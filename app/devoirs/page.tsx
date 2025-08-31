@@ -25,7 +25,7 @@ export default function DevoirsListPage() {
       const spellingLists = await getSpellingLists();
       setLists(spellingLists);
       if (storedName) {
-        const userProgress = getSpellingProgress(storedName);
+        const userProgress = await getSpellingProgress(storedName);
         setProgress(userProgress);
       }
       setIsLoading(false);
@@ -97,4 +97,3 @@ export default function DevoirsListPage() {
     </main>
   );
 }
-

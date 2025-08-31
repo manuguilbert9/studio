@@ -70,7 +70,7 @@ interface SpellingProgress {
   };
 }
 
-export function getSpellingProgress(userId: string): Record<string, boolean> {
+export async function getSpellingProgress(userId: string): Promise<Record<string, boolean>> {
   if (typeof window === 'undefined') return {};
   try {
     const db = localStorage.getItem(SPELLING_PROGRESS_DB);
@@ -88,7 +88,7 @@ export function getSpellingProgress(userId: string): Record<string, boolean> {
   }
 }
 
-export function saveSpellingResult(userId: string, exerciseId: string, errors: string[]) {
+export async function saveSpellingResult(userId: string, exerciseId: string, errors: string[]) {
   if (typeof window === 'undefined') return;
   try {
     const dbString = localStorage.getItem(SPELLING_PROGRESS_DB);
@@ -108,4 +108,3 @@ export function saveSpellingResult(userId: string, exerciseId: string, errors: s
     console.error("Failed to save spelling result", e);
   }
 }
-
