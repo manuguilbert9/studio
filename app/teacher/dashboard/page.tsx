@@ -26,7 +26,7 @@ export default function TeacherDashboardPage() {
   
   // Data states
   const [allScores, setAllScores] = useState<Score[]>([]);
-  const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
+  const [allSpellingProgress, setAllSpellingProgress] = useState<Map<string, SpellingProgress>>(new Map());
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   
@@ -43,15 +43,18 @@ export default function TeacherDashboardPage() {
 
     async function loadData() {
       setIsLoading(true);
-      const [scores, progress, lists, studentList] = await Promise.all([
+      const [scores, progressData, lists, studentList] = await Promise.all([
         getAllScores(),
         getAllSpellingProgress(),
         getSpellingLists(),
         getStudents(),
       ]);
       
+      const progressMap = new Map<string, SpellingProgress>();
+      progressData.forEach(p => progressMap.set(p.userId, p));
+
       setAllScores(scores);
-      setAllSpellingProgress(progress);
+      setAllSpellingProgress(progressMap);
       setSpellingLists(lists);
       setStudents(studentList);
 
@@ -196,7 +199,7 @@ export default function TeacherDashboardPage() {
                           `${list.id}-lundi`,
                           `${list.id}-jeudi`
                         ]).map(exerciseId => {
-                          const studentProgress = allSpellingProgress.find(p => p.userId === student.id);
+                          const studentProgress = allSpellingProgress.get(student.id);
                           const isCompleted = studentProgress?.progress?.[exerciseId.toLowerCase()];
                           return (
                             <TableCell key={exerciseId} className="text-center">
