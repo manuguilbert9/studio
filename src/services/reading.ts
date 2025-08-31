@@ -1,9 +1,10 @@
+
 'use server';
 
 import fs from 'fs/promises';
 import path from 'path';
 
-const textsDirectory = path.join(process.cwd(), 'public/fluence');
+const textsDirectory = path.join(process.cwd(), 'public', 'fluence');
 
 export async function getAvailableTexts(): Promise<Record<string, string[]>> {
   try {
