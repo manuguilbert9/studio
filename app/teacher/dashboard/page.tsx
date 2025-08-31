@@ -8,14 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star } from 'lucide-react';
+import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star, Check, X, Pencil } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getAllScores, Score } from '@/services/scores';
 import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress, SpellingResult } from '@/services/spelling';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { difficultyLevelToString } from '@/lib/skills';
-import { createStudent, getStudents, type Student } from '@/services/students';
+import { createStudent, getStudents, type Student, updateStudentCode } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,11 @@ export default function TeacherDashboardPage() {
   // New student form state
   const [newStudentName, setNewStudentName] = useState('');
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
+
+  // Edit student code state
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [newCode, setNewCode] = useState('');
+  const [isUpdatingCode, setIsUpdatingCode] = useState(false);
   
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
@@ -80,7 +85,9 @@ export default function TeacherDashboardPage() {
     const map = new Map<string, Record<string, SpellingResult>>();
     if (allSpellingProgress) {
         allSpellingProgress.forEach(progressItem => {
-            map.set(progressItem.userId, progressItem.progress);
+            if (progressItem.userId && progressItem.progress) {
+               map.set(progressItem.userId, progressItem.progress);
+            }
         });
     }
     return map;
@@ -130,6 +137,46 @@ export default function TeacherDashboardPage() {
         });
     } finally {
         setIsCreatingStudent(false);
+    }
+  }
+
+  const handleEditCode = (student: Student) => {
+    setEditingStudentId(student.id);
+    setNewCode(student.code);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingStudentId(null);
+    setNewCode('');
+  };
+  
+  const handleUpdateCode = async (studentId: string) => {
+    if (newCode.length !== 4 || !/^\d{4}$/.test(newCode)) {
+      toast({
+        variant: 'destructive',
+        title: "Code invalide",
+        description: "Le code secret doit être composé de 4 chiffres.",
+      });
+      return;
+    }
+
+    setIsUpdatingCode(true);
+    const result = await updateStudentCode(studentId, newCode);
+    setIsUpdatingCode(false);
+
+    if (result.success) {
+      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, code: newCode } : s));
+      toast({
+        title: "Code mis à jour",
+        description: "Le code secret de l'élève a été modifié.",
+      });
+      handleCancelEdit();
+    } else {
+       toast({
+        variant: 'destructive',
+        title: "Erreur",
+        description: result.error || "Impossible de mettre à jour le code.",
+      });
     }
   }
   
@@ -196,13 +243,43 @@ export default function TeacherDashboardPage() {
                                   <TableRow>
                                       <TableHead>Prénom</TableHead>
                                       <TableHead className="text-right">Code Secret</TableHead>
+                                      <TableHead className="w-[120px] text-right">Actions</TableHead>
                                   </TableRow>
                               </TableHeader>
                               <TableBody>
                                   {students.map(student => (
                                       <TableRow key={student.id}>
                                           <TableCell className="font-medium">{student.name}</TableCell>
-                                          <TableCell className="text-right font-mono font-bold">{student.code}</TableCell>
+                                           <TableCell className="text-right font-mono font-bold">
+                                              {editingStudentId === student.id ? (
+                                                  <Input 
+                                                      type="text" 
+                                                      value={newCode}
+                                                      onChange={(e) => setNewCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                                      maxLength={4}
+                                                      className="h-8 w-20 inline-block text-center"
+                                                      autoFocus
+                                                  />
+                                              ) : (
+                                                  <span>{student.code}</span>
+                                              )}
+                                          </TableCell>
+                                           <TableCell className="text-right">
+                                              {editingStudentId === student.id ? (
+                                                  <div className="flex gap-2 justify-end">
+                                                      <Button size="icon" className="h-8 w-8" onClick={() => handleUpdateCode(student.id)} disabled={isUpdatingCode}>
+                                                          {isUpdatingCode ? <Loader2 className="animate-spin" /> : <Check />}
+                                                      </Button>
+                                                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelEdit}>
+                                                          <X />
+                                                      </Button>
+                                                  </div>
+                                              ) : (
+                                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditCode(student)}>
+                                                      <Pencil />
+                                                  </Button>
+                                              )}
+                                          </TableCell>
                                       </TableRow>
                                   ))}
                               </TableBody>
@@ -285,7 +362,10 @@ export default function TeacherDashboardPage() {
                                               </TooltipTrigger>
                                               <TooltipContent>
                                                 <p>Fait le : {format(new Date(result.completedAt), 'd MMM yyyy, HH:mm', { locale: fr })}</p>
-                                                <p>Erreurs : {result.errors.length} / {wordCount}</p>
+                                                <p>Erreurs : {result.errors.length > 0 ? `${result.errors.length} / ${wordCount}` : "Aucune"}</p>
+                                                {result.errors.length > 0 && (
+                                                  <p className="font-semibold text-destructive mt-1">{result.errors.join(', ')}</p>
+                                                )}
                                               </TooltipContent>
                                             </Tooltip>
                                           )}

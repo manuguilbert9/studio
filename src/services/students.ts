@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 
 export interface Student {
     id: string;
@@ -33,6 +33,35 @@ export async function createStudent(name: string): Promise<Student> {
         name: name.trim(),
         code: code,
     };
+}
+
+/**
+ * Updates the code for a specific student.
+ * @param studentId The ID of the student to update.
+ * @param newCode The new 4-digit code.
+ * @returns A promise that resolves to an object indicating success or failure.
+ */
+export async function updateStudentCode(studentId: string, newCode: string): Promise<{ success: boolean; error?: string }> {
+    if (!studentId) {
+        return { success: false, error: 'Student ID is required.' };
+    }
+    if (!newCode || newCode.length !== 4 || !/^\d{4}$/.test(newCode)) {
+        return { success: false, error: 'The code must be 4 digits.' };
+    }
+
+    try {
+        const studentDocRef = doc(db, 'students', studentId);
+        await updateDoc(studentDocRef, {
+            code: newCode
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error updating student code in Firestore:", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: 'An unknown error occurred.' };
+    }
 }
 
 
