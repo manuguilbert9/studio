@@ -204,11 +204,26 @@ export default function TeacherDashboardPage() {
                       <TableRow>
                         <TableHead className="font-bold sticky left-0 bg-background z-10">Élève</TableHead>
                         {spellingLists.flatMap(list => [
-                          { session: 'Lundi', exerciseId: `${list.id}-lundi` },
-                          { session: 'Jeudi', exerciseId: `${list.id}-jeudi` }
-                        ]).map(({ exerciseId, session }) => (
-                          <TableHead key={exerciseId} className="text-center">{exerciseId.split('-')[0]}<br/>{session}</TableHead>
-                        ))}
+                          { session: 'Lundi', sessionKey: 'lundi', exerciseId: `${list.id}-lundi`, listData: list },
+                          { session: 'Jeudi', sessionKey: 'jeudi', exerciseId: `${list.id}-jeudi`, listData: list }
+                        ]).map(({ exerciseId, session, sessionKey, listData }) => {
+                          const half = Math.ceil(listData.words.length / 2);
+                          const sessionWords = sessionKey === 'lundi' ? listData.words.slice(0, half) : listData.words.slice(half);
+                          const wordListString = sessionWords.join(', ');
+
+                          return (
+                            <TableHead key={exerciseId} className="text-center">
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="cursor-help underline-dashed">{exerciseId.split('-')[0]}<br/>{session}</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs text-center">
+                                        <p className="font-normal text-sm text-popover-foreground">{wordListString}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TableHead>
+                          )
+                        })}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -222,7 +237,7 @@ export default function TeacherDashboardPage() {
                                   const listId = exerciseId.split('-')[0];
                                   const session = exerciseId.split('-')[1];
                                   const listData = spellingLists.find(l => l.id === listId);
-                                  const wordCount = listData ? (session === 'lundi' ? Math.ceil(listData.totalWords / 2) : Math.floor(listData.totalWords / 2)) : 0;
+                                  const wordCount = listData ? (session === 'lundi' ? Math.ceil(listData.words.length / 2) : Math.floor(listData.words.length / 2)) : 0;
                                   
                                   return (
                                       <TableCell key={exerciseId} className="text-center">
