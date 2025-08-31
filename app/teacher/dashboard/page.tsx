@@ -93,13 +93,13 @@ export default function TeacherDashboardPage() {
 
   // Memoize the progress map to avoid re-calculating on every render.
   const studentProgressMap = useMemo(() => {
-      const map = new Map<string, Record<string, SpellingResult>>();
-      if (allSpellingProgress) {
+    const map = new Map<string, Record<string, SpellingResult>>();
+    if (allSpellingProgress.length > 0) {
         allSpellingProgress.forEach(progressItem => {
             map.set(progressItem.userId, progressItem.progress);
         });
-      }
-      return map;
+    }
+    return map;
   }, [allSpellingProgress]);
 
   if (isLoading) {
@@ -289,5 +289,3 @@ export default function TeacherDashboardPage() {
     </main>
   );
 }
-
-    
