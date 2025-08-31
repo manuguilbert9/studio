@@ -90,12 +90,6 @@ export default function TeacherDashboardPage() {
     }
   }
 
-  const getStudentProgress = (studentId: string, exerciseId: string) => {
-    const studentProgress = allSpellingProgress.find(p => p.userId === studentId);
-    if (!studentProgress) return false;
-    return studentProgress.progress[exerciseId.toLowerCase()] !== undefined;
-  }
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -201,15 +195,19 @@ export default function TeacherDashboardPage() {
                         {spellingLists.flatMap(list => [
                           `${list.id}-lundi`,
                           `${list.id}-jeudi`
-                        ]).map(exerciseId => (
-                          <TableCell key={exerciseId} className="text-center">
-                            {getStudentProgress(student.id, exerciseId) ? (
-                              <CheckCircle className="text-green-500 mx-auto" />
-                            ) : (
-                              <XCircle className="text-muted-foreground/50 mx-auto" />
-                            )}
-                          </TableCell>
-                        ))}
+                        ]).map(exerciseId => {
+                          const studentProgress = allSpellingProgress.find(p => p.userId === student.id);
+                          const isCompleted = studentProgress?.progress?.[exerciseId.toLowerCase()];
+                          return (
+                            <TableCell key={exerciseId} className="text-center">
+                              {isCompleted ? (
+                                <CheckCircle className="text-green-500 mx-auto" />
+                              ) : (
+                                <XCircle className="text-muted-foreground/50 mx-auto" />
+                              )}
+                            </TableCell>
+                          )
+                        })}
                       </TableRow>
                     ))}
                   </TableBody>
