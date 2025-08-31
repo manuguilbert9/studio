@@ -70,7 +70,7 @@ export default function TeacherDashboardPage() {
 
     loadData();
   }, [router, toast]);
-
+  
   const studentProgressMap = useMemo(() => {
     const map = new Map<string, Record<string, SpellingResult>>();
     if (allSpellingProgress) {
@@ -80,6 +80,7 @@ export default function TeacherDashboardPage() {
     }
     return map;
   }, [allSpellingProgress]);
+
 
   const handleLogout = () => {
     sessionStorage.removeItem('teacher_authenticated');
@@ -236,29 +237,31 @@ export default function TeacherDashboardPage() {
                   </TableBody>
                 </Table>
                 </div>
-                 <div className="mt-8 p-4 border rounded-md bg-muted/50">
+                {/* --- START DEBUG --- */}
+                <div className="mt-8 p-4 border rounded-md bg-muted/50">
                     <h4 className="font-bold text-lg mb-2">Données de débogage</h4>
                     <div className="space-y-4">
                         <div>
-                            <h5 className="font-semibold">Données brutes de `allSpellingProgress` ({allSpellingProgress.length} enregistrements)</h5>
+                            <h5 className="font-semibold">`students` ({students.length} élèves)</h5>
+                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
+                                {JSON.stringify(students, null, 2)}
+                            </pre>
+                        </div>
+                        <div>
+                            <h5 className="font-semibold">`allSpellingProgress` ({allSpellingProgress.length} enregistrements)</h5>
                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
                                 {JSON.stringify(allSpellingProgress, null, 2)}
                             </pre>
                         </div>
                         <div>
-                            <h5 className="font-semibold">Données de `studentProgressMap` ({studentProgressMap.size} entrées)</h5>
+                            <h5 className="font-semibold">`studentProgressMap` ({studentProgressMap.size} entrées)</h5>
                              <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
                                 {JSON.stringify(Array.from(studentProgressMap.entries()), null, 2)}
                             </pre>
                         </div>
-                         <div>
-                            <h5 className="font-semibold">Liste des élèves (`students`, {students.length} élèves)</h5>
-                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
-                                {JSON.stringify(students, null, 2)}
-                            </pre>
-                        </div>
                     </div>
                 </div>
+                {/* --- END DEBUG --- */}
               </CardContent>
             </Card>
           </TabsContent>
