@@ -7,14 +7,16 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star } from 'lucide-react';
+import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star, Settings } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { getSpellingLists, saveSpellingResult, type SpellingList } from '@/services/spelling';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 
-const WORD_DISPLAY_TIME_MS = 500;
 
 export default function SpellingExercisePage() {
   const router = useRouter();
@@ -31,9 +33,33 @@ export default function SpellingExercisePage() {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'idle' | 'showing'>('showing');
   const [isFinished, setIsFinished] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-
+  
+  const [wordDisplayTime, setWordDisplayTime] = useState(5000); // Default 5s
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    try {
+        const savedTime = localStorage.getItem('spelling_display_time');
+        if (savedTime) {
+            setWordDisplayTime(JSON.parse(savedTime));
+        }
+    } catch (error) {
+        console.error("Could not retrieve display time from localStorage", error);
+        setWordDisplayTime(5000);
+    }
+  }, []);
+
+  const handleTimeChange = (value: number[]) => {
+    setWordDisplayTime(value[0]);
+    try {
+      localStorage.setItem('spelling_display_time', JSON.stringify(value[0]));
+    } catch (error) {
+      console.error("Could not save display time to localStorage", error);
+    }
+  };
+
 
   useEffect(() => {
     async function loadExercise() {
@@ -54,11 +80,11 @@ export default function SpellingExercisePage() {
       const half = Math.ceil(foundList.words.length / 2);
       const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
       
-      // Duplicate each word and shuffle the list
-      const duplicatedWords = sessionWords.flatMap(word => [word, word]);
-      const shuffledWords = duplicatedWords.sort(() => Math.random() - 0.5);
+      // New logic: First pass in order, second pass shuffled.
+      const shuffledSessionWords = [...sessionWords].sort(() => Math.random() - 0.5);
+      const finalWordList = [...sessionWords, ...shuffledSessionWords];
 
-      setWords(shuffledWords);
+      setWords(finalWordList);
       setIsLoading(false);
     }
     loadExercise();
@@ -71,8 +97,8 @@ export default function SpellingExercisePage() {
     showTimeoutRef.current = setTimeout(() => {
       setFeedback('idle');
       setTimeout(() => inputRef.current?.focus(), 100);
-    }, WORD_DISPLAY_TIME_MS);
-  }, []);
+    }, wordDisplayTime);
+  }, [wordDisplayTime]);
 
   useEffect(() => {
     if (words.length > 0 && !isFinished) {
@@ -150,6 +176,7 @@ export default function SpellingExercisePage() {
   
   const currentWord = words[currentWordIndex];
   const progress = ((currentWordIndex + (feedback === 'correct' ? 1 : 0)) / words.length) * 100;
+  const isFirstPass = currentWordIndex < words.length / 2;
 
   if (isFinished) {
     return (
@@ -166,7 +193,7 @@ export default function SpellingExercisePage() {
                         <p className="font-semibold text-lg mb-2">Mots à revoir :</p>
                         <Card className="p-4 bg-muted/50">
                             <ul className="flex flex-wrap gap-x-4 gap-y-1">
-                                {errors.map(error => <li key={error} className="font-semibold text-destructive">{error}</li>)}
+                                {[...new Set(errors)].map(error => <li key={error} className="font-semibold text-destructive">{error}</li>)}
                             </ul>
                         </Card>
                     </div>
@@ -188,17 +215,54 @@ export default function SpellingExercisePage() {
   return (
     <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
       <div className="w-full max-w-2xl">
-        <header className="relative flex items-center justify-center mb-4">
+        <header className="relative flex items-center justify-between mb-4">
            <Button asChild variant="ghost" className="absolute left-0">
             <Link href="/devoirs">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour
             </Link>
           </Button>
-          <h1 className="font-headline text-2xl sm:text-3xl text-center">{list.id} - {list.title}</h1>
+          <h1 className="font-headline text-2xl sm:text-3xl text-center flex-grow">{list.id} - {list.title}</h1>
+           <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="absolute right-0">
+                    <Settings className="h-5 w-5" />
+                    <span className="sr-only">Réglages</span>
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80">
+                <div className="grid gap-4">
+                    <div className="space-y-2">
+                        <h4 className="font-medium leading-none">Réglages</h4>
+                        <p className="text-sm text-muted-foreground">
+                           Personnalisez votre exercice.
+                        </p>
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="display-time">Durée d'affichage du mot</Label>
+                        <Slider 
+                            id="display-time"
+                            min={1000} 
+                            max={10000} 
+                            step={500} 
+                            value={[wordDisplayTime]}
+                            onValueChange={handleTimeChange}
+                        />
+                         <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Rapide</span>
+                            <span>{wordDisplayTime / 1000}s</span>
+                            <span>Lent</span>
+                        </div>
+                    </div>
+                </div>
+            </PopoverContent>
+           </Popover>
         </header>
 
-        <Progress value={progress} className="w-full mb-8 h-3" />
+        <Progress value={progress} className="w-full mb-4 h-3" />
+        <div className="text-center text-sm text-muted-foreground mb-4">
+            Passage {isFirstPass ? '1' : '2'} / 2
+        </div>
 
         <Card className="w-full min-h-[350px] sm:min-h-[400px] p-6 sm:p-8 flex flex-col justify-between items-center shadow-2xl">
           {feedback === 'showing' ? (
@@ -259,3 +323,4 @@ export default function SpellingExercisePage() {
     </main>
   );
 }
+
