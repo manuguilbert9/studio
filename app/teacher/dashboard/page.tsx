@@ -27,7 +27,7 @@ export default function TeacherDashboardPage() {
   
   // Data states
   const [allScores, setAllScores] = useState<Score[]>([]);
-  const [spellingProgress, setSpellingProgress] = useState<SpellingProgress[]>([]);
+  const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   
@@ -53,7 +53,7 @@ export default function TeacherDashboardPage() {
         ]);
         
         setAllScores(scoresData);
-        setSpellingProgress(progressData);
+        setAllSpellingProgress(progressData);
         setSpellingLists(listsData);
         setStudents(studentListData);
       } catch (error) {
@@ -73,13 +73,13 @@ export default function TeacherDashboardPage() {
   
   const studentProgressMap = useMemo(() => {
     const map = new Map<string, Record<string, SpellingResult>>();
-    if (spellingProgress) {
-        spellingProgress.forEach(progressItem => {
+    if (allSpellingProgress) {
+        allSpellingProgress.forEach(progressItem => {
             map.set(progressItem.userId, progressItem.progress);
         });
     }
     return map;
-  }, [spellingProgress]);
+  }, [allSpellingProgress]);
 
 
   const handleLogout = () => {
@@ -237,7 +237,7 @@ export default function TeacherDashboardPage() {
                   </TableBody>
                 </Table>
                 </div>
-                {/* --- START DEBUG --- */}
+                 {/* --- START DEBUG --- */}
                 <div className="mt-8 p-4 border rounded-md bg-muted/50">
                     <h4 className="font-bold text-lg mb-2">Données de débogage</h4>
                     <div className="space-y-4">
@@ -248,9 +248,9 @@ export default function TeacherDashboardPage() {
                             </pre>
                         </div>
                         <div>
-                            <h5 className="font-semibold">`spellingProgress` ({spellingProgress.length} enregistrements)</h5>
+                            <h5 className="font-semibold">`allSpellingProgress` ({allSpellingProgress.length} enregistrements)</h5>
                             <pre className="text-xs bg-white p-2 rounded-md overflow-x-auto max-h-48">
-                                {JSON.stringify(spellingProgress, null, 2)}
+                                {JSON.stringify(allSpellingProgress, null, 2)}
                             </pre>
                         </div>
                         <div>
