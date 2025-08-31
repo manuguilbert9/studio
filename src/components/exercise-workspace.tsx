@@ -237,7 +237,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, username, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode]);
+  }, [isFinished, username, skill.slug, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode, isSaving]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -260,7 +260,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     }
   };
 
-  if (!isReadyToStart) {
+  if (isUserLoading || !isReadyToStart) {
       if (skill.slug === 'calculation') {
         return <CalculationSettings onStart={startCalculationExercise} />;
       }
