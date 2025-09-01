@@ -17,7 +17,7 @@ interface CalcCellProps {
 
 export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, isMinuend = false, tabIndex, isReadOnly = false, value: propValue }: CalcCellProps) {
   const [internalValue, setInternalValue] = useState('');
-  const [crossedValue, setCrossedValue] = useState<string | null>(null);
+  const [isCrossed, setIsCrossed] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -38,21 +38,16 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
     // Allow up to two digits, to handle "1" for borrowing
     if (/^\d{0,2}$/.test(rawInput)) {
       setValue(rawInput);
-      setCrossedValue(null);
+      if (isCrossed) {
+        setIsCrossed(false);
+      }
     }
   };
 
   const handleRightClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isReadOnly || !allowCrossing || !value) return;
     e.preventDefault();
-    if (!crossedValue) {
-        setCrossedValue(value);
-        setValue(''); // Clear the main value to type the new one
-    } else {
-        // Reset
-        setValue(crossedValue);
-        setCrossedValue(null);
-    }
+    setIsCrossed(prev => !prev);
   };
   
   // Logic to display number with borrowed '1'
@@ -88,7 +83,7 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
       />
       
       {/* Special display for borrowed '1' */}
-      {hasBorrowedOne && (
+      {hasBorrowedOne ? (
          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
             <span 
               className="absolute font-bold font-mono"
@@ -107,16 +102,25 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
               {displayValue}
             </span>
         </div>
+      ) : (
+        <span 
+            className="absolute font-bold font-mono pointer-events-none"
+            style={{ fontSize: `${fontSize}px`, color: 'transparent' }}
+            aria-hidden
+        >
+            {value}
+        </span>
       )}
 
+
       {/* Crossed value display */}
-      {crossedValue && (
+      {isCrossed && (
          <>
             <span 
                 className="absolute text-slate-500 font-bold font-mono pointer-events-none"
                 style={{ fontSize: `${fontSize}px` }}
             >
-                {crossedValue}
+                {hasBorrowedOne ? displayValue : value}
             </span>
             <span 
                 className="absolute left-0 top-1/2 w-full h-0.5 bg-slate-700 transform -translate-y-1/2 rotate-[-20deg] pointer-events-none"
