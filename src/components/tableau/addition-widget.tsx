@@ -179,7 +179,6 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
                 size={cellSize} 
                 fontSize={fontSize}
                 tabIndex={getTabIndex(numOperands, 0)}
-                isReadOnly={isExerciseMode}
               />
             </div>
           </div>
@@ -191,7 +190,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
             return (
               <div key={col} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
-                  {colFromRight > 0 && <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} isReadOnly={isExerciseMode}/>}
+                  {colFromRight > 0 && <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} />}
                 </div>
 
                 {[...Array(numOperands)].map((_, rowIndex) => {
@@ -218,7 +217,6 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
                     size={cellSize} 
                     fontSize={fontSize}
                     tabIndex={getTabIndex(numOperands, col + 1)}
-                    isReadOnly={isExerciseMode}
                   />
                 </div>
               </div>

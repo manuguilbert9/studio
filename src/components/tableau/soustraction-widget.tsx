@@ -179,7 +179,6 @@ export function SoustractionWidget({ initialState, onUpdate, onClose, isExercise
                         fontSize={carryFontSize} 
                         borderStyle="dotted"
                         tabIndex={getTabIndex(-1, col)}
-                        isReadOnly={isExerciseMode}
                     />
                   )}
                 </div>
@@ -195,7 +194,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose, isExercise
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
                 {/* Result */}
                 <div style={{height: cellSize}}>
-                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(2, col)} isReadOnly={isExerciseMode} />
+                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(2, col)} />
                 </div>
               </div>
             );
