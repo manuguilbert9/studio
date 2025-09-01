@@ -2,25 +2,20 @@
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
-import { skills, difficultyLevelToString } from '@/lib/skills';
+import { skills } from '@/lib/skills';
 import type { Skill } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { ScoreTube } from '@/components/score-tube';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
-import { Badge } from '@/components/ui/badge';
 import { UserContext } from '@/context/user-context';
 import { getScoresForUser, Score } from '@/services/scores';
+import { ScoreHistoryDisplay } from '@/components/score-history-chart';
 
 
 interface SkillScores {
   skill: Skill;
   scores: Score[];
-  latestScore: Score | null;
 }
 
 
@@ -49,9 +44,8 @@ export default function ResultsPage() {
           return {
             skill,
             scores: relatedScores,
-            latestScore: relatedScores.length > 0 ? relatedScores[0] : null
           };
-        }).filter(ss => ss.latestScore); // Only show skills with at least one score
+        }).filter(ss => ss.scores.length > 0); // Only show skills with at least one score
 
         setSkillScores(scoresBySkill);
       } catch (error) {
@@ -66,7 +60,7 @@ export default function ResultsPage() {
 
   return (
     <div className="flex min-h-screen w-full flex-col items-center bg-background p-4 sm:p-8">
-      <div className="w-full max-w-5xl">
+      <div className="w-full max-w-6xl">
         <header className="relative flex items-center justify-between mb-8">
           <Button asChild variant="ghost">
             <Link href="/en-classe">
@@ -80,7 +74,7 @@ export default function ResultsPage() {
           <div className="w-auto sm:w-[190px]"></div>
         </header>
 
-        <main>
+        <main className="space-y-8">
           {isLoading || isUserLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -99,30 +93,19 @@ export default function ResultsPage() {
               <CardDescription className="mt-2">Commencez un exercice pour voir votre progression ici !</CardDescription>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {skillScores.map(({ skill, latestScore, scores }) => (
-                <Card key={skill.slug} className="flex flex-col items-center p-6 text-center">
-                    <div className="text-primary [&>svg]:h-16 [&>svg]:w-16">
-                        {skill.icon}
+            <>
+              {skillScores.map(({ skill, scores }) => (
+                <Card key={skill.slug} className="flex flex-col p-6">
+                    <div className='flex items-center gap-4'>
+                        <div className="text-primary [&>svg]:h-16 [&>svg]:w-16">
+                            {skill.icon}
+                        </div>
+                        <CardTitle className="font-headline text-3xl">{skill.name}</CardTitle>
                     </div>
-                    <CardTitle className="font-headline text-3xl mt-4 mb-2">{skill.name}</CardTitle>
-                    {latestScore && (
-                        <>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                Dernier exercice le {format(new Date(latestScore.createdAt), 'd MMMM yyyy', { locale: fr })}
-                            </p>
-                            <ScoreTube score={latestScore.score} />
-                             <p className="text-lg mt-2">
-                                Total exercices : <span className="font-bold">{scores.length}</span>
-                            </p>
-                             <Badge variant="secondary" className="mt-2">
-                                {difficultyLevelToString(latestScore.skill, latestScore.calculationSettings, latestScore.currencySettings, latestScore.timeSettings) || "Niveau Standard"}
-                            </Badge>
-                        </>
-                    )}
+                    <ScoreHistoryDisplay scoreHistory={scores} />
                 </Card>
               ))}
-            </div>
+            </>
           )}
         </main>
       </div>

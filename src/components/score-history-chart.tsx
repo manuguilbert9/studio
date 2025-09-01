@@ -1,50 +1,41 @@
 
-
 'use client';
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import type { Score } from './exercise-workspace';
+import type { Score } from '@/services/scores';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ScoreTube } from './score-tube';
 import { Badge } from './ui/badge';
 import { difficultyLevelToString } from '@/lib/skills';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 
-interface ScoreHistoryChartProps {
+interface ScoreHistoryDisplayProps {
   scoreHistory: Score[];
 }
 
-export function ScoreHistoryChart({ scoreHistory }: ScoreHistoryChartProps) {
+export function ScoreHistoryDisplay({ scoreHistory }: ScoreHistoryDisplayProps) {
   // We only show the last 5 scores for clarity
-  const chartData = scoreHistory.slice(0, 5).reverse().map(item => ({
-    date: item.createdAt ? format(new Date(item.createdAt), 'd MMM', { locale: fr }) : 'N/A',
+  const chartData = scoreHistory.slice(0, 5).map(item => ({
+    date: item.createdAt ? format(new Date(item.createdAt), 'd MMM yyyy', { locale: fr }) : 'N/A',
     score: item.score,
     difficulty: difficultyLevelToString(item.skill, item.calculationSettings, item.currencySettings, item.timeSettings)
   }));
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Votre progression</CardTitle>
-        <CardDescription>Voici vos 5 derniers scores et leur niveau.</CardDescription>
+    <Card className="w-full mt-4 bg-muted/50">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-xl">Historique récent</CardTitle>
+        <CardDescription>Vos 5 derniers exercices.</CardDescription>
       </CardHeader>
       <CardContent>
         {chartData.length > 0 ? (
-          <div className="flex justify-around items-end gap-2 sm:gap-4 pt-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 pt-2">
             {chartData.map((item, index) => (
-              <div key={index} className="flex flex-col items-center text-center gap-2">
-                 <div style={{ transform: `scale(${1 - (chartData.length - 1 - index) * 0.1})` }}>
-                    <ScoreTube score={item.score} />
-                 </div>
+              <div key={index} className="flex flex-col items-center text-center gap-2 p-2 rounded-lg bg-card shadow-sm">
+                 <ScoreTube score={item.score} />
                  <p className="text-xs font-medium text-muted-foreground mt-[-1.5rem]">{item.date}</p>
                  {item.difficulty && (
-                    <Badge variant="secondary" className="text-xs">{item.difficulty}</Badge>
+                    <Badge variant="outline" className="text-xs">{item.difficulty}</Badge>
                  )}
               </div>
             ))}

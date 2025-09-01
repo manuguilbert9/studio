@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import type { Skill, SkillLevel } from '@/lib/skills.tsx';
+import type { Skill } from '@/lib/skills.tsx';
 import { useState, useMemo, useEffect, useContext } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
@@ -10,7 +11,7 @@ import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRigh
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, currency as currencyData, formatCurrency } from '@/lib/questions';
 import { Progress } from '@/components/ui/progress';
-import { ScoreHistoryChart } from './score-history-chart';
+import { ScoreHistoryDisplay } from '@/components/score-history-display';
 import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
 import { CalculationSettings } from './calculation-settings';
@@ -34,26 +35,6 @@ const icons = [
 
 const NUM_QUESTIONS = 10;
 
-// Mapping from Student Level to Exercise Difficulty
-const levelToCalcSettings: Record<SkillLevel, CalcSettings> = {
-    A: { operations: 0, numberSize: 0, complexity: 0 }, // Additions, 0-10, immédiat
-    B: { operations: 1, numberSize: 2, complexity: 1 }, // Add/Sub, 0-100, sans retenue
-    C: { operations: 2, numberSize: 3, complexity: 2 }, // Add/Sub/Mul, 0-500, avec retenue
-    D: { operations: 4, numberSize: 4, complexity: 2 }, // Toutes, 0-1000, avec retenue
-};
-const levelToCurrencySettings: Record<SkillLevel, CurrSettings> = {
-    A: { difficulty: 0 },
-    B: { difficulty: 1 },
-    C: { difficulty: 2 },
-    D: { difficulty: 3 },
-};
-const levelToTimeSettings: Record<SkillLevel, TimeSettingsType> = {
-    A: { difficulty: 0, showMinuteCircle: true, matchColors: true, coloredHands: true },
-    B: { difficulty: 1, showMinuteCircle: true, matchColors: false, coloredHands: true },
-    C: { difficulty: 2, showMinuteCircle: true, matchColors: false, coloredHands: false },
-    D: { difficulty: 3, showMinuteCircle: false, matchColors: false, coloredHands: false },
-};
-
 interface ExerciseWorkspaceProps {
   skill: Skill;
   isTableauMode?: boolean;
@@ -67,6 +48,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [showConfetti, setShowConfetti] = useState(false);
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   const { student, isLoading: isUserLoading } = useContext(UserContext);
 
@@ -85,31 +67,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
 
- useEffect(() => {
-    if (isUserLoading || isTableauMode) return;
-
-    const studentLevel = student?.levels?.[skill.slug];
-
-    if (studentLevel) {
-      if (skill.slug === 'calculation') {
-        startCalculationExercise(levelToCalcSettings[studentLevel]);
-      } else if (skill.slug === 'currency') {
-        startCurrencyExercise(levelToCurrencySettings[studentLevel]);
-      } else if (skill.slug === 'time') {
-        startTimeExercise(levelToTimeSettings[studentLevel]);
-      } else {
-        // For other skills that don't have settings pages
-        setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-        setIsReadyToStart(true);
-      }
-    } else {
-       if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
-            setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-            setIsReadyToStart(true);
-        }
+  useEffect(() => {
+    if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+      setIsReadyToStart(true);
     }
-  }, [skill.slug, student, isUserLoading, isTableauMode]);
-
+  }, [skill.slug]);
   
   const startCalculationExercise = (settings: CalcSettings) => {
     setCalculationSettings(settings);
@@ -238,12 +201,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
-      if (isFinished && student && !isTableauMode) {
+      if (isFinished && student && !isSaving && !isTableauMode) {
+        setIsSaving(true);
         setIsLoadingHistory(true);
         
         const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         
-        const scoreData: Omit<Score, 'id' | 'createdAt'> = {
+        const scoreData: Omit<Score, 'createdAt' | 'id'> = {
             userId: student.id,
             skill: skill.slug,
             score: newScoreValue,
@@ -268,12 +232,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           console.error("Error fetching scores: ", e);
         } finally {
             setIsLoadingHistory(false);
+            setIsSaving(false); // Allow saving again
         }
       }
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode]);
+  }, [isFinished, student, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -284,45 +249,19 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setShowConfetti(false);
     setScoreHistory([]);
     setIsLoadingHistory(true);
+    setIsSaving(false);
     setIsReadyToStart(false);
     setCalculationSettings(null);
     setCurrencySettings(null);
     setTimeSettings(null);
     resetInteractiveStates();
-    
-    // Re-trigger the initial effect to check for student level again
-    const studentLevel = student?.levels?.[skill.slug];
-     if (studentLevel) {
-      if (skill.slug === 'calculation') {
-        startCalculationExercise(levelToCalcSettings[studentLevel]);
-      } else if (skill.slug === 'currency') {
-        startCurrencyExercise(levelToCurrencySettings[studentLevel]);
-      } else if (skill.slug === 'time') {
-        startTimeExercise(levelToTimeSettings[studentLevel]);
-      } else {
-        setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-        setIsReadyToStart(true);
-      }
-    } else {
-       if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
-            setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-            setIsReadyToStart(true);
-        }
+     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+      setIsReadyToStart(true);
     }
   };
 
-  if (isUserLoading && !student) {
-     return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'utilisateur...</Card>;
-  }
-
   if (!isReadyToStart) {
-      const studentLevel = student?.levels?.[skill.slug];
-      // If level is defined, we are in an auto-starting process, show a loader
-      if (studentLevel) {
-          return <Card className="w-full shadow-2xl p-8 text-center">Préparation de votre exercice personnalisé...</Card>;
-      }
-      
-      // Otherwise, show settings screen
       if (skill.slug === 'calculation') {
         return <CalculationSettings onStart={startCalculationExercise} />;
       }
@@ -332,7 +271,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       if (skill.slug === 'time') {
         return <TimeSettings onStart={startTimeExercise} />;
       }
-      // Fallback for skills that should have autostarted but didn't
+      // For other skills, this will show a loading state until questions are set.
        return (
             <Card className="w-full shadow-2xl p-8 text-center">
                 Chargement de l'exercice...
@@ -360,7 +299,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
               <Skeleton className="h-48 w-full" />
             </div>
           ) : (
-            scoreHistory.length > 0 && <ScoreHistoryChart scoreHistory={scoreHistory} />
+            scoreHistory.length > 0 && <ScoreHistoryDisplay scoreHistory={scoreHistory} />
           )}
 
           <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
