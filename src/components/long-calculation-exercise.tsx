@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw, Eye, Loader2 } from 'lucide-react';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
@@ -69,24 +69,28 @@ export function LongCalculationExercise() {
     }
 
     const { operand1, operand2, operation } = problem;
-    const operand1Str = operand1.toString();
-    const operand2Str = operand2.toString();
+    const symbol = operation === 'addition' ? '+' : '-';
 
     return (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6">
             <Card className="w-full">
+                <CardHeader>
+                    <CardTitle className="text-center font-body text-2xl sm:text-3xl">
+                        Pose et calcule : <span className="font-numbers font-bold text-primary">{operand1} {symbol} {operand2}</span>
+                    </CardTitle>
+                </CardHeader>
                 <CardContent className="pt-6">
                     <div className="flex justify-center items-center scale-125 transform">
                         {operation === 'addition' ? (
                              <AdditionWidget
-                                initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: 2, numCols, operand1: operand1Str, operand2: operand2Str }}
+                                initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: 2, numCols }}
                                 onUpdate={emptyFunc}
                                 onClose={emptyFunc}
                                 isExerciseMode={true}
                              />
                         ) : (
                              <SoustractionWidget
-                                initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols, operand1: operand1Str, operand2: operand2Str }}
+                                initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols }}
                                 onUpdate={emptyFunc}
                                 onClose={emptyFunc}
                                 isExerciseMode={true}

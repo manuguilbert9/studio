@@ -105,8 +105,8 @@ export function SoustractionWidget({ initialState, onUpdate, onClose, isExercise
     triggerUpdate();
   }
   
-  const getTabIndex = (row: number, col: number): number => {
-    if (isExerciseMode) return -1;
+  const getTabIndex = (row: number, col: number): number | undefined => {
+    if (isExerciseMode) return undefined;
     // Correct tabbing order: left-to-right on minuend, then left-to-right on subtrahend, etc.
     const totalCols = numCols;
     const base = row * totalCols;
@@ -119,12 +119,6 @@ export function SoustractionWidget({ initialState, onUpdate, onClose, isExercise
     return base + col + 1;
   };
   
-  const getOperandDigit = (operand: string | undefined, colFromRight: number): string => {
-    if (!operand) return '';
-    const reversedOperand = operand.split('').reverse().join('');
-    return reversedOperand[colFromRight] || '';
-  }
-
   return (
     <div
       ref={widgetRef}
@@ -184,11 +178,11 @@ export function SoustractionWidget({ initialState, onUpdate, onClose, isExercise
                 </div>
                 {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, col)} value={isExerciseMode ? getOperandDigit(initialState.operand1, colFromRight) : undefined}/>
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, col)} />
                 </div>
                 {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, col)} isReadOnly={true} value={isExerciseMode ? getOperandDigit(initialState.operand2, colFromRight) : undefined}/>
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, col)} />
                 </div>
                 {/* Equals line */}
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />

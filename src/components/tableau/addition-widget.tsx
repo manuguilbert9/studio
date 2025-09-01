@@ -116,12 +116,6 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
     return row * totalCols + tabCol + 1;
   };
 
-  const getOperandDigit = (operand: string | undefined, colFromRight: number): string => {
-    if (!operand) return '';
-    const reversedOperand = operand.split('').reverse().join('');
-    return reversedOperand[colFromRight] || '';
-  }
-
   return (
     <div
       ref={widgetRef}
@@ -178,7 +172,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
                 borderColor={getBorderColor(numCols)} 
                 size={cellSize} 
                 fontSize={fontSize}
-                tabIndex={getTabIndex(numOperands, 0)}
+                tabIndex={isExerciseMode ? undefined : getTabIndex(numOperands, 0)}
               />
             </div>
           </div>
@@ -193,21 +187,16 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
                   {colFromRight > 0 && <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} />}
                 </div>
 
-                {[...Array(numOperands)].map((_, rowIndex) => {
-                    const operandValue = rowIndex === 0 ? getOperandDigit(initialState.operand1, colFromRight) : getOperandDigit(initialState.operand2, colFromRight);
-                    return (
-                        <div key={rowIndex} className="flex items-center" style={{height: cellSize}}>
-                            <CalcCell 
-                                borderColor={borderColor} 
-                                size={cellSize} 
-                                fontSize={fontSize} 
-                                tabIndex={getTabIndex(rowIndex, col + 1)}
-                                isReadOnly={isExerciseMode}
-                                value={isExerciseMode ? operandValue : undefined}
-                            />
-                        </div>
-                    );
-                })}
+                {[...Array(numOperands)].map((_, rowIndex) => (
+                    <div key={rowIndex} className="flex items-center" style={{height: cellSize}}>
+                        <CalcCell 
+                            borderColor={borderColor} 
+                            size={cellSize} 
+                            fontSize={fontSize} 
+                            tabIndex={isExerciseMode ? undefined : getTabIndex(rowIndex, col + 1)}
+                        />
+                    </div>
+                ))}
 
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
 
@@ -216,7 +205,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
                     borderColor={borderColor} 
                     size={cellSize} 
                     fontSize={fontSize}
-                    tabIndex={getTabIndex(numOperands, col + 1)}
+                    tabIndex={isExerciseMode ? undefined : getTabIndex(numOperands, col + 1)}
                   />
                 </div>
               </div>
