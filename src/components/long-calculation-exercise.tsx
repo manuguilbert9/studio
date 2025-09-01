@@ -23,7 +23,6 @@ type Problem = {
     operands: number[];
     operation: OperationType;
     answer: number;
-    noCarry?: boolean; // for subtractions
 };
 type Feedback = 'correct' | 'incorrect' | null;
 
@@ -31,8 +30,7 @@ const NUM_PROBLEMS = 3;
 
 // --- Problem Generation Logic ---
 
-const generateNumber = (digits: number, noLeadingZero = true) => {
-    // This ensures a number with an exact number of digits.
+const generateNumber = (digits: number): number => {
     const min = Math.pow(10, digits - 1);
     const max = Math.pow(10, digits) - 1;
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -40,101 +38,98 @@ const generateNumber = (digits: number, noLeadingZero = true) => {
 
 const generateAddition = (numOperands: number, digits: number, withCarry: boolean): Problem => {
     let operands: number[] = [];
+    let sum = 0;
+    let attempts = 0;
     
-    if (!withCarry) {
-         let columnSums = Array(digits).fill(0);
-         for(let i=0; i < numOperands; i++) {
-            let operandStr = '';
-            for(let d=0; d < digits; d++) {
-                const maxDigit = 9 - columnSums[d];
-                const digit = Math.floor(Math.random() * (maxDigit + 1));
-                operandStr = String(digit) + operandStr;
-                columnSums[d] += digit;
-            }
-            operands.push(parseInt(operandStr, 10));
-         }
+    // Loop until we find a valid addition that respects the carry rule
+    while (attempts < 50) {
+        attempts++;
+        operands = Array.from({ length: numOperands }, () => generateNumber(digits));
+        sum = operands.reduce((acc, op) => acc + op, 0);
 
-    } else {
-        // Ensure at least one carry for withCarry=true
-        let hasCarry = false;
-        let attempts = 0;
-        while (!hasCarry && attempts < 20) {
-            attempts++;
-            operands = Array.from({ length: numOperands }, () => generateNumber(digits));
+        if (!withCarry) {
+            let hasCarry = false;
             let tempSum = 0;
             for (let d = 0; d < digits; d++) {
-                const colSum = operands.reduce((acc, op) => acc + (Math.floor(op / Math.pow(10, d)) % 10), 0);
-                if (colSum >= 10) {
+                const columnSum = operands.reduce((acc, op) => acc + (Math.floor(op / Math.pow(10, d)) % 10), 0) + Math.floor(tempSum / 10);
+                if (columnSum >= 10) {
                     hasCarry = true;
                     break;
                 }
+                tempSum = columnSum;
             }
-             // If we're on the last loop and there's still no carry, force one.
-            if (!hasCarry && attempts > 15 && digits > 1) { 
-                const op1Str = String(operands[0]);
-                const op2Str = String(operands[1]);
-                const unit1 = Number(op1Str[op1Str.length - 1]);
-                const unit2 = Number(op2Str[op2Str.length - 1]);
-                if (unit1 + unit2 < 10) {
-                    const newUnit2 = 10 - unit1; // Force a carry
-                    operands[1] = Math.floor(operands[1] / 10) * 10 + newUnit2;
-                    hasCarry = true; // We've forced it
+            if (!hasCarry) break; // Found a valid no-carry addition
+        } else { // withCarry
+            let hasCarry = false;
+            let tempSum = 0;
+             for (let d = 0; d < digits; d++) {
+                const columnSum = operands.reduce((acc, op) => acc + (Math.floor(op / Math.pow(10, d)) % 10), 0) + Math.floor(tempSum / 10);
+                if (columnSum >= 10) {
+                    hasCarry = true;
+                    break;
                 }
+                 tempSum = columnSum;
             }
+            if (hasCarry) break; // Found a valid with-carry addition
         }
     }
+     // If after many attempts we fail, generate a fallback problem
+    if (attempts >= 50) {
+        if (withCarry) {
+            operands = Array.from({ length: numOperands }, () => generateNumber(digits -1)).concat([Number("9".repeat(digits-1))]);
+        } else {
+             operands = Array.from({ length: numOperands }, () => Number("1".repeat(digits)));
+        }
+        sum = operands.reduce((a, b) => a + b, 0);
+    }
     
-    const sum = operands.reduce((acc, op) => acc + op, 0);
     return { id: Date.now() + Math.random(), operands, operation: 'addition', answer: sum };
 };
 
 
 const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
     let op1: number, op2: number;
-    let needsCarry = false;
     let attempts = 0;
 
-    while(!needsCarry && attempts < 50) { // Increased attempts for safety
+    while (attempts < 50) {
         attempts++;
         op1 = generateNumber(digits);
-
-        // Ensure op2 is also `digits` long and op1 > op2
+        // Ensure op2 is also `digits` long and smaller than op1
         const minOp2 = Math.pow(10, digits - 1);
         const maxOp2 = op1 - 1;
-        if (maxOp2 < minOp2) continue; // op1 is too small, retry
+        if (maxOp2 < minOp2) continue; // op1 is too small, retry (e.g. op1 is 100)
         
         op2 = Math.floor(Math.random() * (maxOp2 - minOp2 + 1)) + minOp2;
-        
-        if (withCarry) {
-            let op1Str = op1.toString();
-            let op2Str = op2.toString().padStart(digits, '0');
 
-            for (let i = 0; i < digits; i++) {
-                 const digit1 = parseInt(op1Str[op1Str.length - 1 - i] || '0');
-                 const digit2 = parseInt(op2Str[op2Str.length - 1 - i] || '0');
-                if (digit1 < digit2) {
-                    needsCarry = true;
-                    break;
-                }
+        let hasCarry = false;
+        for (let d = 0; d < digits; d++) {
+            const d1 = Math.floor(op1 / Math.pow(10, d)) % 10;
+            const d2 = Math.floor(op2 / Math.pow(10, d)) % 10;
+            let effectiveD1 = d1;
+            
+            // Simulate borrowing from the left
+            if(d > 0) {
+              const prevD1 = Math.floor(op1 / Math.pow(10, d - 1)) % 10;
+              const prevD2 = Math.floor(op2 / Math.pow(10, d - 1)) % 10;
+              if (prevD1 < prevD2) {
+                effectiveD1 -= 1;
+              }
             }
-        } else { // No carry logic
-            let op1Str = '', op2Str = '';
-             let isValid = true;
-            for (let i = digits -1; i >= 0; i--) {
-                const d1 = Math.floor(Math.random() * 8) + 1; // 1-8 to avoid all 9s
-                const d2 = Math.floor(Math.random() * (d1 + 1)); // 0-d1
-                op1Str += String(d1);
-                op2Str += String(d2);
+
+            if (effectiveD1 < d2) {
+                hasCarry = true;
+                break;
             }
-            op1 = parseInt(op1Str, 10);
-            op2 = parseInt(op2Str, 10);
-            needsCarry = true; // Exit loop for no-carry case
         }
+        if (hasCarry === withCarry) break;
     }
-     if (!needsCarry && withCarry) { // Fallback if no carry subtraction is found
-        op1 = 143;
-        op2 = 129;
+    
+     // Fallback if no suitable problem is found
+    if (attempts >= 50) {
+        op1 = Number("9".repeat(digits));
+        op2 = Number("1".repeat(digits));
     }
+
     return { id: Date.now() + Math.random(), operands: [op1, op2], operation: 'subtraction', answer: op1 - op2 };
 };
 
@@ -174,7 +169,7 @@ export function LongCalculationExercise() {
                  newProblems = [
                     generateAddition(2, 3, true),
                     generateSubtraction(3, true),
-                    generateSubtraction(3, true)
+                    generateSubtraction(3, true),
                 ];
                 break;
             case 'D':
@@ -228,7 +223,7 @@ export function LongCalculationExercise() {
             isCorrect = parseInt(userCount, 10) === currentProblem.answer;
         } else {
             // Reconstruct user's answer from input cells
-            const numCols = Math.max(...currentProblem.operands.map(op => String(op).length), String(currentProblem.answer).length);
+            const numCols = String(Math.max(...currentProblem.operands, currentProblem.answer)).length;
             let userAnswerStr = '';
             for (let i = numCols; i >= 0; i--) { // Start from potential highest-order column
                  const cellValue = userInputs[`result-${i}`] || '';
@@ -372,7 +367,7 @@ export function LongCalculationExercise() {
                         <div className="flex justify-center items-center scale-90 sm:scale-100 transform">
                             {operation === 'addition' ? (
                                 <AdditionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands)).length }}
+                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands)).length, operands: [] }}
                                     onUpdate={()=>{}}
                                     onClose={()=>{}}
                                     isExerciseMode={true}
@@ -382,7 +377,7 @@ export function LongCalculationExercise() {
                                 />
                             ) : (
                                 <SoustractionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length }}
+                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length, operands: [] }}
                                     onUpdate={()=>{}}
                                     onClose={()=>{}}
                                     isExerciseMode={true}
