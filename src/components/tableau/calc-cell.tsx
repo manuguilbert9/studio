@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -10,15 +11,29 @@ interface CalcCellProps {
   allowCrossing?: boolean;
   isMinuend?: boolean;
   tabIndex?: number;
+  isReadOnly?: boolean;
+  value?: string;
 }
 
-export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, isMinuend = false, tabIndex }: CalcCellProps) {
-  const [value, setValue] = useState('');
+export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, isMinuend = false, tabIndex, isReadOnly = false, value: propValue }: CalcCellProps) {
+  const [internalValue, setInternalValue] = useState('');
   const [crossedValue, setCrossedValue] = useState<string | null>(null);
   
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  const value = isReadOnly ? propValue || '' : internalValue;
+  const setValue = isReadOnly ? () => {} : setInternalValue;
+
+
+  useEffect(() => {
+    if (isReadOnly && propValue) {
+        setInternalValue(propValue);
+    }
+  }, [propValue, isReadOnly]);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return;
     const rawInput = e.target.value;
     // Allow up to two digits, to handle "1" for borrowing
     if (/^\d{0,2}$/.test(rawInput)) {
@@ -28,7 +43,7 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
   };
 
   const handleRightClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!allowCrossing || !value) return;
+    if (isReadOnly || !allowCrossing || !value) return;
     e.preventDefault();
     if (!crossedValue) {
         setCrossedValue(value);
@@ -59,11 +74,13 @@ export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, i
         value={value}
         onChange={handleChange}
         tabIndex={tabIndex}
+        readOnly={isReadOnly}
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
           // Hide the raw text input if we are using the special borrowed one display
-          hasBorrowedOne && 'text-transparent'
+          hasBorrowedOne && 'text-transparent',
+          isReadOnly && "cursor-default ring-0 focus-visible:ring-0 focus:ring-0 focus:ring-offset-0 border-gray-300"
         )}
         style={{
           fontSize: `${fontSize}px`,

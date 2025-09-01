@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -10,12 +11,14 @@ import { CarryCell } from './carry-cell';
 import { Button } from '@/components/ui/button';
 import type { SoustractionWidgetState, Position, Size } from '@/services/tableau.types';
 import 'react-resizable/css/styles.css';
+import { cn } from '@/lib/utils';
 
 
 interface SoustractionWidgetProps {
   initialState: SoustractionWidgetState;
   onUpdate: (state: SoustractionWidgetState) => void;
   onClose: () => void;
+  isExerciseMode?: boolean;
 }
 
 // Units: Blue, Tens: Red, Hundreds: Green
@@ -29,7 +32,7 @@ const colors = [
 const getBorderColor = (colIndexFromRight: number) =>
   colors[colIndexFromRight] || 'border-slate-900';
 
-export function SoustractionWidget({ initialState, onUpdate, onClose }: SoustractionWidgetProps) {
+export function SoustractionWidget({ initialState, onUpdate, onClose, isExerciseMode = false }: SoustractionWidgetProps) {
   const [pos, setPos] = useState<Position>(initialState.pos);
   const [size, setSize] = useState<Size>(initialState.size);
   const [numCols, setNumCols] = useState(initialState.numCols);
@@ -40,6 +43,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const triggerUpdate = useCallback(() => {
+    if (isExerciseMode) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
         onUpdate({
@@ -49,14 +53,14 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
             numCols
         });
     }, 500); // Debounce updates
-  }, [pos, size, numCols, onUpdate, initialState.id]);
+  }, [pos, size, numCols, onUpdate, initialState.id, isExerciseMode]);
 
   useEffect(() => {
     triggerUpdate();
   }, [pos, size, numCols, triggerUpdate]);
 
   const onHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
+     if (isExerciseMode || (e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
         return;
     }
     isDragging.current = true;
@@ -102,6 +106,7 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
   }
   
   const getTabIndex = (row: number, col: number): number => {
+    if (isExerciseMode) return -1;
     // Correct tabbing order: left-to-right on minuend, then left-to-right on subtrahend, etc.
     const totalCols = numCols;
     const base = row * totalCols;
@@ -113,12 +118,18 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
 
     return base + col + 1;
   };
+  
+  const getOperandDigit = (operand: string | undefined, colFromRight: number): string => {
+    if (!operand) return '';
+    const reversedOperand = operand.split('').reverse().join('');
+    return reversedOperand[colFromRight] || '';
+  }
 
   return (
     <div
       ref={widgetRef}
-      className="absolute z-30 group"
-      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+      className={cn("group", !isExerciseMode && "absolute z-30")}
+      style={!isExerciseMode ? { left: `${pos.x}px`, top: `${pos.y}px` } : {}}
       onMouseDown={onHandleMouseDown}
     >
     <ResizableBox
@@ -127,17 +138,20 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
         onResizeStop={handleResizeStop}
         minConstraints={[300, 250]}
         maxConstraints={[800, 600]}
-        handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
+        handle={<span className={cn("react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize", isExerciseMode ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity")} />}
+        disabled={isExerciseMode}
     >
     <Card
-      className="w-full h-full p-4 bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none border border-transparent group-hover:shadow-lg group-hover:border-slate-300 transition-all"
+      className={cn("w-full h-full p-4 bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none", !isExerciseMode && "border border-transparent group-hover:shadow-lg group-hover:border-slate-300 transition-all")}
     >
-      <div
-        className="flex items-center h-full cursor-grab pt-16 pr-1 self-stretch opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Déplacer le widget"
-      >
-        <GripVertical className="h-6 w-6 text-slate-400" />
-      </div>
+      {!isExerciseMode && (
+        <div
+            className="flex items-center h-full cursor-grab pt-16 pr-1 self-stretch opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Déplacer le widget"
+        >
+            <GripVertical className="h-6 w-6 text-slate-400" />
+        </div>
+      )}
 
       <div className="flex flex-col items-center flex-grow h-full justify-center">
         <div className="flex items-start">
@@ -165,46 +179,51 @@ export function SoustractionWidget({ initialState, onUpdate, onClose }: Soustrac
                         fontSize={carryFontSize} 
                         borderStyle="dotted"
                         tabIndex={getTabIndex(-1, col)}
+                        isReadOnly={isExerciseMode}
                     />
                   )}
                 </div>
                 {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, col)}/>
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, col)} isReadOnly={isExerciseMode} value={isExerciseMode ? getOperandDigit(initialState.operand1, colFromRight) : undefined}/>
                 </div>
                 {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, col)} />
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, col)} isReadOnly={isExerciseMode} value={isExerciseMode ? getOperandDigit(initialState.operand2, colFromRight) : undefined}/>
                 </div>
                 {/* Equals line */}
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
                 {/* Result */}
                 <div style={{height: cellSize}}>
-                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(2, col)} />
+                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(2, col)} isReadOnly={isExerciseMode} />
                 </div>
               </div>
             );
           })}
         </div>
 
-        <div className="flex justify-between items-center w-full mt-2 px-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} aria-label="Retirer une colonne">
-            <ChevronLeft />
-          </Button>
+        {!isExerciseMode && (
+             <div className="flex justify-between items-center w-full mt-2 px-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} aria-label="Retirer une colonne">
+                    <ChevronLeft />
+                </Button>
 
-          <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 4} aria-label="Ajouter une colonne">
-            <ChevronRight />
-          </Button>
-        </div>
+                <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 4} aria-label="Ajouter une colonne">
+                    <ChevronRight />
+                </Button>
+            </div>
+        )}
       </div>
 
-      <button
-        onClick={onClose}
-        className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Fermer"
-      >
-        <X className="h-5 w-5" />
-      </button>
+       {!isExerciseMode && (
+            <button
+                onClick={onClose}
+                className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Fermer"
+            >
+                <X className="h-5 w-5" />
+            </button>
+       )}
     </Card>
     </ResizableBox>
     </div>

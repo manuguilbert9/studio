@@ -1,5 +1,6 @@
 
 
+
 export interface Position {
     x: number;
     y: number;
@@ -39,6 +40,8 @@ export interface AdditionWidgetState {
     size: Size;
     numOperands: number;
     numCols: number;
+    operand1?: string;
+    operand2?: string;
 }
 
 export interface SoustractionWidgetState {
@@ -46,6 +49,8 @@ export interface SoustractionWidgetState {
     pos: Position;
     size: Size;
     numCols: number;
+    operand1?: string;
+    operand2?: string;
 }
 
 export interface ImageWidgetState {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -9,13 +10,15 @@ interface CarryCellProps {
     fontSize: number;
     borderStyle?: 'solid' | 'dotted';
     tabIndex?: number;
+    isReadOnly?: boolean;
 }
 
-export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', tabIndex }: CarryCellProps) {
+export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', tabIndex, isReadOnly = false }: CarryCellProps) {
   const [value, setValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isReadOnly) return;
     const val = e.target.value;
      // Allow up to two digits, to handle "1" for borrowing
     if (/^\d{0,2}$/.test(val)) {
@@ -27,6 +30,7 @@ export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', 
   };
 
   const handleRightClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isReadOnly) return;
     e.preventDefault();
     if (value) {
       setIsCrossed(prev => !prev);
@@ -50,12 +54,14 @@ export function CarryCell({ borderColor, size, fontSize, borderStyle = 'solid', 
         maxLength={2}
         value={value}
         tabIndex={tabIndex}
+        readOnly={isReadOnly}
         onChange={handleChange}
         className={cn(
             'border text-center font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 w-full h-full p-0',
             borderColor,
             borderStyle === 'dotted' && 'border-dotted',
-            hasBorrowedOne && 'text-transparent'
+            hasBorrowedOne && 'text-transparent',
+            isReadOnly && "cursor-default"
         )}
         style={{
             fontSize: `${fontSize}px`

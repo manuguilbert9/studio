@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -10,12 +11,14 @@ import { CarryCell } from './carry-cell';
 import { Button } from '@/components/ui/button';
 import type { AdditionWidgetState, Position, Size } from '@/services/tableau.types';
 import 'react-resizable/css/styles.css';
+import { cn } from '@/lib/utils';
 
 
 interface AdditionWidgetProps {
   initialState: AdditionWidgetState;
   onUpdate: (state: AdditionWidgetState) => void;
   onClose: () => void;
+  isExerciseMode?: boolean;
 }
 
 // Units: Blue, Tens: Red, Hundreds: Green
@@ -29,7 +32,7 @@ const colors = [
 const getBorderColor = (colIndexFromRight: number) =>
   colors[colIndexFromRight] || 'border-slate-900';
 
-export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidgetProps) {
+export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode = false }: AdditionWidgetProps) {
   const [pos, setPos] = useState<Position>(initialState.pos);
   const [size, setSize] = useState<Size>(initialState.size);
   const [numOperands, setNumOperands] = useState(initialState.numOperands);
@@ -41,6 +44,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const triggerUpdate = useCallback(() => {
+    if (isExerciseMode) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
         onUpdate({
@@ -51,14 +55,14 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
             numCols
         });
     }, 500); // Debounce updates
-  }, [pos, size, numOperands, numCols, onUpdate, initialState.id]);
+  }, [pos, size, numOperands, numCols, onUpdate, initialState.id, isExerciseMode]);
 
   useEffect(() => {
     triggerUpdate();
   }, [pos, size, numOperands, numCols, triggerUpdate]);
 
   const onHandleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
+    if (isExerciseMode || (e.target as HTMLElement).closest('.react-resizable-handle') || (e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('input')) {
         return;
     }
     isDragging.current = true;
@@ -105,18 +109,24 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
   }
 
   const getTabIndex = (row: number, col: number) => {
+    if (isExerciseMode) return -1;
     const totalCols = numCols + 1; // +1 for the highest-order result column
     // re-map col from left-to-right to right-to-left for tabbing
     const tabCol = (totalCols - 1) - col;
     return row * totalCols + tabCol + 1;
   };
-  
+
+  const getOperandDigit = (operand: string | undefined, colFromRight: number): string => {
+    if (!operand) return '';
+    const reversedOperand = operand.split('').reverse().join('');
+    return reversedOperand[colFromRight] || '';
+  }
 
   return (
     <div
       ref={widgetRef}
-      className="absolute z-30 group"
-      style={{ left: `${pos.x}px`, top: `${pos.y}px` }}
+      className={cn("group", !isExerciseMode && "absolute z-30")}
+      style={!isExerciseMode ? { left: `${pos.x}px`, top: `${pos.y}px` } : {}}
       onMouseDown={onHandleMouseDown}
     >
     <ResizableBox
@@ -125,17 +135,20 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
         onResizeStop={handleResizeStop}
         minConstraints={[300, 200]}
         maxConstraints={[800, 600]}
-        handle={<span className="react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize opacity-0 group-hover:opacity-100 transition-opacity" />}
+        handle={<span className={cn("react-resizable-handle absolute bottom-1 right-1 w-5 h-5 bg-slate-400 rounded-full cursor-se-resize", isExerciseMode ? "hidden" : "opacity-0 group-hover:opacity-100 transition-opacity")} />}
+        disabled={isExerciseMode}
     >
     <Card
-      className="w-full h-full p-4 bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none border border-transparent group-hover:shadow-lg group-hover:border-slate-300 transition-all"
+      className={cn("w-full h-full p-4 bg-white/95 backdrop-blur-sm rounded-lg flex items-start gap-2 select-none", !isExerciseMode && "border border-transparent group-hover:shadow-lg group-hover:border-slate-300 transition-all")}
     >
-      <div
-        className="flex items-center h-full cursor-grab pt-16 pr-1 self-stretch opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Déplacer le widget"
-      >
-        <GripVertical className="h-6 w-6 text-slate-400" />
-      </div>
+      {!isExerciseMode && (
+        <div
+            className="flex items-center h-full cursor-grab pt-16 pr-1 self-stretch opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Déplacer le widget"
+        >
+            <GripVertical className="h-6 w-6 text-slate-400" />
+        </div>
+      )}
 
       <div className="flex flex-col items-center flex-grow h-full justify-center">
         <div className="flex items-start">
@@ -166,6 +179,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                 size={cellSize} 
                 fontSize={fontSize}
                 tabIndex={getTabIndex(numOperands, 0)}
+                isReadOnly={isExerciseMode}
               />
             </div>
           </div>
@@ -177,19 +191,24 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
             return (
               <div key={col} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
-                  {colFromRight > 0 && <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} />}
+                  {colFromRight > 0 && <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} isReadOnly={isExerciseMode}/>}
                 </div>
 
-                {[...Array(numOperands)].map((_, rowIndex) => (
-                  <div key={rowIndex} className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell 
-                        borderColor={borderColor} 
-                        size={cellSize} 
-                        fontSize={fontSize} 
-                        tabIndex={getTabIndex(rowIndex, col + 1)}
-                    />
-                  </div>
-                ))}
+                {[...Array(numOperands)].map((_, rowIndex) => {
+                    const operandValue = rowIndex === 0 ? getOperandDigit(initialState.operand1, colFromRight) : getOperandDigit(initialState.operand2, colFromRight);
+                    return (
+                        <div key={rowIndex} className="flex items-center" style={{height: cellSize}}>
+                            <CalcCell 
+                                borderColor={borderColor} 
+                                size={cellSize} 
+                                fontSize={fontSize} 
+                                tabIndex={getTabIndex(rowIndex, col + 1)}
+                                isReadOnly={isExerciseMode}
+                                value={isExerciseMode ? operandValue : undefined}
+                            />
+                        </div>
+                    );
+                })}
 
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
 
@@ -199,6 +218,7 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
                     size={cellSize} 
                     fontSize={fontSize}
                     tabIndex={getTabIndex(numOperands, col + 1)}
+                    isReadOnly={isExerciseMode}
                   />
                 </div>
               </div>
@@ -206,36 +226,40 @@ export function AdditionWidget({ initialState, onUpdate, onClose }: AdditionWidg
           })}
         </div>
 
-        <div className="flex justify-between items-center w-full mt-2 px-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} aria-label="Retirer une colonne">
-            <ChevronLeft />
-          </Button>
+        {!isExerciseMode && (
+             <div className="flex justify-between items-center w-full mt-2 px-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button onClick={shrinkCols} size="icon" variant="ghost" disabled={numCols <= 2} aria-label="Retirer une colonne">
+                    <ChevronLeft />
+                </Button>
 
-          {numOperands < 3 && (
-            <Button
-              onClick={addOperand}
-              size="sm"
-              variant="ghost"
-              className="text-slate-500 hover:text-slate-800"
-              aria-label="Ajouter un nombre"
-            >
-              <Plus className="w-4 h-4 mr-1" /> Ajouter nombre
-            </Button>
-          )}
+                {numOperands < 3 && (
+                    <Button
+                    onClick={addOperand}
+                    size="sm"
+                    variant="ghost"
+                    className="text-slate-500 hover:text-slate-800"
+                    aria-label="Ajouter un nombre"
+                    >
+                    <Plus className="w-4 h-4 mr-1" /> Ajouter nombre
+                    </Button>
+                )}
 
-          <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 4} aria-label="Ajouter une colonne">
-            <ChevronRight />
-          </Button>
-        </div>
+                <Button onClick={expandCols} size="icon" variant="ghost" disabled={numCols >= 4} aria-label="Ajouter une colonne">
+                    <ChevronRight />
+                </Button>
+            </div>
+        )}
       </div>
 
-      <button
-        onClick={onClose}
-        className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
-        aria-label="Fermer"
-      >
-        <X className="h-5 w-5" />
-      </button>
+       {!isExerciseMode && (
+         <button
+            onClick={onClose}
+            className="absolute -top-3 -right-3 bg-slate-600 text-white rounded-full p-1.5 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-opacity"
+            aria-label="Fermer"
+            >
+            <X className="h-5 w-5" />
+        </button>
+       )}
     </Card>
     </ResizableBox>
     </div>

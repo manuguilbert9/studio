@@ -8,6 +8,7 @@ import {
   FilePenLine,
   PiggyBank,
   Ear,
+  SquarePen,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from './questions';
 
@@ -39,6 +40,12 @@ export const skills: Skill[] = [
     slug: 'currency',
     description: "Entraînez-vous à compter l'argent et à rendre la monnaie.",
     icon: <PiggyBank />,
+  },
+   {
+    name: 'Calcul Posé',
+    slug: 'long-calculation',
+    description: 'Entraînez-vous aux additions et soustractions posées.',
+    icon: <SquarePen />,
   },
   {
     name: 'Lecture',
@@ -81,5 +88,6 @@ export function difficultyLevelToString(
     }
     return null;
 }
+
 
 
