@@ -1,14 +1,19 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { RefreshCw, Eye } from 'lucide-react';
+import { RefreshCw, Eye, Loader2 } from 'lucide-react';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
 
 type OperationType = 'addition' | 'subtraction';
+type Problem = {
+    operand1: number;
+    operand2: number;
+    operation: OperationType;
+}
 
 // A simple component to display the result of the calculation
 function CalculationAnswer({ operand1, operand2, operation }: { operand1: number, operand2: number, operation: OperationType }) {
@@ -23,38 +28,49 @@ function CalculationAnswer({ operand1, operand2, operation }: { operand1: number
 
 
 export function LongCalculationExercise() {
-    const [numCols] = useState(3); // Default to 3-digit numbers
+    const [numCols] = useState(3);
     const [showAnswer, setShowAnswer] = useState(false);
-    
-    // Generate a new problem by changing the key
-    const [problemKey, setProblemKey] = useState(Date.now());
+    const [problem, setProblem] = useState<Problem | null>(null);
 
-    const { operand1, operand2, operation } = useMemo(() => {
-        const max = 10 ** numCols -1;
+    const generateProblem = () => {
+        const max = 10 ** numCols - 1;
         const min = 10 ** (numCols - 1);
         const op1 = Math.floor(Math.random() * (max - min + 1)) + min;
         const op2 = Math.floor(Math.random() * (max - min + 1)) + min;
-
         const selectedOperation: OperationType = Math.random() < 0.5 ? 'addition' : 'subtraction';
 
         if (selectedOperation === 'subtraction' && op1 < op2) {
-            return { operand1: op2, operand2: op1, operation: selectedOperation }; // Ensure op1 > op2 for subtraction
+            setProblem({ operand1: op2, operand2: op1, operation: selectedOperation });
+        } else {
+            setProblem({ operand1: op1, operand2: op2, operation: selectedOperation });
         }
-        return { operand1: op1, operand2: op2, operation: selectedOperation };
+        setShowAnswer(false);
+    };
 
-    }, [problemKey, numCols]);
+    // Generate the first problem on the client side to avoid hydration errors
+    useEffect(() => {
+        generateProblem();
+    }, []);
+
 
     const newCalculation = () => {
-        setShowAnswer(false);
-        setProblemKey(Date.now());
+        generateProblem();
     };
 
     const emptyFunc = () => {};
 
-    // Generate string versions of operands for the widgets
+    if (!problem) {
+        return (
+            <div className="w-full max-w-lg mx-auto flex flex-col items-center justify-center gap-6 h-96">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p>Génération du calcul...</p>
+            </div>
+        )
+    }
+
+    const { operand1, operand2, operation } = problem;
     const operand1Str = operand1.toString();
     const operand2Str = operand2.toString();
-
 
     return (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6">
