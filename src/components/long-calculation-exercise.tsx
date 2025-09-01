@@ -99,34 +99,23 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
         op2 = parseInt(op2Str, 10);
     } else {
         // Ensure at least one carry
-        op1 = generateNumber(digits);
-        op2 = generateNumber(digits, false); // can have fewer digits
-        
-        let op1Str = op1.toString().padStart(digits, '0');
-        let op2Str = op2.toString().padStart(digits, '0');
-        
         let needsCarry = false;
-        for (let i = 0; i < digits; i++) {
-            if (parseInt(op1Str[i]) < parseInt(op2Str[i])) {
-                needsCarry = true;
-                break;
+        while(!needsCarry) {
+            op1 = generateNumber(digits);
+            op2 = generateNumber(digits, false); // can have fewer digits
+            
+            if (op1 < op2) [op1, op2] = [op2, op1]; // Ensure op1 > op2
+            
+            let op1Str = op1.toString().padStart(digits, '0');
+            let op2Str = op2.toString().padStart(digits, '0');
+
+            for (let i = 0; i < digits; i++) {
+                if (parseInt(op1Str[i]) < parseInt(op2Str[i])) {
+                    needsCarry = true;
+                    break;
+                }
             }
         }
-        
-        if (!needsCarry) {
-            // Force a carry by swapping digits
-            const swapIndex = Math.floor(Math.random() * (digits -1)); // Not the most significant digit
-            if (parseInt(op1Str[swapIndex]) >= parseInt(op2Str[swapIndex])) {
-                 const temp = op1Str[swapIndex];
-                 op1Str = op1Str.substring(0, swapIndex) + op2Str[swapIndex] + op1Str.substring(swapIndex + 1);
-                 op2Str = op2Str.substring(0, swapIndex) + temp + op2Str.substring(swapIndex + 1);
-                 op1 = parseInt(op1Str);
-                 op2 = parseInt(op2Str);
-            }
-        }
-
-
-        if (op1 < op2) [op1, op2] = [op2, op1];
     }
     return { id: Date.now() + Math.random(), operands: [op1, op2], operation: 'subtraction', answer: op1 - op2 };
 };
@@ -134,7 +123,7 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
 
 export function LongCalculationExercise() {
     const { student } = useContext(UserContext);
-    const [level, setLevel] = useState<SkillLevel>('B');
+    const [level, setLevel] = useState<SkillLevel | null>(null);
     
     const [problems, setProblems] = useState<Problem[]>([]);
     const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
@@ -164,16 +153,16 @@ export function LongCalculationExercise() {
                 ];
                 break;
             case 'C':
-                newProblems = [
+                 newProblems = [
                     generateAddition(2, 3, true),
                     generateSubtraction(3, true),
-                    generateAddition(3, 3, true),
+                    generateSubtraction(3, true)
                 ];
                 break;
             case 'D':
                 newProblems = [
                     generateAddition(3, 4, true),
-                    generateSubtraction(3, true),
+                    generateSubtraction(4, true),
                     generateSubtraction(4, true),
                 ];
                 break;
@@ -183,15 +172,19 @@ export function LongCalculationExercise() {
     };
     
     useEffect(() => {
-        setIsLoading(true);
-        if (student) {
-            const studentLevel = student.levels?.['long-calculation'] || 'B';
-            setLevel(studentLevel);
-             generateProblemsForLevel(studentLevel);
-        } else {
-            generateProblemsForLevel('B');
+        if(level === null && student) {
+             const studentLevel = student.levels?.['long-calculation'] || 'B';
+             setLevel(studentLevel);
+        } else if (level === null && !student) {
+             setLevel('B'); // Default level if no student
         }
-    }, [student]);
+
+        if (level !== null && problems.length === 0) {
+            setIsLoading(true);
+            generateProblemsForLevel(level);
+        }
+
+    }, [student, level, problems.length]);
 
     const currentProblem = useMemo(() => {
         if (problems.length > 0) {
@@ -265,7 +258,9 @@ export function LongCalculationExercise() {
 
     const restartExercise = () => {
         setIsLoading(true);
-        generateProblemsForLevel(level);
+        if (level) {
+            generateProblemsForLevel(level);
+        }
         setCurrentProblemIndex(0);
         setUserInputs({});
         setUserCount('');
@@ -274,7 +269,7 @@ export function LongCalculationExercise() {
         setCorrectAnswers(0);
     };
 
-    if (isLoading) {
+    if (isLoading || !level) {
         return (
             <div className="w-full max-w-lg mx-auto flex flex-col items-center justify-center gap-6 h-96">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
