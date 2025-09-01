@@ -32,7 +32,8 @@ const NUM_PROBLEMS = 3;
 // --- Problem Generation Logic ---
 
 const generateNumber = (digits: number, noLeadingZero = true) => {
-    const min = noLeadingZero ? Math.pow(10, digits - 1) : 0;
+    // This ensures a number with an exact number of digits.
+    const min = Math.pow(10, digits - 1);
     const max = Math.pow(10, digits) - 1;
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
@@ -56,7 +57,9 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
     } else {
         // Ensure at least one carry for withCarry=true
         let hasCarry = false;
-        while (!hasCarry) {
+        let attempts = 0;
+        while (!hasCarry && attempts < 20) {
+            attempts++;
             operands = Array.from({ length: numOperands }, () => generateNumber(digits));
             let tempSum = 0;
             for (let d = 0; d < digits; d++) {
@@ -67,7 +70,7 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
                 }
             }
              // If we're on the last loop and there's still no carry, force one.
-            if (!hasCarry && digits > 1) { 
+            if (!hasCarry && attempts > 15 && digits > 1) { 
                 const op1Str = String(operands[0]);
                 const op2Str = String(operands[1]);
                 const unit1 = Number(op1Str[op1Str.length - 1]);
@@ -75,6 +78,7 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
                 if (unit1 + unit2 < 10) {
                     const newUnit2 = 10 - unit1; // Force a carry
                     operands[1] = Math.floor(operands[1] / 10) * 10 + newUnit2;
+                    hasCarry = true; // We've forced it
                 }
             }
         }
@@ -100,17 +104,21 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
     } else {
         // Ensure at least one carry
         let needsCarry = false;
-        while(!needsCarry) {
+        let attempts = 0;
+        while(!needsCarry && attempts < 20) {
+            attempts++;
             op1 = generateNumber(digits);
-            op2 = generateNumber(digits, false); // can have fewer digits
+            op2 = generateNumber(digits); // Ensures op2 also has `digits` digits
             
             if (op1 < op2) [op1, op2] = [op2, op1]; // Ensure op1 > op2
             
-            let op1Str = op1.toString().padStart(digits, '0');
-            let op2Str = op2.toString().padStart(digits, '0');
+            let op1Str = op1.toString();
+            let op2Str = op2.toString();
 
             for (let i = 0; i < digits; i++) {
-                if (parseInt(op1Str[i]) < parseInt(op2Str[i])) {
+                 const digit1 = parseInt(op1Str[op1Str.length - 1 - i] || '0');
+                 const digit2 = parseInt(op2Str[op2Str.length - 1 - i] || '0');
+                if (digit1 < digit2) {
                     needsCarry = true;
                     break;
                 }
@@ -178,13 +186,15 @@ export function LongCalculationExercise() {
         } else if (level === null && !student) {
              setLevel('B'); // Default level if no student
         }
+    }, [student, level]);
 
+    useEffect(() => {
         if (level !== null && problems.length === 0) {
             setIsLoading(true);
             generateProblemsForLevel(level);
         }
+    }, [level, problems.length]);
 
-    }, [student, level, problems.length]);
 
     const currentProblem = useMemo(() => {
         if (problems.length > 0) {
@@ -208,7 +218,7 @@ export function LongCalculationExercise() {
             isCorrect = parseInt(userCount, 10) === currentProblem.answer;
         } else {
             // Reconstruct user's answer from input cells
-            const numCols = Math.max(...currentProblem.operands.map(op => String(op).length));
+            const numCols = Math.max(...currentProblem.operands.map(op => String(op).length), String(currentProblem.answer).length);
             let userAnswerStr = '';
             for (let i = numCols; i >= 0; i--) { // Start from potential highest-order column
                  const cellValue = userInputs[`result-${i}`] || '';
@@ -258,9 +268,7 @@ export function LongCalculationExercise() {
 
     const restartExercise = () => {
         setIsLoading(true);
-        if (level) {
-            generateProblemsForLevel(level);
-        }
+        setProblems([]); // This will trigger the useEffect to generate new problems for the current level
         setCurrentProblemIndex(0);
         setUserInputs({});
         setUserCount('');
