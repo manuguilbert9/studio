@@ -59,14 +59,14 @@ export function AdditionWidget({
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
         onUpdate({
-            id: initialState.id,
+            ...initialState,
             pos,
             size,
             numOperands,
             numCols
         });
     }, 500); // Debounce updates
-  }, [pos, size, numOperands, numCols, onUpdate, initialState.id, isExerciseMode]);
+  }, [pos, size, numOperands, numCols, onUpdate, initialState, isExerciseMode]);
 
   useEffect(() => {
     triggerUpdate();

@@ -40,8 +40,7 @@ export interface AdditionWidgetState {
     size: Size;
     numOperands: number;
     numCols: number;
-    operand1?: string;
-    operand2?: string;
+    operands?: number[];
 }
 
 export interface SoustractionWidgetState {
@@ -49,8 +48,7 @@ export interface SoustractionWidgetState {
     pos: Position;
     size: Size;
     numCols: number;
-    operand1?: string;
-    operand2?: string;
+    operands?: number[];
 }
 
 export interface ImageWidgetState {
