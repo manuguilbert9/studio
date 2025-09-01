@@ -91,29 +91,23 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
 
 const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
     let op1: number, op2: number;
-    if (!withCarry) {
-        let op1Str = '', op2Str = '';
-        for (let i = 0; i < digits; i++) {
-            const d1 = Math.floor(Math.random() * 8) + 1; // 1-8
-            const d2 = Math.floor(Math.random() * (d1 + 1)); // 0-d1
-            op1Str = String(d1) + op1Str;
-            op2Str = String(d2) + op2Str;
-        }
-        op1 = parseInt(op1Str, 10);
-        op2 = parseInt(op2Str, 10);
-    } else {
-        // Ensure at least one carry
-        let needsCarry = false;
-        let attempts = 0;
-        while(!needsCarry && attempts < 20) {
-            attempts++;
-            op1 = generateNumber(digits);
-            op2 = generateNumber(digits); // Ensures op2 also has `digits` digits
-            
-            if (op1 < op2) [op1, op2] = [op2, op1]; // Ensure op1 > op2
-            
+    let needsCarry = false;
+    let attempts = 0;
+
+    while(!needsCarry && attempts < 50) { // Increased attempts for safety
+        attempts++;
+        op1 = generateNumber(digits);
+
+        // Ensure op2 is also `digits` long and op1 > op2
+        const minOp2 = Math.pow(10, digits - 1);
+        const maxOp2 = op1 - 1;
+        if (maxOp2 < minOp2) continue; // op1 is too small, retry
+        
+        op2 = Math.floor(Math.random() * (maxOp2 - minOp2 + 1)) + minOp2;
+        
+        if (withCarry) {
             let op1Str = op1.toString();
-            let op2Str = op2.toString();
+            let op2Str = op2.toString().padStart(digits, '0');
 
             for (let i = 0; i < digits; i++) {
                  const digit1 = parseInt(op1Str[op1Str.length - 1 - i] || '0');
@@ -123,7 +117,23 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
                     break;
                 }
             }
+        } else { // No carry logic
+            let op1Str = '', op2Str = '';
+             let isValid = true;
+            for (let i = digits -1; i >= 0; i--) {
+                const d1 = Math.floor(Math.random() * 8) + 1; // 1-8 to avoid all 9s
+                const d2 = Math.floor(Math.random() * (d1 + 1)); // 0-d1
+                op1Str += String(d1);
+                op2Str += String(d2);
+            }
+            op1 = parseInt(op1Str, 10);
+            op2 = parseInt(op2Str, 10);
+            needsCarry = true; // Exit loop for no-carry case
         }
+    }
+     if (!needsCarry && withCarry) { // Fallback if no carry subtraction is found
+        op1 = 143;
+        op2 = 129;
     }
     return { id: Date.now() + Math.random(), operands: [op1, op2], operation: 'subtraction', answer: op1 - op2 };
 };
@@ -189,11 +199,11 @@ export function LongCalculationExercise() {
     }, [student, level]);
 
     useEffect(() => {
-        if (level !== null && problems.length === 0) {
+        if (level !== null) {
             setIsLoading(true);
             generateProblemsForLevel(level);
         }
-    }, [level, problems.length]);
+    }, [level]);
 
 
     const currentProblem = useMemo(() => {
@@ -277,7 +287,7 @@ export function LongCalculationExercise() {
         setCorrectAnswers(0);
     };
 
-    if (isLoading || !level) {
+    if (isLoading || !level || problems.length === 0) {
         return (
             <div className="w-full max-w-lg mx-auto flex flex-col items-center justify-center gap-6 h-96">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
