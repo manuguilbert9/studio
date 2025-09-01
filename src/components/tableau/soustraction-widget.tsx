@@ -184,11 +184,11 @@ export function SoustractionWidget({ initialState, onUpdate, onClose, isExercise
                 </div>
                 {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, col)} isReadOnly={isExerciseMode} value={isExerciseMode ? getOperandDigit(initialState.operand1, colFromRight) : undefined}/>
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, col)} value={isExerciseMode ? getOperandDigit(initialState.operand1, colFromRight) : undefined}/>
                 </div>
                 {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, col)} isReadOnly={isExerciseMode} value={isExerciseMode ? getOperandDigit(initialState.operand2, colFromRight) : undefined}/>
+                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, col)} isReadOnly={true} value={isExerciseMode ? getOperandDigit(initialState.operand2, colFromRight) : undefined}/>
                 </div>
                 {/* Equals line */}
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
