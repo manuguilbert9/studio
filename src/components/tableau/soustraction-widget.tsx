@@ -19,6 +19,9 @@ interface SoustractionWidgetProps {
   onUpdate: (state: SoustractionWidgetState) => void;
   onClose: () => void;
   isExerciseMode?: boolean;
+  exerciseInputs?: Record<string, string>;
+  onInputChange?: (id: string, value: string) => void;
+  feedback?: 'correct' | 'incorrect' | null;
 }
 
 // Units: Blue, Tens: Red, Hundreds: Green
@@ -32,7 +35,15 @@ const colors = [
 const getBorderColor = (colIndexFromRight: number) =>
   colors[colIndexFromRight] || 'border-slate-900';
 
-export function SoustractionWidget({ initialState, onUpdate, onClose, isExerciseMode = false }: SoustractionWidgetProps) {
+export function SoustractionWidget({ 
+    initialState, 
+    onUpdate, 
+    onClose, 
+    isExerciseMode = false,
+    exerciseInputs,
+    onInputChange,
+    feedback
+}: SoustractionWidgetProps) {
   const [pos, setPos] = useState<Position>(initialState.pos);
   const [size, setSize] = useState<Size>(initialState.size);
   const [numCols, setNumCols] = useState(initialState.numCols);
@@ -168,27 +179,60 @@ export function SoustractionWidget({ initialState, onUpdate, onClose, isExercise
                   {/* Do not render carry cell above units column (right-most) */}
                   {colFromRight > 0 && (
                     <CarryCell 
+                        id={`carry-${colFromRight}`}
                         borderColor={getBorderColor(colFromRight)} // Match the column color
                         size={carrySize} 
                         fontSize={carryFontSize} 
                         borderStyle="dotted"
                         tabIndex={getTabIndex(-1, col)}
+                        value={isExerciseMode ? exerciseInputs?.[`carry-${colFromRight}`] : undefined}
+                        onValueChange={isExerciseMode ? onInputChange : undefined}
+                        isReadOnly={!!feedback}
                     />
                   )}
                 </div>
                 {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} allowCrossing={true} isMinuend={true} tabIndex={getTabIndex(0, col)} />
+                    <CalcCell 
+                        id={`op-0-${colFromRight}`}
+                        borderColor={borderColor} 
+                        size={cellSize} 
+                        fontSize={fontSize} 
+                        allowCrossing={true} 
+                        isMinuend={true} 
+                        tabIndex={getTabIndex(0, col)} 
+                        value={isExerciseMode ? exerciseInputs?.[`op-0-${colFromRight}`] : undefined}
+                        onValueChange={isExerciseMode ? onInputChange : undefined}
+                        isReadOnly={!!feedback}
+                    />
                 </div>
                 {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
-                    <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(1, col)} />
+                    <CalcCell 
+                        id={`op-1-${colFromRight}`}
+                        borderColor={borderColor} 
+                        size={cellSize} 
+                        fontSize={fontSize} 
+                        tabIndex={getTabIndex(1, col)}
+                        value={isExerciseMode ? exerciseInputs?.[`op-1-${colFromRight}`] : undefined}
+                        onValueChange={isExerciseMode ? onInputChange : undefined}
+                        isReadOnly={!!feedback}
+                    />
                 </div>
                 {/* Equals line */}
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
                 {/* Result */}
                 <div style={{height: cellSize}}>
-                  <CalcCell borderColor={borderColor} size={cellSize} fontSize={fontSize} tabIndex={getTabIndex(2, col)} />
+                  <CalcCell 
+                    id={`result-${colFromRight}`}
+                    borderColor={borderColor} 
+                    size={cellSize} 
+                    fontSize={fontSize} 
+                    tabIndex={getTabIndex(2, col)}
+                    value={isExerciseMode ? exerciseInputs?.[`result-${colFromRight}`] : undefined}
+                    onValueChange={isExerciseMode ? onInputChange : undefined}
+                    isReadOnly={!!feedback}
+                  />
                 </div>
               </div>
             );

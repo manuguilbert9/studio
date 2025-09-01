@@ -19,6 +19,9 @@ interface AdditionWidgetProps {
   onUpdate: (state: AdditionWidgetState) => void;
   onClose: () => void;
   isExerciseMode?: boolean;
+  exerciseInputs?: Record<string, string>;
+  onInputChange?: (id: string, value: string) => void;
+  feedback?: 'correct' | 'incorrect' | null;
 }
 
 // Units: Blue, Tens: Red, Hundreds: Green
@@ -32,7 +35,15 @@ const colors = [
 const getBorderColor = (colIndexFromRight: number) =>
   colors[colIndexFromRight] || 'border-slate-900';
 
-export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode = false }: AdditionWidgetProps) {
+export function AdditionWidget({ 
+    initialState, 
+    onUpdate, 
+    onClose, 
+    isExerciseMode = false,
+    exerciseInputs,
+    onInputChange,
+    feedback
+}: AdditionWidgetProps) {
   const [pos, setPos] = useState<Position>(initialState.pos);
   const [size, setSize] = useState<Size>(initialState.size);
   const [numOperands, setNumOperands] = useState(initialState.numOperands);
@@ -169,10 +180,14 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
             <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
             <div style={{height: cellSize}}>
               <CalcCell 
+                id={`result-${numCols}`}
                 borderColor={getBorderColor(numCols)} 
                 size={cellSize} 
                 fontSize={fontSize}
-                tabIndex={isExerciseMode ? undefined : getTabIndex(numOperands, 0)}
+                tabIndex={getTabIndex(numOperands, 0)}
+                value={isExerciseMode ? exerciseInputs?.[`result-${numCols}`] : undefined}
+                onValueChange={isExerciseMode ? onInputChange : undefined}
+                isReadOnly={!!feedback}
               />
             </div>
           </div>
@@ -184,16 +199,28 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
             return (
               <div key={col} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
-                  {colFromRight > 0 && <CarryCell borderColor={borderColor} size={carrySize} fontSize={carryFontSize} />}
+                  {colFromRight > 0 && <CarryCell 
+                    id={`carry-${colFromRight}`}
+                    borderColor={borderColor} 
+                    size={carrySize} 
+                    fontSize={carryFontSize} 
+                    value={isExerciseMode ? exerciseInputs?.[`carry-${colFromRight}`] : undefined}
+                    onValueChange={isExerciseMode ? onInputChange : undefined}
+                    isReadOnly={!!feedback}
+                  />}
                 </div>
 
                 {[...Array(numOperands)].map((_, rowIndex) => (
                     <div key={rowIndex} className="flex items-center" style={{height: cellSize}}>
                         <CalcCell 
+                            id={`op-${rowIndex}-${colFromRight}`}
                             borderColor={borderColor} 
                             size={cellSize} 
                             fontSize={fontSize} 
-                            tabIndex={isExerciseMode ? undefined : getTabIndex(rowIndex, col + 1)}
+                            tabIndex={getTabIndex(rowIndex, col + 1)}
+                            value={isExerciseMode ? exerciseInputs?.[`op-${rowIndex}-${colFromRight}`] : undefined}
+                            onValueChange={isExerciseMode ? onInputChange : undefined}
+                            isReadOnly={!!feedback}
                         />
                     </div>
                 ))}
@@ -202,10 +229,14 @@ export function AdditionWidget({ initialState, onUpdate, onClose, isExerciseMode
 
                 <div style={{height: cellSize}}>
                   <CalcCell 
+                    id={`result-${colFromRight}`}
                     borderColor={borderColor} 
                     size={cellSize} 
                     fontSize={fontSize}
-                    tabIndex={isExerciseMode ? undefined : getTabIndex(numOperands, col + 1)}
+                    tabIndex={getTabIndex(numOperands, col + 1)}
+                    value={isExerciseMode ? exerciseInputs?.[`result-${colFromRight}`] : undefined}
+                    onValueChange={isExerciseMode ? onInputChange : undefined}
+                    isReadOnly={!!feedback}
                   />
                 </div>
               </div>

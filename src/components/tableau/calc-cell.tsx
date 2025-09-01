@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
+  id: string;
   borderColor: string;
   size: number;
   fontSize: number;
@@ -13,23 +14,34 @@ interface CalcCellProps {
   tabIndex?: number;
   isReadOnly?: boolean;
   value?: string;
+  onValueChange?: (id: string, value: string) => void;
 }
 
-export function CalcCell({ borderColor, size, fontSize, allowCrossing = false, isMinuend = false, tabIndex, isReadOnly = false, value: propValue }: CalcCellProps) {
+export function CalcCell({ 
+    id, 
+    borderColor, 
+    size, 
+    fontSize, 
+    allowCrossing = false, 
+    isMinuend = false, 
+    tabIndex, 
+    isReadOnly = false, 
+    value: propValue,
+    onValueChange
+}: CalcCellProps) {
   const [internalValue, setInternalValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
   
   const inputRef = useRef<HTMLInputElement>(null);
   
-  const value = isReadOnly ? propValue || '' : internalValue;
-  const setValue = isReadOnly ? () => {} : setInternalValue;
-
+  const value = onValueChange ? propValue || '' : internalValue;
+  const setValue = onValueChange ? (val: string) => onValueChange(id, val) : setInternalValue;
 
   useEffect(() => {
-    if (isReadOnly && propValue) {
-        setInternalValue(propValue);
+    if (propValue !== undefined) {
+      setInternalValue(propValue);
     }
-  }, [propValue, isReadOnly]);
+  }, [propValue]);
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
