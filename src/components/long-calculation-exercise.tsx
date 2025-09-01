@@ -31,6 +31,7 @@ const NUM_PROBLEMS = 3;
 // --- Problem Generation Logic ---
 
 const generateNumber = (digits: number): number => {
+    if (digits < 1) return 0;
     const min = Math.pow(10, digits - 1);
     const max = Math.pow(10, digits) - 1;
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -76,7 +77,7 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
      // If after many attempts we fail, generate a fallback problem
     if (attempts >= 50) {
         if (withCarry) {
-            operands = Array.from({ length: numOperands }, () => generateNumber(digits -1)).concat([Number("9".repeat(digits-1))]);
+            operands = Array.from({ length: numOperands - 1 }, () => generateNumber(digits -1)).concat([Number("9".repeat(digits-1))]);
         } else {
              operands = Array.from({ length: numOperands }, () => Number("1".repeat(digits)));
         }
@@ -94,12 +95,13 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
     while (attempts < 50) {
         attempts++;
         op1 = generateNumber(digits);
-        // Ensure op2 is also `digits` long and smaller than op1
-        const minOp2 = Math.pow(10, digits - 1);
-        const maxOp2 = op1 - 1;
-        if (maxOp2 < minOp2) continue; // op1 is too small, retry (e.g. op1 is 100)
-        
-        op2 = Math.floor(Math.random() * (maxOp2 - minOp2 + 1)) + minOp2;
+        op2 = generateNumber(digits);
+
+        if (op1 <= op2) {
+            [op1, op2] = [op2, op1]; // Ensure op1 > op2
+            if (op1 === op2) op1++;
+        }
+
 
         let hasCarry = false;
         for (let d = 0; d < digits; d++) {
@@ -126,8 +128,9 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
     
      // Fallback if no suitable problem is found
     if (attempts >= 50) {
-        op1 = Number("9".repeat(digits));
-        op2 = Number("1".repeat(digits));
+        op1 = generateNumber(digits);
+        op2 = generateNumber(digits - 1);
+        if (op1 <= op2) op1 = op2 + 10;
     }
 
     return { id: Date.now() + Math.random(), operands: [op1, op2], operation: 'subtraction', answer: op1 - op2 };
@@ -273,7 +276,9 @@ export function LongCalculationExercise() {
 
     const restartExercise = () => {
         setIsLoading(true);
-        setProblems([]); // This will trigger the useEffect to generate new problems for the current level
+        if (level) {
+            generateProblemsForLevel(level);
+        }
         setCurrentProblemIndex(0);
         setUserInputs({});
         setUserCount('');
@@ -367,7 +372,7 @@ export function LongCalculationExercise() {
                         <div className="flex justify-center items-center scale-90 sm:scale-100 transform">
                             {operation === 'addition' ? (
                                 <AdditionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands)).length, operands: [] }}
+                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands)).length }}
                                     onUpdate={()=>{}}
                                     onClose={()=>{}}
                                     isExerciseMode={true}
@@ -377,7 +382,7 @@ export function LongCalculationExercise() {
                                 />
                             ) : (
                                 <SoustractionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length, operands: [] }}
+                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length }}
                                     onUpdate={()=>{}}
                                     onClose={()=>{}}
                                     isExerciseMode={true}
