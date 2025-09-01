@@ -118,14 +118,14 @@ export function LongCalculationExercise() {
                 newProblems = [
                     generateAddition(2, 3, true),
                     generateSubtraction(3, true),
-                    generateAddition(3, 2, true),
+                    generateAddition(3, 3, true), // Changed from 3 op, 2 digits
                 ];
                 break;
             case 'D':
                 newProblems = [
-                    generateAddition(3, 3, true),
+                    generateAddition(3, 4, true),     // Changed from 3 op, 3 digits
                     generateSubtraction(3, true),
-                    generateSubtraction(4, true)
+                    generateSubtraction(4, true),     // Changed from 3 digits
                 ];
                 break;
         }
