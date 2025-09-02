@@ -469,7 +469,7 @@ export default function TeacherDashboardPage() {
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle>Résultats des exercices "En classe"</CardTitle>
-                  <CardDescription>Voici les derniers scores enregistrés pour tous les élèves.</CardDescription>
+                  <CardDescription>Voici les derniers scores enregistrés for tous les élèves.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
