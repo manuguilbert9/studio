@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp } from "firebase/firestore"; 
+import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
 import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
 import { getStudents } from './students';
 
@@ -87,5 +87,23 @@ export async function getAllScores(): Promise<Score[]> {
     } catch (error) {
         console.error("Error loading all scores from Firestore:", error);
         return [];
+    }
+}
+
+// Deletes a specific score document from the 'scores' collection.
+export async function deleteScore(scoreId: string): Promise<{ success: boolean; error?: string }> {
+    if (!scoreId) {
+        return { success: false, error: 'Score ID is required.' };
+    }
+    try {
+        const scoreDocRef = doc(db, 'scores', scoreId);
+        await deleteDoc(scoreDocRef);
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting score from Firestore:", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: 'An unknown error occurred.' };
     }
 }

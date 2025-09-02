@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star, Check, X, Pencil, SlidersHorizontal } from 'lucide-react';
+import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star, Check, X, Pencil, SlidersHorizontal, Trash2 } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import { getAllScores, Score } from '@/services/scores';
+import { getAllScores, Score, deleteScore } from '@/services/scores';
 import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress, SpellingResult } from '@/services/spelling';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -219,6 +219,23 @@ export default function TeacherDashboardPage() {
         variant: 'destructive',
         title: "Erreur",
         description: result.error || "Impossible de mettre à jour les niveaux.",
+      });
+    }
+  };
+
+   const handleDeleteScore = async (scoreId: string) => {
+    const result = await deleteScore(scoreId);
+    if (result.success) {
+      setAllScores(prevScores => prevScores.filter(score => score.id !== scoreId));
+      toast({
+        title: "Score supprimé",
+        description: "Le résultat a été supprimé avec succès.",
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: "Erreur de suppression",
+        description: result.error || "Impossible de supprimer le score.",
       });
     }
   };
@@ -463,6 +480,7 @@ export default function TeacherDashboardPage() {
                         <TableHead>Compétence</TableHead>
                         <TableHead>Niveau</TableHead>
                         <TableHead className="text-right">Score</TableHead>
+                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -479,6 +497,16 @@ export default function TeacherDashboardPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-bold text-primary">{score.score.toFixed(0)}%</TableCell>
+                           <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteScore(score.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <span className="sr-only">Supprimer</span>
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       )})}
                     </TableBody>
