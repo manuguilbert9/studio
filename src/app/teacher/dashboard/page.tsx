@@ -469,7 +469,7 @@ export default function TeacherDashboardPage() {
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle>Résultats des exercices "En classe"</CardTitle>
-                  <CardDescription>Voici les derniers scores enregistrés for tous les élèves.</CardDescription>
+                  <CardDescription>Voici les derniers scores enregistrés pour tous les élèves.</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -480,7 +480,7 @@ export default function TeacherDashboardPage() {
                         <TableHead>Compétence</TableHead>
                         <TableHead>Niveau</TableHead>
                         <TableHead className="text-right">Score</TableHead>
-                         <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -497,7 +497,7 @@ export default function TeacherDashboardPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right font-bold text-primary">{score.score.toFixed(0)}%</TableCell>
-                           <TableCell className="text-right">
+                          <TableCell className="text-right">
                             <Button
                               variant="ghost"
                               size="icon"

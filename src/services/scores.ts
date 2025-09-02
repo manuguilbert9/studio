@@ -4,7 +4,6 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
 import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
-import { getStudents } from './students';
 
 export interface Score {
     id: string;
