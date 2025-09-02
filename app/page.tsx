@@ -59,8 +59,7 @@ export default function ModeSelectionPage() {
         </div>
         <Card className="w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95">
           <CardHeader className="text-center">
-            <CardTitle className="font-headline text-3xl sm:text-4xl">Bienvenue !</CardTitle>
-            <CardDescription className="text-base sm:text-lg">
+            <CardDescription className="font-headline text-3xl sm:text-4xl">
               Connecte-toi pour commencer.
             </CardDescription>
           </CardHeader>
