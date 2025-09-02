@@ -238,7 +238,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode]);
+  }, [isFinished, student, isTableauMode]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -563,3 +563,4 @@ const renderSetTime = () => (
   );
 }
 
+    
