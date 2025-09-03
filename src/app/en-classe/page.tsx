@@ -1,18 +1,40 @@
 
 'use client';
 
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { skills } from '@/lib/skills';
+import { skills as allSkills, type Skill } from '@/lib/skills';
 import { Logo } from '@/components/logo';
 import { BarChart3, Home, Presentation } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
+import { getEnabledSkills } from '@/services/teacher';
 
 export default function EnClassePage() {
-  const { student, isLoading } = useContext(UserContext);
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
+  const [enabledSkills, setEnabledSkills] = useState<Skill[] | null>(null);
+  const [isLoadingSkills, setIsLoadingSkills] = useState(true);
+
+  useEffect(() => {
+    async function fetchSkills() {
+      setIsLoadingSkills(true);
+      const enabledSlugs = await getEnabledSkills();
+      
+      if (enabledSlugs === null) {
+        // If null, all skills are enabled
+        setEnabledSkills(allSkills);
+      } else {
+        const filteredSkills = allSkills.filter(skill => enabledSlugs.includes(skill.slug));
+        setEnabledSkills(filteredSkills);
+      }
+      setIsLoadingSkills(false);
+    }
+    fetchSkills();
+  }, []);
+
+  const isLoading = isUserLoading || isLoadingSkills;
 
   if (isLoading || !student) {
     return (
@@ -23,7 +45,7 @@ export default function EnClassePage() {
                 <Skeleton className="h-8 w-64 mx-auto" />
             </header>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
-                {[...Array(5)].map((_, i) => (
+                {[...Array(6)].map((_, i) => (
                     <Card key={i} className="flex h-full flex-col items-center justify-center p-6 text-center">
                         <Skeleton className="h-20 w-20 rounded-full mb-4" />
                         <Skeleton className="h-8 w-32 mb-2" />
@@ -64,19 +86,26 @@ export default function EnClassePage() {
             </Button>
         </div>
       </header>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
-        {skills.map((skill) => (
-          <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
-            <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
-              <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
-                {skill.icon}
-              </div>
-              <h3 className="font-headline text-2xl sm:text-3xl mb-2">{skill.name}</h3>
-              <p className="text-muted-foreground text-sm sm:text-base">{skill.description}</p>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {enabledSkills && enabledSkills.length > 0 ? (
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
+          {enabledSkills.map((skill) => (
+            <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
+              <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
+                <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
+                  {skill.icon}
+                </div>
+                <h3 className="font-headline text-2xl sm:text-3xl mb-2">{skill.name}</h3>
+                <p className="text-muted-foreground text-sm sm:text-base">{skill.description}</p>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <Card className="w-full max-w-2xl mx-auto p-8 text-center">
+            <h3 className="font-headline text-2xl">Aucun exercice n'est disponible</h3>
+            <p className="text-muted-foreground mt-2">Votre enseignant n'a pas encore activé d'exercices pour le mode "En classe".</p>
+        </Card>
+      )}
     </main>
   );
 }

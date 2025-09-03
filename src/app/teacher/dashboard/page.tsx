@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star, Check, X, Pencil, SlidersHorizontal, Trash2 } from 'lucide-react';
+import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star, Check, X, Pencil, SlidersHorizontal, Trash2, Settings } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getAllScores, Score, deleteScore } from '@/services/scores';
 import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress, SpellingResult } from '@/services/spelling';
@@ -20,12 +20,13 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getCurrentSpellingListId, setCurrentSpellingList } from '@/services/teacher';
+import { getCurrentSpellingListId, setCurrentSpellingList, getEnabledSkills, setEnabledSkills } from '@/services/teacher';
 import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Switch } from '@/components/ui/switch';
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'A', label: 'A - Maternelle' },
@@ -46,6 +47,8 @@ export default function TeacherDashboardPage() {
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [currentListId, setCurrentListId] = useState<string | null>(null);
+  const [enabledSkills, setEnabledSkillsState] = useState<string[]>([]);
+  const [isSkillSettingsLoading, setIsSkillSettingsLoading] = useState(true);
 
   // Form states
   const [newStudentName, setNewStudentName] = useState('');
@@ -59,13 +62,15 @@ export default function TeacherDashboardPage() {
   
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
+    setIsSkillSettingsLoading(true);
       try {
-        const [scoresData, progressData, listsData, studentListData, currentId] = await Promise.all([
+        const [scoresData, progressData, listsData, studentListData, currentId, enabledSkillsData] = await Promise.all([
           getAllScores(),
           getAllSpellingProgress(),
           getSpellingLists(),
           getStudents(),
           getCurrentSpellingListId(),
+          getEnabledSkills(),
         ]);
         
         setAllScores(scoresData);
@@ -73,6 +78,8 @@ export default function TeacherDashboardPage() {
         setSpellingLists(listsData);
         setStudents(studentListData);
         setCurrentListId(currentId);
+        // If null, it means all skills are enabled by default
+        setEnabledSkillsState(enabledSkillsData === null ? availableSkills.map(s => s.slug) : enabledSkillsData);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast({
@@ -82,6 +89,7 @@ export default function TeacherDashboardPage() {
         });
       } finally {
         setIsLoading(false);
+        setIsSkillSettingsLoading(false);
       }
   }, [toast]);
 
@@ -111,7 +119,7 @@ export default function TeacherDashboardPage() {
     allScores.forEach(score => {
         const studentScores = map.get(score.userId) || [];
         studentScores.push(score);
-        map.set(score.userId, studentScores);
+        map.set(score.userId, studentScores.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     });
     return map;
   }, [allScores]);
@@ -251,6 +259,30 @@ export default function TeacherDashboardPage() {
     }
   };
 
+  const handleSkillToggle = (slug: string, checked: boolean) => {
+    setEnabledSkillsState(prev => 
+      checked ? [...prev, slug] : prev.filter(s => s !== slug)
+    );
+  };
+
+  const handleSaveEnabledSkills = async () => {
+    setIsSkillSettingsLoading(true);
+    const result = await setEnabledSkills(enabledSkills);
+    if (result.success) {
+      toast({
+        title: "Exercices mis à jour",
+        description: "Les exercices disponibles pour les élèves ont été enregistrés.",
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: "Erreur",
+        description: result.error || "Impossible de sauvegarder les changements.",
+      });
+    }
+    setIsSkillSettingsLoading(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -276,10 +308,11 @@ export default function TeacherDashboardPage() {
 
         <div className="max-w-7xl mx-auto">
           <Tabs defaultValue="students">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="students"><Users className="mr-2"/> Gestion des élèves</TabsTrigger>
-              <TabsTrigger value="homework"><BookOpen className="mr-2"/> Suivi des devoirs</TabsTrigger>
-              <TabsTrigger value="class-results"><BarChart3 className="mr-2"/> Résultats "En classe"</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="students"><Users className="mr-2"/> Élèves</TabsTrigger>
+              <TabsTrigger value="exercises"><Settings className="mr-2" /> Exercices</TabsTrigger>
+              <TabsTrigger value="homework"><BookOpen className="mr-2"/> Devoirs</TabsTrigger>
+              <TabsTrigger value="class-results"><BarChart3 className="mr-2"/> Résultats</TabsTrigger>
             </TabsList>
 
             <TabsContent value="students">
@@ -337,7 +370,7 @@ export default function TeacherDashboardPage() {
                                               )}
                                           </TableCell>
                                            <TableCell>
-                                                <div className="flex gap-1">
+                                                <div className="flex gap-1 flex-wrap">
                                                 {student.levels && Object.entries(student.levels).length > 0 ? (
                                                     Object.entries(student.levels).map(([skill, level]) => (
                                                         <Tooltip key={skill}>
@@ -383,6 +416,44 @@ export default function TeacherDashboardPage() {
                   </Card>
               </div>
             </TabsContent>
+
+             <TabsContent value="exercises">
+                <Card className="mt-4">
+                  <CardHeader>
+                    <CardTitle>Gestion des exercices "En classe"</CardTitle>
+                    <CardDescription>
+                      Choisissez les exercices qui seront visibles par les élèves dans la section "En classe".
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {isSkillSettingsLoading ? (
+                      <Loader2 className="mx-auto animate-spin" />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {availableSkills.map(skill => (
+                          <div key={skill.slug} className="flex items-center space-x-4 rounded-md border p-4">
+                             <div className="text-primary">{skill.icon}</div>
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-medium leading-none">{skill.name}</p>
+                              <p className="text-sm text-muted-foreground">{skill.description}</p>
+                            </div>
+                             <Switch
+                                checked={enabledSkills.includes(skill.slug)}
+                                onCheckedChange={(checked) => handleSkillToggle(skill.slug, checked)}
+                              />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter>
+                     <Button onClick={handleSaveEnabledSkills} disabled={isSkillSettingsLoading}>
+                        {isSkillSettingsLoading && <Loader2 className="mr-2 animate-spin" />}
+                        Enregistrer les modifications
+                    </Button>
+                  </CardFooter>
+                </Card>
+             </TabsContent>
 
             <TabsContent value="homework">
               <Card className="mt-4">
