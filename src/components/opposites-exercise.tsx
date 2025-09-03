@@ -53,7 +53,9 @@ export function OppositesExercise() {
   const { student } = useContext(UserContext);
   const [allEntries, setAllEntries] = useState<AntonymEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
+  
+  const [isStarted, setIsStarted] = useState(false);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty>(0);
   
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -73,10 +75,10 @@ export function OppositesExercise() {
     loadPairs();
   }, []);
 
-  const generateQuestions = (selectedDifficulty: Difficulty) => {
+  const generateQuestions = (difficulty: Difficulty) => {
     if (allEntries.length === 0) return;
 
-    const questionType = questionTypes[selectedDifficulty];
+    const questionType = questionTypes[difficulty];
     const shuffledEntries = [...allEntries].sort(() => 0.5 - Math.random());
     const selectedEntries = shuffledEntries.slice(0, NUM_QUESTIONS);
     
@@ -113,9 +115,9 @@ export function OppositesExercise() {
     setQuestions(newQuestions);
   };
   
-  const startExercise = (selectedDifficulty: Difficulty) => {
-    setDifficulty(selectedDifficulty);
+  const startExercise = () => {
     generateQuestions(selectedDifficulty);
+    setIsStarted(true);
   }
 
   const handleAnswer = (answer: string) => {
@@ -143,7 +145,7 @@ export function OppositesExercise() {
 
    useEffect(() => {
     async function saveFinalScore() {
-      if (isFinished && student && !isSaving && difficulty !== null) {
+      if (isFinished && student && !isSaving) {
         setIsSaving(true);
         const scoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         await addScore({
@@ -156,10 +158,10 @@ export function OppositesExercise() {
       }
     }
     saveFinalScore();
-  }, [isFinished, student, correctAnswers, isSaving, difficulty]);
+  }, [isFinished, student, correctAnswers, isSaving]);
 
   const restartExercise = () => {
-    setDifficulty(null);
+    setIsStarted(false);
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setUserInput('');
@@ -178,7 +180,7 @@ export function OppositesExercise() {
      return <Card className="w-full shadow-2xl p-8 text-center text-destructive">Impossible de charger le fichier "contraires.txt". Veuillez vérifier qu'il se trouve dans le dossier public/vocabulaire.</Card>;
   }
 
-  if (difficulty === null) {
+  if (!isStarted) {
     return (
        <Card className="w-full max-w-2xl mx-auto shadow-2xl">
         <CardHeader>
@@ -193,14 +195,14 @@ export function OppositesExercise() {
               min={0}
               max={2}
               step={1}
-              defaultValue={[0]}
-              onValueChange={(value) => setDifficulty(value[0] as Difficulty)}
+              value={[selectedDifficulty]}
+              onValueChange={(value) => setSelectedDifficulty(value[0] as Difficulty)}
             />
-            <p className="text-center text-muted-foreground font-medium">{difficultyDesc[difficulty === null ? 0 : difficulty]}</p>
+            <p className="text-center text-muted-foreground font-medium">{difficultyDesc[selectedDifficulty]}</p>
           </div>
         </CardContent>
         <CardFooter>
-          <Button onClick={() => startExercise(difficulty ?? 0)} size="lg" className="w-full text-xl py-7">
+          <Button onClick={startExercise} size="lg" className="w-full text-xl py-7">
             Commencer l'exercice !
           </Button>
         </CardFooter>
