@@ -48,6 +48,7 @@ export function WordFamiliesExercise() {
   const [showConfetti, setShowConfetti] = useState(false);
   
   const currentRoundPairs = useMemo(() => rounds[currentRoundIndex] || [], [rounds, currentRoundIndex]);
+  
   const isRoundFinished = useMemo(() => {
     if (currentRoundPairs.length === 0) return false;
     return correctPairsInRound === currentRoundPairs.length;
@@ -78,8 +79,8 @@ export function WordFamiliesExercise() {
     loadLists();
   }, []);
   
-  const setupRound = (roundIndex: number) => {
-    const pairsForRound = rounds[roundIndex];
+  const setupRound = (roundIndex: number, pairsForSetup: WordPair[][]) => {
+    const pairsForRound = pairsForSetup[roundIndex];
     if (pairsForRound) {
         setColumnA(shuffleArray(pairsForRound.map(p => ({ word: p.original, isPaired: false }))));
         setColumnB(shuffleArray(pairsForRound.map(p => ({ word: p.familyMember, isPaired: false }))));
@@ -106,7 +107,6 @@ export function WordFamiliesExercise() {
         const validPairs = result.pairs.filter(p => p.familyMember && p.familyMember.trim() !== '' && p.original.trim() !== p.familyMember.trim());
         setAllPairs(validPairs);
         
-        // Split pairs into rounds
         const shuffledPairs = shuffleArray(validPairs);
         const newRounds: WordPair[][] = [];
         for (let i = 0; i < shuffledPairs.length; i += PAIRS_PER_ROUND) {
@@ -114,7 +114,7 @@ export function WordFamiliesExercise() {
         }
         setRounds(newRounds);
         if (newRounds.length > 0) {
-            setupRound(0);
+            setupRound(0, newRounds);
         }
       }
     } catch (error) {
@@ -149,13 +149,14 @@ export function WordFamiliesExercise() {
     if (selectedA && selectedB) {
       checkPair(selectedA, selectedB);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedA, selectedB]);
 
   const goToNextRound = () => {
     if (currentRoundIndex < rounds.length - 1) {
       const nextRound = currentRoundIndex + 1;
       setCurrentRoundIndex(nextRound);
-      setupRound(nextRound);
+      setupRound(nextRound, rounds);
     }
   };
 
@@ -235,7 +236,7 @@ export function WordFamiliesExercise() {
        <CardHeader>
           <CardTitle className="font-headline text-2xl text-center">Relie les mots de la même famille</CardTitle>
           <CardDescription className="text-center">
-            Manche {currentRoundIndex + 1} / {rounds.length}
+             {rounds.length > 0 && `Manche ${currentRoundIndex + 1} / ${rounds.length}`}
           </CardDescription>
           <Progress value={overallProgress} className="w-full mt-4 h-3" />
         </CardHeader>
