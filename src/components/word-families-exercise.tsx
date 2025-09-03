@@ -70,13 +70,17 @@ export function WordFamiliesExercise() {
 
     setSelectedList(list);
     setIsLoadingPairs(true);
+    setPairs([]);
+    setColumnA([]);
+    setColumnB([]);
     
     try {
       const result = await generateWordFamilies({ words: list.words });
       if (result && result.pairs) {
-        setPairs(result.pairs);
-        setColumnA(shuffleArray(result.pairs.map(p => ({ word: p.original, isPaired: false }))));
-        setColumnB(shuffleArray(result.pairs.map(p => ({ word: p.familyMember, isPaired: false }))));
+        const validPairs = result.pairs.filter(p => p.familyMember && p.familyMember.trim() !== '' && p.original.trim() !== p.familyMember.trim());
+        setPairs(validPairs);
+        setColumnA(shuffleArray(validPairs.map(p => ({ word: p.original, isPaired: false }))));
+        setColumnB(shuffleArray(validPairs.map(p => ({ word: p.familyMember, isPaired: false }))));
       }
     } catch (error) {
       console.error("Failed to generate word families:", error);
@@ -200,42 +204,51 @@ export function WordFamiliesExercise() {
           <Progress value={progress} className="w-full mt-4 h-3" />
         </CardHeader>
         <CardContent className="relative">
-            <div className="grid grid-cols-2 gap-4 sm:gap-8">
-                {/* Column A */}
-                <div className="flex flex-col gap-3">
-                    {columnA.map(({word, isPaired}) => (
-                        <Button 
-                            key={word}
-                            variant={selectedA === word ? 'default' : 'secondary'}
-                            onClick={() => !isPaired && setSelectedA(word)}
-                            disabled={isPaired}
-                            className={cn("text-base sm:text-lg h-14 transition-all duration-200", 
-                              isPaired && "bg-green-200 text-green-800 line-through pointer-events-none",
-                              feedback === 'incorrect' && selectedA === word && 'bg-red-500/80 animate-shake'
-                            )}
-                        >
-                            {word}
-                        </Button>
-                    ))}
+             {pairs.length > 0 ? (
+                <div className="grid grid-cols-2 gap-4 sm:gap-8">
+                    {/* Column A */}
+                    <div className="flex flex-col gap-3">
+                        {columnA.map(({word, isPaired}) => (
+                            <Button 
+                                key={word}
+                                variant={selectedA === word ? 'default' : 'secondary'}
+                                onClick={() => !isPaired && setSelectedA(word)}
+                                disabled={isPaired}
+                                className={cn("text-base sm:text-lg h-14 transition-all duration-200", 
+                                  isPaired && "bg-green-200 text-green-800 line-through pointer-events-none",
+                                  feedback === 'incorrect' && selectedA === word && 'bg-red-500/80 animate-shake'
+                                )}
+                            >
+                                {word}
+                            </Button>
+                        ))}
+                    </div>
+                    {/* Column B */}
+                    <div className="flex flex-col gap-3">
+                         {columnB.map(({word, isPaired}) => (
+                            <Button 
+                                key={word}
+                                variant={selectedB === word ? 'default' : 'secondary'}
+                                onClick={() => !isPaired && setSelectedB(word)}
+                                disabled={isPaired}
+                                 className={cn("text-base sm:text-lg h-14 transition-all duration-200", 
+                                  isPaired && "bg-green-200 text-green-800 line-through pointer-events-none",
+                                  feedback === 'incorrect' && selectedB === word && 'bg-red-500/80 animate-shake'
+                                )}
+                            >
+                                {word}
+                            </Button>
+                        ))}
+                    </div>
                 </div>
-                {/* Column B */}
-                <div className="flex flex-col gap-3">
-                     {columnB.map(({word, isPaired}) => (
-                        <Button 
-                            key={word}
-                            variant={selectedB === word ? 'default' : 'secondary'}
-                            onClick={() => !isPaired && setSelectedB(word)}
-                            disabled={isPaired}
-                             className={cn("text-base sm:text-lg h-14 transition-all duration-200", 
-                              isPaired && "bg-green-200 text-green-800 line-through pointer-events-none",
-                              feedback === 'incorrect' && selectedB === word && 'bg-red-500/80 animate-shake'
-                            )}
-                        >
-                            {word}
-                        </Button>
-                    ))}
+            ) : (
+                <div className="text-center text-muted-foreground p-8">
+                    <p>L'IA n'a pas pu générer de paires pour cette liste.</p>
+                     <Button onClick={restartExercise} variant="outline" className="mt-4">
+                        Choisir une autre liste
+                    </Button>
                 </div>
-            </div>
+            )}
             {/* Feedback overlay */}
             {feedback && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
