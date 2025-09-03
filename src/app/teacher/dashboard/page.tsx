@@ -12,12 +12,11 @@ import { Logo } from '@/components/logo';
 import { createStudent, getStudents, type Student, updateStudent, deleteStudent } from '@/services/students';
 import { getSpellingLists, getAllSpellingProgress, SpellingProgress, SpellingList, SpellingResult } from '@/services/spelling';
 import { setCurrentSpellingList, getCurrentSpellingListId } from '@/services/teacher';
-
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { skills as availableSkills, type SkillLevel } from '@/lib/skills';
@@ -117,7 +116,7 @@ function StudentManager({ students, onUpdateStudentList, onOpenEditModal, onDele
                                             {student.levels && Object.entries(student.levels).length > 0 ? (
                                                 Object.entries(student.levels).map(([skill, level]) => (
                                                     <Tooltip key={skill}>
-                                                        <TooltipTrigger>
+                                                        <TooltipTrigger asChild>
                                                             <Badge variant="secondary">{level}</Badge>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
