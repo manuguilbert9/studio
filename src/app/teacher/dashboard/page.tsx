@@ -14,10 +14,12 @@ import { StudentManager } from '@/components/teacher/student-manager';
 import { HomeworkTracker } from '@/components/teacher/homework-tracker';
 import { ExercisesManager } from '@/components/teacher/exercises-manager';
 import { ResultsManager } from '@/components/teacher/results-manager';
+import { DatabaseManager } from '@/components/teacher/database-manager';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
 import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
+import { BuildInfo } from '@/components/teacher/build-info';
 
 
 export default function TeacherDashboardPage() {
@@ -71,8 +73,8 @@ export default function TeacherDashboardPage() {
 
   return (
     <TooltipProvider>
-      <main className="min-h-screen bg-background p-4 sm:p-8">
-        <header className="flex items-center justify-between mb-8 max-w-7xl mx-auto">
+      <main className="min-h-screen bg-background p-4 sm:p-8 flex flex-col">
+        <header className="flex items-center justify-between mb-8 max-w-7xl mx-auto w-full">
           <Logo />
           <div className="flex items-center gap-4">
               <FullscreenToggle />
@@ -85,18 +87,19 @@ export default function TeacherDashboardPage() {
           </div>
         </header>
 
-        <div className="max-w-7xl mx-auto mt-4">
+        <div className="max-w-7xl mx-auto mt-4 w-full flex-grow">
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             </div>
           ) : (
             <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
                     <TabsTrigger value="exercises">Exercices en classe</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
+                    <TabsTrigger value="database">Base de données</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
                     <StudentManager />
@@ -110,9 +113,15 @@ export default function TeacherDashboardPage() {
                  <TabsContent value="results" className="mt-6">
                     <ResultsManager students={students} allScores={allScores} onDataRefresh={loadData} />
                 </TabsContent>
+                 <TabsContent value="database" className="mt-6">
+                    <DatabaseManager />
+                </TabsContent>
             </Tabs>
           )}
         </div>
+         <footer className="max-w-7xl mx-auto w-full pt-8 mt-auto flex justify-end">
+            <BuildInfo />
+        </footer>
       </main>
     </TooltipProvider>
   );
