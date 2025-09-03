@@ -13,7 +13,8 @@ interface TeacherSettings {
 
 /**
  * Retrieves all teacher settings from Firestore.
- * @returns The settings object, or a default object if not set.
+ * If the document doesn't exist, it returns an empty object.
+ * @returns The settings object.
  */
 async function getTeacherSettings(): Promise<TeacherSettings> {
     try {
@@ -21,13 +22,12 @@ async function getTeacherSettings(): Promise<TeacherSettings> {
         if (docSnap.exists()) {
             return docSnap.data() as TeacherSettings;
         }
-        return {};
+        return {}; // Return empty object if no settings doc exists
     } catch (error) {
         console.error("Error getting teacher settings:", error);
-        return {};
+        return {}; // Return empty object on error
     }
 }
-
 
 /**
  * Saves the ID of the current spelling list.
@@ -35,6 +35,7 @@ async function getTeacherSettings(): Promise<TeacherSettings> {
  */
 export async function setCurrentSpellingList(listId: string): Promise<{ success: boolean; error?: string }> {
     try {
+        // Using merge: true will create the document if it doesn't exist.
         await setDoc(settingsDocRef, { currentSpellingListId: listId }, { merge: true });
         return { success: true };
     } catch (error) {
@@ -58,6 +59,7 @@ export async function getCurrentSpellingListId(): Promise<string | null> {
  */
 export async function setEnabledSkills(skills: string[]): Promise<{ success: boolean; error?: string }> {
     try {
+        // Using merge: true will create the document if it doesn't exist and update only the specified field.
         await setDoc(settingsDocRef, { enabledSkills: skills }, { merge: true });
         return { success: true };
     } catch (error) {
@@ -68,10 +70,13 @@ export async function setEnabledSkills(skills: string[]): Promise<{ success: boo
 
 /**
  * Retrieves the list of enabled skill slugs.
- * @returns An array of skill slugs, or null if no setting is found (implying all are enabled).
+ * @returns An array of skill slugs. If the setting has never been saved, returns null to indicate "all enabled by default".
  */
 export async function getEnabledSkills(): Promise<string[] | null> {
     const settings = await getTeacherSettings();
-    // If the setting exists, return it. If it's undefined, return null.
-    return 'enabledSkills' in settings ? settings.enabledSkills! : null;
+    // If enabledSkills is not in the document, it's undefined. We return null in that case.
+    if (typeof settings.enabledSkills === 'undefined') {
+        return null;
+    }
+    return settings.enabledSkills;
 }

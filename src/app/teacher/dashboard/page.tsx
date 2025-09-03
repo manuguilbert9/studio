@@ -304,8 +304,8 @@ function ExercisesManager() {
             const enabledSlugs = await getEnabledSkills();
             
             const skillsState: Record<string, boolean> = {};
+            // If settings haven't been saved yet (null), enable all skills by default.
             if (enabledSlugs === null) {
-                // If null (not set in DB), all skills are enabled by default
                 availableSkills.forEach(skill => skillsState[skill.slug] = true);
             } else {
                 availableSkills.forEach(skill => {
@@ -327,6 +327,7 @@ function ExercisesManager() {
         const skillsToSave = Object.keys(enabledSkills).filter(slug => enabledSkills[slug]);
         const result = await setEnabledSkills(skillsToSave);
         setIsSaving(false);
+        
         if (result.success) {
             toast({ title: "Paramètres enregistrés", description: "La liste des exercices disponibles a été mise à jour." });
         } else {
@@ -335,7 +336,7 @@ function ExercisesManager() {
     };
 
     if (isLoading) {
-        return <Loader2 className="animate-spin mx-auto mt-8" />
+        return <div className="flex justify-center p-8"><Loader2 className="animate-spin mx-auto mt-8 h-8 w-8" /></div>
     }
     
     return (
@@ -344,6 +345,7 @@ function ExercisesManager() {
                 <CardTitle>Gestion des Exercices "En Classe"</CardTitle>
                 <CardDescription>
                     Sélectionnez les exercices que les élèves peuvent utiliser en mode "En classe". 
+                    Les changements seront visibles immédiatement pour les élèves.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -505,7 +507,7 @@ export default function TeacherDashboardPage() {
         </header>
 
         <div className="max-w-7xl mx-auto mt-4">
-            <Tabs defaultValue="students">
+            <Tabs defaultValue="students" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
