@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -24,12 +24,17 @@ type ColumnItem = {
 
 type FeedbackState = 'correct' | 'incorrect' | null;
 
+const PAIRS_PER_ROUND = 8;
+
 export function WordFamiliesExercise() {
   const [availableLists, setAvailableLists] = useState<SpellingList[]>([]);
   const [isLoadingLists, setIsLoadingLists] = useState(true);
   const [selectedList, setSelectedList] = useState<SpellingList | null>(null);
 
-  const [pairs, setPairs] = useState<WordPair[]>([]);
+  const [allPairs, setAllPairs] = useState<WordPair[]>([]);
+  const [rounds, setRounds] = useState<WordPair[][]>([]);
+  const [currentRoundIndex, setCurrentRoundIndex] = useState(0);
+
   const [isLoadingPairs, setIsLoadingPairs] = useState(false);
   
   const [columnA, setColumnA] = useState<ColumnItem[]>([]);
@@ -39,9 +44,18 @@ export function WordFamiliesExercise() {
   const [selectedB, setSelectedB] = useState<string | null>(null);
   
   const [feedback, setFeedback] = useState<FeedbackState>(null);
-  const [correctPairs, setCorrectPairs] = useState(0);
+  const [correctPairsInRound, setCorrectPairsInRound] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [isFinished, setIsFinished] = useState(false);
+  
+  const currentRoundPairs = useMemo(() => rounds[currentRoundIndex] || [], [rounds, currentRoundIndex]);
+  const isRoundFinished = useMemo(() => {
+    if (currentRoundPairs.length === 0) return false;
+    return correctPairsInRound === currentRoundPairs.length;
+  }, [correctPairsInRound, currentRoundPairs]);
+
+  const isExerciseFinished = useMemo(() => {
+    return rounds.length > 0 && currentRoundIndex === rounds.length - 1 && isRoundFinished;
+  }, [rounds, currentRoundIndex, isRoundFinished]);
   
   // Fisher-Yates shuffle algorithm
   const shuffleArray = (array: any[]) => {
@@ -63,6 +77,18 @@ export function WordFamiliesExercise() {
     }
     loadLists();
   }, []);
+  
+  const setupRound = (roundIndex: number) => {
+    const pairsForRound = rounds[roundIndex];
+    if (pairsForRound) {
+        setColumnA(shuffleArray(pairsForRound.map(p => ({ word: p.original, isPaired: false }))));
+        setColumnB(shuffleArray(pairsForRound.map(p => ({ word: p.familyMember, isPaired: false }))));
+        setCorrectPairsInRound(0);
+        setSelectedA(null);
+        setSelectedB(null);
+        setFeedback(null);
+    }
+  }
 
   const handleStartExercise = async (listId: string) => {
     const list = availableLists.find(l => l.id === listId);
@@ -70,41 +96,47 @@ export function WordFamiliesExercise() {
 
     setSelectedList(list);
     setIsLoadingPairs(true);
-    setPairs([]);
-    setColumnA([]);
-    setColumnB([]);
+    setAllPairs([]);
+    setRounds([]);
+    setCurrentRoundIndex(0);
     
     try {
       const result = await generateWordFamilies({ words: list.words });
       if (result && result.pairs) {
         const validPairs = result.pairs.filter(p => p.familyMember && p.familyMember.trim() !== '' && p.original.trim() !== p.familyMember.trim());
-        setPairs(validPairs);
-        setColumnA(shuffleArray(validPairs.map(p => ({ word: p.original, isPaired: false }))));
-        setColumnB(shuffleArray(validPairs.map(p => ({ word: p.familyMember, isPaired: false }))));
+        setAllPairs(validPairs);
+        
+        // Split pairs into rounds
+        const shuffledPairs = shuffleArray(validPairs);
+        const newRounds: WordPair[][] = [];
+        for (let i = 0; i < shuffledPairs.length; i += PAIRS_PER_ROUND) {
+            newRounds.push(shuffledPairs.slice(i, i + PAIRS_PER_ROUND));
+        }
+        setRounds(newRounds);
+        if (newRounds.length > 0) {
+            setupRound(0);
+        }
       }
     } catch (error) {
       console.error("Failed to generate word families:", error);
-      // Handle error state in UI
     } finally {
       setIsLoadingPairs(false);
     }
   };
 
   const checkPair = (wordA: string, wordB: string) => {
-    const isCorrect = pairs.some(p => (p.original === wordA && p.familyMember === wordB));
+    const isCorrect = currentRoundPairs.some(p => (p.original === wordA && p.familyMember === wordB));
     
     if (isCorrect) {
       setFeedback('correct');
-      setCorrectPairs(prev => prev + 1);
+      setCorrectPairsInRound(prev => prev + 1);
       setShowConfetti(true);
-      // Mark words as paired
       setColumnA(prev => prev.map(item => item.word === wordA ? { ...item, isPaired: true } : item));
       setColumnB(prev => prev.map(item => item.word === wordB ? { ...item, isPaired: true } : item));
     } else {
       setFeedback('incorrect');
     }
 
-    // Reset selection and feedback after a delay
     setTimeout(() => {
       setSelectedA(null);
       setSelectedB(null);
@@ -118,23 +150,25 @@ export function WordFamiliesExercise() {
       checkPair(selectedA, selectedB);
     }
   }, [selectedA, selectedB]);
-  
-  useEffect(() => {
-    if (pairs.length > 0 && correctPairs === pairs.length) {
-      setIsFinished(true);
-    }
-  }, [correctPairs, pairs]);
 
+  const goToNextRound = () => {
+    if (currentRoundIndex < rounds.length - 1) {
+      const nextRound = currentRoundIndex + 1;
+      setCurrentRoundIndex(nextRound);
+      setupRound(nextRound);
+    }
+  };
 
   const restartExercise = () => {
     setSelectedList(null);
-    setPairs([]);
+    setAllPairs([]);
+    setRounds([]);
+    setCurrentRoundIndex(0);
     setColumnA([]);
     setColumnB([]);
     setSelectedA(null);
     setSelectedB(null);
-    setCorrectPairs(0);
-    setIsFinished(false);
+    setCorrectPairsInRound(0);
   };
 
   if (isLoadingLists) {
@@ -172,7 +206,7 @@ export function WordFamiliesExercise() {
     );
   }
 
-  if (isFinished) {
+  if (isExerciseFinished) {
     return (
          <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8 relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -194,17 +228,19 @@ export function WordFamiliesExercise() {
     )
   }
 
-  const progress = pairs.length > 0 ? (correctPairs / pairs.length) * 100 : 0;
+  const overallProgress = allPairs.length > 0 ? ((currentRoundIndex * PAIRS_PER_ROUND + correctPairsInRound) / allPairs.length) * 100 : 0;
   
   return (
     <Card className="w-full max-w-4xl mx-auto shadow-2xl p-4 sm:p-6">
        <CardHeader>
           <CardTitle className="font-headline text-2xl text-center">Relie les mots de la même famille</CardTitle>
-          <CardDescription className="text-center">Clique sur un mot de chaque colonne pour former une paire.</CardDescription>
-          <Progress value={progress} className="w-full mt-4 h-3" />
+          <CardDescription className="text-center">
+            Manche {currentRoundIndex + 1} / {rounds.length}
+          </CardDescription>
+          <Progress value={overallProgress} className="w-full mt-4 h-3" />
         </CardHeader>
-        <CardContent className="relative">
-             {pairs.length > 0 ? (
+        <CardContent className="relative min-h-[400px] flex flex-col justify-center">
+             {currentRoundPairs.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4 sm:gap-8">
                     {/* Column A */}
                     <div className="flex flex-col gap-3">
@@ -212,8 +248,8 @@ export function WordFamiliesExercise() {
                             <Button 
                                 key={word}
                                 variant={selectedA === word ? 'default' : 'secondary'}
-                                onClick={() => !isPaired && setSelectedA(word)}
-                                disabled={isPaired}
+                                onClick={() => !isPaired && !feedback && setSelectedA(word)}
+                                disabled={isPaired || !!feedback}
                                 className={cn("text-base sm:text-lg h-14 transition-all duration-200", 
                                   isPaired && "bg-green-200 text-green-800 line-through pointer-events-none",
                                   feedback === 'incorrect' && selectedA === word && 'bg-red-500/80 animate-shake'
@@ -229,8 +265,8 @@ export function WordFamiliesExercise() {
                             <Button 
                                 key={word}
                                 variant={selectedB === word ? 'default' : 'secondary'}
-                                onClick={() => !isPaired && setSelectedB(word)}
-                                disabled={isPaired}
+                                onClick={() => !isPaired && !feedback && setSelectedB(word)}
+                                disabled={isPaired || !!feedback}
                                  className={cn("text-base sm:text-lg h-14 transition-all duration-200", 
                                   isPaired && "bg-green-200 text-green-800 line-through pointer-events-none",
                                   feedback === 'incorrect' && selectedB === word && 'bg-red-500/80 animate-shake'
@@ -249,21 +285,28 @@ export function WordFamiliesExercise() {
                     </Button>
                 </div>
             )}
-            {/* Feedback overlay */}
-            {feedback && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm">
-                    {feedback === 'correct' ? (
-                       <Check className="h-24 w-24 text-green-500 animate-in zoom-in-150" />
-                    ) : (
-                       <X className="h-24 w-24 text-red-500 animate-in zoom-in-150" />
+            
+            {/* Feedback & Round transition overlay */}
+            {(feedback || isRoundFinished) && !isExerciseFinished && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm flex-col gap-4">
+                    {feedback === 'correct' && !isRoundFinished && <Check className="h-24 w-24 text-green-500 animate-in zoom-in-150" />}
+                    {feedback === 'incorrect' && <X className="h-24 w-24 text-red-500 animate-in zoom-in-150" />}
+                    
+                    {isRoundFinished && (
+                        <div className="text-center animate-in fade-in">
+                            <h3 className="text-2xl font-headline mb-4">Manche terminée !</h3>
+                            <Button onClick={goToNextRound} size="lg">
+                                Manche suivante <ArrowRight className="ml-2" />
+                            </Button>
+                        </div>
                     )}
                 </div>
             )}
+
              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                <Confetti active={showConfetti} config={{angle: 90, spread: 90, startVelocity: 20, elementCount: 50, duration: 1500, stagger: 2}}/>
-            </div>
+                <Confetti active={showConfetti && !isRoundFinished} config={{angle: 90, spread: 90, startVelocity: 20, elementCount: 50, duration: 1500, stagger: 2}}/>
+             </div>
         </CardContent>
     </Card>
   )
-
 }

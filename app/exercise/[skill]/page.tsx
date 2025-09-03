@@ -11,6 +11,7 @@ import { FluencyExercise } from '@/components/fluency-exercise';
 import { Button } from '@/components/ui/button';
 import { DictationExercise } from '@/components/dictation-exercise';
 import { LongCalculationExercise } from '@/components/long-calculation-exercise';
+import { WordFamiliesExercise } from '@/components/word-families-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -29,6 +30,8 @@ export default function ExercisePage() {
         return <DictationExercise isTableauMode={false} />;
       case 'long-calculation':
         return <LongCalculationExercise />;
+      case 'word-families':
+        return <WordFamiliesExercise />;
       default:
         return <ExerciseWorkspace skill={skill} />;
     }
