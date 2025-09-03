@@ -14,7 +14,7 @@ import { getAllScores, Score, deleteScore } from '@/services/scores';
 import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress, SpellingResult } from '@/services/spelling';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { difficultyLevelToString, skills as availableSkills } from '@/lib/skills';
+import { difficultyLevelToString, skills as availableSkills, Skill } from '@/lib/skills';
 import { createStudent, getStudents, type Student, updateStudentCode, updateStudentLevels, SkillLevel } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'A', label: 'A - Maternelle' },
@@ -104,6 +105,16 @@ export default function TeacherDashboardPage() {
     }
     return map;
   }, [allSpellingProgress]);
+
+  const scoresByStudent = useMemo(() => {
+    const map = new Map<string, Score[]>();
+    allScores.forEach(score => {
+        const studentScores = map.get(score.userId) || [];
+        studentScores.push(score);
+        map.set(score.userId, studentScores);
+    });
+    return map;
+  }, [allScores]);
 
   const handleSetCurrentList = async (listId: string) => {
     const result = await setCurrentSpellingList(listId);
@@ -222,8 +233,8 @@ export default function TeacherDashboardPage() {
       });
     }
   };
-
-   const handleDeleteScore = async (scoreId: string) => {
+  
+  const handleDeleteScore = async (scoreId: string) => {
     const result = await deleteScore(scoreId);
     if (result.success) {
       setAllScores(prevScores => prevScores.filter(score => score.id !== scoreId));
@@ -239,7 +250,7 @@ export default function TeacherDashboardPage() {
       });
     }
   };
-  
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -469,48 +480,67 @@ export default function TeacherDashboardPage() {
               <Card className="mt-4">
                 <CardHeader>
                   <CardTitle>Résultats des exercices "En classe"</CardTitle>
-                  <CardDescription>Voici les derniers scores enregistrés pour tous les élèves.</CardDescription>
+                  <CardDescription>
+                    Consultez les résultats de chaque élève. Cliquez sur un élève pour voir ses scores détaillés.
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Élève</TableHead>
-                        <TableHead>Compétence</TableHead>
-                        <TableHead>Niveau</TableHead>
-                        <TableHead className="text-right">Score</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allScores.map(score => {
-                        const studentName = students.find(s => s.id === score.userId)?.name || score.userId;
-                        return (
-                        <TableRow key={score.id}>
-                          <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
-                          <TableCell className="font-medium">{studentName}</TableCell>
-                          <TableCell>{score.skill}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right font-bold text-primary">{score.score.toFixed(0)}%</TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleDeleteScore(score.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                              <span className="sr-only">Supprimer</span>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      )})}
-                    </TableBody>
-                  </Table>
+                  <Accordion type="single" collapsible className="w-full">
+                    {students.map(student => {
+                      const studentScores = scoresByStudent.get(student.id) || [];
+                      return (
+                        <AccordionItem value={student.id} key={student.id} disabled={studentScores.length === 0}>
+                           <AccordionTrigger className={cn("text-lg", studentScores.length === 0 && "text-muted-foreground cursor-not-allowed")}>
+                            <div className="flex items-center gap-4">
+                              <span>{student.name}</span>
+                              <Badge variant="secondary">{studentScores.length} résultat{studentScores.length > 1 ? 's' : ''}</Badge>
+                            </div>
+                          </AccordionTrigger>
+                          <AccordionContent>
+                             {studentScores.length > 0 ? (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Compétence</TableHead>
+                                            <TableHead>Niveau</TableHead>
+                                            <TableHead className="text-right">Score</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {studentScores.map(score => (
+                                            <TableRow key={score.id}>
+                                                <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
+                                                <TableCell>{availableSkills.find(s => s.slug === score.skill)?.name || score.skill}</TableCell>
+                                                <TableCell>
+                                                  <Badge variant="outline">
+                                                    {difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard'}
+                                                  </Badge>
+                                                </TableCell>
+                                                <TableCell className="text-right font-bold text-primary">{score.score.toFixed(0)}%</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                      variant="ghost"
+                                                      size="icon"
+                                                      onClick={() => handleDeleteScore(score.id)}
+                                                    >
+                                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                                      <span className="sr-only">Supprimer</span>
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                             ) : (
+                                <p className="text-center text-muted-foreground p-4">Aucun résultat pour cet élève.</p>
+                             )}
+                          </AccordionContent>
+                        </AccordionItem>
+                      )
+                    })}
+                  </Accordion>
                 </CardContent>
               </Card>
             </TabsContent>
