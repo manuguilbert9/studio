@@ -1,14 +1,15 @@
 
-
 'use server';
 
 import type { AntonymEntry } from '@/services/vocabulary.types';
-// @ts-ignore
-import antonymsFile from '@/data/public/vocabulaire/contraires.txt';
+import fs from 'fs/promises';
+import path from 'path';
+
 
 export async function getAntonymPairs(): Promise<AntonymEntry[]> {
   try {
-    const fileContent: string = antonymsFile;
+    const filePath = path.join(process.cwd(), 'public', 'vocabulaire', 'contraires.txt');
+    const fileContent: string = await fs.readFile(filePath, 'utf-8');
     const lines = fileContent.split('\n').filter(line => line.trim() !== '' && line.includes(':'));
     
     const pairs: AntonymEntry[] = lines.map(line => {
