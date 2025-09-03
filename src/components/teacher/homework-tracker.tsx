@@ -7,10 +7,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Loader2, CheckCircle } from 'lucide-react';
 import { type Student } from '@/services/students';
 import { SpellingProgress, SpellingList, SpellingResult } from '@/services/spelling';
-import { getCurrentSpellingListId } from '@/services/teacher';
+import { getCurrentSpellingListId, setCurrentSpellingListId } from '@/services/teacher';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '../ui/label';
 
 export function HomeworkTracker({ students, spellingLists, allProgress }: { 
     students: Student[],
@@ -26,6 +28,11 @@ export function HomeworkTracker({ students, spellingLists, allProgress }: {
             setIsLoading(false);
         });
     }, []);
+
+    const handleListChange = async (listId: string) => {
+        setCurrentListId(listId);
+        await setCurrentSpellingListId(listId);
+    };
     
     const progressByStudent = useMemo(() => {
         const map = new Map<string, SpellingProgress>();
@@ -64,16 +71,20 @@ export function HomeworkTracker({ students, spellingLists, allProgress }: {
                 <CardDescription>Suivez la progression des élèves pour la liste de devoirs de la semaine.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="p-4 rounded-lg bg-secondary">
-                    <p className="text-muted-foreground">Liste de la semaine actuelle :</p>
-                    {currentListDetails ? (
-                         <p className="text-xl font-bold">{currentListDetails.id} – {currentListDetails.title}</p>
-                    ) : (
-                        <p className="text-xl font-bold">Aucune</p>
-                    )}
-                    <p className="text-xs text-muted-foreground mt-1">
-                        Pour modifier, éditez le fichier `src/data/teacher-settings.json`.
-                    </p>
+                <div className="p-4 rounded-lg bg-secondary/50 max-w-sm">
+                    <Label htmlFor="spelling-list-select" className="text-sm font-medium text-muted-foreground">
+                        Liste de la semaine
+                    </Label>
+                    <Select onValueChange={handleListChange} value={currentListId || ''}>
+                        <SelectTrigger id="spelling-list-select" className="mt-1">
+                            <SelectValue placeholder="Choisir une liste..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {spellingLists.map(list => (
+                                <SelectItem key={list.id} value={list.id}>{list.id} – {list.title}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 
                  {currentListId ? (
@@ -138,7 +149,7 @@ export function HomeworkTracker({ students, spellingLists, allProgress }: {
                         </TableBody>
                     </Table>
                 ) : (
-                    <p className="text-center text-muted-foreground py-8">Veuillez sélectionner une liste dans le fichier de configuration pour voir la progression.</p>
+                    <p className="text-center text-muted-foreground py-8">Veuillez sélectionner une liste pour commencer.</p>
                 )}
             </CardContent>
         </Card>

@@ -2,15 +2,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
-import { getEnabledSkills } from '@/services/teacher';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Loader2, Save } from 'lucide-react';
+import { getEnabledSkills, setEnabledSkills } from '@/services/teacher';
 import { skills as availableSkills } from '@/lib/skills';
 import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
 
 export function ExercisesManager() {
+    const { toast } = useToast();
     const [enabledSkills, setEnabledSkills] = useState<Record<string, boolean>>({});
     const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         async function fetchSkills() {
@@ -22,6 +26,30 @@ export function ExercisesManager() {
         fetchSkills();
     }, []);
 
+    const handleToggleSkill = (slug: string) => {
+        setEnabledSkills(prev => ({
+            ...prev,
+            [slug]: !prev[slug]
+        }));
+    };
+
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
+        const result = await setEnabledSkills(enabledSkills);
+        if (result.success) {
+            toast({
+                title: "Modifications enregistrées",
+                description: "La liste des exercices disponibles a été mise à jour."
+            });
+        } else {
+            toast({
+                variant: 'destructive',
+                title: "Erreur",
+                description: "Impossible d'enregistrer les modifications."
+            });
+        }
+        setIsSaving(false);
+    }
 
     if (isLoading) {
         return (
@@ -41,8 +69,7 @@ export function ExercisesManager() {
             <CardHeader>
                 <CardTitle>Gestion des Exercices "En Classe"</CardTitle>
                 <CardDescription>
-                    Voici la liste des exercices que les élèves peuvent utiliser en mode "En classe". 
-                    Pour modifier cette liste, vous devez éditer le fichier `src/data/teacher-settings.json` et redéployer l'application.
+                    Cochez les exercices que vous souhaitez rendre disponibles pour les élèves en mode "En classe".
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -57,12 +84,18 @@ export function ExercisesManager() {
                         </div>
                         <Switch
                             checked={enabledSkills[skill.slug] ?? false}
-                            disabled={true}
-                            aria-label={`Statut de l'exercice ${skill.name}`}
+                            onCheckedChange={() => handleToggleSkill(skill.slug)}
+                            aria-label={`Activer/Désactiver l'exercice ${skill.name}`}
                         />
                     </div>
                 ))}
             </CardContent>
+            <CardFooter className="justify-end">
+                <Button onClick={handleSaveChanges} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                    Enregistrer les modifications
+                </Button>
+            </CardFooter>
         </Card>
     );
 }
