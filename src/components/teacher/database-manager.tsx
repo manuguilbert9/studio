@@ -1,0 +1,152 @@
+
+'use client';
+
+import { useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Upload, Download, Loader2, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { exportAllData, importAllData } from '@/services/database';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+
+
+export function DatabaseManager() {
+    const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
+    const [isImportAlertOpen, setIsImportAlertOpen] = useState(false);
+    const [fileToImport, setFileToImport] = useState<File | null>(null);
+
+    const handleExport = async () => {
+        setIsLoading(true);
+        toast({ title: "Préparation de l'exportation...", description: "Cela peut prendre quelques instants." });
+        try {
+            const data = await exportAllData();
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            const date = new Date().toISOString().split('T')[0];
+            link.download = `backup-classe-magique-${date}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            toast({ title: "Exportation réussie !", description: "Le fichier de sauvegarde a été téléchargé." });
+        } catch (error) {
+            console.error("Export error:", error);
+            toast({ variant: 'destructive', title: "Erreur d'exportation", description: "Impossible de générer le fichier de sauvegarde." });
+        }
+        setIsLoading(false);
+    };
+
+    const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file && file.type === 'application/json') {
+            setFileToImport(file);
+            setIsImportAlertOpen(true);
+        } else {
+            toast({ variant: 'destructive', title: "Fichier invalide", description: "Veuillez sélectionner un fichier JSON valide." });
+        }
+         // Reset file input so the same file can be selected again
+        event.target.value = '';
+    };
+
+    const handleImportConfirm = async () => {
+        if (!fileToImport) return;
+        
+        setIsImportAlertOpen(false);
+        setIsLoading(true);
+        toast({ title: "Importation en cours...", description: "Veuillez ne pas fermer cette page." });
+
+        try {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const content = e.target?.result;
+                    if (typeof content !== 'string') throw new Error("Le contenu du fichier est invalide.");
+
+                    const data = JSON.parse(content);
+                    const result = await importAllData(data);
+
+                    if (result.success) {
+                        toast({ title: "Importation terminée !", description: "Les données ont été restaurées. La page va se rafraîchir." });
+                        setTimeout(() => window.location.reload(), 2000);
+                    } else {
+                         throw new Error(result.error || 'Erreur inconnue lors de l\'importation.');
+                    }
+                } catch (parseError: any) {
+                     toast({ variant: 'destructive', title: "Erreur d'importation", description: parseError.message || "Le format du fichier est incorrect." });
+                } finally {
+                     setIsLoading(false);
+                     setFileToImport(null);
+                }
+            };
+            reader.readAsText(fileToImport);
+        } catch (error) {
+             console.error("Import error:", error);
+             toast({ variant: 'destructive', title: "Erreur d'importation", description: "Impossible de lire le fichier." });
+             setIsLoading(false);
+             setFileToImport(null);
+        }
+    };
+
+    return (
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Gestion de la base de données</CardTitle>
+                    <CardDescription>
+                        Exportez toutes les données de l'application (élèves, scores, etc.) dans un fichier de sauvegarde, ou importez un fichier pour restaurer les données.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex flex-col gap-4 p-6 rounded-lg bg-secondary/50 items-center">
+                        <h3 className="font-semibold text-lg">Exporter les données</h3>
+                        <p className="text-sm text-center text-muted-foreground">Téléchargez un fichier JSON contenant toutes les données actuelles de l'application.</p>
+                        <Button onClick={handleExport} disabled={isLoading} className="mt-2">
+                            {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Download className="mr-2" />}
+                            Exporter la sauvegarde
+                        </Button>
+                    </div>
+
+                     <div className="flex flex-col gap-4 p-6 rounded-lg bg-destructive/10 items-center border border-destructive/50">
+                        <h3 className="font-semibold text-lg text-destructive">Importer des données</h3>
+                        <p className="text-sm text-center text-muted-foreground">Restaurer les données depuis un fichier JSON. Attention, cette action est irréversible.</p>
+                        <Button asChild variant="destructive" className="mt-2 cursor-pointer" disabled={isLoading}>
+                             <label htmlFor="import-file">
+                                {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Upload className="mr-2" />}
+                                Choisir un fichier...
+                            </label>
+                        </Button>
+                        <input id="import-file" type="file" accept=".json" onChange={handleFileSelect} className="hidden" />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <AlertDialog open={isImportAlertOpen} onOpenChange={setIsImportAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                             <AlertTriangle className="text-destructive h-6 w-6" />
+                             Êtes-vous absolument sûr ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="py-4">
+                            Cette action est <span className="font-bold">irréversible</span> et va <span className="font-bold text-destructive">supprimer toutes les données actuelles</span> de la base de données (élèves, scores, devoirs, etc.).
+                            <br/><br/>
+                            Elles seront remplacées par le contenu du fichier <code className="bg-muted px-1 py-0.5 rounded-sm">{fileToImport?.name}</code>. Êtes-vous certain de vouloir continuer ?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setFileToImport(null)}>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleImportConfirm} className="bg-destructive hover:bg-destructive/90">
+                            Oui, importer et remplacer
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+}
