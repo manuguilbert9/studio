@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useContext, useCallback } from 'react';
@@ -40,7 +41,7 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
   const [inputValue, setInputValue] = useState('');
   const [results, setResults] = useState<DictationResult[]>([]);
   const [isFinished, setIsFinished] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   // Settings states
   const [repeatInterval, setRepeatInterval] = useState(5000); // Default 5s
@@ -123,19 +124,24 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
       // End of exercise
       if (repeatIntervalRef.current) clearInterval(repeatIntervalRef.current);
       setIsFinished(true);
-      if (student && !isTableauMode && !isSaving) {
-        setIsSaving(true);
-        const correctCount = updatedResults.filter(r => r.isCorrect).length;
-        const score = (correctCount / words.length) * 100;
-        await addScore({
-          userId: student.id,
-          skill: 'dictation',
-          score: score,
-        });
-        setIsSaving(false);
-      }
     }
   };
+  
+  useEffect(() => {
+      const saveResult = async () => {
+        if (isFinished && student && !isTableauMode && !hasBeenSaved) {
+            setHasBeenSaved(true);
+            const correctCount = results.filter(r => r.isCorrect).length;
+            const score = (correctCount / words.length) * 100;
+            await addScore({
+                userId: student.id,
+                skill: 'dictation',
+                score: score,
+            });
+        }
+      };
+      saveResult();
+  },[isFinished, student, results, words.length, isTableauMode, hasBeenSaved]);
   
   const startExercise = (listId: string) => {
     const list = availableLists.find(l => l.id === listId);
@@ -156,6 +162,7 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
     setCurrentWordIndex(0);
     setResults([]);
     setIsFinished(false);
+    setHasBeenSaved(false);
   };
 
   const handleIntervalChange = (value: number[]) => {

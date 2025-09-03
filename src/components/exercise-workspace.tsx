@@ -48,7 +48,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [showConfetti, setShowConfetti] = useState(false);
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
   
   const { student, isLoading: isUserLoading } = useContext(UserContext);
 
@@ -201,8 +201,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
-      if (isFinished && student && !isSaving && !isTableauMode) {
-        setIsSaving(true);
+      if (isFinished && student && !hasBeenSaved && !isTableauMode) {
+        setHasBeenSaved(true);
         setIsLoadingHistory(true);
         
         const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
@@ -232,13 +232,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           console.error("Error fetching scores: ", e);
         } finally {
             setIsLoadingHistory(false);
-            setIsSaving(false); // Allow saving again
         }
       }
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode]);
+  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode, hasBeenSaved]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -249,7 +248,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setShowConfetti(false);
     setScoreHistory([]);
     setIsLoadingHistory(true);
-    setIsSaving(false);
+    setHasBeenSaved(false);
     setIsReadyToStart(false);
     setCalculationSettings(null);
     setCurrencySettings(null);

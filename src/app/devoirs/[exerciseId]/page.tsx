@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
@@ -33,7 +34,7 @@ export default function SpellingExercisePage() {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'idle' | 'showing'>('showing');
   const [isFinished, setIsFinished] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const [isSaving, setIsSaving] = useState(false);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   const [wordDisplayTime, setWordDisplayTime] = useState(DEFAULT_WORD_DISPLAY_TIME_MS);
 
@@ -123,14 +124,19 @@ export default function SpellingExercisePage() {
     if (currentWordIndex < words.length - 1) {
       setCurrentWordIndex(prev => prev + 1);
     } else {
-      if (student && student.id && exerciseId && !isSaving) {
-        setIsSaving(true);
-        await saveSpellingResult(student.id, exerciseId, errors);
-        setIsSaving(false);
-      }
       setIsFinished(true);
     }
   };
+  
+  useEffect(() => {
+      const saveResult = async () => {
+          if (isFinished && student && student.id && exerciseId && !hasBeenSaved) {
+              setHasBeenSaved(true);
+              await saveSpellingResult(student.id, exerciseId, errors);
+          }
+      };
+      saveResult();
+  }, [isFinished, student, exerciseId, errors, hasBeenSaved]);
 
   if (isLoading || isUserLoading) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;

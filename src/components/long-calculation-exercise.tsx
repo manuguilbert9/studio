@@ -148,7 +148,7 @@ export function LongCalculationExercise() {
     const [feedback, setFeedback] = useState<Feedback>(null);
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
-    const [isSaving, setIsSaving] = useState(false);
+    const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [userCount, setUserCount] = useState('');
 
@@ -261,19 +261,18 @@ export function LongCalculationExercise() {
 
     useEffect(() => {
         const saveFinalScore = async () => {
-             if (isFinished && student && !isSaving) {
-                setIsSaving(true);
+             if (isFinished && student && !hasBeenSaved) {
+                setHasBeenSaved(true);
                 const score = (correctAnswers / NUM_PROBLEMS) * 100;
                 await addScore({
                     userId: student.id,
                     skill: 'long-calculation',
                     score: score,
                 });
-                setIsSaving(false);
             }
         }
         saveFinalScore();
-    }, [isFinished, student, correctAnswers]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved]);
 
     const restartExercise = () => {
         setIsLoading(true);
@@ -286,6 +285,7 @@ export function LongCalculationExercise() {
         setFeedback(null);
         setIsFinished(false);
         setCorrectAnswers(0);
+        setHasBeenSaved(false);
     };
 
     if (isLoading || !level || problems.length === 0) {

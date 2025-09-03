@@ -65,7 +65,7 @@ export function OppositesExercise() {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   useEffect(() => {
     async function loadPairs() {
@@ -147,19 +147,18 @@ export function OppositesExercise() {
 
   useEffect(() => {
     const saveFinalScore = async () => {
-      if (isFinished && student && !isSaving) {
-        setIsSaving(true);
+      if (isFinished && student && !hasBeenSaved) {
+        setHasBeenSaved(true);
         const scoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         await addScore({
           userId: student.id,
           skill: 'opposites',
           score: scoreValue,
         });
-        setIsSaving(false);
       }
     };
     saveFinalScore();
-  }, [isFinished, student, correctAnswers, isSaving]);
+  }, [isFinished, student, correctAnswers, hasBeenSaved]);
 
 
   const restartExercise = () => {
@@ -170,6 +169,7 @@ export function OppositesExercise() {
     setFeedback(null);
     setCorrectAnswers(0);
     setIsFinished(false);
+    setHasBeenSaved(false);
   };
   
   const currentQuestion = useMemo(() => questions[currentQuestionIndex], [questions, currentQuestionIndex]);
