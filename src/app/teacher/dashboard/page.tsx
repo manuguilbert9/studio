@@ -21,6 +21,7 @@ export default function TeacherDashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   
   // Data states
   const [students, setStudents] = useState<Student[]>([]);
@@ -28,7 +29,6 @@ export default function TeacherDashboardPage() {
   const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
 
   const loadDashboardData = useCallback(async () => {
-    setIsLoading(true);
       try {
         const [studentData, listsData, progressData] = await Promise.all([
             getStudents(),
@@ -51,12 +51,14 @@ export default function TeacherDashboardPage() {
   }, [toast]);
 
   useEffect(() => {
-    const isAuthenticated = sessionStorage.getItem('teacher_authenticated') === 'true';
-    if (!isAuthenticated) {
+    // This effect should only run once on mount to check auth.
+    const isAuth = sessionStorage.getItem('teacher_authenticated') === 'true';
+    if (!isAuth) {
       router.replace('/teacher/login');
-      return;
+    } else {
+      setIsAuthenticated(true);
+      loadDashboardData();
     }
-    loadDashboardData();
   }, [router, loadDashboardData]);
   
   const handleLogout = () => {
@@ -64,7 +66,7 @@ export default function TeacherDashboardPage() {
     router.push('/');
   }
 
-  if (isLoading) {
+  if (!isAuthenticated || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-16 w-16 animate-spin" />
