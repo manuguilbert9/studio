@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Loader2, RefreshCw, Check, X, Send } from 'lucide-react';
-import { getAntonymPairs, type AntonymPair } from '@/services/vocabulary';
+import { getAntonymPairs, type AntonymEntry } from '@/services/vocabulary';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import Confetti from 'react-dom-confetti';
@@ -37,9 +37,21 @@ const difficultyDesc = [
 
 const questionTypes: QuestionType[] = ['qcm-2', 'qcm-4', 'input'];
 
+// Fisher-Yates shuffle algorithm
+const shuffleArray = (array: any[]) => {
+  let currentIndex = array.length, randomIndex;
+  while (currentIndex !== 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+  }
+  return array;
+};
+
+
 export function OppositesExercise() {
   const { student } = useContext(UserContext);
-  const [allPairs, setAllPairs] = useState<AntonymPair[]>([]);
+  const [allEntries, setAllEntries] = useState<AntonymEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   
@@ -54,39 +66,46 @@ export function OppositesExercise() {
   useEffect(() => {
     async function loadPairs() {
       setIsLoading(true);
-      const pairs = await getAntonymPairs();
-      setAllPairs(pairs);
+      const entries = await getAntonymPairs();
+      setAllEntries(entries);
       setIsLoading(false);
     }
     loadPairs();
   }, []);
 
   const generateQuestions = (selectedDifficulty: Difficulty) => {
-    if (allPairs.length === 0) return;
+    if (allEntries.length === 0) return;
 
     const questionType = questionTypes[selectedDifficulty];
-    const shuffledPairs = [...allPairs].sort(() => 0.5 - Math.random());
-    const selectedPairs = shuffledPairs.slice(0, NUM_QUESTIONS);
+    const shuffledEntries = [...allEntries].sort(() => 0.5 - Math.random());
+    const selectedEntries = shuffledEntries.slice(0, NUM_QUESTIONS);
     
-    const newQuestions = selectedPairs.map(pair => {
+    const newQuestions = selectedEntries.map(entry => {
       const question: Question = {
-        word: pair.word,
-        answer: pair.opposite,
+        word: entry.word,
+        answer: entry.opposite,
         type: questionType,
       };
 
       if (questionType === 'qcm-2' || questionType === 'qcm-4') {
-        const options = new Set<string>([pair.opposite]);
         const numOptions = questionType === 'qcm-2' ? 2 : 4;
-        const otherWords = allPairs
-            .map(p => p.opposite)
-            .filter(w => w !== pair.opposite);
-
-        while (options.size < numOptions && otherWords.length > 0) {
-            const randomIndex = Math.floor(Math.random() * otherWords.length);
-            options.add(otherWords.splice(randomIndex, 1)[0]);
+        let options = new Set<string>([entry.opposite]);
+        
+        const availableDistractors = [...entry.distractors];
+        while (options.size < numOptions && availableDistractors.length > 0) {
+            const randomIndex = Math.floor(Math.random() * availableDistractors.length);
+            options.add(availableDistractors.splice(randomIndex, 1)[0]);
         }
-        question.options = Array.from(options).sort(() => 0.5 - Math.random());
+        
+        // If we still don't have enough options from the entry's distractors,
+        // grab some from other entries (as a fallback)
+        const otherOpposites = allEntries.map(e => e.opposite).filter(o => !options.has(o));
+         while (options.size < numOptions && otherOpposites.length > 0) {
+            const randomIndex = Math.floor(Math.random() * otherOpposites.length);
+            options.add(otherOpposites.splice(randomIndex, 1)[0]);
+        }
+
+        question.options = shuffleArray(Array.from(options));
       }
       return question;
     });
@@ -155,7 +174,7 @@ export function OppositesExercise() {
     return <Card className="w-full shadow-2xl p-8 text-center"><Loader2 className="mx-auto animate-spin" /> Chargement...</Card>;
   }
 
-  if (allPairs.length === 0) {
+  if (allEntries.length === 0) {
      return <Card className="w-full shadow-2xl p-8 text-center text-destructive">Impossible de charger le fichier "contraires.txt". Veuillez vérifier qu'il se trouve dans le dossier public/vocabulaire.</Card>;
   }
 
