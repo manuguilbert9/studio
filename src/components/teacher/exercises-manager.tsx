@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
@@ -19,7 +19,6 @@ export function ExercisesManager() {
     useEffect(() => {
         async function fetchSkills() {
             setIsLoading(true);
-            // The service now guarantees a valid object is returned.
             const skillsState = await getEnabledSkills();
             setEnabledSkills(skillsState);
             setIsLoading(false);
@@ -31,7 +30,7 @@ export function ExercisesManager() {
         setEnabledSkills(prev => ({ ...prev, [slug]: checked }));
     };
 
-    const handleSaveChanges = async () => {
+    const handleSaveChanges = useCallback(async () => {
         setIsSaving(true);
         try {
             const result = await setEnabledSkills(enabledSkills);
@@ -45,7 +44,7 @@ export function ExercisesManager() {
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [enabledSkills, toast]);
 
     if (isLoading) {
         return (
