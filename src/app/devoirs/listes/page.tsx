@@ -4,7 +4,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { getSpellingLists } from '@/services/spelling';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { FormattedWord } from '@/components/formatted-word';
+import { cn } from '@/lib/utils';
+
 
 export default async function WordListsPage() {
   const lists = await getSpellingLists();
@@ -34,7 +35,9 @@ export default async function WordListsPage() {
               <CardContent>
                 <div className="flex flex-wrap gap-x-6 gap-y-3">
                   {list.words.map((word) => (
-                    <FormattedWord key={word} word={word} className="text-xl"/>
+                    <span key={word} className="text-xl font-body">
+                      {word.replace(/\|.*?\|/g, '').replace(/\(.*?\)/g, '')}
+                    </span>
                   ))}
                 </div>
               </CardContent>
