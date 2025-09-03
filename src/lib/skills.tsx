@@ -10,6 +10,7 @@ import {
   Ear,
   SquarePen,
   Spline,
+  GitCompareArrows,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from './questions';
 
@@ -29,6 +30,12 @@ export const skills: Skill[] = [
     slug: 'dictation',
     description: "Écoutez le mot et écrivez-le correctement.",
     icon: <Ear />,
+  },
+  {
+    name: 'Contraires',
+    slug: 'opposites',
+    description: 'Trouvez le contraire du mot proposé.',
+    icon: <GitCompareArrows />,
   },
   {
     name: 'Familles de mots',
