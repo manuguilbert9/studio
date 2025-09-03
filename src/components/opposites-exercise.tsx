@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useContext } from 'react';
@@ -158,7 +159,7 @@ export function OppositesExercise() {
       }
     }
     saveFinalScore();
-  }, [isFinished, student, correctAnswers, isSaving]);
+  }, [isFinished, student, correctAnswers]);
 
   const restartExercise = () => {
     setIsStarted(false);

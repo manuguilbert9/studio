@@ -123,7 +123,7 @@ export function DictationExercise({ isTableauMode = false }: DictationExercisePr
       // End of exercise
       if (repeatIntervalRef.current) clearInterval(repeatIntervalRef.current);
       setIsFinished(true);
-      if (student && !isTableauMode) {
+      if (student && !isTableauMode && !isSaving) {
         setIsSaving(true);
         const correctCount = updatedResults.filter(r => r.isCorrect).length;
         const score = (correctCount / words.length) * 100;

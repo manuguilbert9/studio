@@ -273,7 +273,7 @@ export function LongCalculationExercise() {
             }
         }
         saveFinalScore();
-    }, [isFinished, student, correctAnswers, isSaving]);
+    }, [isFinished, student, correctAnswers]);
 
     const restartExercise = () => {
         setIsLoading(true);

@@ -33,6 +33,7 @@ export default function SpellingExercisePage() {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'idle' | 'showing'>('showing');
   const [isFinished, setIsFinished] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [wordDisplayTime, setWordDisplayTime] = useState(DEFAULT_WORD_DISPLAY_TIME_MS);
 
@@ -122,8 +123,10 @@ export default function SpellingExercisePage() {
     if (currentWordIndex < words.length - 1) {
       setCurrentWordIndex(prev => prev + 1);
     } else {
-      if (student && student.id && exerciseId) {
+      if (student && student.id && exerciseId && !isSaving) {
+        setIsSaving(true);
         await saveSpellingResult(student.id, exerciseId, errors);
+        setIsSaving(false);
       }
       setIsFinished(true);
     }
@@ -213,7 +216,7 @@ export default function SpellingExercisePage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in">
-              <div className="flex items-center gap-2 w-full max-w-md">
+              <div className="flex items-center gap-2 w-full max-w-md relative">
                 <Input
                   ref={inputRef}
                   value={inputValue}
@@ -288,4 +291,3 @@ export default function SpellingExercisePage() {
     </main>
   );
 }
-
