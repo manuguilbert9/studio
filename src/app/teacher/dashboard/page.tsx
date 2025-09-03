@@ -29,6 +29,7 @@ export default function TeacherDashboardPage() {
   const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
 
   const loadDashboardData = useCallback(async () => {
+      setIsLoading(true);
       try {
         const [studentData, listsData, progressData] = await Promise.all([
             getStudents(),
@@ -51,7 +52,6 @@ export default function TeacherDashboardPage() {
   }, [toast]);
 
   useEffect(() => {
-    // This effect should only run once on mount to check auth.
     const isAuth = sessionStorage.getItem('teacher_authenticated') === 'true';
     if (!isAuth) {
       router.replace('/teacher/login');
@@ -97,7 +97,7 @@ export default function TeacherDashboardPage() {
                     <TabsTrigger value="exercises">Exercices en classe</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
-                    <StudentManager initialStudents={students} />
+                    <StudentManager />
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
                     <HomeworkTracker students={students} spellingLists={spellingLists} allProgress={allProgress}/>

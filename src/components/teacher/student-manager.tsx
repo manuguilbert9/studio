@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -25,18 +25,30 @@ const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'D', label: 'D - CM2/6ème' },
 ];
 
-export function StudentManager({ initialStudents }: { initialStudents: Student[] }) {
+export function StudentManager() {
     const { toast } = useToast();
-    const [students, setStudents] = useState<Student[]>(initialStudents);
+    const [students, setStudents] = useState<Student[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [newStudentName, setNewStudentName] = useState('');
     const [isCreatingStudent, setIsCreatingStudent] = useState(false);
     
-      // Editing states
+    // Editing states
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [editedName, setEditedName] = useState('');
     const [editedCode, setEditedCode] = useState('');
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
     const [isUpdating, setIsUpdating] = useState(false);
+
+    const fetchStudents = useCallback(async () => {
+        setIsLoading(true);
+        const studentData = await getStudents();
+        setStudents(studentData);
+        setIsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        fetchStudents();
+    }, [fetchStudents]);
 
      const handleCreateStudent = async (e: FormEvent) => {
         e.preventDefault();
@@ -44,13 +56,13 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
 
         setIsCreatingStudent(true);
         try {
-            const newStudent = await createStudent(newStudentName);
-            setStudents(prev => [...prev, newStudent].sort((a,b) => a.name.localeCompare(b.name)));
+            await createStudent(newStudentName);
             toast({
                 title: "Élève créé !",
-                description: `L'élève ${newStudent.name} a été ajouté avec le code ${newStudent.code}.`,
+                description: `L'élève ${newStudentName} a été ajouté.`,
             });
             setNewStudentName('');
+            await fetchStudents(); // Refresh the list
         } catch(error) {
             toast({
                 variant: 'destructive',
@@ -87,24 +99,24 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
             code: editedCode,
             levels: editedLevels
         });
-        setIsUpdating(false);
-
+        
         if (result.success) {
-            setStudents(prev => prev.map(s => s.id === editingStudent.id ? { ...s, name: editedName, code: editedCode, levels: editedLevels } : s));
+            await fetchStudents(); // Refresh list
             toast({ title: "Élève mis à jour", description: `Les informations de ${editedName} ont été modifiées.` });
             closeEditModal();
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de mettre à jour les informations." });
         }
+         setIsUpdating(false);
     };
 
     const handleDeleteStudent = async (studentId: string) => {
         const result = await deleteStudent(studentId);
         if (result.success) {
-        setStudents(prev => prev.filter(s => s.id !== studentId));
-        toast({ title: "Élève supprimé", description: "L'élève a bien été supprimé de la liste." });
+            await fetchStudents(); // Refresh list
+            toast({ title: "Élève supprimé", description: "L'élève a bien été supprimé de la liste." });
         } else {
-        toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de supprimer l'élève." });
+            toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de supprimer l'élève." });
         }
     }
 
@@ -143,70 +155,76 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
                             <CardDescription>Consultez la liste des élèves, leurs codes et leurs niveaux.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Prénom</TableHead>
-                                        <TableHead>Code Secret</TableHead>
-                                        <TableHead>Niveaux</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {students.map(student => (
-                                        <TableRow key={student.id}>
-                                            <TableCell className="font-medium">{student.name}</TableCell>
-                                            <TableCell className="font-mono font-bold">{student.code}</TableCell>
-                                            <TableCell>
-                                                <div className="flex gap-1 flex-wrap">
-                                                {student.levels && Object.entries(student.levels).length > 0 ? (
-                                                    Object.entries(student.levels).map(([skill, level]) => (
-                                                        <Tooltip key={skill}>
-                                                            <TooltipTrigger asChild>
-                                                                <Badge variant="secondary">{level}</Badge>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <p>{availableSkills.find(s => s.slug === skill)?.name || skill}</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-muted-foreground text-xs">Aucun</span>
-                                                )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex gap-1 justify-end">
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditModal(student)}>
-                                                        <Pencil />
-                                                    </Button>
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger asChild>
-                                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
-                                                                <Trash2 />
-                                                            </Button>
-                                                        </AlertDialogTrigger>
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                            <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                                                            <AlertDialogDescription>
-                                                                Cette action est irréversible. Toutes les données de l'élève {student.name}, y compris ses scores, seront définitivement supprimées.
-                                                            </AlertDialogDescription>
-                                                            </AlertDialogHeader>
-                                                            <AlertDialogFooter>
-                                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                            <AlertDialogAction onClick={() => handleDeleteStudent(student.id)}>
-                                                                Supprimer
-                                                            </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </div>
-                                            </TableCell>
+                           {isLoading ? (
+                                <div className="flex justify-center items-center h-48">
+                                    <Loader2 className="h-8 w-8 animate-spin" />
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Prénom</TableHead>
+                                            <TableHead>Code Secret</TableHead>
+                                            <TableHead>Niveaux</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {students.map(student => (
+                                            <TableRow key={student.id}>
+                                                <TableCell className="font-medium">{student.name}</TableCell>
+                                                <TableCell className="font-mono font-bold">{student.code}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex gap-1 flex-wrap">
+                                                    {student.levels && Object.entries(student.levels).length > 0 ? (
+                                                        Object.entries(student.levels).map(([skill, level]) => (
+                                                            <Tooltip key={skill}>
+                                                                <TooltipTrigger asChild>
+                                                                    <Badge variant="secondary">{level}</Badge>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>{availableSkills.find(s => s.slug === skill)?.name || skill}</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        ))
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-xs">Aucun</span>
+                                                    )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex gap-1 justify-end">
+                                                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditModal(student)}>
+                                                            <Pencil />
+                                                        </Button>
+                                                        <AlertDialog>
+                                                            <AlertDialogTrigger asChild>
+                                                                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                                    <Trash2 />
+                                                                </Button>
+                                                            </AlertDialogTrigger>
+                                                            <AlertDialogContent>
+                                                                <AlertDialogHeader>
+                                                                <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                                                <AlertDialogDescription>
+                                                                    Cette action est irréversible. Toutes les données de l'élève {student.name}, y compris ses scores, seront définitivement supprimées.
+                                                                </AlertDialogDescription>
+                                                                </AlertDialogHeader>
+                                                                <AlertDialogFooter>
+                                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleDeleteStudent(student.id)}>
+                                                                    Supprimer
+                                                                </AlertDialogAction>
+                                                                </AlertDialogFooter>
+                                                            </AlertDialogContent>
+                                                        </AlertDialog>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -272,4 +290,3 @@ export function StudentManager({ initialStudents }: { initialStudents: Student[]
         </>
     );
 }
-
