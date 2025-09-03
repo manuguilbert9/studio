@@ -19,30 +19,30 @@ export function ExercisesManager() {
     useEffect(() => {
         async function fetchSkills() {
             setIsLoading(true);
-            const enabledSlugs = await getEnabledSkills();
+            const skillsState = await getEnabledSkills();
             
-            const skillsState: Record<string, boolean> = {};
-            if (enabledSlugs === null) {
-                availableSkills.forEach(skill => skillsState[skill.slug] = true);
-            } else {
+            // If settings are not in DB, default all to true
+            if (skillsState === null) {
+                const defaultSkills: Record<string, boolean> = {};
                 availableSkills.forEach(skill => {
-                    skillsState[skill.slug] = enabledSlugs.includes(skill.slug);
+                    defaultSkills[skill.slug] = true;
                 });
+                setEnabledSkills(defaultSkills);
+            } else {
+                setEnabledSkills(skillsState);
             }
-            setEnabledSkills(skillsState);
             setIsLoading(false);
         }
         fetchSkills();
     }, []);
 
-    const handleSkillToggle = useCallback((slug: string, checked: boolean) => {
+    const handleSkillToggle = (slug: string, checked: boolean) => {
         setEnabledSkills(prev => ({ ...prev, [slug]: checked }));
-    }, []);
+    };
 
     const handleSaveChanges = async () => {
         setIsSaving(true);
-        const skillsToSave = Object.keys(enabledSkills).filter(slug => enabledSkills[slug]);
-        const result = await setEnabledSkills(skillsToSave);
+        const result = await setEnabledSkills(enabledSkills);
         
         if (result.success) {
             toast({ title: "Paramètres enregistrés", description: "La liste des exercices disponibles a été mise à jour." });
@@ -101,4 +101,3 @@ export function ExercisesManager() {
         </Card>
     );
 }
-

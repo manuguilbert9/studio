@@ -14,20 +14,20 @@ import { getEnabledSkills } from '@/services/teacher';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
-  const [enabledSkills, setEnabledSkills] = useState<Skill[] | null>(null);
+  const [enabledSkillsList, setEnabledSkillsList] = useState<Skill[] | null>(null);
   const [isLoadingSkills, setIsLoadingSkills] = useState(true);
 
   useEffect(() => {
     async function fetchSkills() {
       setIsLoadingSkills(true);
-      const enabledSlugs = await getEnabledSkills();
+      const enabledSkillsMap = await getEnabledSkills();
       
-      if (enabledSlugs === null) {
-        // If null, all skills are enabled
-        setEnabledSkills(allSkills);
+      if (enabledSkillsMap === null) {
+        // If null (never set before), all skills are enabled by default
+        setEnabledSkillsList(allSkills);
       } else {
-        const filteredSkills = allSkills.filter(skill => enabledSlugs.includes(skill.slug));
-        setEnabledSkills(filteredSkills);
+        const filteredSkills = allSkills.filter(skill => enabledSkillsMap[skill.slug]);
+        setEnabledSkillsList(filteredSkills);
       }
       setIsLoadingSkills(false);
     }
@@ -86,9 +86,9 @@ export default function EnClassePage() {
             </Button>
         </div>
       </header>
-      {enabledSkills && enabledSkills.length > 0 ? (
+      {enabledSkillsList && enabledSkillsList.length > 0 ? (
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
-          {enabledSkills.map((skill) => (
+          {enabledSkillsList.map((skill) => (
             <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
               <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
                 <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">

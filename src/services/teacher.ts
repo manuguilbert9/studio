@@ -3,12 +3,13 @@
 
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { skills } from '@/lib/skills';
 
 const settingsDocRef = doc(db, 'teacher', 'settings');
 
 interface TeacherSettings {
     currentSpellingListId?: string;
-    enabledSkills?: string[];
+    enabledSkills?: Record<string, boolean>;
 }
 
 /**
@@ -35,7 +36,6 @@ async function getTeacherSettings(): Promise<TeacherSettings> {
  */
 export async function setCurrentSpellingList(listId: string): Promise<{ success: boolean; error?: string }> {
     try {
-        // Using merge: true will create the document if it doesn't exist.
         await setDoc(settingsDocRef, { currentSpellingListId: listId }, { merge: true });
         return { success: true };
     } catch (error) {
@@ -54,13 +54,12 @@ export async function getCurrentSpellingListId(): Promise<string | null> {
 }
 
 /**
- * Saves the list of enabled skill slugs for the "En classe" mode.
- * @param skills An array of skill slugs (e.g., ['reading', 'calculation']).
+ * Saves the enabled/disabled state for all skills.
+ * @param skillsState A record object mapping skill slugs to a boolean.
  */
-export async function setEnabledSkills(skills: string[]): Promise<{ success: boolean; error?: string }> {
+export async function setEnabledSkills(skillsState: Record<string, boolean>): Promise<{ success: boolean; error?: string }> {
     try {
-        // Using merge: true will create the document if it doesn't exist and update only the specified field.
-        await setDoc(settingsDocRef, { enabledSkills: skills }, { merge: true });
+        await setDoc(settingsDocRef, { enabledSkills: skillsState }, { merge: true });
         return { success: true };
     } catch (error) {
         console.error("Error setting enabled skills:", error);
@@ -69,14 +68,18 @@ export async function setEnabledSkills(skills: string[]): Promise<{ success: boo
 }
 
 /**
- * Retrieves the list of enabled skill slugs.
- * @returns An array of skill slugs. If the setting has never been saved, returns null to indicate "all enabled by default".
+ * Retrieves the enabled/disabled state for all skills.
+ * @returns An object mapping skill slugs to a boolean. If not set, returns null.
  */
-export async function getEnabledSkills(): Promise<string[] | null> {
+export async function getEnabledSkills(): Promise<Record<string, boolean> | null> {
     const settings = await getTeacherSettings();
-    // If enabledSkills is not in the document, it's undefined. We return null in that case.
-    if (typeof settings.enabledSkills === 'undefined') {
-        return null;
+    if (settings.enabledSkills) {
+        // Ensure all available skills are present in the returned object, defaulting to true if missing.
+        const completeSkillSet: Record<string, boolean> = {};
+        skills.forEach(skill => {
+            completeSkillSet[skill.slug] = settings.enabledSkills![skill.slug] ?? true;
+        });
+        return completeSkillSet;
     }
-    return settings.enabledSkills;
+    return null; // This indicates no settings have been saved yet.
 }
