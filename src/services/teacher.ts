@@ -67,7 +67,7 @@ export async function getEnabledSkills(): Promise<Record<string, boolean>> {
 export async function setEnabledSkills(enabledSkills: Record<string, boolean>): Promise<{ success: boolean; error?: string }> {
      try {
         const settingsRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
-        await setDoc(settingsRef, { enabledSkills: enabledSkills }, { merge: true });
+        await setDoc(settingsRef, { enabledSkills }, { merge: true });
         return { success: true };
     } catch (e) {
         console.error("Error setting enabled skills:", e);
