@@ -15,6 +15,9 @@ export default {
       },
     },
     extend: {
+      backgroundImage: {
+        'gradient-highlight': 'linear-gradient(to right, hsl(var(--primary)), hsl(270, 90%, 65%))',
+      },
       fontFamily: {
         body: ['Arial', 'sans-serif'],
         headline: ['Belleza', 'sans-serif'],
