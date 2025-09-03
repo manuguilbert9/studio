@@ -11,7 +11,7 @@ import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRigh
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, currency as currencyData, formatCurrency } from '@/lib/questions';
 import { Progress } from '@/components/ui/progress';
-import { ScoreHistoryDisplay } from '@/components/score-history-chart';
+import { ScoreHistoryDisplay } from './score-history-chart';
 import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
 import { CalculationSettings } from './calculation-settings';
@@ -238,7 +238,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, isTableauMode]);
+  }, [isFinished, student, isTableauMode, skill.slug, correctAnswers, calculationSettings, currencySettings, timeSettings, isSaving]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -562,5 +562,3 @@ const renderSetTime = () => (
     </div>
   );
 }
-
-    

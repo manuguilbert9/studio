@@ -10,8 +10,13 @@ import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Play, Pause, RefreshCw } from 'lucide-react';
 import { Skeleton } from './ui/skeleton';
+import { cn } from '@/lib/utils';
 
-export function FluencyExercise() {
+interface FluencyExerciseProps {
+  isTableauMode?: boolean;
+}
+
+export function FluencyExercise({ isTableauMode = false }: FluencyExerciseProps) {
   const [availableTexts, setAvailableTexts] = useState<Record<string, string[]>>({});
   const [selectedLevel, setSelectedLevel] = useState<string>('');
   const [selectedText, setSelectedText] = useState<string>('');
@@ -117,10 +122,12 @@ export function FluencyExercise() {
   const netWpm = wpm > 0 ? Math.max(0, wpm - errors) : 0;
 
   return (
-    <Card className="w-full max-w-4xl mx-auto shadow-2xl">
-      <CardHeader>
-        <CardTitle className="font-headline text-3xl text-center">Exercice de Fluence</CardTitle>
-      </CardHeader>
+    <Card className={cn("w-full max-w-4xl mx-auto", isTableauMode ? "shadow-none border-0 bg-transparent" : "shadow-2xl")}>
+      {!isTableauMode && (
+         <CardHeader>
+          <CardTitle className="font-headline text-3xl text-center">Exercice de Fluence</CardTitle>
+        </CardHeader>
+      )}
       <CardContent className="space-y-6">
         <div className="flex flex-col sm:flex-row items-center gap-4 justify-between">
             <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -156,28 +163,31 @@ export function FluencyExercise() {
         {selectedText && (
           <>
             {/* Stopwatch Display and Controls */}
-            <Card className="bg-muted/50 p-4">
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <div className="text-center">
-                        <p className="text-sm text-muted-foreground">Chronomètre</p>
-                        <p className="font-mono text-5xl font-bold text-primary">
-                          <span>{("0" + Math.floor(time / 60)).slice(-2)}:</span>
-                          <span>{("0" + (time % 60)).slice(-2)}</span>
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button onClick={startStopwatch} disabled={isRunning} aria-label="Démarrer">
-                            <Play className="mr-2"/> Démarrer
-                        </Button>
-                        <Button onClick={stopStopwatch} disabled={!isRunning} variant="destructive" aria-label="Arrêter">
-                            <Pause className="mr-2"/> Arrêter
-                        </Button>
-                        <Button onClick={resetStopwatch} variant="outline" aria-label="Réinitialiser">
-                            <RefreshCw/>
-                        </Button>
-                    </div>
-                </div>
-            </Card>
+            {!isTableauMode && (
+              <Card className="bg-muted/50 p-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                      <div className="text-center">
+                          <p className="text-sm text-muted-foreground">Chronomètre</p>
+                          <p className="font-mono text-5xl font-bold text-primary">
+                            <span>{("0" + Math.floor(time / 60)).slice(-2)}:</span>
+                            <span>{("0" + (time % 60)).slice(-2)}</span>
+                          </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <Button onClick={startStopwatch} disabled={isRunning} aria-label="Démarrer">
+                              <Play className="mr-2"/> Démarrer
+                          </Button>
+                          <Button onClick={stopStopwatch} disabled={!isRunning} variant="destructive" aria-label="Arrêter">
+                              <Pause className="mr-2"/> Arrêter
+                          </Button>
+                          <Button onClick={resetStopwatch} variant="outline" aria-label="Réinitialiser">
+                              <RefreshCw/>
+                          </Button>
+                      </div>
+                  </div>
+              </Card>
+            )}
+
 
             {/* Text Content */}
             <Card>
@@ -193,20 +203,22 @@ export function FluencyExercise() {
                         </div>
                     ) : (
                       <div 
-                        className="p-6 text-2xl leading-relaxed font-serif cursor-pointer"
+                        className={cn("p-6 font-serif cursor-pointer", isTableauMode ? "text-4xl leading-relaxed" : "text-2xl leading-relaxed")}
                         onClick={handleTextClick}
                       >
                        {rawTextContent.split('\n').map((line, i) => <p key={i}>{line || <>&nbsp;</>}</p>)}
                       </div>
                     )}
                 </CardContent>
-                 <CardFooter className="text-sm text-muted-foreground">
-                    Cliquez sur le texte pour démarrer ou arrêter le chrono.
-                </CardFooter>
+                 {!isTableauMode && (
+                    <CardFooter className="text-sm text-muted-foreground">
+                        Cliquez sur le texte pour démarrer ou arrêter le chrono.
+                    </CardFooter>
+                 )}
             </Card>
 
             {/* Results Display */}
-            {showResults && (
+            {showResults && !isTableauMode && (
               <Card className="bg-secondary/50 p-6">
                 <CardTitle className="text-2xl mb-4 text-center">Résultats de la lecture</CardTitle>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">

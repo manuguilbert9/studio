@@ -43,7 +43,7 @@ async function parseSpellingFile(): Promise<SpellingList[]> {
                 // The words are expected on the next line
                 if (i + 1 < lines.length) {
                     const wordsLine = lines[i + 1].trim();
-                    const words = wordsLine.split(',').map(word => word.trim().replace(/\|.*?\|/g, '').replace(/\(.*?\)/g, '')).filter(Boolean);
+                    const words = wordsLine.split(',').map(word => word.trim()).filter(Boolean);
                     
                     lists.push({
                         id: listId,
