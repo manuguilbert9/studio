@@ -145,7 +145,8 @@ export function OppositesExercise() {
     }, 1500);
   };
 
-   const saveFinalScore = useCallback(async () => {
+  useEffect(() => {
+    const saveFinalScore = async () => {
       if (isFinished && student && !isSaving) {
         setIsSaving(true);
         const scoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
@@ -153,17 +154,13 @@ export function OppositesExercise() {
           userId: student.id,
           skill: 'opposites',
           score: scoreValue,
-          // We can add settings later if needed
         });
         setIsSaving(false);
       }
-    }, [isFinished, student, isSaving, correctAnswers]);
+    };
+    saveFinalScore();
+  }, [isFinished, student, correctAnswers, isSaving]);
 
-    useEffect(() => {
-        if (isFinished) {
-            saveFinalScore();
-        }
-    }, [isFinished, saveFinalScore]);
 
   const restartExercise = () => {
     setIsStarted(false);
