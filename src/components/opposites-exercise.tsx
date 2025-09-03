@@ -160,7 +160,9 @@ export function OppositesExercise() {
     }, [isFinished, student, isSaving, correctAnswers]);
 
     useEffect(() => {
-        saveFinalScore();
+        if (isFinished) {
+            saveFinalScore();
+        }
     }, [isFinished, saveFinalScore]);
 
   const restartExercise = () => {
@@ -240,7 +242,7 @@ export function OppositesExercise() {
 
 
   return (
-     <Card className="w-full max-w-2xl mx-auto shadow-2xl relative">
+     <Card className="w-full max-w-2xl mx-auto shadow-2xl relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
             <Confetti active={feedback === 'correct'} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 70, duration: 2000, stagger: 3}} />
         </div>
