@@ -1,0 +1,19 @@
+
+{
+  "patterns": [
+    { "pattern": ".n", "type": "onset", "context": "v" },
+    { "pattern": "s.l", "type": "coda" },
+    { "pattern": "s.m", "type": "coda" },
+    { "pattern": "s.n", "type": "coda" },
+    { "pattern": "s.p", "type": "coda" },
+    { "pattern": "s.t", "type": "coda" },
+    { "pattern": "ff.r", "type": "onset" },
+    { "pattern": "sc.r", "type": "onset" },
+    { "pattern": "st.r", "type": "onset" },
+    { "pattern": "c.c", "type": "coda", "context": "[iey]" },
+    { "pattern": "c.t", "type": "coda", "context": "[iey]" }
+  ],
+  "exceptions": {
+    "monsieur": ["mo", "sieur"]
+  }
+}
