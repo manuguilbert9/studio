@@ -7,11 +7,11 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Home, LogOut, UserPlus, Pencil, Trash2, CheckCircle } from 'lucide-react';
+import { Loader2, Home, LogOut, UserPlus, Pencil, Trash2, CheckCircle, Save } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { createStudent, getStudents, type Student, updateStudent, deleteStudent } from '@/services/students';
 import { getSpellingLists, getAllSpellingProgress, SpellingProgress, SpellingList, SpellingResult } from '@/services/spelling';
-import { setCurrentSpellingList, getCurrentSpellingListId } from '@/services/teacher';
+import { setCurrentSpellingList, getCurrentSpellingListId, getEnabledSkills, setEnabledSkills } from '@/services/teacher';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Switch } from '@/components/ui/switch';
 
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
@@ -291,6 +292,89 @@ function HomeworkTracker({ students, spellingLists, allProgress }: { students: S
     );
 }
 
+function ExercisesManager() {
+    const { toast } = useToast();
+    const [enabledSkills, setEnabledSkills] = useState<Record<string, boolean>>({});
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        async function fetchSkills() {
+            setIsLoading(true);
+            const enabledSlugs = await getEnabledSkills();
+            
+            const skillsState: Record<string, boolean> = {};
+            if (enabledSlugs === null) {
+                // If null, all skills are enabled by default
+                availableSkills.forEach(skill => skillsState[skill.slug] = true);
+            } else {
+                availableSkills.forEach(skill => {
+                    skillsState[skill.slug] = enabledSlugs.includes(skill.slug);
+                });
+            }
+            setEnabledSkills(skillsState);
+            setIsLoading(false);
+        }
+        fetchSkills();
+    }, []);
+
+    const handleSkillToggle = (slug: string, checked: boolean) => {
+        setEnabledSkills(prev => ({ ...prev, [slug]: checked }));
+    };
+
+    const handleSaveChanges = async () => {
+        setIsSaving(true);
+        const skillsToSave = Object.keys(enabledSkills).filter(slug => enabledSkills[slug]);
+        const result = await setEnabledSkills(skillsToSave);
+        setIsSaving(false);
+        if (result.success) {
+            toast({ title: "Paramètres enregistrés", description: "La liste des exercices disponibles a été mise à jour." });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible d'enregistrer les paramètres." });
+        }
+    };
+
+    if (isLoading) {
+        return <Loader2 className="animate-spin mx-auto mt-8" />
+    }
+    
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Gestion des Exercices "En Classe"</CardTitle>
+                <CardDescription>
+                    Sélectionnez les exercices que les élèves peuvent utiliser en mode "En classe". 
+                    Les modifications seront appliquées immédiatement.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 {availableSkills.map(skill => (
+                    <div key={skill.slug} className="flex items-center justify-between p-4 rounded-lg bg-secondary/50">
+                        <div className='flex items-center gap-4'>
+                            <div className="text-primary">{skill.icon}</div>
+                            <div>
+                                <h3 className="font-bold text-lg">{skill.name}</h3>
+                                <p className="text-xs text-muted-foreground">{skill.description}</p>
+                            </div>
+                        </div>
+                        <Switch
+                            checked={enabledSkills[skill.slug] ?? false}
+                            onCheckedChange={(checked) => handleSkillToggle(skill.slug, checked)}
+                            aria-label={`Activer/Désactiver l'exercice ${skill.name}`}
+                        />
+                    </div>
+                ))}
+            </CardContent>
+            <CardFooter>
+                 <Button onClick={handleSaveChanges} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="animate-spin mr-2"/> : <Save className="mr-2"/>}
+                    Enregistrer les modifications
+                </Button>
+            </CardFooter>
+        </Card>
+    )
+}
+
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -423,9 +507,10 @@ export default function TeacherDashboardPage() {
 
         <div className="max-w-7xl mx-auto mt-4">
             <Tabs defaultValue="students">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
+                    <TabsTrigger value="exercises">Exercices en classe</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
                     <StudentManager 
@@ -437,6 +522,9 @@ export default function TeacherDashboardPage() {
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
                     <HomeworkTracker students={students} spellingLists={spellingLists} allProgress={allProgress}/>
+                </TabsContent>
+                <TabsContent value="exercises" className="mt-6">
+                    <ExercisesManager />
                 </TabsContent>
             </Tabs>
         </div>
