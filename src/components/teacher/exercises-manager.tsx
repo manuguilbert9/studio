@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
@@ -20,17 +20,7 @@ export function ExercisesManager() {
         async function fetchSkills() {
             setIsLoading(true);
             const skillsState = await getEnabledSkills();
-            
-            // If settings are not in DB, default all to true
-            if (skillsState === null) {
-                const defaultSkills: Record<string, boolean> = {};
-                availableSkills.forEach(skill => {
-                    defaultSkills[skill.slug] = true;
-                });
-                setEnabledSkills(defaultSkills);
-            } else {
-                setEnabledSkills(skillsState);
-            }
+            setEnabledSkills(skillsState);
             setIsLoading(false);
         }
         fetchSkills();
@@ -42,14 +32,19 @@ export function ExercisesManager() {
 
     const handleSaveChanges = async () => {
         setIsSaving(true);
-        const result = await setEnabledSkills(enabledSkills);
-        
-        if (result.success) {
-            toast({ title: "Paramètres enregistrés", description: "La liste des exercices disponibles a été mise à jour." });
-        } else {
-            toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible d'enregistrer les paramètres." });
+        try {
+            const result = await setEnabledSkills(enabledSkills);
+            
+            if (result.success) {
+                toast({ title: "Paramètres enregistrés", description: "La liste des exercices disponibles a été mise à jour." });
+            } else {
+                toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible d'enregistrer les paramètres." });
+            }
+        } catch (error) {
+             toast({ variant: 'destructive', title: "Erreur inattendue", description: "Une erreur s'est produite lors de la sauvegarde." });
+        } finally {
+            setIsSaving(false);
         }
-        setIsSaving(false);
     };
 
     if (isLoading) {

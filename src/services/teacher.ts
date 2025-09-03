@@ -69,17 +69,26 @@ export async function setEnabledSkills(skillsState: Record<string, boolean>): Pr
 
 /**
  * Retrieves the enabled/disabled state for all skills.
- * @returns An object mapping skill slugs to a boolean. If not set, returns null.
+ * @returns An object mapping skill slugs to a boolean. If not set, returns a default with all skills enabled.
  */
-export async function getEnabledSkills(): Promise<Record<string, boolean> | null> {
+export async function getEnabledSkills(): Promise<Record<string, boolean>> {
     const settings = await getTeacherSettings();
+    const completeSkillSet: Record<string, boolean> = {};
+    
+    // Default all skills to true
+    skills.forEach(skill => {
+        completeSkillSet[skill.slug] = true;
+    });
+
+    // If settings exist, override defaults
     if (settings.enabledSkills) {
-        // Ensure all available skills are present in the returned object, defaulting to true if missing.
-        const completeSkillSet: Record<string, boolean> = {};
-        skills.forEach(skill => {
-            completeSkillSet[skill.slug] = settings.enabledSkills![skill.slug] ?? true;
-        });
-        return completeSkillSet;
+         for (const skill of skills) {
+            // Only use the saved value if it's explicitly present in the DB, otherwise it stays true
+            if (Object.prototype.hasOwnProperty.call(settings.enabledSkills, skill.slug)) {
+                 completeSkillSet[skill.slug] = settings.enabledSkills[skill.slug];
+            }
+        }
     }
-    return null; // This indicates no settings have been saved yet.
+    
+    return completeSkillSet;
 }
