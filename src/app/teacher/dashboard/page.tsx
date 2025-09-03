@@ -1,24 +1,30 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent, useCallback } from 'react';
+import { useEffect, useState, FormEvent, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Home, LogOut, UserPlus, Users, Trash2, Pencil, SlidersHorizontal } from 'lucide-react';
+import { Loader2, Home, LogOut, UserPlus, Pencil, Trash2, CheckCircle } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { createStudent, getStudents, type Student, updateStudent, deleteStudent } from '@/services/students';
+import { getSpellingLists, getAllSpellingProgress, SpellingProgress, SpellingList, SpellingResult } from '@/services/spelling';
+import { setCurrentSpellingList, getCurrentSpellingListId } from '@/services/teacher';
+
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { skills as availableSkills, type SkillLevel } from '@/lib/skills';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
@@ -28,6 +34,265 @@ const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'D', label: 'D - CM2/6ème' },
 ];
 
+function StudentManager({ students, onUpdateStudentList, onOpenEditModal, onDeleteStudent }: { 
+    students: Student[],
+    onUpdateStudentList: (students: Student[]) => void,
+    onOpenEditModal: (student: Student) => void,
+    onDeleteStudent: (studentId: string) => void
+}) {
+    const { toast } = useToast();
+    const [newStudentName, setNewStudentName] = useState('');
+    const [isCreatingStudent, setIsCreatingStudent] = useState(false);
+
+     const handleCreateStudent = async (e: FormEvent) => {
+        e.preventDefault();
+        if (!newStudentName.trim()) return;
+
+        setIsCreatingStudent(true);
+        try {
+            const newStudent = await createStudent(newStudentName);
+            onUpdateStudentList([...students, newStudent].sort((a,b) => a.name.localeCompare(b.name)));
+            toast({
+                title: "Élève créé !",
+                description: `L'élève ${newStudent.name} a été ajouté avec le code ${newStudent.code}.`,
+            });
+            setNewStudentName('');
+        } catch(error) {
+            toast({
+                variant: 'destructive',
+                title: "Erreur",
+                description: "Impossible de créer l'élève.",
+            });
+        } finally {
+            setIsCreatingStudent(false);
+        }
+    }
+
+    return (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-1">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Créer un nouvel élève</CardTitle>
+                        <CardDescription>Ajoutez un élève et un code secret lui sera automatiquement assigné.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleCreateStudent} className="flex items-center gap-4">
+                            <Input 
+                                placeholder="Prénom de l'élève" 
+                                value={newStudentName}
+                                onChange={e => setNewStudentName(e.target.value)}
+                                required
+                            />
+                            <Button type="submit" disabled={isCreatingStudent}>
+                                {isCreatingStudent ? <Loader2 className="animate-spin" /> : <UserPlus />}
+                            </Button>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
+             <div className="lg:col-span-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Liste des élèves</CardTitle>
+                        <CardDescription>Consultez la liste des élèves, leurs codes et leurs niveaux.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Prénom</TableHead>
+                                    <TableHead>Code Secret</TableHead>
+                                    <TableHead>Niveaux</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {students.map(student => (
+                                    <TableRow key={student.id}>
+                                        <TableCell className="font-medium">{student.name}</TableCell>
+                                        <TableCell className="font-mono font-bold">{student.code}</TableCell>
+                                        <TableCell>
+                                            <div className="flex gap-1 flex-wrap">
+                                            {student.levels && Object.entries(student.levels).length > 0 ? (
+                                                Object.entries(student.levels).map(([skill, level]) => (
+                                                    <Tooltip key={skill}>
+                                                        <TooltipTrigger>
+                                                            <Badge variant="secondary">{level}</Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>{availableSkills.find(s => s.slug === skill)?.name || skill}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ))
+                                            ) : (
+                                                <span className="text-muted-foreground text-xs">Aucun</span>
+                                            )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex gap-1 justify-end">
+                                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => onOpenEditModal(student)}>
+                                                    <Pencil />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                            <Trash2 />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                        <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Cette action est irréversible. Toutes les données de l'élève {student.name}, y compris ses scores, seront définitivement supprimées.
+                                                        </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => onDeleteStudent(student.id)}>
+                                                            Supprimer
+                                                        </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    )
+}
+
+function HomeworkTracker({ students, spellingLists, allProgress }: { students: Student[], spellingLists: SpellingList[], allProgress: SpellingProgress[] }) {
+    const { toast } = useToast();
+    const [currentListId, setCurrentListId] = useState<string | null>(null);
+
+    useEffect(() => {
+        getCurrentSpellingListId().then(setCurrentListId);
+    }, []);
+
+    const handleSetCurrentList = async (listId: string) => {
+        const result = await setCurrentSpellingList(listId);
+        if (result.success) {
+            setCurrentListId(listId);
+            toast({ title: "Semaine mise à jour", description: `La liste ${listId} est maintenant la liste de devoirs actuelle.` });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de définir la liste actuelle." });
+        }
+    };
+    
+    const progressByStudent = useMemo(() => {
+        const map = new Map<string, SpellingProgress>();
+        allProgress.forEach(p => map.set(p.userId, p));
+        return map;
+    }, [allProgress]);
+
+    const getStudentProgressForList = (studentId: string, session: 'lundi' | 'jeudi'): SpellingResult | null => {
+        if (!currentListId) return null;
+        const studentProgress = progressByStudent.get(studentId);
+        if (!studentProgress) return null;
+
+        const exerciseId = `${currentListId.toLowerCase()}-${session}`;
+        return studentProgress.progress[exerciseId] || null;
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Suivi des devoirs d'orthographe</CardTitle>
+                <CardDescription>Sélectionnez la liste de la semaine et suivez la progression des élèves.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <Label htmlFor="current-list" className="text-lg">Liste de la semaine :</Label>
+                    <Select value={currentListId || ''} onValueChange={handleSetCurrentList}>
+                        <SelectTrigger id="current-list" className="w-[200px]">
+                            <SelectValue placeholder="Choisir une liste..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {spellingLists.map(list => (
+                                <SelectItem key={list.id} value={list.id}>{list.id} – {list.title}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                
+                 {currentListId ? (
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Élève</TableHead>
+                                <TableHead>Devoirs de Lundi</TableHead>
+                                <TableHead>Devoirs de Jeudi</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {students.map(student => {
+                                const lundiResult = getStudentProgressForList(student.id, 'lundi');
+                                const jeudiResult = getStudentProgressForList(student.id, 'jeudi');
+
+                                return (
+                                <TableRow key={student.id}>
+                                    <TableCell className="font-medium">{student.name}</TableCell>
+                                    <TableCell>
+                                        {lundiResult ? (
+                                             <div className="flex items-center gap-2">
+                                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span className="text-xs text-muted-foreground cursor-default">
+                                                            {lundiResult.errors.length} erreur(s)
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Terminé le {format(new Date(lundiResult.completedAt), 'd MMM yyyy', { locale: fr })}</p>
+                                                        {lundiResult.errors.length > 0 && <p>Erreurs: {lundiResult.errors.join(', ')}</p>}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">Non fait</span>
+                                        )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {jeudiResult ? (
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircle className="h-5 w-5 text-green-500" />
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span className="text-xs text-muted-foreground cursor-default">
+                                                            {jeudiResult.errors.length} erreur(s)
+                                                        </span>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        <p>Terminé le {format(new Date(jeudiResult.completedAt), 'd MMM yyyy', { locale: fr })}</p>
+                                                        {jeudiResult.errors.length > 0 && <p>Erreurs: {jeudiResult.errors.join(', ')}</p>}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </div>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">Non fait</span>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            )})}
+                        </TableBody>
+                    </Table>
+                ) : (
+                    <p className="text-center text-muted-foreground py-8">Veuillez sélectionner une liste pour voir la progression.</p>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
+
 export default function TeacherDashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -35,10 +300,9 @@ export default function TeacherDashboardPage() {
   
   // Data states
   const [students, setStudents] = useState<Student[]>([]);
+  const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
+  const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
 
-  // Form states
-  const [newStudentName, setNewStudentName] = useState('');
-  const [isCreatingStudent, setIsCreatingStudent] = useState(false);
   
   // Editing states
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -51,8 +315,14 @@ export default function TeacherDashboardPage() {
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
       try {
-        const studentListData = await getStudents();
-        setStudents(studentListData);
+        const [studentData, listsData, progressData] = await Promise.all([
+            getStudents(),
+            getSpellingLists(),
+            getAllSpellingProgress()
+        ]);
+        setStudents(studentData);
+        setSpellingLists(listsData);
+        setAllProgress(progressData);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast({
@@ -77,30 +347,6 @@ export default function TeacherDashboardPage() {
   const handleLogout = () => {
     sessionStorage.removeItem('teacher_authenticated');
     router.push('/');
-  }
-
-  const handleCreateStudent = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!newStudentName.trim()) return;
-
-    setIsCreatingStudent(true);
-    try {
-        const newStudent = await createStudent(newStudentName);
-        setStudents(prev => [...prev, newStudent].sort((a,b) => a.name.localeCompare(b.name)));
-        toast({
-            title: "Élève créé !",
-            description: `L'élève ${newStudent.name} a été ajouté avec le code ${newStudent.code}.`,
-        });
-        setNewStudentName('');
-    } catch(error) {
-         toast({
-            variant: 'destructive',
-            title: "Erreur",
-            description: "Impossible de créer l'élève.",
-        });
-    } finally {
-        setIsCreatingStudent(false);
-    }
   }
 
   const openEditModal = (student: Student) => {
@@ -176,102 +422,24 @@ export default function TeacherDashboardPage() {
           </div>
         </header>
 
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
-            <div className="lg:col-span-1">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Créer un nouvel élève</CardTitle>
-                        <CardDescription>Ajoutez un élève et un code secret lui sera automatiquement assigné.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleCreateStudent} className="flex items-center gap-4">
-                            <Input 
-                                placeholder="Prénom de l'élève" 
-                                value={newStudentName}
-                                onChange={e => setNewStudentName(e.target.value)}
-                                required
-                            />
-                            <Button type="submit" disabled={isCreatingStudent}>
-                                {isCreatingStudent ? <Loader2 className="animate-spin" /> : <UserPlus />}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="lg:col-span-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Liste des élèves</CardTitle>
-                        <CardDescription>Consultez la liste des élèves, leurs codes et leurs niveaux.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Prénom</TableHead>
-                                    <TableHead>Code Secret</TableHead>
-                                    <TableHead>Niveaux</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {students.map(student => (
-                                    <TableRow key={student.id}>
-                                        <TableCell className="font-medium">{student.name}</TableCell>
-                                        <TableCell className="font-mono font-bold">{student.code}</TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-1 flex-wrap">
-                                            {student.levels && Object.entries(student.levels).length > 0 ? (
-                                                Object.entries(student.levels).map(([skill, level]) => (
-                                                    <Tooltip key={skill}>
-                                                        <TooltipTrigger>
-                                                            <Badge variant="secondary">{level}</Badge>
-                                                        </TooltipTrigger>
-                                                        <TooltipContent>
-                                                            <p>{availableSkills.find(s => s.slug === skill)?.name || skill}</p>
-                                                        </TooltipContent>
-                                                    </Tooltip>
-                                                ))
-                                            ) : (
-                                                <span className="text-muted-foreground text-xs">Aucun</span>
-                                            )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex gap-1 justify-end">
-                                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditModal(student)}>
-                                                    <Pencil />
-                                                </Button>
-                                                <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
-                                                            <Trash2 />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                        <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Cette action est irréversible. Toutes les données de l'élève {student.name}, y compris ses scores, seront définitivement supprimées.
-                                                        </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteStudent(student.id)}>
-                                                            Supprimer
-                                                        </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-            </div>
+        <div className="max-w-7xl mx-auto mt-4">
+            <Tabs defaultValue="students">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
+                    <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
+                </TabsList>
+                <TabsContent value="students" className="mt-6">
+                    <StudentManager 
+                        students={students} 
+                        onUpdateStudentList={setStudents}
+                        onOpenEditModal={openEditModal}
+                        onDeleteStudent={handleDeleteStudent}
+                    />
+                </TabsContent>
+                <TabsContent value="homework" className="mt-6">
+                    <HomeworkTracker students={students} spellingLists={spellingLists} allProgress={allProgress}/>
+                </TabsContent>
+            </Tabs>
         </div>
 
         {/* Dialog for editing student */}
