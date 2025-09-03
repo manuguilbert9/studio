@@ -69,7 +69,7 @@ export async function getScoresForUser(userId: string, skillSlug?: string): Prom
 // Retrieves all scores for all users, for the teacher dashboard.
 export async function getAllScores(): Promise<Score[]> {
     try {
-        const q = query(collection(db, "scores"), orderBy("createdAt", "desc"), limit(100));
+        const q = query(collection(db, "scores"), orderBy("createdAt", "desc"));
         const querySnapshot = await getDocs(q);
         const scores: Score[] = [];
         

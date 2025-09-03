@@ -13,8 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StudentManager } from '@/components/teacher/student-manager';
 import { HomeworkTracker } from '@/components/teacher/homework-tracker';
 import { ExercisesManager } from '@/components/teacher/exercises-manager';
+import { ResultsManager } from '@/components/teacher/results-manager';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
+import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 
 
@@ -27,17 +29,20 @@ export default function TeacherDashboardPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
+  const [allScores, setAllScores] = useState<Score[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, listsData, progressData] = await Promise.all([
+    const [studentData, listsData, progressData, scoresData] = await Promise.all([
       getStudents(),
       getSpellingLists(),
-      getAllSpellingProgress()
+      getAllSpellingProgress(),
+      getAllScores()
     ]);
     setStudents(studentData);
     setSpellingLists(listsData);
     setAllProgress(progressData);
+    setAllScores(scoresData);
     setIsLoading(false);
   }, []);
 
@@ -87,10 +92,11 @@ export default function TeacherDashboardPage() {
             </div>
           ) : (
             <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
                     <TabsTrigger value="exercises">Exercices en classe</TabsTrigger>
+                    <TabsTrigger value="results">Résultats</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
                     <StudentManager />
@@ -100,6 +106,9 @@ export default function TeacherDashboardPage() {
                 </TabsContent>
                 <TabsContent value="exercises" className="mt-6">
                     <ExercisesManager />
+                </TabsContent>
+                 <TabsContent value="results" className="mt-6">
+                    <ResultsManager students={students} allScores={allScores} onDataRefresh={loadData} />
                 </TabsContent>
             </Tabs>
           )}
