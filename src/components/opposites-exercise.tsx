@@ -2,14 +2,15 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useContext } from 'react';
+import { useState, useEffect, useMemo, useContext, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { Loader2, RefreshCw, Check, X, Send } from 'lucide-react';
-import { getAntonymPairs, type AntonymEntry } from '@/services/vocabulary';
+import { getAntonymPairs } from '@/services/vocabulary';
+import type { AntonymEntry } from '@/services/vocabulary.types';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import Confetti from 'react-dom-confetti';
@@ -102,7 +103,7 @@ export function OppositesExercise() {
         
         // If we still don't have enough options from the entry's distractors,
         // grab some from other entries (as a fallback)
-        const otherOpposites = allEntries.map(e => e.opposite).filter(o => !options.has(o));
+        const otherOpposites = allEntries.map(e => e.opposite).filter(o => !options.has(o) && o !== entry.opposite);
          while (options.size < numOptions && otherOpposites.length > 0) {
             const randomIndex = Math.floor(Math.random() * otherOpposites.length);
             options.add(otherOpposites.splice(randomIndex, 1)[0]);
@@ -144,8 +145,7 @@ export function OppositesExercise() {
     }, 1500);
   };
 
-   useEffect(() => {
-    async function saveFinalScore() {
+   const saveFinalScore = useCallback(async () => {
       if (isFinished && student && !isSaving) {
         setIsSaving(true);
         const scoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
@@ -157,9 +157,11 @@ export function OppositesExercise() {
         });
         setIsSaving(false);
       }
-    }
-    saveFinalScore();
-  }, [isFinished, student, correctAnswers]);
+    }, [isFinished, student, isSaving, correctAnswers]);
+
+    useEffect(() => {
+        saveFinalScore();
+    }, [isFinished, saveFinalScore]);
 
   const restartExercise = () => {
     setIsStarted(false);
