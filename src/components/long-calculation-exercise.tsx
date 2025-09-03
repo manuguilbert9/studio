@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useContext } from 'react';
@@ -272,7 +273,7 @@ export function LongCalculationExercise() {
             }
         }
         saveFinalScore();
-    }, [isFinished, student]);
+    }, [isFinished, student, correctAnswers, isSaving]);
 
     const restartExercise = () => {
         setIsLoading(true);
