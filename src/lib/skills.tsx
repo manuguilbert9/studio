@@ -9,6 +9,7 @@ import {
   PiggyBank,
   Ear,
   SquarePen,
+  Spline,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from './questions';
 
@@ -28,6 +29,12 @@ export const skills: Skill[] = [
     slug: 'dictation',
     description: "Écoutez le mot et écrivez-le correctement.",
     icon: <Ear />,
+  },
+  {
+    name: 'Familles de mots',
+    slug: 'word-families',
+    description: "Relie les mots qui appartiennent à la même famille.",
+    icon: <Spline />,
   },
   {
     name: 'L\'heure',
@@ -88,6 +95,3 @@ export function difficultyLevelToString(
     }
     return null;
 }
-
-
-
