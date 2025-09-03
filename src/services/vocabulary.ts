@@ -1,15 +1,14 @@
 
 
-import type { AntonymEntry } from '@/services/vocabulary.types';
+'use server';
 
-// This function now runs on the client-side
+import type { AntonymEntry } from '@/services/vocabulary.types';
+// @ts-ignore
+import antonymsFile from '@/data/public/vocabulaire/contraires.txt';
+
 export async function getAntonymPairs(): Promise<AntonymEntry[]> {
   try {
-    const response = await fetch('/vocabulaire/contraires.txt');
-    if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.statusText}`);
-    }
-    const fileContent = await response.text();
+    const fileContent: string = antonymsFile;
     const lines = fileContent.split('\n').filter(line => line.trim() !== '' && line.includes(':'));
     
     const pairs: AntonymEntry[] = lines.map(line => {

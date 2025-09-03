@@ -3,8 +3,9 @@
 
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, Timestamp, collection, getDocs } from 'firebase/firestore';
-import fs from 'fs/promises';
-import path from 'path';
+// @ts-ignore
+import spellingFile from '@/data/public/orthographe/listes_orthographe.txt';
+
 
 export interface SpellingList {
   id: string;
@@ -25,11 +26,10 @@ export interface SpellingProgress {
 
 
 async function parseSpellingFile(): Promise<SpellingList[]> {
-    const filePath = path.join(process.cwd(), 'public', 'orthographe', 'listes_orthographe.txt');
     const lists: SpellingList[] = [];
     
     try {
-        const fileContent = await fs.readFile(filePath, 'utf-8');
+        const fileContent: string = spellingFile;
         const lines = fileContent.split('\n').filter(line => line.trim() !== ''); // Ignore empty lines
 
         for (let i = 0; i < lines.length; i++) {

@@ -1,9 +1,22 @@
+import image1cent from '@/data/public/monnaie/1cent.png';
+import image2cents from '@/data/public/monnaie/2cents.png';
+import image5cents from '@/data/public/monnaie/5cents.png';
+import image10cents from '@/data/public/monnaie/10cents.png';
+import image20cents from '@/data/public/monnaie/20cents.png';
+import image50cents from '@/data/public/monnaie/50cents.png';
+import image1euro from '@/data/public/monnaie/1euro.png';
+import image2euros from '@/data/public/monnaie/2euros.png';
+import image5euros from '@/data/public/monnaie/5euros.png';
+import image10euros from '@/data/public/monnaie/10euros.png';
+import image20euros from '@/data/public/monnaie/20euros.png';
+import image50euros from '@/data/public/monnaie/50euros.png';
+import image100euros from '@/data/public/monnaie/100euros.png';
 
 
 export type CurrencyItem = {
     name: string;
     value: number; // in cents
-    image: string;
+    image: any; // Now an imported image object
     hint?: string;
 };
 
@@ -13,8 +26,8 @@ export interface Question {
   // For QCM
   options?: string[];
   answer?: string;
-  images?: { src: string; alt: string, hint?: string }[];
-  image?: string | null;
+  images?: { src: any; alt: string, hint?: string }[];
+  image?: any | null;
   hint?: string;
   // For time questions (QCM and set-time)
   hour?: number;
@@ -155,19 +168,19 @@ function generateTimeQuestion(settings: TimeSettings): Question {
 }
 
 export const currency: CurrencyItem[] = [
-  { name: '1 cent', value: 1, image: '/monnaie/1cent.png', hint: 'pièce 1 centime' },
-  { name: '2 cents', value: 2, image: '/monnaie/2cents.png', hint: 'pièce 2 centimes' },
-  { name: '5 cents', value: 5, image: '/monnaie/5cents.png', hint: 'pièce 5 centimes' },
-  { name: '10 cents', value: 10, image: '/monnaie/10cents.png', hint: 'pièce 10 centimes' },
-  { name: '20 cents', value: 20, image: '/monnaie/20cents.png', hint: 'pièce 20 centimes' },
-  { name: '50 cents', value: 50, image: '/monnaie/50cents.png', hint: 'pièce 50 centimes' },
-  { name: '1 euro', value: 100, image: '/monnaie/1euro.png', hint: 'pièce 1 euro' },
-  { name: '2 euros', value: 200, image: '/monnaie/2euros.png', hint: 'pièce 2 euros' },
-  { name: '5 euros', value: 500, image: '/monnaie/5euros.png', hint: 'billet 5 euros' },
-  { name: '10 euros', value: 1000, image: '/monnaie/10euros.png', hint: 'billet 10 euros' },
-  { name: '20 euros', value: 2000, image: '/monnaie/20euros.png', hint: 'billet 20 euros' },
-  { name: '50 euros', value: 5000, image: '/monnaie/50euros.png', hint: 'billet 50 euros' },
-  { name: '100 euros', value: 10000, image: '/monnaie/100euros.png', hint: 'billet 100 euros' },
+  { name: '1 cent', value: 1, image: image1cent, hint: 'pièce 1 centime' },
+  { name: '2 cents', value: 2, image: image2cents, hint: 'pièce 2 centimes' },
+  { name: '5 cents', value: 5, image: image5cents, hint: 'pièce 5 centimes' },
+  { name: '10 cents', value: 10, image: image10cents, hint: 'pièce 10 centimes' },
+  { name: '20 cents', value: 20, image: image20cents, hint: 'pièce 20 centimes' },
+  { name: '50 cents', value: 50, image: image50cents, hint: 'pièce 50 centimes' },
+  { name: '1 euro', value: 100, image: image1euro, hint: 'pièce 1 euro' },
+  { name: '2 euros', value: 200, image: image2euros, hint: 'pièce 2 euros' },
+  { name: '5 euros', value: 500, image: image5euros, hint: 'billet 5 euros' },
+  { name: '10 euros', value: 1000, image: image10euros, hint: 'billet 10 euros' },
+  { name: '20 euros', value: 2000, image: image20euros, hint: 'billet 20 euros' },
+  { name: '50 euros', value: 5000, image: image50euros, hint: 'billet 50 euros' },
+  { name: '100 euros', value: 10000, image: image100euros, hint: 'billet 100 euros' },
 ];
 
 export const formatCurrency = (value: number) => {
@@ -184,8 +197,8 @@ function generateCurrencyQuestion(settings: CurrencySettings): Question {
     let question: string = '';
     let answer: string = '';
     let options: Set<string> = new Set();
-    let images: { src: string; alt: string; hint?: string }[] = [];
-    let image: string | null = null;
+    let images: { src: any; alt: string; hint?: string }[] = [];
+    let image: any | null = null;
     let hint: string | undefined = undefined;
     
     let questionTypeRandomizer = Math.random();
