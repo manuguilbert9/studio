@@ -11,6 +11,7 @@ import { BarChart3, Home, Presentation } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { getEnabledSkills } from '@/services/teacher';
+import { FullscreenToggle } from '@/components/fullscreen-toggle';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
@@ -60,13 +61,14 @@ export default function EnClassePage() {
   return (
     <main className="container mx-auto px-4 py-8">
        <header className="mb-12 text-center space-y-4 relative">
-        <div className="absolute top-0 left-0">
+        <div className="absolute top-0 left-0 flex items-center gap-2">
              <Button asChild variant="outline" size="sm">
                 <Link href="/">
                     <Home className="mr-2" />
                     Accueil
                 </Link>
             </Button>
+            <FullscreenToggle />
         </div>
         <Logo />
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>

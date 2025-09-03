@@ -15,6 +15,7 @@ import { HomeworkTracker } from '@/components/teacher/homework-tracker';
 import { ExercisesManager } from '@/components/teacher/exercises-manager';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
+import { FullscreenToggle } from '@/components/fullscreen-toggle';
 
 
 export default function TeacherDashboardPage() {
@@ -69,6 +70,7 @@ export default function TeacherDashboardPage() {
         <header className="flex items-center justify-between mb-8 max-w-7xl mx-auto">
           <Logo />
           <div className="flex items-center gap-4">
+              <FullscreenToggle />
               <Button asChild variant="outline">
                   <Link href="/"><Home className="mr-2"/> Accueil Principal</Link>
               </Button>
