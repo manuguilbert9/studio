@@ -305,7 +305,7 @@ function ExercisesManager() {
             
             const skillsState: Record<string, boolean> = {};
             if (enabledSlugs === null) {
-                // If null, all skills are enabled by default
+                // If null (not set in DB), all skills are enabled by default
                 availableSkills.forEach(skill => skillsState[skill.slug] = true);
             } else {
                 availableSkills.forEach(skill => {
@@ -318,9 +318,9 @@ function ExercisesManager() {
         fetchSkills();
     }, []);
 
-    const handleSkillToggle = (slug: string, checked: boolean) => {
+    const handleSkillToggle = useCallback((slug: string, checked: boolean) => {
         setEnabledSkills(prev => ({ ...prev, [slug]: checked }));
-    };
+    }, []);
 
     const handleSaveChanges = async () => {
         setIsSaving(true);
@@ -344,7 +344,6 @@ function ExercisesManager() {
                 <CardTitle>Gestion des Exercices "En Classe"</CardTitle>
                 <CardDescription>
                     Sélectionnez les exercices que les élèves peuvent utiliser en mode "En classe". 
-                    Les modifications seront appliquées immédiatement.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
