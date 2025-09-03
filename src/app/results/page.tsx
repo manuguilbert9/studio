@@ -11,7 +11,6 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { ScoreTube } from '@/components/score-tube';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
 import { Badge } from '@/components/ui/badge';
 import { UserContext } from '@/context/user-context';
 import { getScoresForUser, Score } from '@/services/scores';
@@ -44,14 +43,19 @@ export default function ResultsPage() {
         const scoresBySkill = skills.map(skill => {
           const relatedScores = userScores
             .filter(score => score.skill === skill.slug)
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            .sort((a, b) => {
+                 // Ensure createdAt exists and is valid before comparing
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
           
           return {
             skill,
             scores: relatedScores,
             latestScore: relatedScores.length > 0 ? relatedScores[0] : null
           };
-        }).filter(ss => ss.latestScore); // Only show skills with at least one score
+        }).filter(ss => ss.scores.length > 0); // Only show skills with at least one score
 
         setSkillScores(scoresBySkill);
       } catch (error) {
@@ -106,7 +110,7 @@ export default function ResultsPage() {
                         {skill.icon}
                     </div>
                     <CardTitle className="font-headline text-3xl mt-4 mb-2">{skill.name}</CardTitle>
-                    {latestScore && (
+                    {latestScore && latestScore.createdAt && (
                         <>
                             <p className="text-sm text-muted-foreground mb-4">
                                 Dernier exercice le {format(new Date(latestScore.createdAt), 'd MMMM yyyy', { locale: fr })}
