@@ -19,8 +19,8 @@ export const AnalogClock = React.forwardRef<SVGSVGElement, AnalogClockProps>(
     const hourAngle = (hour % 12 + minute / 60) * 30;
     const minuteAngle = minute * 6;
     
-    const hourColor = "hsl(var(--destructive))";
-    const minuteColor = "hsl(var(--ring))";
+    const hourColor = "#ef4444"; // red-500
+    const minuteColor = "#3b82f6"; // blue-500
 
     return (
         <div className="relative w-64 h-64 sm:w-80 sm:h-80 mx-auto my-4">
@@ -66,9 +66,9 @@ export const AnalogClock = React.forwardRef<SVGSVGElement, AnalogClockProps>(
                                 textAnchor="middle"
                                 className={cn(
                                     "text-[10px] sm:text-xs font-bold",
-                                    matchColors || coloredHands ? "fill-ring" : "fill-foreground",
                                     onMinuteClick && "cursor-pointer hover:opacity-70 transition-opacity"
                                 )}
+                                fill={matchColors || coloredHands ? minuteColor : "hsl(var(--foreground))"}
                                 onClick={() => onMinuteClick?.(i)}
                             >
                                 {i === 0 ? "00" : i}
@@ -114,9 +114,9 @@ export const AnalogClock = React.forwardRef<SVGSVGElement, AnalogClockProps>(
                     dy=".35em"
                     textAnchor="middle"
                     className={cn("text-base sm:text-xl font-bold",
-                        matchColors || coloredHands ? "fill-destructive" : "fill-foreground",
                         onHourClick && "cursor-pointer hover:opacity-70 transition-opacity"
                     )}
+                    fill={matchColors || coloredHands ? hourColor : "hsl(var(--foreground))"}
                     onClick={() => onHourClick?.(num)}
                     >
                     {num}
