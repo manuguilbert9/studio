@@ -63,32 +63,31 @@ export async function setEnabledSkills(skillsState: Record<string, boolean>): Pr
         return { success: true };
     } catch (error) {
         console.error("Error setting enabled skills:", error);
-        return { success: false, error: (error as Error).message };
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: 'An unknown error occurred while saving.' };
     }
 }
 
 /**
  * Retrieves the enabled/disabled state for all skills.
- * @returns An object mapping skill slugs to a boolean. If not set, returns a default with all skills enabled.
+ * If no settings are found, it returns a default object with all skills enabled.
+ * @returns An object mapping skill slugs to a boolean.
  */
 export async function getEnabledSkills(): Promise<Record<string, boolean>> {
     const settings = await getTeacherSettings();
-    const completeSkillSet: Record<string, boolean> = {};
-    
-    // Default all skills to true
+    const defaultSkills: Record<string, boolean> = {};
     skills.forEach(skill => {
-        completeSkillSet[skill.slug] = true;
+        defaultSkills[skill.slug] = true; // Default to enabled
     });
 
-    // If settings exist, override defaults
-    if (settings.enabledSkills) {
-         for (const skill of skills) {
-            // Only use the saved value if it's explicitly present in the DB, otherwise it stays true
-            if (Object.prototype.hasOwnProperty.call(settings.enabledSkills, skill.slug)) {
-                 completeSkillSet[skill.slug] = settings.enabledSkills[skill.slug];
-            }
-        }
+    if (settings && settings.enabledSkills) {
+        // Merge saved settings with defaults to ensure all skills are present
+        const mergedSkills = { ...defaultSkills, ...settings.enabledSkills };
+        return mergedSkills;
     }
     
-    return completeSkillSet;
+    // If no settings.enabledSkills, return the complete default list
+    return defaultSkills;
 }

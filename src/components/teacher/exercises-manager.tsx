@@ -19,6 +19,7 @@ export function ExercisesManager() {
     useEffect(() => {
         async function fetchSkills() {
             setIsLoading(true);
+            // The service now guarantees a valid object is returned.
             const skillsState = await getEnabledSkills();
             setEnabledSkills(skillsState);
             setIsLoading(false);
@@ -34,7 +35,6 @@ export function ExercisesManager() {
         setIsSaving(true);
         try {
             const result = await setEnabledSkills(enabledSkills);
-            
             if (result.success) {
                 toast({ title: "Paramètres enregistrés", description: "La liste des exercices disponibles a été mise à jour." });
             } else {
