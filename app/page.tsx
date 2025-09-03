@@ -90,7 +90,7 @@ export default function ModeSelectionPage() {
                       placeholder="Ton code à 4 chiffres"
                       value={code}
                       onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="text-base h-12 pl-10 font-mono tracking-[0.5em]"
+                      className="text-base h-12 pl-10"
                       required
                       maxLength={4}
                       aria-label="Code secret"
