@@ -25,12 +25,12 @@ export default function ExercisePage() {
   const renderExercise = () => {
     switch (skill.slug) {
       case 'reading':
-        return <FluencyExercise />;
+        return <FluencyExercise isTableauMode={false} />;
       case 'dictation':
         return <DictationExercise isTableauMode={false} />;
       case 'long-calculation':
         return <LongCalculationExercise />;
-       case 'word-families':
+      case 'word-families':
         return <WordFamiliesExercise />;
       default:
         return <ExerciseWorkspace skill={skill} />;
