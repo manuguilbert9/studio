@@ -30,6 +30,7 @@ export function StudentManager() {
     const [students, setStudents] = useState<Student[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [newStudentName, setNewStudentName] = useState('');
+    const [newStudentCode, setNewStudentCode] = useState('');
     const [isCreatingStudent, setIsCreatingStudent] = useState(false);
     
     // Editing states
@@ -52,22 +53,31 @@ export function StudentManager() {
 
      const handleCreateStudent = async (e: FormEvent) => {
         e.preventDefault();
-        if (!newStudentName.trim()) return;
+        if (!newStudentName.trim() || !newStudentCode.trim()) {
+            toast({ variant: 'destructive', title: "Champs requis", description: "Le prénom et le code sont obligatoires." });
+            return;
+        };
+
+        if (newStudentCode.length !== 4 || !/^\d{4}$/.test(newStudentCode)) {
+            toast({ variant: 'destructive', title: "Code invalide", description: "Le code secret doit être composé de 4 chiffres." });
+            return;
+        }
 
         setIsCreatingStudent(true);
         try {
-            await createStudent(newStudentName);
+            await createStudent(newStudentName, newStudentCode);
             toast({
                 title: "Élève créé !",
                 description: `L'élève ${newStudentName} a été ajouté.`,
             });
             setNewStudentName('');
+            setNewStudentCode('');
             await fetchStudents(); // Refresh the list
         } catch(error) {
             toast({
                 variant: 'destructive',
                 title: "Erreur",
-                description: "Impossible de créer l'élève.",
+                description: "Impossible de créer l'élève. Ce code est peut-être déjà utilisé.",
             });
         } finally {
             setIsCreatingStudent(false);
@@ -131,18 +141,26 @@ export function StudentManager() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Créer un nouvel élève</CardTitle>
-                            <CardDescription>Ajoutez un élève et un code secret lui sera automatiquement assigné.</CardDescription>
+                            <CardDescription>Ajoutez un élève avec son prénom et un code secret à 4 chiffres.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleCreateStudent} className="flex items-center gap-4">
+                            <form onSubmit={handleCreateStudent} className="space-y-4">
                                 <Input 
                                     placeholder="Prénom de l'élève" 
                                     value={newStudentName}
                                     onChange={e => setNewStudentName(e.target.value)}
                                     required
                                 />
-                                <Button type="submit" disabled={isCreatingStudent}>
-                                    {isCreatingStudent ? <Loader2 className="animate-spin" /> : <UserPlus />}
+                                 <Input 
+                                    placeholder="Code à 4 chiffres" 
+                                    value={newStudentCode}
+                                    onChange={e => setNewStudentCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                    maxLength={4}
+                                    required
+                                />
+                                <Button type="submit" disabled={isCreatingStudent} className="w-full">
+                                    {isCreatingStudent ? <Loader2 className="animate-spin mr-2" /> : <UserPlus className="mr-2" />}
+                                    Ajouter l'élève
                                 </Button>
                             </form>
                         </CardContent>

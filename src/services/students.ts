@@ -3,6 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { skills } from '@/lib/skills';
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
@@ -13,30 +14,40 @@ export interface Student {
     levels?: Record<string, SkillLevel>;
 }
 
-// Generates a random 4-digit code as a string.
-function generateCode(): string {
-    return Math.floor(1000 + Math.random() * 9000).toString();
-}
 
 /**
- * Creates a new student with a unique 4-digit code.
+ * Creates a new student with a specific code and default levels.
  * @param name The name of the student.
- * @returns The newly created student object including the code.
+ * @param code The 4-digit code for the student.
+ * @returns The newly created student object.
  */
-export async function createStudent(name: string): Promise<Student> {
-    const code = generateCode();
+export async function createStudent(name: string, code: string): Promise<Student> {
     
+    // Check if a student with this code already exists
+    const q = query(collection(db, "students"), where("code", "==", code));
+    const querySnapshot = await getDocs(q);
+    if (!querySnapshot.empty) {
+        // A student with this code already exists, we should throw an error.
+        throw new Error(`A student with code ${code} already exists.`);
+    }
+    
+    // Set default levels for all available skills to 'B'
+    const defaultLevels: Record<string, SkillLevel> = {};
+    skills.forEach(skill => {
+        defaultLevels[skill.slug] = 'B';
+    });
+
     const docRef = await addDoc(collection(db, 'students'), {
         name: name.trim(),
         code: code,
-        levels: {} // Initialize with empty levels
+        levels: defaultLevels
     });
 
     return {
         id: docRef.id,
         name: name.trim(),
         code: code,
-        levels: {}
+        levels: defaultLevels
     };
 }
 
