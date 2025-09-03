@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import { useParams, useRouter, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star } from 'lucide-react';
@@ -13,8 +13,10 @@ import { getSpellingLists, saveSpellingResult, type SpellingList } from '@/servi
 import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 
-const WORD_DISPLAY_TIME_MS = 500;
+const DEFAULT_WORD_DISPLAY_TIME_MS = 5000;
 
 export default function SpellingExercisePage() {
   const router = useRouter();
@@ -31,6 +33,8 @@ export default function SpellingExercisePage() {
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'idle' | 'showing'>('showing');
   const [isFinished, setIsFinished] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+
+  const [wordDisplayTime, setWordDisplayTime] = useState(DEFAULT_WORD_DISPLAY_TIME_MS);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -54,9 +58,7 @@ export default function SpellingExercisePage() {
       const half = Math.ceil(foundList.words.length / 2);
       const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
       
-      // Duplicate each word and shuffle the list
-      const duplicatedWords = sessionWords.flatMap(word => [word, word]);
-      const shuffledWords = duplicatedWords.sort(() => Math.random() - 0.5);
+      const shuffledWords = sessionWords.sort(() => Math.random() - 0.5);
 
       setWords(shuffledWords);
       setIsLoading(false);
@@ -64,15 +66,27 @@ export default function SpellingExercisePage() {
     loadExercise();
   }, [exerciseId]);
 
+  const handleSpeak = useCallback((word: string) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(word);
+      utterance.lang = 'fr-FR';
+      window.speechSynthesis.speak(utterance);
+    }
+  }, []);
+
   const showWord = useCallback(() => {
     setFeedback('showing');
     setInputValue('');
     if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
+    
+    // Speak word when it's shown
+    handleSpeak(words[currentWordIndex]);
+
     showTimeoutRef.current = setTimeout(() => {
       setFeedback('idle');
       setTimeout(() => inputRef.current?.focus(), 100);
-    }, WORD_DISPLAY_TIME_MS);
-  }, []);
+    }, wordDisplayTime);
+  }, [words, currentWordIndex, wordDisplayTime, handleSpeak]);
 
   useEffect(() => {
     if (words.length > 0 && !isFinished) {
@@ -115,14 +129,6 @@ export default function SpellingExercisePage() {
     }
   };
 
-  const handleSpeak = () => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(words[currentWordIndex]);
-      utterance.lang = 'fr-FR';
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-  
   if (isLoading || isUserLoading) {
     return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
   }
@@ -187,7 +193,7 @@ export default function SpellingExercisePage() {
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-2xl space-y-6">
         <header className="relative flex items-center justify-center mb-4">
            <Button asChild variant="ghost" className="absolute left-0">
             <Link href="/devoirs">
@@ -198,33 +204,33 @@ export default function SpellingExercisePage() {
           <h1 className="font-headline text-2xl sm:text-3xl text-center">{list.id} - {list.title}</h1>
         </header>
 
-        <Progress value={progress} className="w-full mb-8 h-3" />
+        <Progress value={progress} className="w-full h-3" />
 
         <Card className="w-full min-h-[350px] sm:min-h-[400px] p-6 sm:p-8 flex flex-col justify-between items-center shadow-2xl">
           {feedback === 'showing' ? (
             <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in">
               <p className="font-bold text-5xl sm:text-7xl font-body tracking-wider">{currentWord}</p>
-              <button onClick={handleSpeak} className="mt-8 text-muted-foreground hover:text-primary transition-colors">
-                <Volume2 className="h-8 w-8" />
-              </button>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in">
-              <div className="relative w-full max-w-md">
+              <div className="flex items-center gap-2 w-full max-w-md">
                 <Input
                   ref={inputRef}
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                   placeholder="Écris le mot ici..."
-                  className={cn("h-16 text-2xl text-center",
+                  className={cn("h-16 text-2xl text-center flex-grow",
                     feedback === 'correct' && 'border-green-500 ring-green-500',
                     feedback === 'incorrect' && 'border-red-500 ring-red-500 animate-shake'
                   )}
                   disabled={feedback === 'correct'}
                 />
-                 {feedback === 'correct' && <Check className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 text-green-500"/>}
-                 {feedback === 'incorrect' && <X className="absolute right-4 top-1/2 -translate-y-1/2 h-8 w-8 text-red-500"/>}
+                 <Button onClick={() => handleSpeak(currentWord)} size="icon" variant="outline" className="h-16 w-16" disabled={feedback !== 'idle'}>
+                    <Volume2 className="h-6 w-6"/>
+                 </Button>
+                 {feedback === 'correct' && <Check className="absolute right-20 top-1/2 -translate-y-1/2 h-8 w-8 text-green-500"/>}
+                 {feedback === 'incorrect' && <X className="absolute right-20 top-1/2 -translate-y-1/2 h-8 w-8 text-red-500"/>}
               </div>
               
               {feedback === 'idle' && (
@@ -245,6 +251,29 @@ export default function SpellingExercisePage() {
             </div>
           )}
         </Card>
+        
+        <Card className="bg-muted/50">
+            <CardHeader>
+                <CardTitle className="text-xl">Réglages de l'exercice</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="grid gap-2">
+                    <Label htmlFor="display-time">Temps d'affichage du mot</Label>
+                    <Slider
+                        id="display-time"
+                        min={1000}
+                        max={10000}
+                        step={500}
+                        value={[wordDisplayTime]}
+                        onValueChange={(value) => setWordDisplayTime(value[0])}
+                    />
+                    <div className="text-sm text-muted-foreground text-center">
+                        {wordDisplayTime / 1000} secondes
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+
          <style jsx>{`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
@@ -259,3 +288,4 @@ export default function SpellingExercisePage() {
     </main>
   );
 }
+
