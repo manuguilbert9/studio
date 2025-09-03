@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
@@ -41,27 +41,22 @@ export async function createStudent(name: string): Promise<Student> {
 }
 
 /**
- * Updates the code for a specific student.
+ * Updates a student's data.
  * @param studentId The ID of the student to update.
- * @param newCode The new 4-digit code.
+ * @param data The data to update (name, code, levels).
  * @returns A promise that resolves to an object indicating success or failure.
  */
-export async function updateStudentCode(studentId: string, newCode: string): Promise<{ success: boolean; error?: string }> {
+export async function updateStudent(studentId: string, data: Partial<Omit<Student, 'id'>>): Promise<{ success: boolean; error?: string }> {
     if (!studentId) {
         return { success: false, error: 'Student ID is required.' };
-    }
-    if (!newCode || newCode.length !== 4 || !/^\d{4}$/.test(newCode)) {
-        return { success: false, error: 'The code must be 4 digits.' };
     }
 
     try {
         const studentDocRef = doc(db, 'students', studentId);
-        await updateDoc(studentDocRef, {
-            code: newCode
-        });
+        await updateDoc(studentDocRef, data);
         return { success: true };
     } catch (error) {
-        console.error("Error updating student code in Firestore:", error);
+        console.error("Error updating student in Firestore:", error);
         if (error instanceof Error) {
             return { success: false, error: error.message };
         }
@@ -70,22 +65,21 @@ export async function updateStudentCode(studentId: string, newCode: string): Pro
 }
 
 /**
- * Updates the skill levels for a specific student.
- * @param studentId The ID of the student to update.
- * @param levels The object containing the new skill levels.
+ * Deletes a student from the database.
+ * @param studentId The ID of the student to delete.
  * @returns A promise that resolves to an object indicating success or failure.
  */
-export async function updateStudentLevels(studentId: string, levels: Record<string, SkillLevel>): Promise<{ success: boolean; error?: string }> {
+export async function deleteStudent(studentId: string): Promise<{ success: boolean; error?: string }> {
     if (!studentId) {
         return { success: false, error: 'Student ID is required.' };
     }
-
     try {
         const studentDocRef = doc(db, 'students', studentId);
-        await setDoc(studentDocRef, { levels }, { merge: true });
+        await deleteDoc(studentDocRef);
+        // Note: You might also want to delete associated scores and progress here.
         return { success: true };
     } catch (error) {
-        console.error("Error updating student levels in Firestore:", error);
+        console.error("Error deleting student from Firestore:", error);
         if (error instanceof Error) {
             return { success: false, error: error.message };
         }

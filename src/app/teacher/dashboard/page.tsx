@@ -1,32 +1,25 @@
 
 'use client';
 
-import { useEffect, useState, FormEvent, useMemo, useCallback } from 'react';
+import { useEffect, useState, FormEvent, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, BookOpen, BarChart3, Home, LogOut, CheckCircle, Circle, UserPlus, Users, AlertTriangle, Star, Check, X, Pencil, SlidersHorizontal, Trash2, Settings } from 'lucide-react';
+import { Loader2, Home, LogOut, UserPlus, Users, Trash2, Pencil, SlidersHorizontal } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import { getAllScores, Score, deleteScore } from '@/services/scores';
-import { getAllSpellingProgress, getSpellingLists, SpellingList, SpellingProgress, SpellingResult } from '@/services/spelling';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { difficultyLevelToString, skills as availableSkills, Skill } from '@/lib/skills';
-import { createStudent, getStudents, type Student, updateStudentCode, updateStudentLevels, SkillLevel } from '@/services/students';
+import { createStudent, getStudents, type Student, updateStudent, deleteStudent } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { getCurrentSpellingListId, setCurrentSpellingList, getEnabledSkills, setEnabledSkills } from '@/services/teacher';
-import { cn } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Switch } from '@/components/ui/switch';
+import { skills as availableSkills, type SkillLevel } from '@/lib/skills';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'A', label: 'A - Maternelle' },
@@ -35,51 +28,31 @@ const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'D', label: 'D - CM2/6ème' },
 ];
 
-
 export default function TeacherDashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   
   // Data states
-  const [allScores, setAllScores] = useState<Score[]>([]);
-  const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
-  const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
-  const [currentListId, setCurrentListId] = useState<string | null>(null);
-  const [enabledSkills, setEnabledSkillsState] = useState<string[]>([]);
-  const [isSkillSettingsLoading, setIsSkillSettingsLoading] = useState(true);
 
   // Form states
   const [newStudentName, setNewStudentName] = useState('');
   const [isCreatingStudent, setIsCreatingStudent] = useState(false);
-  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
-  const [newCode, setNewCode] = useState('');
-  const [isUpdatingCode, setIsUpdatingCode] = useState(false);
-  const [editingLevelsStudent, setEditingLevelsStudent] = useState<Student | null>(null);
-  const [currentLevels, setCurrentLevels] = useState<Record<string, SkillLevel>>({});
-  const [isUpdatingLevels, setIsUpdatingLevels] = useState(false);
   
+  // Editing states
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [editedName, setEditedName] = useState('');
+  const [editedCode, setEditedCode] = useState('');
+  const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
+  const [isUpdating, setIsUpdating] = useState(false);
+
+
   const loadDashboardData = useCallback(async () => {
     setIsLoading(true);
-    setIsSkillSettingsLoading(true);
       try {
-        const [scoresData, progressData, listsData, studentListData, currentId, enabledSkillsData] = await Promise.all([
-          getAllScores(),
-          getAllSpellingProgress(),
-          getSpellingLists(),
-          getStudents(),
-          getCurrentSpellingListId(),
-          getEnabledSkills(),
-        ]);
-        
-        setAllScores(scoresData);
-        setAllSpellingProgress(progressData);
-        setSpellingLists(listsData);
+        const studentListData = await getStudents();
         setStudents(studentListData);
-        setCurrentListId(currentId);
-        // If null, it means all skills are enabled by default
-        setEnabledSkillsState(enabledSkillsData === null ? availableSkills.map(s => s.slug) : enabledSkillsData);
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
         toast({
@@ -89,7 +62,6 @@ export default function TeacherDashboardPage() {
         });
       } finally {
         setIsLoading(false);
-        setIsSkillSettingsLoading(false);
       }
   }, [toast]);
 
@@ -102,46 +74,6 @@ export default function TeacherDashboardPage() {
     loadDashboardData();
   }, [router, loadDashboardData]);
   
-  const studentProgressMap = useMemo(() => {
-    const map = new Map<string, Record<string, SpellingResult>>();
-    if (allSpellingProgress) {
-        allSpellingProgress.forEach(progressItem => {
-            if (progressItem.userId && progressItem.progress) {
-               map.set(progressItem.userId, progressItem.progress);
-            }
-        });
-    }
-    return map;
-  }, [allSpellingProgress]);
-
-  const scoresByStudent = useMemo(() => {
-    const map = new Map<string, Score[]>();
-    allScores.forEach(score => {
-        const studentScores = map.get(score.userId) || [];
-        studentScores.push(score);
-        map.set(score.userId, studentScores.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
-    });
-    return map;
-  }, [allScores]);
-
-  const handleSetCurrentList = async (listId: string) => {
-    const result = await setCurrentSpellingList(listId);
-    if (result.success) {
-      setCurrentListId(listId);
-      toast({
-        title: "Liste actuelle mise à jour",
-        description: `La liste ${listId} est maintenant la liste de travail.`,
-      });
-    } else {
-       toast({
-        variant: 'destructive',
-        title: "Erreur",
-        description: "Impossible de définir la liste actuelle.",
-      });
-    }
-  };
-
-
   const handleLogout = () => {
     sessionStorage.removeItem('teacher_authenticated');
     router.push('/');
@@ -171,116 +103,54 @@ export default function TeacherDashboardPage() {
     }
   }
 
-  const handleEditCode = (student: Student) => {
-    setEditingStudentId(student.id);
-    setNewCode(student.code);
+  const openEditModal = (student: Student) => {
+    setEditingStudent(student);
+    setEditedName(student.name);
+    setEditedCode(student.code);
+    setEditedLevels(student.levels || {});
   };
 
-  const handleCancelEdit = () => {
-    setEditingStudentId(null);
-    setNewCode('');
+  const closeEditModal = () => {
+    setEditingStudent(null);
   };
   
-  const handleUpdateCode = async (studentId: string) => {
-    if (newCode.length !== 4 || !/^\d{4}$/.test(newCode)) {
-      toast({
-        variant: 'destructive',
-        title: "Code invalide",
-        description: "Le code secret doit être composé de 4 chiffres.",
-      });
+  const handleUpdateStudent = async () => {
+    if (!editingStudent) return;
+    
+    if (editedCode.length !== 4 || !/^\d{4}$/.test(editedCode)) {
+      toast({ variant: 'destructive', title: "Code invalide", description: "Le code secret doit être composé de 4 chiffres." });
       return;
     }
 
-    setIsUpdatingCode(true);
-    const result = await updateStudentCode(studentId, newCode);
-    setIsUpdatingCode(false);
+    setIsUpdating(true);
+    const result = await updateStudent(editingStudent.id, {
+        name: editedName,
+        code: editedCode,
+        levels: editedLevels
+    });
+    setIsUpdating(false);
 
     if (result.success) {
-      setStudents(prev => prev.map(s => s.id === studentId ? { ...s, code: newCode } : s));
-      toast({
-        title: "Code mis à jour",
-        description: "Le code secret de l'élève a été modifié.",
-      });
-      handleCancelEdit();
+        setStudents(prev => prev.map(s => s.id === editingStudent.id ? { ...s, name: editedName, code: editedCode, levels: editedLevels } : s));
+        toast({ title: "Élève mis à jour", description: `Les informations de ${editedName} ont été modifiées.` });
+        closeEditModal();
     } else {
-       toast({
-        variant: 'destructive',
-        title: "Erreur",
-        description: result.error || "Impossible de mettre à jour le code.",
-      });
+        toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de mettre à jour les informations." });
     }
   };
 
-  const handleOpenLevelsModal = (student: Student) => {
-    setEditingLevelsStudent(student);
-    setCurrentLevels(student.levels || {});
-  };
+  const handleDeleteStudent = async (studentId: string) => {
+    const result = await deleteStudent(studentId);
+    if (result.success) {
+      setStudents(prev => prev.filter(s => s.id !== studentId));
+      toast({ title: "Élève supprimé", description: "L'élève a bien été supprimé de la liste." });
+    } else {
+       toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de supprimer l'élève." });
+    }
+  }
 
   const handleLevelChange = (skillSlug: string, level: SkillLevel) => {
-    setCurrentLevels(prev => ({ ...prev, [skillSlug]: level }));
-  };
-
-  const handleUpdateLevels = async () => {
-    if (!editingLevelsStudent) return;
-    setIsUpdatingLevels(true);
-    const result = await updateStudentLevels(editingLevelsStudent.id, currentLevels);
-    setIsUpdatingLevels(false);
-
-    if (result.success) {
-      setStudents(prev => prev.map(s => s.id === editingLevelsStudent.id ? { ...s, levels: currentLevels } : s));
-      toast({
-        title: "Niveaux mis à jour",
-        description: `Les niveaux de compétence de ${editingLevelsStudent.name} ont été enregistrés.`,
-      });
-      setEditingLevelsStudent(null);
-    } else {
-      toast({
-        variant: 'destructive',
-        title: "Erreur",
-        description: result.error || "Impossible de mettre à jour les niveaux.",
-      });
-    }
-  };
-  
-  const handleDeleteScore = async (scoreId: string) => {
-    const result = await deleteScore(scoreId);
-    if (result.success) {
-      setAllScores(prevScores => prevScores.filter(score => score.id !== scoreId));
-      toast({
-        title: "Score supprimé",
-        description: "Le résultat a été supprimé avec succès.",
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: "Erreur de suppression",
-        description: result.error || "Impossible de supprimer le score.",
-      });
-    }
-  };
-
-  const handleSkillToggle = (slug: string, checked: boolean) => {
-    setEnabledSkillsState(prev => 
-      checked ? [...prev, slug] : prev.filter(s => s !== slug)
-    );
-  };
-
-  const handleSaveEnabledSkills = async () => {
-    setIsSkillSettingsLoading(true);
-    const result = await setEnabledSkills(enabledSkills);
-    if (result.success) {
-      toast({
-        title: "Exercices mis à jour",
-        description: "Les exercices disponibles pour les élèves ont été enregistrés.",
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: "Erreur",
-        description: result.error || "Impossible de sauvegarder les changements.",
-      });
-    }
-    setIsSkillSettingsLoading(false);
+    setEditedLevels(prev => ({ ...prev, [skillSlug]: level }));
   };
 
   if (isLoading) {
@@ -306,362 +176,161 @@ export default function TeacherDashboardPage() {
           </div>
         </header>
 
-        <div className="max-w-7xl mx-auto">
-          <Tabs defaultValue="students">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="students"><Users className="mr-2"/> Élèves</TabsTrigger>
-              <TabsTrigger value="exercises"><Settings className="mr-2" /> Exercices</TabsTrigger>
-              <TabsTrigger value="homework"><BookOpen className="mr-2"/> Devoirs</TabsTrigger>
-              <TabsTrigger value="class-results"><BarChart3 className="mr-2"/> Résultats</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="students">
-               <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mt-4">
-                  <Card>
-                      <CardHeader>
-                          <CardTitle>Créer un nouvel élève</CardTitle>
-                          <CardDescription>Ajoutez un élève et un code secret lui sera automatiquement assigné.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                          <form onSubmit={handleCreateStudent} className="flex items-center gap-4">
-                              <Input 
-                                  placeholder="Prénom de l'élève" 
-                                  value={newStudentName}
-                                  onChange={e => setNewStudentName(e.target.value)}
-                                  required
-                              />
-                              <Button type="submit" disabled={isCreatingStudent}>
-                                  {isCreatingStudent ? <Loader2 className="animate-spin" /> : <UserPlus />}
-                              </Button>
-                          </form>
-                      </CardContent>
-                  </Card>
-                  <Card>
-                      <CardHeader>
-                          <CardTitle>Liste des élèves</CardTitle>
-                          <CardDescription>Consultez la liste des élèves, leurs codes et leurs niveaux.</CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                          <Table>
-                              <TableHeader>
-                                  <TableRow>
-                                      <TableHead>Prénom</TableHead>
-                                      <TableHead>Code Secret</TableHead>
-                                      <TableHead>Niveaux</TableHead>
-                                      <TableHead className="w-[120px] text-right">Actions</TableHead>
-                                  </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                  {students.map(student => (
-                                      <TableRow key={student.id}>
-                                          <TableCell className="font-medium">{student.name}</TableCell>
-                                           <TableCell className="font-mono font-bold">
-                                              {editingStudentId === student.id ? (
-                                                  <Input 
-                                                      type="text" 
-                                                      value={newCode}
-                                                      onChange={(e) => setNewCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                                      maxLength={4}
-                                                      className="h-8 w-20 inline-block text-center"
-                                                      autoFocus
-                                                  />
-                                              ) : (
-                                                  <span>{student.code}</span>
-                                              )}
-                                          </TableCell>
-                                           <TableCell>
-                                                <div className="flex gap-1 flex-wrap">
-                                                {student.levels && Object.entries(student.levels).length > 0 ? (
-                                                    Object.entries(student.levels).map(([skill, level]) => (
-                                                        <Tooltip key={skill}>
-                                                            <TooltipTrigger>
-                                                                <Badge variant="secondary">{level}</Badge>
-                                                            </TooltipTrigger>
-                                                            <TooltipContent>
-                                                                <p>{availableSkills.find(s => s.slug === skill)?.name || skill}</p>
-                                                            </TooltipContent>
-                                                        </Tooltip>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-muted-foreground text-xs">Aucun</span>
-                                                )}
-                                                </div>
-                                          </TableCell>
-                                           <TableCell className="text-right">
-                                              {editingStudentId === student.id ? (
-                                                  <div className="flex gap-1 justify-end">
-                                                      <Button size="icon" className="h-8 w-8" onClick={() => handleUpdateCode(student.id)} disabled={isUpdatingCode}>
-                                                          {isUpdatingCode ? <Loader2 className="animate-spin" /> : <Check />}
-                                                      </Button>
-                                                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelEdit}>
-                                                          <X />
-                                                      </Button>
-                                                  </div>
-                                              ) : (
-                                                <div className="flex gap-1 justify-end">
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleOpenLevelsModal(student)}>
-                                                        <SlidersHorizontal />
-                                                    </Button>
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleEditCode(student)}>
-                                                        <Pencil />
-                                                    </Button>
-                                                </div>
-                                              )}
-                                          </TableCell>
-                                      </TableRow>
-                                  ))}
-                              </TableBody>
-                          </Table>
-                      </CardContent>
-                  </Card>
-              </div>
-            </TabsContent>
-
-             <TabsContent value="exercises">
-                <Card className="mt-4">
-                  <CardHeader>
-                    <CardTitle>Gestion des exercices "En classe"</CardTitle>
-                    <CardDescription>
-                      Choisissez les exercices qui seront visibles par les élèves dans la section "En classe".
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {isSkillSettingsLoading ? (
-                      <Loader2 className="mx-auto animate-spin" />
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {availableSkills.map(skill => (
-                          <div key={skill.slug} className="flex items-center space-x-4 rounded-md border p-4">
-                             <div className="text-primary">{skill.icon}</div>
-                            <div className="flex-1 space-y-1">
-                              <p className="text-sm font-medium leading-none">{skill.name}</p>
-                              <p className="text-sm text-muted-foreground">{skill.description}</p>
-                            </div>
-                             <Switch
-                                checked={enabledSkills.includes(skill.slug)}
-                                onCheckedChange={(checked) => handleSkillToggle(skill.slug, checked)}
-                              />
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                  <CardFooter>
-                     <Button onClick={handleSaveEnabledSkills} disabled={isSkillSettingsLoading}>
-                        {isSkillSettingsLoading && <Loader2 className="mr-2 animate-spin" />}
-                        Enregistrer les modifications
-                    </Button>
-                  </CardFooter>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 mt-4">
+            <div className="lg:col-span-1">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Créer un nouvel élève</CardTitle>
+                        <CardDescription>Ajoutez un élève et un code secret lui sera automatiquement assigné.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <form onSubmit={handleCreateStudent} className="flex items-center gap-4">
+                            <Input 
+                                placeholder="Prénom de l'élève" 
+                                value={newStudentName}
+                                onChange={e => setNewStudentName(e.target.value)}
+                                required
+                            />
+                            <Button type="submit" disabled={isCreatingStudent}>
+                                {isCreatingStudent ? <Loader2 className="animate-spin" /> : <UserPlus />}
+                            </Button>
+                        </form>
+                    </CardContent>
                 </Card>
-             </TabsContent>
-
-            <TabsContent value="homework">
-              <Card className="mt-4">
-                <CardHeader>
-                  <CardTitle>Suivi des devoirs d'orthographe</CardTitle>
-                  <CardDescription>Consultez la progression des élèves pour chaque liste de devoirs. Vous pouvez définir la liste actuelle en cliquant sur l'étoile.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="font-bold sticky left-0 bg-background z-10">Élève</TableHead>
-                        {spellingLists.flatMap(list => [
-                          { session: 'Lundi', sessionKey: 'lundi', exerciseId: `${list.id}-lundi`, listData: list },
-                          { session: 'Jeudi', sessionKey: 'jeudi', exerciseId: `${list.id}-jeudi`, listData: list }
-                        ]).map(({ exerciseId, session, sessionKey, listData }) => {
-                          const half = Math.ceil(listData.words.length / 2);
-                          const sessionWords = sessionKey === 'lundi' ? listData.words.slice(0, half) : listData.words.slice(half);
-                          const wordListString = sessionWords.join(', ');
-
-                          return (
-                            <TableHead key={exerciseId} className="text-center">
-                               <div className="flex items-center justify-center gap-2">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <span className="cursor-help underline-dashed">{exerciseId.split('-')[0]}<br/>{session}</span>
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-xs text-center">
-                                        <p className="font-normal text-sm text-popover-foreground">{wordListString}</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                                <button onClick={() => handleSetCurrentList(listData.id)}>
-                                    <Star className={cn("h-4 w-4 text-muted-foreground/30 hover:text-yellow-400", currentListId === listData.id && "text-yellow-400 fill-yellow-400")}/>
-                                </button>
-                               </div>
-                            </TableHead>
-                          )
-                        })}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {students.map(student => {
-                          const studentProgress = studentProgressMap.get(student.id);
-                          return (
-                          <TableRow key={student.id}>
-                              <TableCell className="font-semibold sticky left-0 bg-background z-10">{student.name}</TableCell>
-                              {spellingLists.flatMap(list => [`${list.id}-lundi`, `${list.id}-jeudi`]).map(exerciseId => {
-                                  const result = studentProgress?.[exerciseId.toLowerCase()];
-                                  const listId = exerciseId.split('-')[0];
-                                  const session = exerciseId.split('-')[1];
-                                  const listData = spellingLists.find(l => l.id === listId);
-                                  const wordCount = listData ? (session === 'lundi' ? Math.ceil(listData.words.length / 2) : Math.floor(listData.words.length / 2)) : 0;
-                                  
-                                  return (
-                                      <TableCell key={exerciseId} className="text-center">
-                                          {!result ? (
-                                              <Circle className="text-muted-foreground/30 mx-auto" />
-                                          ) : (
-                                            <Tooltip>
-                                              <TooltipTrigger asChild>
-                                                <div className="flex items-center justify-center cursor-help">
-                                                    {result.errors.length === 0 ? (
-                                                        <CheckCircle className="text-green-500 mx-auto" />
-                                                    ) : (
-                                                        <div className="flex items-center justify-center gap-1.5 text-amber-600 font-bold">
-                                                            <AlertTriangle className="h-4 w-4" />
-                                                            <span>{result.errors.length}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                              </TooltipTrigger>
-                                              <TooltipContent>
-                                                <p>Fait le : {format(new Date(result.completedAt), 'd MMM yyyy, HH:mm', { locale: fr })}</p>
-                                                <p>Erreurs : {result.errors.length > 0 ? `${result.errors.length} / ${wordCount}` : "Aucune"}</p>
-                                                {result.errors.length > 0 && (
-                                                  <p className="font-semibold text-destructive mt-1">{result.errors.join(', ')}</p>
-                                                )}
-                                              </TooltipContent>
-                                            </Tooltip>
-                                          )}
-                                      </TableCell>
-                                  );
-                              })}
-                          </TableRow>
-                      )})}
-                    </TableBody>
-                  </Table>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="class-results">
-              <Card className="mt-4">
-                <CardHeader>
-                  <CardTitle>Résultats des exercices "En classe"</CardTitle>
-                  <CardDescription>
-                    Consultez les résultats de chaque élève. Cliquez sur un élève pour voir ses scores détaillés.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Accordion type="single" collapsible className="w-full">
-                    {students.map(student => {
-                      const studentScores = scoresByStudent.get(student.id) || [];
-                      return (
-                        <AccordionItem value={student.id} key={student.id} disabled={studentScores.length === 0}>
-                           <AccordionTrigger className={cn("text-lg", studentScores.length === 0 && "text-muted-foreground cursor-not-allowed")}>
-                            <div className="flex items-center gap-4">
-                              <span>{student.name}</span>
-                              <Badge variant="secondary">{studentScores.length} résultat{studentScores.length > 1 ? 's' : ''}</Badge>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                             {studentScores.length > 0 ? (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead>Compétence</TableHead>
-                                            <TableHead>Niveau</TableHead>
-                                            <TableHead className="text-right">Score</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {studentScores.map(score => (
-                                            <TableRow key={score.id}>
-                                                <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
-                                                <TableCell>{availableSkills.find(s => s.slug === score.skill)?.name || score.skill}</TableCell>
-                                                <TableCell>
-                                                  <Badge variant="outline">
-                                                    {difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard'}
-                                                  </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right font-bold text-primary">{score.score.toFixed(0)}%</TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button
-                                                      variant="ghost"
-                                                      size="icon"
-                                                      onClick={() => handleDeleteScore(score.id)}
-                                                    >
-                                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                                      <span className="sr-only">Supprimer</span>
-                                                    </Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                             ) : (
-                                <p className="text-center text-muted-foreground p-4">Aucun résultat pour cet élève.</p>
-                             )}
-                          </AccordionContent>
-                        </AccordionItem>
-                      )
-                    })}
-                  </Accordion>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+            </div>
+            <div className="lg:col-span-2">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Liste des élèves</CardTitle>
+                        <CardDescription>Consultez la liste des élèves, leurs codes et leurs niveaux.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Prénom</TableHead>
+                                    <TableHead>Code Secret</TableHead>
+                                    <TableHead>Niveaux</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {students.map(student => (
+                                    <TableRow key={student.id}>
+                                        <TableCell className="font-medium">{student.name}</TableCell>
+                                        <TableCell className="font-mono font-bold">{student.code}</TableCell>
+                                        <TableCell>
+                                            <div className="flex gap-1 flex-wrap">
+                                            {student.levels && Object.entries(student.levels).length > 0 ? (
+                                                Object.entries(student.levels).map(([skill, level]) => (
+                                                    <Tooltip key={skill}>
+                                                        <TooltipTrigger>
+                                                            <Badge variant="secondary">{level}</Badge>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>{availableSkills.find(s => s.slug === skill)?.name || skill}</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                ))
+                                            ) : (
+                                                <span className="text-muted-foreground text-xs">Aucun</span>
+                                            )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex gap-1 justify-end">
+                                                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditModal(student)}>
+                                                    <Pencil />
+                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                            <Trash2 />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                        <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Cette action est irréversible. Toutes les données de l'élève {student.name}, y compris ses scores, seront définitivement supprimées.
+                                                        </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteStudent(student.id)}>
+                                                            Supprimer
+                                                        </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
         </div>
 
-        {/* Dialog for editing levels */}
-        <Dialog open={!!editingLevelsStudent} onOpenChange={(isOpen) => !isOpen && setEditingLevelsStudent(null)}>
-            <DialogContent>
+        {/* Dialog for editing student */}
+        <Dialog open={!!editingStudent} onOpenChange={(isOpen) => !isOpen && closeEditModal()}>
+            <DialogContent className="sm:max-w-[600px]">
                 <DialogHeader>
-                    <DialogTitle>Gérer les niveaux de {editingLevelsStudent?.name}</DialogTitle>
+                    <DialogTitle>Modifier les informations de {editingStudent?.name}</DialogTitle>
                     <DialogDescription>
-                       Définissez le niveau de compétence pour chaque matière.
+                       Changez le nom, le code secret ou les niveaux de compétence de l'élève.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    {availableSkills.map(skill => (
-                        <div key={skill.slug} className="grid grid-cols-3 items-center gap-4">
-                             <Label htmlFor={`level-${skill.slug}`} className="text-right font-semibold">
-                                {skill.name}
-                            </Label>
-                            <Select 
-                                value={currentLevels[skill.slug]} 
-                                onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
-                            >
-                                <SelectTrigger className="col-span-2">
-                                    <SelectValue placeholder="Choisir un niveau..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {skillLevels.map(level => (
-                                        <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                <div className="grid gap-6 py-4">
+                    <div className='grid grid-cols-2 gap-4'>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-name">Prénom</Label>
+                            <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
                         </div>
-                    ))}
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-code">Code Secret</Label>
+                            <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
+                        </div>
+                    </div>
+                     <div>
+                        <Label className="font-semibold">Niveaux de compétence</Label>
+                        <div className="grid grid-cols-2 gap-4 mt-2">
+                             {availableSkills.map(skill => (
+                                <div key={skill.slug} className="grid grid-cols-3 items-center gap-2">
+                                    <Label htmlFor={`level-${skill.slug}`} className="text-right text-xs sm:text-sm">
+                                        {skill.name}
+                                    </Label>
+                                    <Select 
+                                        value={editedLevels[skill.slug]} 
+                                        onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
+                                    >
+                                        <SelectTrigger className="col-span-2 h-9">
+                                            <SelectValue placeholder="Choisir..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {skillLevels.map(level => (
+                                                <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </div>
                  <DialogFooter>
                     <DialogClose asChild>
                         <Button type="button" variant="secondary">Annuler</Button>
                     </DialogClose>
-                    <Button onClick={handleUpdateLevels} disabled={isUpdatingLevels}>
-                        {isUpdatingLevels && <Loader2 className="animate-spin" />}
-                        Enregistrer
+                    <Button onClick={handleUpdateStudent} disabled={isUpdating}>
+                        {isUpdating && <Loader2 className="animate-spin mr-2" />}
+                        Enregistrer les modifications
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-
-
       </main>
     </TooltipProvider>
   );

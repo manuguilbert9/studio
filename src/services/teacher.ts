@@ -8,7 +8,7 @@ const settingsDocRef = doc(db, 'teacher', 'settings');
 
 interface TeacherSettings {
     currentSpellingListId?: string;
-    enabledSkills?: string[]; // Array of skill slugs
+    // enabledSkills is removed for now to simplify focus on student management
 }
 
 /**
@@ -50,28 +50,4 @@ export async function setCurrentSpellingList(listId: string): Promise<{ success:
 export async function getCurrentSpellingListId(): Promise<string | null> {
     const settings = await getTeacherSettings();
     return settings.currentSpellingListId || null;
-}
-
-/**
- * Saves the list of enabled skills for the "En classe" mode.
- * @param skills An array of skill slugs to be enabled.
- */
-export async function setEnabledSkills(skills: string[]): Promise<{ success: boolean; error?: string }> {
-    try {
-        await setDoc(settingsDocRef, { enabledSkills: skills }, { merge: true });
-        return { success: true };
-    } catch (error) {
-        console.error("Error setting enabled skills:", error);
-        return { success: false, error: (error as Error).message };
-    }
-}
-
-/**
- * Retrieves the list of enabled skill slugs.
- * @returns An array of enabled skill slugs, or null if not set (which means all skills are enabled by default).
- */
-export async function getEnabledSkills(): Promise<string[] | null> {
-    const settings = await getTeacherSettings();
-    // If enabledSkills is undefined, return null to signify "all enabled" by default
-    return settings.enabledSkills === undefined ? null : settings.enabledSkills;
 }
