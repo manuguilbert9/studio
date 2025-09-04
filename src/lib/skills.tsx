@@ -27,12 +27,6 @@ export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
   {
-    name: 'Contraires',
-    slug: 'opposites',
-    description: 'Trouvez le contraire du mot proposé.',
-    icon: <GitCompareArrows />,
-  },
-  {
     name: 'Familles de mots',
     slug: 'word-families',
     description: "Relie les mots qui appartiennent à la même famille.",
