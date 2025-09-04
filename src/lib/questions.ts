@@ -164,21 +164,20 @@ function generateTimeQuestion(settings: TimeSettings): Question {
   }
 }
 
-// IMPORTANT: Files must live under /public/monnaie/… in production
 export const currency: CurrencyItem[] = [
-  { name: '1 cent', value: 1, image: '/monnaie/1cent.png', hint: 'pièce 1 centime' },
-  { name: '2 cents', value: 2, image: '/monnaie/2cents.png', hint: 'pièce 2 centimes' },
-  { name: '5 cents', value: 5, image: '/monnaie/5cents.png', hint: 'pièce 5 centimes' },
-  { name: '10 cents', value: 10, image: '/monnaie/10cents.png', hint: 'pièce 10 centimes' },
-  { name: '20 cents', value: 20, image: '/monnaie/20cents.png', hint: 'pièce 20 centimes' },
-  { name: '50 cents', value: 50, image: '/monnaie/50cents.png', hint: 'pièce 50 centimes' },
-  { name: '1 euro', value: 100, image: '/monnaie/1euro.png', hint: 'pièce 1 euro' },
-  { name: '2 euros', value: 200, image: '/monnaie/2euros.png', hint: 'pièce 2 euros' },
-  { name: '5 euros', value: 500, image: '/monnaie/5euros.png', hint: 'billet 5 euros' },
-  { name: '10 euros', value: 1000, image: '/monnaie/10euros.png', hint: 'billet 10 euros' },
-  { name: '20 euros', value: 2000, image: '/monnaie/20euros.png', hint: 'billet 20 euros' },
-  { name: '50 euros', value: 5000, image: '/monnaie/50euros.png', hint: 'billet 50 euros' },
-  { name: '100 euros', value: 10000, image: '/monnaie/100euros.png', hint: 'billet 100 euros' },
+  { name: '1 cent', value: 1, image: '/coins/1cent.png', hint: 'pièce 1 centime' },
+  { name: '2 cents', value: 2, image: '/coins/2cents.png', hint: 'pièce 2 centimes' },
+  { name: '5 cents', value: 5, image: '/coins/5cents.png', hint: 'pièce 5 centimes' },
+  { name: '10 cents', value: 10, image: '/coins/10cents.png', hint: 'pièce 10 centimes' },
+  { name: '20 cents', value: 20, image: '/coins/20cents.png', hint: 'pièce 20 centimes' },
+  { name: '50 cents', value: 50, image: '/coins/50cents.png', hint: 'pièce 50 centimes' },
+  { name: '1 euro', value: 100, image: '/coins/1euro.png', hint: 'pièce 1 euro' },
+  { name: '2 euros', value: 200, image: '/coins/2euros.png', hint: 'pièce 2 euros' },
+  { name: '5 euros', value: 500, image: '/coins/5euros.png', hint: 'billet 5 euros' },
+  { name: '10 euros', value: 1000, image: '/coins/10euros.png', hint: 'billet 10 euros' },
+  { name: '20 euros', value: 2000, image: '/coins/20euros.png', hint: 'billet 20 euros' },
+  { name: '50 euros', value: 5000, image: '/coins/50euros.png', hint: 'billet 50 euros' },
+  { name: '100 euros', value: 10000, image: '/coins/100euros.png', hint: 'billet 100 euros' },
 ];
 
 export const formatCurrency = (value: number) => {

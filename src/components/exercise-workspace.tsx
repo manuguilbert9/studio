@@ -21,6 +21,7 @@ import { PriceTag } from './price-tag';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score } from '@/services/scores';
+import Image from 'next/image';
 
 
 const motivationalMessages = [
@@ -166,7 +167,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     // Check if the selected indices match the correct indices perfectly
     const isCorrect = selectedIndices.length === correctIndices.length && 
                       selectedIndices.every(index => correctIndices.includes(index)) &&
-                      correctIndices.every(index => correctIndices.includes(index));
+                      correctIndices.every(index => selectedIndices.includes(index));
 
     if (isCorrect) {
         processCorrectAnswer();
@@ -327,17 +328,19 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       ) : exerciseData.images && exerciseData.images.length > 0 ? (
         <div className="flex flex-wrap items-center justify-center gap-4">
           {exerciseData.images.map((image, index) => (
-            <img
+            <Image
               key={index}
               src={image.src}
               alt={image.alt}
-              className="max-h-24 rounded-lg object-contain"
+              width={96}
+              height={96}
+              className="rounded-lg object-contain"
               data-ai-hint={image.hint}
             />
           ))}
         </div>
       ) : exerciseData.image ? (
-        <img
+        <Image
           src={exerciseData.image}
           alt={exerciseData.question}
           width={400}
@@ -388,7 +391,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                   <p className="text-muted-foreground font-semibold">Argent donné</p>
                   <div className="flex gap-2">
                   {exerciseData.paymentImages.map((item, index) => (
-                      <img key={index} src={item.image} alt={item.name} className="h-16 object-contain" />
+                      <Image key={index} src={item.image} alt={item.name} width={120} height={64} className="h-16 object-contain" />
                   ))}
                   </div>
               </div>
@@ -405,7 +408,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             <p className="text-4xl font-bold font-numbers">{formatCurrency(composedAmount)}</p>
             <div className="h-16 mt-2 flex flex-wrap gap-1 justify-center items-center overflow-y-auto">
                 {selectedCoins.map((coin, index) => (
-                    <img key={index} src={coin.src} alt={coin.alt} className="h-8 object-contain" />
+                    <Image key={index} src={coin.src} alt={coin.alt} width={32} height={32} className="h-8 object-contain" />
                 ))}
             </div>
         </div>
@@ -421,7 +424,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                         disabled={!!feedback}
                         className="h-auto p-1 flex flex-col gap-1 items-center transform active:scale-95 hover:bg-accent/50"
                     >
-                        <img src={item.image} alt={item.name} className="h-12 object-contain" />
+                        <Image src={item.image} alt={item.name} width={48} height={48} className="h-12 object-contain" />
                         <span className="text-xs font-numbers">{item.name}</span>
                     </Button>
                 ))}
@@ -470,7 +473,7 @@ const renderSelectMultiple = () => (
                             feedback && !selectedIndices.includes(index) && 'opacity-50'
                         )}
                     >
-                        <img src={item.image} alt={item.name} className="h-14 object-contain" />
+                        <Image src={item.image} alt={item.name} width={56} height={56} className="h-14 object-contain" />
                     </button>
                 ))}
             </CardContent>
