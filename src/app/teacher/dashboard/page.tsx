@@ -12,7 +12,6 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StudentManager } from '@/components/teacher/student-manager';
 import { HomeworkTracker } from '@/components/teacher/homework-tracker';
-import { ExercisesManager } from '@/components/teacher/exercises-manager';
 import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
@@ -94,10 +93,9 @@ export default function TeacherDashboardPage() {
             </div>
           ) : (
             <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
-                    <TabsTrigger value="exercises">Exercices en classe</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
                     <TabsTrigger value="database">Base de données</TabsTrigger>
                 </TabsList>
@@ -106,9 +104,6 @@ export default function TeacherDashboardPage() {
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
                     <HomeworkTracker students={students} spellingLists={spellingLists} allProgress={allProgress}/>
-                </TabsContent>
-                <TabsContent value="exercises" className="mt-6">
-                    <ExercisesManager />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
                     <ResultsManager students={students} allScores={allScores} onDataRefresh={loadData} />
