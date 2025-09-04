@@ -19,7 +19,7 @@ import { CountSettings } from './count-settings';
 import { NumberLevelSettings } from './number-level-settings';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
-import { addScore, getScoresForUser, Score } from '@/services/scores';
+import { addScore, getScoresForUser, Score, HomeworkSession } from '@/services/scores';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
@@ -41,9 +41,10 @@ const NUM_QUESTIONS = 10;
 interface ExerciseWorkspaceProps {
   skill: Skill;
   isTableauMode?: boolean;
+  homeworkSession?: HomeworkSession | null;
 }
 
-export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWorkspaceProps) {
+export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSession = null }: ExerciseWorkspaceProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
@@ -206,6 +207,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             scoreData.timeSettings = timeSettings;
         }
 
+        if (homeworkSession) {
+            scoreData.homeworkSession = homeworkSession;
+        }
+
         await addScore(scoreData);
         
         try {
@@ -220,7 +225,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, isTableauMode, hasBeenSaved]);
+  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, isTableauMode, hasBeenSaved, homeworkSession]);
   
   const restartExercise = () => {
     setQuestions([]);

@@ -5,15 +5,18 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
 import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
 
+export type HomeworkSession = 'lundi' | 'jeudi';
+
 export interface Score {
     id: string;
-    userId: string; // This is now the student's unique ID
+    userId: string;
     skill: string;
     score: number;
     createdAt: string; 
     timeSettings?: TimeSettings;
     calculationSettings?: CalculationSettings;
     currencySettings?: CurrencySettings;
+    homeworkSession?: HomeworkSession; // To mark which homework was done
 }
 
 // Adds a new score document to the 'scores' collection.
@@ -44,11 +47,8 @@ export async function getScoresForUser(userId: string, skillSlug?: string): Prom
     try {
         let q;
         if(skillSlug){
-            // This query might also need an index if you use it frequently
             q = query(collection(db, "scores"), where("userId", "==", userId), where("skill", "==", skillSlug), orderBy("createdAt", "desc"));
         } else {
-            // This query is simplified to avoid needing a composite index by default.
-            // We will sort the results in the application code.
             q = query(collection(db, "scores"), where("userId", "==", userId));
         }
         
@@ -59,18 +59,40 @@ export async function getScoresForUser(userId: string, skillSlug?: string): Prom
             scores.push({
                 id: doc.id,
                 ...data,
-                // Convert Firestore Timestamp to ISO string for consistency
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
             } as Score);
         });
 
-        // Sort the results manually in the code
-        scores.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        // If no skillSlug was provided, sort manually as the query can't do it without an index
+        if (!skillSlug) {
+            scores.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        }
         
         return scores;
     } catch (error) {
         console.error("Error loading scores from Firestore:", error);
         return [];
+    }
+}
+
+// Checks if a student has completed a specific math homework
+export async function hasDoneMathHomework(userId: string, skillSlug: string, session: HomeworkSession): Promise<boolean> {
+    if (!userId || !skillSlug || !session) {
+        return false;
+    }
+    try {
+        const q = query(
+            collection(db, "scores"),
+            where("userId", "==", userId),
+            where("skill", "==", skillSlug),
+            where("homeworkSession", "==", session),
+            limit(1) // We only need to know if at least one exists
+        );
+        const querySnapshot = await getDocs(q);
+        return !querySnapshot.empty;
+    } catch (error) {
+        console.error("Error checking math homework status:", error);
+        return false;
     }
 }
 

@@ -14,7 +14,7 @@ import { fr } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '../ui/label';
 import { skills as allSkills, getSkillBySlug } from '@/lib/skills';
-import { Score } from '@/services/scores';
+import { Score, hasDoneMathHomework } from '@/services/scores';
 
 interface HomeworkTrackerProps {
     students: Student[];
@@ -25,33 +25,61 @@ interface HomeworkTrackerProps {
 
 export function HomeworkTracker({ students, spellingLists, allProgress, allScores }: HomeworkTrackerProps) {
     const [currentListId, setCurrentListId] = useState<string | null>(null);
-    const [currentSkillSlug, setCurrentSkillSlug] = useState<string | null>(null);
+    const [currentSkillSlugLundi, setCurrentSkillSlugLundi] = useState<string | null>(null);
+    const [currentSkillSlugJeudi, setCurrentSkillSlugJeudi] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    const [mathLundiDone, setMathLundiDone] = useState<Record<string, boolean>>({});
+    const [mathJeudiDone, setMathJeudiDone] = useState<Record<string, boolean>>({});
 
     const mathSkills = allSkills.filter(s => 
         s.slug !== 'long-calculation' && 
         s.slug !== 'word-families' &&
-        s.slug !== 'mental-calculation' && // Exclude for now
-        s.slug !== 'spelling' // This is an example, assuming 'spelling' is not a math skill
+        s.slug !== 'mental-calculation' && 
+        s.slug !== 'spelling' 
     );
 
-
     useEffect(() => {
-        getCurrentHomeworkConfig().then(({ listId, skillSlug }) => {
+        setIsLoading(true);
+        getCurrentHomeworkConfig().then(async ({ listId, skillSlugLundi, skillSlugJeudi }) => {
             setCurrentListId(listId);
-            setCurrentSkillSlug(skillSlug);
+            setCurrentSkillSlugLundi(skillSlugLundi);
+            setCurrentSkillSlugJeudi(skillSlugJeudi);
+
+            const lundiPromises = students.map(s => 
+                skillSlugLundi ? hasDoneMathHomework(s.id, skillSlugLundi, 'lundi') : Promise.resolve(false)
+            );
+            const jeudiPromises = students.map(s => 
+                skillSlugJeudi ? hasDoneMathHomework(s.id, skillSlugJeudi, 'jeudi') : Promise.resolve(false)
+            );
+
+            const lundiResults = await Promise.all(lundiPromises);
+            const jeudiResults = await Promise.all(jeudiPromises);
+
+            const lundiMap: Record<string, boolean> = {};
+            const jeudiMap: Record<string, boolean> = {};
+
+            students.forEach((s, i) => {
+                lundiMap[s.id] = lundiResults[i];
+                jeudiMap[s.id] = jeudiResults[i];
+            });
+
+            setMathLundiDone(lundiMap);
+            setMathJeudiDone(jeudiMap);
             setIsLoading(false);
         });
-    }, []);
+    }, [students]);
 
-    const handleConfigChange = async (type: 'list' | 'skill', value: string) => {
+    const handleConfigChange = async (type: 'list' | 'skillLundi' | 'skillJeudi', value: string) => {
         const newListId = type === 'list' ? value : currentListId;
-        const newSkillSlug = type === 'skill' ? value : currentSkillSlug;
+        const newSkillSlugLundi = type === 'skillLundi' ? value : currentSkillSlugLundi;
+        const newSkillSlugJeudi = type === 'skillJeudi' ? value : currentSkillSlugJeudi;
         
         if (type === 'list') setCurrentListId(value);
-        if (type === 'skill') setCurrentSkillSlug(value);
+        if (type === 'skillLundi') setCurrentSkillSlugLundi(value);
+        if (type === 'skillJeudi') setCurrentSkillSlugJeudi(value);
         
-        await setCurrentHomeworkConfig(newListId, newSkillSlug);
+        await setCurrentHomeworkConfig(newListId, newSkillSlugLundi, newSkillSlugJeudi);
     };
     
     const progressByStudent = useMemo(() => {
@@ -59,21 +87,6 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
         allProgress.forEach(p => map.set(p.userId, p));
         return map;
     }, [allProgress]);
-    
-    const scoresByStudent = useMemo(() => {
-        const map = new Map<string, Score[]>();
-        if (!allScores) {
-            return map;
-        }
-        allScores.forEach(score => {
-            if (!map.has(score.userId)) {
-                map.set(score.userId, []);
-            }
-            map.get(score.userId)!.push(score);
-        });
-        return map;
-    }, [allScores]);
-
 
     const getSpellingProgressForSession = (studentId: string, session: 'lundi' | 'jeudi'): SpellingResult | null => {
         if (!currentListId) return null;
@@ -83,14 +96,7 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
         const exerciseId = `${currentListId.toLowerCase()}-${session}`;
         return studentProgress.progress[exerciseId] || null;
     };
-    
-    const hasDoneMathExercise = (studentId: string): boolean => {
-        if (!currentSkillSlug) return false;
-        const studentScores = scoresByStudent.get(studentId) || [];
-        return studentScores.some(score => score.skill === currentSkillSlug);
-    };
 
-    
     if (isLoading) {
         return (
             <Card>
@@ -108,13 +114,13 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
         <Card>
             <CardHeader>
                 <CardTitle>Suivi des devoirs</CardTitle>
-                <CardDescription>Suivez la progression des élèves pour les devoirs de la semaine.</CardDescription>
+                <CardDescription>Configurez et suivez la progression des élèves pour les devoirs de la semaine.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-lg bg-secondary/50">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 rounded-lg bg-secondary/50">
                     <div>
                         <Label htmlFor="spelling-list-select" className="text-sm font-medium text-muted-foreground">
-                            Liste d'orthographe de la semaine
+                            Orthographe
                         </Label>
                         <Select onValueChange={(val) => handleConfigChange('list', val)} value={currentListId || ''}>
                             <SelectTrigger id="spelling-list-select" className="mt-1">
@@ -128,11 +134,26 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                         </Select>
                     </div>
                      <div>
-                        <Label htmlFor="math-skill-select" className="text-sm font-medium text-muted-foreground">
-                            Exercice de maths de la semaine
+                        <Label htmlFor="math-skill-lundi-select" className="text-sm font-medium text-muted-foreground">
+                            Maths (Lundi)
                         </Label>
-                        <Select onValueChange={(val) => handleConfigChange('skill', val)} value={currentSkillSlug || ''}>
-                            <SelectTrigger id="math-skill-select" className="mt-1">
+                        <Select onValueChange={(val) => handleConfigChange('skillLundi', val)} value={currentSkillSlugLundi || ''}>
+                            <SelectTrigger id="math-skill-lundi-select" className="mt-1">
+                                <SelectValue placeholder="Choisir un exercice..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {mathSkills.map(skill => (
+                                    <SelectItem key={skill.slug} value={skill.slug}>{skill.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div>
+                        <Label htmlFor="math-skill-jeudi-select" className="text-sm font-medium text-muted-foreground">
+                            Maths (Jeudi)
+                        </Label>
+                        <Select onValueChange={(val) => handleConfigChange('skillJeudi', val)} value={currentSkillSlugJeudi || ''}>
+                            <SelectTrigger id="math-skill-jeudi-select" className="mt-1">
                                 <SelectValue placeholder="Choisir un exercice..." />
                             </SelectTrigger>
                             <SelectContent>
@@ -148,15 +169,14 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                     <TableHeader>
                         <TableRow>
                             <TableHead>Élève</TableHead>
-                            <TableHead>Devoirs d'orthographe</TableHead>
-                            <TableHead>Exercice de maths</TableHead>
+                            <TableHead>Orthographe</TableHead>
+                            <TableHead>Mathématiques</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {students.map(student => {
                             const lundiResult = getSpellingProgressForSession(student.id, 'lundi');
                             const jeudiResult = getSpellingProgressForSession(student.id, 'jeudi');
-                            const mathDone = hasDoneMathExercise(student.id);
 
                             return (
                             <TableRow key={student.id}>
@@ -164,7 +184,7 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                                 <TableCell>
                                     <div className="flex flex-col gap-2">
                                         <div className="flex items-center gap-2">
-                                             <span className="font-semibold text-sm">Lundi:</span>
+                                             <span className="font-semibold text-sm w-12">Lundi:</span>
                                              {lundiResult ? (
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
@@ -180,7 +200,7 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                                             )}
                                         </div>
                                          <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-sm">Jeudi:</span>
+                                            <span className="font-semibold text-sm w-12">Jeudi:</span>
                                              {jeudiResult ? (
                                                  <Tooltip>
                                                     <TooltipTrigger asChild>
@@ -198,18 +218,32 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    {currentSkillSlug ? (
-                                         mathDone ? (
-                                                <div className="flex items-center gap-2">
+                                     <div className="flex flex-col gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-sm w-12">Lundi:</span>
+                                            {currentSkillSlugLundi ? (
+                                                mathLundiDone[student.id] ? (
                                                     <CheckCircle className="h-5 w-5 text-green-500" />
-                                                    <span className="text-xs text-muted-foreground">Fait</span>
-                                                </div>
+                                                ) : (
+                                                    <span className="text-xs text-muted-foreground">Non fait</span>
+                                                )
                                             ) : (
-                                                <span className="text-xs text-muted-foreground">Non fait</span>
-                                            )
-                                    ) : (
-                                        <span className="text-xs text-muted-foreground">Aucun assigné</span>
-                                    )}
+                                                <span className="text-xs text-muted-foreground">-</span>
+                                            )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-sm w-12">Jeudi:</span>
+                                             {currentSkillSlugJeudi ? (
+                                                mathJeudiDone[student.id] ? (
+                                                    <CheckCircle className="h-5 w-5 text-green-500" />
+                                                ) : (
+                                                    <span className="text-xs text-muted-foreground">Non fait</span>
+                                                )
+                                            ) : (
+                                                <span className="text-xs text-muted-foreground">-</span>
+                                            )}
+                                        </div>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )})}

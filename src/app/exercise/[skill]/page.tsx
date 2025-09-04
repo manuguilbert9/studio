@@ -3,7 +3,7 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getSkillBySlug } from '@/lib/skills';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,11 +12,15 @@ import { Button } from '@/components/ui/button';
 import { LongCalculationExercise } from '@/components/long-calculation-exercise';
 import { WordFamiliesExercise } from '@/components/word-families-exercise';
 import { MentalCalculationExercise } from '@/components/mental-calculation-exercise';
+import { HomeworkSession } from '@/services/scores';
 
 export default function ExercisePage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const skillSlug = typeof params.skill === 'string' ? params.skill : '';
   const skill = getSkillBySlug(skillSlug);
+
+  const homeworkSession = searchParams.get('homework') as HomeworkSession | null;
 
   if (!skill) {
     notFound();
@@ -31,7 +35,7 @@ export default function ExercisePage() {
       case 'mental-calculation':
         return <MentalCalculationExercise />;
       default:
-        return <ExerciseWorkspace skill={skill} />;
+        return <ExerciseWorkspace skill={skill} homeworkSession={homeworkSession}/>;
     }
   };
 
@@ -40,13 +44,13 @@ export default function ExercisePage() {
       <div className="w-full max-w-4xl">
         <header className="relative flex items-center justify-between mb-8">
            <Button asChild variant="ghost" className="hidden sm:inline-flex">
-            <Link href="/en-classe">
+            <Link href={homeworkSession ? "/devoirs" : "/en-classe"}>
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour aux compétences
+              Retour
             </Link>
           </Button>
            <Button asChild variant="ghost" size="icon" className="sm:hidden">
-            <Link href="/en-classe" aria-label="Retour aux compétences">
+            <Link href={homeworkSession ? "/devoirs" : "/en-classe"} aria-label="Retour">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>

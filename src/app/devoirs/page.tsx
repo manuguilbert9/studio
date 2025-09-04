@@ -12,7 +12,7 @@ import { getSpellingLists, getSpellingProgress, SpellingList } from '@/services/
 import { UserContext } from '@/context/user-context';
 import { getCurrentHomeworkConfig } from '@/services/teacher';
 import { getSkillBySlug } from '@/lib/skills';
-import { getScoresForUser } from '@/services/scores';
+import { getScoresForUser, hasDoneMathHomework } from '@/services/scores';
 
 function HomeworkList() {
   const router = useRouter();
@@ -22,8 +22,10 @@ function HomeworkList() {
   const [spellingProgress, setSpellingProgress] = useState<Record<string, boolean>>({});
   
   const [currentListId, setCurrentListId] = useState<string | null>(null);
-  const [currentMathSkillSlug, setCurrentMathSkillSlug] = useState<string | null>(null);
-  const [isMathExerciseDone, setIsMathExerciseDone] = useState(false);
+  const [currentMathSkillSlugLundi, setCurrentMathSkillSlugLundi] = useState<string | null>(null);
+  const [currentMathSkillSlugJeudi, setCurrentMathSkillSlugJeudi] = useState<string | null>(null);
+  const [isMathLundiDone, setIsMathLundiDone] = useState(false);
+  const [isMathJeudiDone, setIsMathJeudiDone] = useState(false);
   
   const [isLoading, setIsLoading] = useState(true);
 
@@ -35,7 +37,7 @@ function HomeworkList() {
       };
 
       setIsLoading(true);
-      const [lists, progress, { listId, skillSlug }] = await Promise.all([
+      const [lists, progress, { listId, skillSlugLundi, skillSlugJeudi }] = await Promise.all([
         getSpellingLists(),
         getSpellingProgress(student.id),
         getCurrentHomeworkConfig()
@@ -44,13 +46,14 @@ function HomeworkList() {
       setSpellingLists(lists);
       setSpellingProgress(progress);
       setCurrentListId(listId);
-      setCurrentMathSkillSlug(skillSlug);
+      setCurrentMathSkillSlugLundi(skillSlugLundi);
+      setCurrentMathSkillSlugJeudi(skillSlugJeudi);
 
-      if (skillSlug) {
-        const mathScores = await getScoresForUser(student.id, skillSlug);
-        if (mathScores.length > 0) {
-            setIsMathExerciseDone(true);
-        }
+      if (skillSlugLundi) {
+        setIsMathLundiDone(await hasDoneMathHomework(student.id, skillSlugLundi, 'lundi'));
+      }
+      if (skillSlugJeudi) {
+        setIsMathJeudiDone(await hasDoneMathHomework(student.id, skillSlugJeudi, 'jeudi'));
       }
 
       setIsLoading(false);
@@ -85,7 +88,9 @@ function HomeworkList() {
   }
   
   const currentList = spellingLists.find(list => list.id === currentListId);
-  const currentMathSkill = getSkillBySlug(currentMathSkillSlug || '');
+  const mathSkillLundi = getSkillBySlug(currentMathSkillSlugLundi || '');
+  const mathSkillJeudi = getSkillBySlug(currentMathSkillSlugJeudi || '');
+
 
   return (
     <div className="space-y-8">
@@ -129,29 +134,41 @@ function HomeworkList() {
                  )}
 
                  {/* Math Card */}
-                 {currentMathSkill ? (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3 font-headline text-2xl">
-                                <Calculator className="text-primary" />
-                                <span>Mathématiques</span>
-                            </CardTitle>
-                            <CardDescription>{currentMathSkill.name}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             <Button 
-                                variant={isMathExerciseDone ? "secondary" : "default"} 
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3 font-headline text-2xl">
+                            <Calculator className="text-primary" />
+                            <span>Mathématiques</span>
+                        </CardTitle>
+                        <CardDescription>Exercices de la semaine</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {mathSkillLundi ? (
+                            <Button 
+                                variant={isMathLundiDone ? "secondary" : "default"} 
                                 className="w-full h-14 text-base justify-between"
-                                onClick={() => router.push(`/exercise/${currentMathSkill.slug}`)}
+                                onClick={() => router.push(`/exercise/${mathSkillLundi.slug}?homework=lundi`)}
                             >
-                                <span>Faire l'exercice</span>
-                                {isMathExerciseDone && <CheckCircle className="text-green-500"/>}
+                                <span>Lundi : {mathSkillLundi.name}</span>
+                                {isMathLundiDone && <CheckCircle className="text-green-500"/>}
                             </Button>
-                        </CardContent>
-                    </Card>
-                 ) : (
-                     <Card className="flex items-center justify-center p-8"><p className="text-muted-foreground">Aucun exercice de maths assigné.</p></Card>
-                 )}
+                        ) : (
+                            <div className="text-center text-sm text-muted-foreground p-4">Aucun exercice pour lundi.</div>
+                        )}
+                        {mathSkillJeudi ? (
+                             <Button 
+                                variant={isMathJeudiDone ? "secondary" : "default"} 
+                                className="w-full h-14 text-base justify-between"
+                                onClick={() => router.push(`/exercise/${mathSkillJeudi.slug}?homework=jeudi`)}
+                            >
+                                <span>Jeudi : {mathSkillJeudi.name}</span>
+                                {isMathJeudiDone && <CheckCircle className="text-green-500"/>}
+                            </Button>
+                        ) : (
+                             <div className="text-center text-sm text-muted-foreground p-4">Aucun exercice pour jeudi.</div>
+                        )}
+                    </CardContent>
+                </Card>
             </CardContent>
         </Card>
 

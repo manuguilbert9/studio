@@ -10,7 +10,8 @@ const SETTINGS_DOC_ID = 'settings';
 
 interface TeacherSettings {
     currentSpellingListId?: string;
-    currentMathSkillSlug?: string;
+    currentMathSkillSlugLundi?: string;
+    currentMathSkillSlugJeudi?: string;
     enabledSkills?: Record<string, boolean>;
 }
 
@@ -30,21 +31,23 @@ async function getSettingsDoc(): Promise<TeacherSettings | null> {
 }
 
 
-export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlug: string | null }> {
+export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null }> {
     const settings = await getSettingsDoc();
     return {
         listId: settings?.currentSpellingListId || null,
-        skillSlug: settings?.currentMathSkillSlug || null
+        skillSlugLundi: settings?.currentMathSkillSlugLundi || null,
+        skillSlugJeudi: settings?.currentMathSkillSlugJeudi || null,
     };
 }
 
 
-export async function setCurrentHomeworkConfig(listId: string | null, skillSlug: string | null): Promise<{ success: boolean; error?: string }> {
+export async function setCurrentHomeworkConfig(listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null): Promise<{ success: boolean; error?: string }> {
      try {
         const settingsRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
         await setDoc(settingsRef, { 
             currentSpellingListId: listId,
-            currentMathSkillSlug: skillSlug 
+            currentMathSkillSlugLundi: skillSlugLundi,
+            currentMathSkillSlugJeudi: skillSlugJeudi,
         }, { merge: true });
         return { success: true };
     } catch (e) {
