@@ -1,10 +1,11 @@
 
 
+
 import { numberToFrench } from "./utils";
 
 
 export interface Question {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm';
   question: string;
   // For QCM
   options?: string[];
@@ -21,6 +22,8 @@ export interface Question {
   countNumber?: number;
   // For audio questions
   textToSpeak?: string;
+  // For written-to-audio questions
+  optionsWithAudio?: { text: string; audio: string }[];
 }
 
 export interface CalculationSettings {
@@ -207,6 +210,64 @@ function generateEcouteLesNombresQuestion(): Question {
   };
 }
 
+// Generates questions for the "nombres-complexes" skill (70-99)
+function generateNombresComplexesQuestion(): Question {
+    const isReverse = Math.random() > 0.5;
+
+    // Generate a "tricky" number between 70 and 99
+    const answerNumber = Math.floor(Math.random() * 30) + 70;
+    const answerText = String(answerNumber);
+    const answerAudio = numberToFrench[answerNumber] || answerText;
+
+    const options = new Set<number>([answerNumber]);
+
+    // Generate "trap" options
+    const tens = Math.floor(answerNumber / 10); // 7, 8, or 9
+    const ones = answerNumber % 10;
+
+    // Trap 1: wrong tens
+    if (tens === 7) options.add(90 + ones);
+    else if (tens === 9) options.add(70 + ones);
+    else if (tens === 8) options.add(Math.random() > 0.5 ? 71 : 91); // 71 or 91 for 81
+    
+    // Trap 2: wrong ones
+    if (tens === 7 || tens === 9) { // 7x and 9x
+        if (ones > 0 && ones < 9) {
+             options.add(tens * 10 + (ones + (Math.random() > 0.5 ? 1 : -1) ));
+        }
+    }
+
+    // Fill with random other tricky numbers
+    while (options.size < 4) {
+        options.add(Math.floor(Math.random() * 30) + 70);
+    }
+    
+    const allOptions = Array.from(options);
+
+    if (isReverse) {
+        // Written to Audio QCM
+        return {
+            type: 'written-to-audio-qcm',
+            question: "Comment se prononce ce nombre ?",
+            answer: answerText,
+            textToSpeak: answerText, // The number to display
+            optionsWithAudio: allOptions.sort(() => Math.random() - 0.5).map(num => ({
+                text: String(num),
+                audio: numberToFrench[num] || String(num)
+            }))
+        };
+    } else {
+        // Audio to Written QCM
+        return {
+            type: 'audio-qcm',
+            question: "Clique sur le nombre que tu entends.",
+            options: allOptions.map(String).sort(() => Math.random() - 0.5),
+            answer: answerText,
+            textToSpeak: answerAudio,
+        };
+    }
+}
+
 
 export async function generateQuestions(
   skill: string,
@@ -225,6 +286,10 @@ export async function generateQuestions(
 
   if (skill === 'ecoute-les-nombres') {
       return Array.from({ length: count }, () => generateEcouteLesNombresQuestion());
+  }
+
+  if (skill === 'nombres-complexes') {
+      return Array.from({ length: count }, () => generateNombresComplexesQuestion());
   }
 
   // Fallback

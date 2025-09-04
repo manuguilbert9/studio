@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -85,12 +86,18 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     return questions[currentQuestionIndex];
   }, [currentQuestionIndex, questions]);
   
-  // Effect for auto-playing audio questions
-  useEffect(() => {
-    if (exerciseData?.type === 'audio-qcm' && exerciseData.textToSpeak && 'speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(exerciseData.textToSpeak);
+  const playAudio = (text: string) => {
+    if (text && 'speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = 'fr-FR';
       window.speechSynthesis.speak(utterance);
+    }
+  }
+  
+  // Effect for auto-playing audio questions
+  useEffect(() => {
+    if (exerciseData?.type === 'audio-qcm' && exerciseData.textToSpeak) {
+        playAudio(exerciseData.textToSpeak);
     }
   }, [exerciseData]);
 
@@ -314,17 +321,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   );
 
   const renderAudioQCM = () => {
-    const playAudio = () => {
-        if (exerciseData.textToSpeak && 'speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(exerciseData.textToSpeak);
-            utterance.lang = 'fr-FR';
-            window.speechSynthesis.speak(utterance);
-        }
-    };
-    
     return (
         <div className="flex flex-col items-center justify-center w-full space-y-8">
-            <Button onClick={playAudio} size="lg" variant="outline" className="h-24 w-24 rounded-full">
+            <Button onClick={() => playAudio(exerciseData.textToSpeak!)} size="lg" variant="outline" className="h-24 w-24 rounded-full">
                 <Volume2 className="h-12 w-12" />
             </Button>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-lg">
@@ -349,6 +348,38 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         </div>
     );
   };
+  
+  const renderWrittenToAudioQCM = () => {
+    return (
+        <div className="flex flex-col items-center justify-center w-full space-y-8">
+            <div className="font-numbers text-8xl font-bold text-primary">
+                {exerciseData.textToSpeak}
+            </div>
+             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-lg">
+                 {exerciseData.optionsWithAudio?.map((option, index) => (
+                     <Button
+                        key={`${option.text}-${index}`}
+                        variant="outline"
+                        onClick={() => {
+                            playAudio(option.audio);
+                            handleQcmAnswer(option.text);
+                        }}
+                        className={cn(
+                        "h-24 p-4 justify-center transition-all duration-300 transform active:scale-95",
+                        feedback === 'correct' && option.text === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                        feedback === 'incorrect' && option.text !== exerciseData.answer && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                        feedback && option.text !== exerciseData.answer && 'opacity-50',
+                        feedback && option.text === exerciseData.answer && 'opacity-100'
+                        )}
+                        disabled={!!feedback}
+                    >
+                        <Volume2 className="h-10 w-10"/>
+                    </Button>
+                ))}
+            </div>
+        </div>
+    )
+  }
 
   const renderCount = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-6">
@@ -421,6 +452,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
           {exerciseData.type === 'audio-qcm' && renderAudioQCM()}
+          {exerciseData.type === 'written-to-audio-qcm' && renderWrittenToAudioQCM()}
           {exerciseData.type === 'set-time' && renderSetTime()}
           {exerciseData.type === 'count' && renderCount()}
         </CardContent>
