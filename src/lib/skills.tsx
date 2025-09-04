@@ -28,7 +28,7 @@ export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 export const skills: Skill[] = [
   {
     name: 'Dénombrement',
-    slug: 'dénombrement',
+    slug: 'denombrement',
     description: "Dénombrer une quantité inférieure à 20.",
     icon: <ListOrdered />,
   },

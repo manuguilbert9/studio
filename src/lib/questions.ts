@@ -177,7 +177,7 @@ export function generateQuestions(
     );
   }
   
-  if (skill === 'dénombrement') {
+  if (skill === 'denombrement') {
       return Array.from({ length: count }, () => generateDénombrementQuestion());
   }
 
