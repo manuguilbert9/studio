@@ -85,6 +85,15 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     return questions[currentQuestionIndex];
   }, [currentQuestionIndex, questions]);
   
+  // Effect for auto-playing audio questions
+  useEffect(() => {
+    if (exerciseData?.type === 'audio-qcm' && exerciseData.textToSpeak && 'speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(exerciseData.textToSpeak);
+      utterance.lang = 'fr-FR';
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [exerciseData]);
+
   const resetInteractiveStates = () => {
     setFeedback(null);
   }
@@ -313,14 +322,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         }
     };
     
-    // Play audio automatically when question changes
-    useEffect(() => {
-        if(exerciseData?.textToSpeak) {
-            playAudio();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [exerciseData?.textToSpeak]);
-
     return (
         <div className="flex flex-col items-center justify-center w-full space-y-8">
             <Button onClick={playAudio} size="lg" variant="outline" className="h-24 w-24 rounded-full">
