@@ -44,9 +44,12 @@ export async function getScoresForUser(userId: string, skillSlug?: string): Prom
     try {
         let q;
         if(skillSlug){
+            // This query might also need an index if you use it frequently
             q = query(collection(db, "scores"), where("userId", "==", userId), where("skill", "==", skillSlug), orderBy("createdAt", "desc"));
         } else {
-            q = query(collection(db, "scores"), where("userId", "==", userId), orderBy("createdAt", "desc"));
+            // This query is simplified to avoid needing a composite index by default.
+            // We will sort the results in the application code.
+            q = query(collection(db, "scores"), where("userId", "==", userId));
         }
         
         const querySnapshot = await getDocs(q);
@@ -60,6 +63,10 @@ export async function getScoresForUser(userId: string, skillSlug?: string): Prom
                 createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
             } as Score);
         });
+
+        // Sort the results manually in the code
+        scores.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        
         return scores;
     } catch (error) {
         console.error("Error loading scores from Firestore:", error);
