@@ -349,7 +349,7 @@ const renderSetTime = () => (
             <div className="text-2xl font-bold text-red-600 animate-shake">Oups ! Essaye encore.</div>
           )}
         </CardFooter>
-        <style jsx>{`
+        <style jsx>{\`
           @keyframes fall {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
             100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
@@ -362,7 +362,7 @@ const renderSetTime = () => (
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        `}</style>
+        \`}</style>
       </Card>
     </div>
   );
