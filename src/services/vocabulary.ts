@@ -35,6 +35,27 @@ export async function getAntonymPairs(): Promise<AntonymEntry[]> {
     return pairs;
   } catch (error) {
     console.error('Failed to read or parse "contraires.txt":', error);
-    return [];
+    // Fallback attempt using fetch if fs fails (e.g. in some serverless environments)
+     try {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch(new URL('/vocabulaire/contraires.txt', process.env.VERCEL_URL || 'http://localhost:3000'));
+        if (!response.ok) throw new Error('Failed to fetch fallback file');
+        const fileContent = await response.text();
+        const lines = fileContent.split('\n').filter(line => line.trim() !== '' && line.includes(':'));
+        const pairs: AntonymEntry[] = lines.map(line => {
+          const cleanLine = line.replace(/^\d+\.\s*/, '');
+          const parts = cleanLine.split(':');
+          if (parts.length < 2) return null;
+          const word = parts[0].trim();
+          const allOpposites = parts[1].split(',').map(s => s.trim()).filter(Boolean);
+          const [opposite, ...distractors] = allOpposites;
+          if (!word || !opposite) return null;
+          return { word, opposite, distractors };
+        }).filter((p): p is AntonymEntry => p !== null);
+        return pairs;
+    } catch (fetchError) {
+        console.error('Fallback fetch for "contraires.txt" also failed:', fetchError);
+        return [];
+    }
   }
 }
