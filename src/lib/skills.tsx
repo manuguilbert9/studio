@@ -11,6 +11,7 @@ import {
   Spline,
   GitCompareArrows,
   Waves,
+  ListOrdered,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from './questions';
 
@@ -25,6 +26,12 @@ export interface Skill {
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
+  {
+    name: 'Dénombrement',
+    slug: 'dénombrement',
+    description: "Dénombrer une quantité inférieure à 20.",
+    icon: <ListOrdered />,
+  },
   {
     name: 'Familles de mots',
     slug: 'word-families',

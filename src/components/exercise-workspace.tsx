@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -288,7 +287,37 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     </>
   );
 
-const renderSetTime = () => (
+  const renderCount = () => (
+    <div className="flex flex-col items-center justify-center w-full space-y-6">
+      <div className="grid grid-cols-5 gap-2 text-4xl" style={{ gridTemplateRows: 'repeat(4, 1fr)' }}>
+        {Array.from({ length: exerciseData.countNumber ?? 0 }).map((_, i) => (
+          <span key={i} role="img" aria-label={exerciseData.countEmoji}>
+            {exerciseData.countEmoji}
+          </span>
+        ))}
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl">
+        {Array.from({ length: 21 }, (_, i) => i).map((num) => (
+          <Button
+            key={num}
+            variant="outline"
+            onClick={() => handleQcmAnswer(String(num))}
+            className={cn(
+              'text-xl h-12 w-12 font-numbers transition-all duration-300 transform active:scale-95',
+              feedback === 'correct' && String(num) === exerciseData.answer && 'bg-green-500/80 text-white border-green-600',
+              feedback === 'incorrect' && String(num) !== exerciseData.answer && 'opacity-50',
+              feedback && String(num) === exerciseData.answer && 'opacity-100'
+            )}
+            disabled={!!feedback}
+          >
+            {num}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderSetTime = () => (
     <InteractiveClock
       hour={exerciseData.hour!}
       minute={exerciseData.minute!}
@@ -296,7 +325,7 @@ const renderSetTime = () => (
       settings={exerciseData.timeSettings!}
       feedback={feedback}
     />
-)
+);
 
 
   return (
@@ -329,6 +358,7 @@ const renderSetTime = () => (
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
           {exerciseData.type === 'set-time' && renderSetTime()}
+          {exerciseData.type === 'count' && renderCount()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (

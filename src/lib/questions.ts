@@ -1,6 +1,6 @@
 
 export interface Question {
-  type: 'qcm' | 'set-time';
+  type: 'qcm' | 'set-time' | 'count';
   question: string;
   // For QCM
   options?: string[];
@@ -12,6 +12,9 @@ export interface Question {
   hour?: number;
   minute?: number;
   timeSettings?: TimeSettings;
+  // For count questions
+  countEmoji?: string;
+  countNumber?: number;
 }
 
 export interface CalculationSettings {
@@ -148,6 +151,21 @@ function generateTimeQuestion(settings: TimeSettings): Question {
   }
 }
 
+function generateDénombrementQuestion(): Question {
+  const emojis = ['🍎', '🍌', '🚗', '🚜', '🍓', '🍊', '🚓', '🚑'];
+  const emoji = emojis[Math.floor(Math.random() * emojis.length)];
+  const count = Math.floor(Math.random() * (19 - 3 + 1)) + 3; // 3 to 19
+
+  return {
+    type: 'count',
+    question: `Combien y a-t-il de ${emoji} ?`,
+    countEmoji: emoji,
+    countNumber: count,
+    answer: String(count),
+  };
+}
+
+
 export function generateQuestions(
   skill: string,
   count: number,
@@ -157,6 +175,10 @@ export function generateQuestions(
     return Array.from({ length: count }, () =>
       generateTimeQuestion(settings.time!)
     );
+  }
+  
+  if (skill === 'dénombrement') {
+      return Array.from({ length: count }, () => generateDénombrementQuestion());
   }
 
   // Fallback
