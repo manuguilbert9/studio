@@ -10,32 +10,29 @@ import { Logo } from '@/components/logo';
 import { Home, Presentation, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
-import { getEnabledSkills } from '@/services/teacher';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [enabledSkillsList, setEnabledSkillsList] = useState<Skill[] | null>(null);
-  const [isLoadingSkills, setIsLoadingSkills] = useState(true);
 
   useEffect(() => {
-    async function fetchSkills() {
-      setIsLoadingSkills(true);
-      const enabledSkillsMap = await getEnabledSkills();
-      
-      if (enabledSkillsMap === null) {
-        // If null (never set before), all skills are enabled by default
+      if (student) {
+        // If student data is available, filter skills based on their profile
+        if (student.enabledSkills) {
+            const filteredSkills = allSkills.filter(skill => student.enabledSkills![skill.slug]);
+            setEnabledSkillsList(filteredSkills);
+        } else {
+            // If the property doesn't exist (e.g., older student data), enable all by default
+            setEnabledSkillsList(allSkills);
+        }
+      } else if (!isUserLoading) {
+        // If there's no student and we're not loading, show all skills (or none)
         setEnabledSkillsList(allSkills);
-      } else {
-        const filteredSkills = allSkills.filter(skill => enabledSkillsMap[skill.slug]);
-        setEnabledSkillsList(filteredSkills);
       }
-      setIsLoadingSkills(false);
-    }
-    fetchSkills();
-  }, []);
+  }, [student, isUserLoading]);
 
-  const isLoading = isUserLoading || isLoadingSkills;
+  const isLoading = isUserLoading || enabledSkillsList === null;
 
   if (isLoading || !student) {
     return (

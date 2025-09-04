@@ -14,6 +14,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { skills as availableSkills, type SkillLevel } from '@/lib/skills';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -25,10 +26,13 @@ const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'D', label: 'D - CM2/6ème' },
 ];
 
-export function StudentManager() {
+interface StudentManagerProps {
+    students: Student[];
+    onStudentsChange: () => void;
+}
+
+export function StudentManager({ students, onStudentsChange }: StudentManagerProps) {
     const { toast } = useToast();
-    const [students, setStudents] = useState<Student[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
     const [newStudentName, setNewStudentName] = useState('');
     const [newStudentCode, setNewStudentCode] = useState('');
     const [isCreatingStudent, setIsCreatingStudent] = useState(false);
@@ -38,18 +42,9 @@ export function StudentManager() {
     const [editedName, setEditedName] = useState('');
     const [editedCode, setEditedCode] = useState('');
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
+    const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
     const [isUpdating, setIsUpdating] = useState(false);
 
-    const fetchStudents = useCallback(async () => {
-        setIsLoading(true);
-        const studentData = await getStudents();
-        setStudents(studentData);
-        setIsLoading(false);
-    }, []);
-
-    useEffect(() => {
-        fetchStudents();
-    }, [fetchStudents]);
 
      const handleCreateStudent = async (e: FormEvent) => {
         e.preventDefault();
@@ -72,7 +67,7 @@ export function StudentManager() {
             });
             setNewStudentName('');
             setNewStudentCode('');
-            await fetchStudents(); // Refresh the list
+            onStudentsChange(); // Refresh the list
         } catch(error) {
             toast({
                 variant: 'destructive',
@@ -89,6 +84,14 @@ export function StudentManager() {
         setEditedName(student.name);
         setEditedCode(student.code);
         setEditedLevels(student.levels || {});
+        // If enabledSkills is not set, default all to true
+        if (student.enabledSkills) {
+             setEditedEnabledSkills(student.enabledSkills);
+        } else {
+            const allEnabled: Record<string, boolean> = {};
+            availableSkills.forEach(skill => allEnabled[skill.slug] = true);
+            setEditedEnabledSkills(allEnabled);
+        }
     };
 
     const closeEditModal = () => {
@@ -107,11 +110,12 @@ export function StudentManager() {
         const result = await updateStudent(editingStudent.id, {
             name: editedName,
             code: editedCode,
-            levels: editedLevels
+            levels: editedLevels,
+            enabledSkills: editedEnabledSkills,
         });
         
         if (result.success) {
-            await fetchStudents(); // Refresh list
+            onStudentsChange(); // Refresh list
             toast({ title: "Élève mis à jour", description: `Les informations de ${editedName} ont été modifiées.` });
             closeEditModal();
         } else {
@@ -123,7 +127,7 @@ export function StudentManager() {
     const handleDeleteStudent = async (studentId: string) => {
         const result = await deleteStudent(studentId);
         if (result.success) {
-            await fetchStudents(); // Refresh list
+            onStudentsChange(); // Refresh list
             toast({ title: "Élève supprimé", description: "L'élève a bien été supprimé de la liste." });
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de supprimer l'élève." });
@@ -132,6 +136,10 @@ export function StudentManager() {
 
     const handleLevelChange = (skillSlug: string, level: SkillLevel) => {
         setEditedLevels(prev => ({ ...prev, [skillSlug]: level }));
+    };
+
+    const handleEnabledSkillChange = (skillSlug: string, isEnabled: boolean) => {
+        setEditedEnabledSkills(prev => ({...prev, [skillSlug]: isEnabled}));
     };
 
     return (
@@ -173,11 +181,9 @@ export function StudentManager() {
                             <CardDescription>Consultez la liste des élèves, leurs codes et leurs niveaux.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                           {isLoading ? (
-                                <div className="flex justify-center items-center h-48">
-                                    <Loader2 className="h-8 w-8 animate-spin" />
-                                </div>
-                            ) : (
+                           {students.length === 0 ? (
+                               <p className="text-center text-muted-foreground py-8">Aucun élève n'a encore été créé.</p>
+                           ) : (
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -250,12 +256,9 @@ export function StudentManager() {
 
             {/* Dialog for editing student */}
             <Dialog open={!!editingStudent} onOpenChange={(isOpen) => !isOpen && closeEditModal()}>
-                <DialogContent className="sm:max-w-[600px]">
+                <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Modifier les informations de {editingStudent?.name}</DialogTitle>
-                        <DialogDescription>
-                        Changez le nom, le code secret ou les niveaux de compétence de l'élève.
-                        </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-4">
                         <div className='grid grid-cols-2 gap-4'>
@@ -268,9 +271,10 @@ export function StudentManager() {
                                 <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
                             </div>
                         </div>
-                        <div>
-                            <Label className="font-semibold">Niveaux de compétence</Label>
-                            <div className="grid grid-cols-2 gap-4 mt-2">
+
+                        <div className="space-y-4">
+                            <h3 className="font-semibold">Niveaux de compétence</h3>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                 {availableSkills.map(skill => (
                                     <div key={skill.slug} className="grid grid-cols-3 items-center gap-2">
                                         <Label htmlFor={`level-${skill.slug}`} className="text-right text-xs sm:text-sm">
@@ -293,6 +297,25 @@ export function StudentManager() {
                                 ))}
                             </div>
                         </div>
+                        
+                        <div className="space-y-4">
+                            <h3 className="font-semibold">Exercices activés</h3>
+                             <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-secondary/50">
+                                {availableSkills.map(skill => (
+                                    <div key={skill.slug} className="flex items-center justify-between p-3 bg-card rounded-lg shadow-sm">
+                                        <Label htmlFor={`skill-${skill.slug}`} className="text-sm font-medium">
+                                            {skill.name}
+                                        </Label>
+                                        <Switch
+                                            id={`skill-${skill.slug}`}
+                                            checked={editedEnabledSkills[skill.slug] ?? false}
+                                            onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                     </div>
                     <DialogFooter>
                         <DialogClose asChild>

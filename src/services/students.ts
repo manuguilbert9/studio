@@ -12,6 +12,7 @@ export interface Student {
     name: string;
     code: string;
     levels?: Record<string, SkillLevel>;
+    enabledSkills?: Record<string, boolean>;
 }
 
 
@@ -37,17 +38,24 @@ export async function createStudent(name: string, code: string): Promise<Student
         defaultLevels[skill.slug] = 'B';
     });
 
+    const defaultEnabledSkills: Record<string, boolean> = {};
+    skills.forEach(skill => {
+        defaultEnabledSkills[skill.slug] = true;
+    });
+
     const docRef = await addDoc(collection(db, 'students'), {
         name: name.trim(),
         code: code,
-        levels: defaultLevels
+        levels: defaultLevels,
+        enabledSkills: defaultEnabledSkills
     });
 
     return {
         id: docRef.id,
         name: name.trim(),
         code: code,
-        levels: defaultLevels
+        levels: defaultLevels,
+        enabledSkills: defaultEnabledSkills
     };
 }
 
@@ -114,7 +122,8 @@ export async function getStudents(): Promise<Student[]> {
                 id: doc.id,
                 name: data.name,
                 code: data.code,
-                levels: data.levels || {}
+                levels: data.levels || {},
+                enabledSkills: data.enabledSkills
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -152,7 +161,8 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     id: doc.id,
                     name: studentData.name,
                     code: studentData.code,
-                    levels: studentData.levels || {}
+                    levels: studentData.levels || {},
+                    enabledSkills: studentData.enabledSkills
                 };
             }
         }
@@ -180,7 +190,8 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 id: docSnap.id,
                 name: data.name,
                 code: data.code,
-                levels: data.levels || {}
+                levels: data.levels || {},
+                enabledSkills: data.enabledSkills
             };
         }
         return null;
