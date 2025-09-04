@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to generate stories for children.
@@ -10,14 +11,14 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const StoryInputSchema = z.object({
+const StoryInputSchema = z.object({
   emojis: z.array(z.string()).describe('An array of emojis to inspire the story. Up to 6.'),
   length: z.enum(['courte', 'moyenne', 'longue']).describe('The desired length of the story.'),
   tone: z.enum(['aventure', 'comique', 'effrayante']).describe('The tone of the story.'),
 });
 export type StoryInput = z.infer<typeof StoryInputSchema>;
 
-export const StoryOutputSchema = z.object({
+const StoryOutputSchema = z.object({
   title: z.string().describe('A creative and fitting title for the story.'),
   story: z.string().describe('The generated story text.'),
   moral: z.string().describe('A short, clear moral for the story.'),
