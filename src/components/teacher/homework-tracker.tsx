@@ -62,6 +62,9 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
     
     const scoresByStudent = useMemo(() => {
         const map = new Map<string, Score[]>();
+        if (!allScores) {
+            return map;
+        }
         allScores.forEach(score => {
             if (!map.has(score.userId)) {
                 map.set(score.userId, []);
