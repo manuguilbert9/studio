@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -11,11 +11,26 @@ import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
 
-const availableEmojis = [
+// Base emojis, always present
+const baseEmojis = [
   '👑', '🏰', '🐉', '🦄', '🏴‍☠️', '🚀', '👽', '🤖',
-  ' detective', '🌲', '🦊', '🦉', '🔑', '🗺️', '💎', '🕰️',
+  ' détective', '🌲', '🦊', '🦉', '🔑', '🗺️', '💎', '🕰️',
   '🎩', '🧪', '✨', '🍪', '🎈', '⚽', '🎨', '🎤'
 ];
+
+// Pool of extra emojis for random selection
+const extraEmojiPool = [
+  '🧛', '🧟', '👻', '🧜‍♀️', '🧞', ' fairies', '🌊', '🌋', '🏜️', '🏝️',
+  '🧭', '🏆', '🎁', '🍭', '🍕', '🍰', '🎸', '🎻', '🎭', '🎪',
+  '🚂', '⛵', '🚁', 'SUBMARINE', 'Amulette', 'Potion', 'Sort', 'Trésor'
+];
+
+// Function to get a unique random subset of emojis
+const getRandomEmojis = (pool: string[], count: number): string[] => {
+  const shuffled = [...pool].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+};
+
 
 type StoryLength = 'courte' | 'moyenne' | 'longue';
 type StoryTone = 'aventure' | 'comique' | 'effrayante';
@@ -28,6 +43,15 @@ export default function StoryBoxPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [story, setStory] = useState<StoryOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // State for the dynamic emoji list
+  const [availableEmojis, setAvailableEmojis] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Generate the list on component mount
+    const randomEmojis = getRandomEmojis(extraEmojiPool, 8); // Add 8 random emojis
+    setAvailableEmojis([...baseEmojis, ...randomEmojis]);
+  }, []);
 
   const handleEmojiClick = (emoji: string) => {
     setSelectedEmojis((current) => {
