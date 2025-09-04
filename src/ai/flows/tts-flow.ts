@@ -69,17 +69,21 @@ const textToSpeechFlow = ai.defineFlow(
       prompt: `Parle en français métropolitain. ${text}`,
     });
 
-    const audioPart = response.candidates[0]?.output?.content?.parts?.find(
-        (part: Part) => part.media
-    );
+    const cand = response?.candidates?.[0];
+    if (!cand) {
+        throw new Error(`TTS: no candidates returned from model.`);
+    }
+    
+    const partWithAudio = cand.content?.parts?.find(p => (p as Part).inlineData?.data);
 
-    if (!audioPart || !audioPart.media) {
+    if (!partWithAudio || !(partWithAudio as Part).inlineData) {
+      console.error('TTS parts:', JSON.stringify(cand.content?.parts, null, 2));
       throw new Error('No audio media was returned from the TTS model.');
     }
 
     // The media URL is a data URI with base64 encoded PCM data. We need to extract it.
     const audioBuffer = Buffer.from(
-      audioPart.media.url.substring(audioPart.media.url.indexOf(',') + 1),
+      (partWithAudio as Part).inlineData!.data,
       'base64'
     );
 
