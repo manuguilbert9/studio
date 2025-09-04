@@ -32,6 +32,10 @@ export function ResultsManager({ students, allScores, onDataRefresh }: ResultsMa
                 map.get(score.userId)!.push(score);
             }
         });
+        // Sort scores by date for each student
+        map.forEach((scores, studentId) => {
+            map.set(studentId, scores.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+        });
         return map;
     }, [students, allScores]);
 
@@ -45,7 +49,7 @@ export function ResultsManager({ students, allScores, onDataRefresh }: ResultsMa
         }
     };
     
-    const studentsWithScores = students.filter(student => scoresByStudent.get(student.id)?.length > 0);
+    const studentsWithScores = students.filter(student => (scoresByStudent.get(student.id) || []).length > 0);
 
     return (
         <Card>
@@ -77,7 +81,7 @@ export function ResultsManager({ students, allScores, onDataRefresh }: ResultsMa
                                         <TableRow key={score.id}>
                                             <TableCell className="font-medium">{getSkillBySlug(score.skill)?.name || score.skill}</TableCell>
                                             <TableCell>{Math.round(score.score)} %</TableCell>
-                                            <TableCell>{difficultyLevelToString(score.skill, undefined, undefined, score.timeSettings) || 'Standard'}</TableCell>
+                                            <TableCell>{difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard'}</TableCell>
                                             <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
                                             <TableCell className="text-right">
                                                  <AlertDialog>
