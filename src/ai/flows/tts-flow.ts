@@ -1,26 +1,32 @@
-
 'use server';
 /**
- * @fileOverview A flow for text-to-speech synthesis.
+ * @fileOverview A flow for text-to-speech synthesis using Google Generative AI SDK directly.
  *
  * - textToSpeech - A function that converts text into speech audio.
  */
 
-import { ai } from '@/ai/genkit';
-import { googleAI, Part } from '@genkit-ai/googleai';
 import { z } from 'zod';
 import wav from 'wav';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Define the schema for the output
+// ---------------------------
+// Config voix Gemini (whitelist + fallback)
+// ---------------------------
+const GEMINI_VOICES = new Set([
+  'achernar','achird','algenib','algieba','alnilam','aoede','autonoe',
+  'callirrhoe','charon','despina','enceladus','erinome','fenrir','gacrux',
+  'iapetus','kore','laomedeia','leda','orus','puck','pulcherrima',
+  'rasalgethi','sadachbia','sadaltager','schedar','sulafat','umbriel',
+  'vindemiatrix','zephyr','zubenelgenubi'
+]);
+const DEFAULT_VOICE = 'algenib';
+
+// Sortie
 const TTSOutputSchema = z.object({
   media: z.string().describe('The base64 encoded WAV audio data URI.'),
 });
 
-/**
- * Converts PCM audio data to WAV format.
- * @param pcmData The raw PCM audio data as a Buffer.
- * @returns A promise that resolves with the base64 encoded WAV data.
- */
+/** PCM -> WAV (base64) */
 async function toWav(
   pcmData: Buffer,
   channels = 1,
@@ -34,73 +40,86 @@ async function toWav(
       bitDepth: sampleWidth * 8,
     });
 
-    const bufs: any[] = [];
+    const bufs: Buffer[] = [];
     writer.on('error', reject);
-    writer.on('data', (d) => {
-      bufs.push(d);
-    });
-    writer.on('end', () => {
-      resolve(Buffer.concat(bufs).toString('base64'));
-    });
+    writer.on('data', (d: Buffer) => bufs.push(d));
+    writer.on('finish', () => resolve(Buffer.concat(bufs).toString('base64')));
 
     writer.write(pcmData);
     writer.end();
   });
 }
 
-// Define the Genkit flow
-const textToSpeechFlow = ai.defineFlow(
-  {
-    name: 'textToSpeechFlow',
-    inputSchema: z.string(),
-    outputSchema: TTSOutputSchema,
-  },
-  async (text) => {
-    const response = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: { 
-            voiceConfig: { 
-                prebuiltVoiceConfig: { voiceName: 'Algenib' } 
-            } 
-        },
-      },
-      prompt: `Parle en français métropolitain. ${text}`,
-    });
-
-    const cand = response?.candidates?.[0];
-    if (!cand) {
-        const blockReason = (response as any)?.promptFeedback?.blockReason;
-        if (blockReason) {
-            throw new Error(`TTS request was blocked. Reason: ${blockReason}`);
-        }
-        throw new Error(`TTS: no candidates returned from model.`);
-    }
-    
-    const partWithAudio = cand.content?.parts?.find(p => (p as Part).inlineData?.data);
-
-    if (!partWithAudio || !(partWithAudio as Part).inlineData) {
-      console.error('TTS parts:', JSON.stringify(cand.content?.parts, null, 2));
-      throw new Error('No audio media was returned from the TTS model.');
-    }
-
-    // The media URL is a data URI with base64 encoded PCM data. We need to extract it.
-    const audioBuffer = Buffer.from(
-      (partWithAudio as Part).inlineData!.data,
-      'base64'
-    );
-
-    // Convert the PCM data to WAV format.
-    const wavBase64 = await toWav(audioBuffer);
-
-    return {
-      media: 'data:audio/wav;base64,' + wavBase64,
-    };
-  }
-);
-
+/** Extraction du PCM base64 depuis la réponse officielle du SDK */
+function extractAudioBase64FromSDK(result: any): string | null {
+  // Chemin officiel: result.response.candidates[0].content.parts[n].inlineData.data
+  const cand = result?.response?.candidates?.[0];
+  const parts: any[] = cand?.content?.parts ?? [];
+  const p = parts.find(prt => prt?.inlineData?.data);
+  return p?.inlineData?.data ?? null;
+}
 
 export async function textToSpeech(text: string): Promise<z.infer<typeof TTSOutputSchema>> {
-    return await textToSpeechFlow(text);
+  const cleaned = (text ?? '').trim();
+  if (!cleaned) throw new Error('TTS: input text is empty.');
+
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_GENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('Missing GEMINI_API_KEY / GOOGLE_GENAI_API_KEY in environment.');
+  }
+
+  const voiceNameEnv = (process.env.GEMINI_TTS_VOICE || 'algenib').toLowerCase();
+  const selectedVoice = GEMINI_VOICES.has(voiceNameEnv) ? voiceNameEnv : DEFAULT_VOICE;
+
+  // Limite de sécurité : textes très longs peuvent provoquer des réponses vides
+  const MAX_CHARS = 4000;
+  const payloadText = cleaned.length > MAX_CHARS ? cleaned.slice(0, MAX_CHARS) : cleaned;
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.5-flash-preview-tts',
+  });
+
+  // Appel direct à l’API Gemini TTS
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: 'user',
+        parts: [{ text: `Parle en français métropolitain avec une diction naturelle. ${payloadText}` }],
+      },
+    ],
+    generationConfig: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: { prebuiltVoiceConfig: { voiceName: selectedVoice } },
+      },
+    },
+  });
+
+  // Diagnostic blocage/modération
+  const pf = (result as any)?.response?.promptFeedback;
+  if (pf?.blockReason) {
+    console.error('TTS blocked:', JSON.stringify(pf, null, 2));
+    throw new Error(`TTS request was blocked. Reason: ${pf.blockReason}`);
+  }
+
+  // Extraction audio
+  const base64Pcm = extractAudioBase64FromSDK(result);
+  if (!base64Pcm) {
+    console.error(
+      'TTS raw result (truncated):',
+      JSON.stringify(
+        result,
+        (_k, v) => (typeof v === 'string' && v.length > 400 ? v.slice(0, 400) + '…' : v),
+        2
+      )
+    );
+    throw new Error('TTS: no audio returned by model.');
+  }
+
+  // PCM (24 kHz mono s16le) -> WAV
+  const pcmBuffer = Buffer.from(base64Pcm, 'base64');
+  const wavBase64 = await toWav(pcmBuffer);
+
+  return { media: 'data:audio/wav;base64,' + wavBase64 };
 }
