@@ -8,12 +8,13 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type TimeSettings as TimeSettingsType } from '@/lib/questions';
+import { generateQuestions, type Question, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType } from '@/lib/questions';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryDisplay } from './score-history-display';
 import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
 import { TimeSettings } from './time-settings';
+import { CountSettings } from './count-settings';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score } from '@/services/scores';
@@ -52,10 +53,11 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [scoreHistory, setScoreHistory] = useState<Score[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
+  const [countSettings, setCountSettings] = useState<CountSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
   
   useEffect(() => {
-    if (skill.slug !== 'time') {
+    if (skill.slug !== 'time' && skill.slug !== 'denombrement') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
@@ -66,6 +68,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }));
     setIsReadyToStart(true);
   }
+  
+  const startCountExercise = (settings: CountSettingsType) => {
+    setCountSettings(settings);
+    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { count: settings }));
+    setIsReadyToStart(true);
+  };
 
   const exerciseData = useMemo(() => {
     if (questions.length === 0) return null;
@@ -171,8 +179,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setHasBeenSaved(false);
     setIsReadyToStart(false);
     setTimeSettings(null);
+    setCountSettings(null);
     resetInteractiveStates();
-     if (skill.slug !== 'time') {
+    if (skill.slug !== 'time' && skill.slug !== 'denombrement') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
@@ -181,6 +190,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   if (!isReadyToStart) {
       if (skill.slug === 'time') {
         return <TimeSettings onStart={startTimeExercise} />;
+      }
+      if (skill.slug === 'denombrement') {
+        return <CountSettings onStart={startCountExercise} />;
       }
       // For other skills, this will show a loading state until questions are set.
        return (
@@ -291,7 +303,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     <div className="flex flex-col items-center justify-center w-full space-y-6">
       <div className="grid grid-cols-5 gap-2 text-4xl" style={{ gridTemplateRows: 'repeat(4, 1fr)' }}>
         {Array.from({ length: exerciseData.countNumber ?? 0 }).map((_, i) => (
-          <span key={i} role="img" aria-label={exerciseData.countEmoji}>
+          <span key={i} role="img" aria-label={exerciseData.question}>
             {exerciseData.countEmoji}
           </span>
         ))}

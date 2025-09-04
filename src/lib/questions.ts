@@ -1,4 +1,5 @@
 
+
 export interface Question {
   type: 'qcm' | 'set-time' | 'count';
   question: string;
@@ -34,8 +35,13 @@ export interface TimeSettings {
   coloredHands: boolean;
 }
 
+export interface CountSettings {
+    maxNumber: number;
+}
+
 export interface AllSettings {
   time?: TimeSettings;
+  count?: CountSettings;
 }
 
 function generateTimeQuestion(settings: TimeSettings): Question {
@@ -151,7 +157,7 @@ function generateTimeQuestion(settings: TimeSettings): Question {
   }
 }
 
-function generateDénombrementQuestion(): Question {
+function generateDénombrementQuestion(settings: CountSettings): Question {
   const items = [
     { emoji: '🍎', name: 'pommes' },
     { emoji: '🍌', name: 'bananes' },
@@ -163,7 +169,8 @@ function generateDénombrementQuestion(): Question {
     { emoji: '🚑', name: 'ambulances' }
   ];
   const selectedItem = items[Math.floor(Math.random() * items.length)];
-  const count = Math.floor(Math.random() * (19 - 3 + 1)) + 3; // 3 to 19
+  const max = settings.maxNumber || 19;
+  const count = Math.floor(Math.random() * (max - 3 + 1)) + 3; 
 
   return {
     type: 'count',
@@ -186,8 +193,8 @@ export function generateQuestions(
     );
   }
   
-  if (skill === 'denombrement') {
-      return Array.from({ length: count }, () => generateDénombrementQuestion());
+  if (skill === 'denombrement' && settings?.count) {
+      return Array.from({ length: count }, () => generateDénombrementQuestion(settings.count!));
   }
 
   // Fallback
