@@ -26,12 +26,6 @@ export interface Skill {
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
-    {
-    name: 'Phonologie',
-    slug: 'phonology',
-    description: 'Écoutez la syllabe et choisissez la bonne réponse.',
-    icon: <Waves />,
-  },
   {
     name: 'Contraires',
     slug: 'opposites',
