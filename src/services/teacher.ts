@@ -46,23 +46,10 @@ export async function setCurrentSpellingListId(listId: string): Promise<{ succes
     }
 }
 
-export async function getEnabledSkills(): Promise<Record<string, boolean>> {
+export async function getEnabledSkills(): Promise<Record<string, boolean> | null> {
     const settings = await getSettingsDoc();
-    
-    // Create a default object with all skills enabled
-    const defaultSkills: Record<string, boolean> = {};
-    skills.forEach(skill => {
-        defaultSkills[skill.slug] = true;
-    });
-
-    if (settings?.enabledSkills) {
-        // Merge saved settings with defaults to ensure all skills are present
-        return { ...defaultSkills, ...settings.enabledSkills };
-    }
-    
-    return defaultSkills;
+    return settings?.enabledSkills || null;
 }
-
 
 export async function setEnabledSkills(enabledSkills: Record<string, boolean>): Promise<{ success: boolean; error?: string }> {
      try {

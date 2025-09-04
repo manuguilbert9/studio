@@ -14,6 +14,7 @@ import { StudentManager } from '@/components/teacher/student-manager';
 import { HomeworkTracker } from '@/components/teacher/homework-tracker';
 import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
+import { ExercisesManager } from '@/components/teacher/exercises-manager';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
 import { getAllScores, Score } from '@/services/scores';
@@ -93,14 +94,18 @@ export default function TeacherDashboardPage() {
             </div>
           ) : (
             <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
+                    <TabsTrigger value="exercises">Exercices en classe</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
                     <TabsTrigger value="database">Base de données</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
                     <StudentManager />
+                </TabsContent>
+                <TabsContent value="exercises" className="mt-6">
+                    <ExercisesManager />
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
                     <HomeworkTracker students={students} spellingLists={spellingLists} allProgress={allProgress}/>
