@@ -158,36 +158,41 @@ const generateLevelD = (): MentalMathQuestion => {
     
     switch(type) {
         case 'multInt': {
-            const n1 = randInt(101, 999);
+            // Reduced complexity: e.g., 2-digit number by 1-digit
+            const n1 = randInt(10, 99);
             const n2 = randInt(2, 9);
             question = `${n1} × ${n2} = ?`;
             answer = n1 * n2;
             break;
         }
         case 'addDecimal': {
-            const n1 = randInt(10, 50) / 10;
-            const n2 = randInt(10, 50) / 10;
+            // Simplified decimals
+            const n1 = randInt(10, 30) / 10; // e.g., 1.0 to 3.0
+            const n2 = randInt(10, 30) / 10; // e.g., 1.0 to 3.0
             question = `${String(n1).replace('.', ',')} + ${String(n2).replace('.', ',')} = ?`;
             answer = parseFloat((n1 + n2).toFixed(1));
             break;
         }
         case 'subDecimal': {
-            let n1 = randInt(20, 80) / 10;
-            let n2 = randInt(10, 70) / 10;
+            // Simplified decimals
+            let n1 = randInt(20, 50) / 10; // e.g., 2.0 to 5.0
+            let n2 = randInt(10, 30) / 10; // e.g., 1.0 to 3.0
             if (n1 < n2) [n1, n2] = [n2, n1];
             question = `${String(n1).replace('.', ',')} - ${String(n2).replace('.', ',')} = ?`;
             answer = parseFloat((n1 - n2).toFixed(1));
             break;
         }
         case 'divInt': {
+            // Easier divisions
             const divisor = randInt(2, 9);
-            const res = randInt(10, 50);
+            const res = randInt(5, 20); // Smaller result
             const dividend = divisor * res;
             question = `${dividend} ÷ ${divisor} = ?`;
             answer = res;
             break;
         }
         case 'prop': {
+            // Same as before, already quite simple
             const operation = choice(['double', 'half']);
             if (operation === 'half') {
                 const n = randInt(10, 100) * 2;
