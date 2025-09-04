@@ -1,7 +1,4 @@
-Voici **`questions.ts`** corrigé (chemins d’images prêts pour la prod : place tes fichiers dans `/public/monnaie/…`).
-J’ai aussi corrigé une petite faute dans la soustraction (la réponse utilisait `+` au lieu de `-`).
 
-```ts
 export type CurrencyItem = {
   name: string;
   value: number; // in cents
@@ -493,7 +490,7 @@ function generateCalculationQuestion(settings: CalculationSettings): Question {
         num2 = Math.floor(Math.random() * num1);
       }
       question = `${num1} - ${num2} = ?`;
-      answer = num1 - num2; // ✅ corrected
+      answer = num1 - num2;
       break;
 
     case 'x':
@@ -591,4 +588,3 @@ export function generateQuestions(
     hint: "point d'interrogation",
   }));
 }
-```
