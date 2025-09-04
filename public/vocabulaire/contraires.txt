@@ -1,100 +1,81 @@
-1. grand : petit , mince, moyen, énorme
-2. chaud : froid , tiède, sec, humide
-3. jour : nuit , matin, soir, midi
-4. rapide : lent , pressé, vif, agile
-5. haut : bas , profond, large, fort
-6. ouvert : fermé , cassé, vide, grand
-7. sec : mouillé , propre, chaud, dur
-8. clair : sombre , blanc, sale, terne
-9. heureux : triste , joyeux, content, riche
-10. jeune : vieux , adulte, nouveau, petit
-11. propre : sale , net, clair, lavé
-12. facile : difficile , long, court, drôle
-13. dur : mou , sec, chaud, lourd
-14. fort : faible , dur, grand, gros
-15. vide : plein , sec, ouvert, propre
-16. loin : près , derrière, bas, long
-17. nouveau : ancien , jeune, beau, récent
-18. gentil : méchant , poli, sage, timide
-19. vrai : faux , juste, réel, exact
-20. lourd : léger , gros, court, vide
-21. content : fâché , heureux, gentil, joyeux
-22. dedans : dehors , au-dessus, dessous, loin
-23. riche : pauvre , célèbre, avare, haut
-24. commencer : finir , débuter, ouvrir, entrer
-25. entrer : sortir , monter, rentrer, courir
-26. monter : descendre , grimper, lever, soulever
-27. devant : derrière , dessus, autour, dedans
-28. parler : se taire , crier, lire, écrire
-29. dur : tendre , fort, sec, plein
-30. sec : humide , chaud, dur, lourd
-31. fermer : ouvrir , casser, couper, rentrer
-32. long : court , grand, étroit, lent
-33. vrai : faux , sage, bon, fort
-34. donner : recevoir , offrir, prêter, échanger
-35. large : étroit , grand, court, rond
-36. calme : agité , tranquille, mou, lent
-37. marcher : courir , sauter, voler, rouler
-38. allumer : éteindre , éclairer, chauffer, briller
-39. lever : baisser , monter, pousser, tirer
-40. propre : sale , brillant, sec, doux
-41. dur : mou , petit, fort, noir
-42. aimer : détester , adorer, vouloir, goûter
-43. heureux : malheureux , curieux, content, sage
-44. succès : échec , travail, chance, effort
-45. sec : trempé , chaud, lisse, doux
-46. lumière : obscurité , jour, éclat, feu
-47. devant : arrière , côté, haut, bas
-48. intérieur : extérieur , devant, au-dessus, derrière
-49. pousser : tirer , lever, lancer, porter
-50. vrai : mensonge , parole, histoire, écrit
-51. bas : haut , petit, mince, moyen
-52. honnête : menteur , gentil, franc, sage
-53. gentil : cruel , drôle, petit, calme
-54. sage : fou , tranquille, heureux, joyeux
-55. rapide : lent , agile, grand, fort
-56. intelligent : bête , curieux, gentil, studieux
-57. sec : mou , dur, net, court
-58. gros : mince , long, large, fort
-59. mou : dur , froid, bas, vide
-60. timide : audacieux , lent, petit, sage
-61. visible : invisible , coloré, net, ouvert
-62. poli : impoli , calme, sage, doux
-63. chance : malchance , jeu, sort, surprise
-64. possible : impossible , difficile, dur, étrange
-65. connu : inconnu , célèbre, vu, parlé
-66. vivant : mort , blessé, malade, faible
-67. clair : foncé , doux, net, simple
-68. silencieux : bruyant , calme, timide, sourd
-69. dur : fragile , cassant, sec, vieux
-70. serré : lâche , petit, mince, mou
-71. proche : éloigné , petit, voisin, près
-72. droit : courbé , grand, haut, pointu
-73. vrai : inventé , joli, exact, parfait
-74. terre : ciel , mer, sable, nuage
-75. doux : piquant , moelleux, simple, tendre
-76. calme : nerveux , triste, gentil, lent
-77. ami : ennemi , copain, frère, voisin
-78. devant : derrière , autour, au-dessus, dedans
-79. lentement : rapidement , fort, doucement, souvent
-80. épais : fin , dur, long, mince
-81. simple : compliqué , petit, facile, court
-82. ordre : désordre , travail, calme, bruit
-83. mince : gros , petit, fin, léger
-84. clair : obscur , joli, blanc, petit
-85. courageux : peureux , timide, petit, fort
-86. avancer : reculer , sauter, courir, marcher
-87. sec : arrosé , ouvert, lisse, coloré
-88. large : mince , grand, long, fort
-89. sage : turbulent , calme, poli, drôle
-90. sourire : pleurer , rire, parler, chanter
-91. brillant : terne , clair, lisse, neuf
-92. calme : excité , silencieux, petit, doux
-93. sale : propre , vieux, lourd, usé
-94. haut : profond , large, fort, énorme
-95. fragile : solide , cassé, dur, fin
-96. entrer : sortir , passer, glisser, tomber
-97. debout : assis , couché, haut, petit
-98. présent : absent , attentif, levé, sage
-99. sécher : mouiller , ranger, laver, plier
-100. vrai : inventé , faux, perdu, trouvé
+1. allumer: éteindre, briller, éclairer
+2. beaucoup: peu, trop, assez
+3. beau: laid, joli, magnifique
+4. bon: mauvais, excellent, délicieux
+5. chaud: froid, tiède, brûlant
+6. commencer: finir, débuter, démarrer
+7. content: triste, heureux, joyeux
+8. courageux: peureux, brave, vaillant
+9. court: long, bref, petit
+10. dernier: premier, suivant, final
+11. descendre: monter, grimper, tomber
+12. difficile: facile, compliqué, simple
+13. donner: recevoir, prendre, offrir
+14. drôle: sérieux, amusant, comique
+15. dur: mou, solide, rigide
+16. fort: faible, puissant, robuste
+17. grand: petit, immense, haut
+18. haut: bas, élevé, sommet
+19. jour: nuit, matin, soirée
+20. juste: injuste, correct, équitable
+21. large: étroit, ample, vaste
+22. léger: lourd, pesant, fin
+23. lent: rapide, vitesse, doucement
+24. libre: occupé, prisonnier, disponible
+25. loin: près, proche, distant
+26. majeur: mineur, grand, important
+27. malade: sain, guéri, souffrant
+28. marié: célibataire, divorcé, uni
+29. matin: soir, aube, journée
+30. meilleur: pire, supérieur, excellent
+31. mettre: enlever, poser, placer
+32. mince: épais, fin, svelte
+33. monter: descendre, grimper, escalader
+34. mort: vivant, vie, décédé
+35. mouillé: sec, humide, trempé
+36. naître: mourir, venir au monde, exister
+37. noir: blanc, sombre, obscur
+38. obéir: désobéir, écouter, suivre
+39. ouvrir: fermer, clore, entrouvrir
+40. parler: se taire, dire, discuter
+41. partir: arriver, venir, s'en aller
+42. passé: futur, présent, ancien
+43. patient: impatient, calme, persévérant
+44. perdre: trouver, gagner, égarer
+4un. plein: vide, rempli, comble
+45. plus: moins, davantage, supplémentaire
+46. poli: impoli, courtois, grossier
+47. possible: impossible, faisable, réalisable
+48. premier: dernier, initial, débutant
+49. prendre: laisser, donner, saisir
+50. propre: sale, net, crasseux
+51. punir: récompenser, sanctionner, féliciter
+52. question: réponse, interrogation, demande
+53. rapide: lent, vite, véloce
+54. recevoir: donner, envoyer, accepter
+55. rire: pleurer, sourire, s'amuser
+56. riche: pauvre, fortuné, misérable
+57. sage: turbulent, calme, dissipé
+58. savoir: ignorer, connaître, apprendre
+59. simple: compliqué, facile, complexe
+60. solide: liquide, robuste, fragile
+61. souvent: rarement, parfois, fréquemment
+62. subtil: grossier, fin, délicat
+63. success: échec, réussite, victoire
+64. tard: tôt, en retard, à l'heure
+65. terne: brillant, mat, éclatant
+66. toujours: jamais, souvent, constamment
+67. tranquille: agité, calme, bruyant
+68. triste: joyeux, content, heureux
+69. unir: séparer, joindre, diviser
+70. utile: inutile, pratique, nécessaire
+71. vendre: acheter, vendre, donner
+72. vérité: mensonge, faux, vrai
+73. vide: plein, rempli, creux
+74. vieux: jeune, neuf, ancien
+75. vite: lentement, rapidement, vitesse
+76. visible: invisible, apparent, caché
+77. voler: ramper, planer, dérober
+78. volontaire: involontaire, obligé, spontané
+79. vrai: faux, vérité, mensonge
+80. aimer: détester, adorer, haïr
