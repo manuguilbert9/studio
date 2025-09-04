@@ -1,13 +1,96 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, Loader2, AlertTriangle } from 'lucide-react';
+import { Upload, Download, Loader2, AlertTriangle, ListCollapse } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportAllData, importAllData } from '@/services/database';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { getGloballyEnabledSkills, setGloballyEnabledSkills } from '@/services/teacher';
+import { skills as availableSkills } from '@/lib/skills';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+
+function ExercisesManager() {
+    const [enabledSkills, setEnabledSkills] = useState<Record<string, boolean>>({});
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        getGloballyEnabledSkills().then(skills => {
+            setEnabledSkills(skills);
+            setIsLoading(false);
+        });
+    }, []);
+
+    const handleToggleSkill = useCallback(async (skillSlug: string, isEnabled: boolean) => {
+        const newEnabledSkills = { ...enabledSkills, [skillSlug]: isEnabled };
+        setEnabledSkills(newEnabledSkills);
+        const result = await setGloballyEnabledSkills(newEnabledSkills);
+        if (!result.success) {
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: 'Impossible de sauvegarder le réglage.'
+            });
+            // Revert UI on failure
+            setEnabledSkills(prev => ({...prev, [skillSlug]: !isEnabled}));
+        }
+    }, [enabledSkills, toast]);
+
+    const toggleAll = (enable: boolean) => {
+        const newEnabledSkills: Record<string, boolean> = {};
+        availableSkills.forEach(skill => {
+            newEnabledSkills[skill.slug] = enable;
+        });
+        setEnabledSkills(newEnabledSkills);
+        setGloballyEnabledSkills(newEnabledSkills);
+    };
+
+    if (isLoading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Gestion des Exercices (Global)</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Gestion des Exercices (Global)</CardTitle>
+                <CardDescription>Activez ou désactivez des exercices pour <span className="font-bold">tous les élèves</span>. Les réglages individuels priment si un exercice est désactivé pour un élève spécifique.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center gap-4 mb-4">
+                    <Button onClick={() => toggleAll(true)} variant="outline" size="sm">Tout activer</Button>
+                    <Button onClick={() => toggleAll(false)} variant="outline" size="sm">Tout désactiver</Button>
+                </div>
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 rounded-lg bg-secondary/50">
+                    {availableSkills.map(skill => (
+                        <div key={skill.slug} className="flex items-center justify-between p-3 bg-card rounded-lg shadow-sm">
+                            <Label htmlFor={`skill-${skill.slug}`} className="text-sm font-medium">
+                                {skill.name}
+                            </Label>
+                            <Switch
+                                id={`skill-${skill.slug}`}
+                                checked={enabledSkills[skill.slug] ?? false}
+                                onCheckedChange={(checked) => handleToggleSkill(skill.slug, checked)}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 
 export function DatabaseManager() {
@@ -94,10 +177,11 @@ export function DatabaseManager() {
     };
 
     return (
-        <>
+        <div className="space-y-8">
+            <ExercisesManager />
             <Card>
                 <CardHeader>
-                    <CardTitle>Gestion de la base de données</CardTitle>
+                    <CardTitle>Sauvegarde et Restauration</CardTitle>
                     <CardDescription>
                         Exportez toutes les données de l'application (élèves, scores, etc.) dans un fichier de sauvegarde, ou importez un fichier pour restaurer les données.
                     </CardDescription>
@@ -147,6 +231,6 @@ export function DatabaseManager() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     );
 }

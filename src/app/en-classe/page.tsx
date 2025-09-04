@@ -11,30 +11,47 @@ import { Home, Presentation, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
+import { getGloballyEnabledSkills } from '@/services/teacher';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [enabledSkillsList, setEnabledSkillsList] = useState<Skill[] | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-      if (student) {
-        // If student data is available, filter skills based on their profile
-        if (student.enabledSkills) {
-            const filteredSkills = allSkills.filter(skill => student.enabledSkills![skill.slug]);
-            setEnabledSkillsList(filteredSkills);
-        } else {
-            // If the property doesn't exist (e.g., older student data), enable all by default
-            setEnabledSkillsList(allSkills);
+      async function determineEnabledSkills() {
+        if (!student) {
+            if (!isUserLoading) {
+                setEnabledSkillsList(allSkills); // Default for non-logged in state
+                setIsLoading(false);
+            }
+            return;
         }
-      } else if (!isUserLoading) {
-        // If there's no student and we're not loading, show all skills (or none)
-        setEnabledSkillsList(allSkills);
+
+        setIsLoading(true);
+        const globalSkills = await getGloballyEnabledSkills();
+        
+        // Student's specific settings
+        const studentSkills = student.enabledSkills;
+
+        // If student has no specific settings, use global ones
+        const studentEnabled = studentSkills ? studentSkills : globalSkills;
+
+        const filteredSkills = allSkills.filter(skill => 
+            (globalSkills[skill.slug] ?? true) && (studentEnabled[skill.slug] ?? true)
+        );
+        
+        setEnabledSkillsList(filteredSkills);
+        setIsLoading(false);
+      }
+
+      if (!isUserLoading) {
+        determineEnabledSkills();
       }
   }, [student, isUserLoading]);
 
-  const isLoading = isUserLoading || enabledSkillsList === null;
 
-  if (isLoading || !student) {
+  if (isLoading || isUserLoading) {
     return (
         <main className="container mx-auto px-4 py-8">
             <header className="mb-12 text-center space-y-4">
@@ -53,6 +70,20 @@ export default function EnClassePage() {
             </div>
         </main>
     );
+  }
+  
+  if (!student) {
+       return (
+        <main className="container mx-auto px-4 py-8">
+            <header className="mb-12 text-center space-y-4">
+                <Logo />
+                 <h2 className="font-headline text-4xl sm:text-5xl">Veuillez vous connecter</h2>
+                 <Button asChild>
+                    <Link href="/">Retour à l'accueil</Link>
+                 </Button>
+            </header>
+        </main>
+       )
   }
 
   return (
