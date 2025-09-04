@@ -57,13 +57,13 @@ const textToSpeechFlow = ai.defineFlow(
   },
   async (text) => {
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      model: googleAI.model('tts-1'),
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
-            voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: 'Algenib' } // Corrected voice name
-            }
+          voice: {
+            name: 'fr-FR-Studio-A'
+          }
         }
       },
       prompt: text,
