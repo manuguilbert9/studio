@@ -33,12 +33,6 @@ export const skills: Skill[] = [
     icon: <ListOrdered />,
   },
   {
-    name: 'Lecture Fluide',
-    slug: 'reading',
-    description: "S'entraîner à lire des textes à voix haute et à chronométrer sa vitesse de lecture.",
-    icon: <BookOpenText />,
-  },
-  {
     name: 'Familles de mots',
     slug: 'word-families',
     description: "Identifier des mots de la même famille. Utiliser les familles de mots pour mémoriser l'orthographe.",

@@ -9,7 +9,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
-import { FluencyExercise } from '@/components/fluency-exercise';
 import { TimerWidget } from '@/components/tableau/timer-widget';
 import { DateWidget } from '@/components/tableau/date-widget';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
@@ -244,12 +243,7 @@ export default function TableauPage() {
         </div>
       );
     }
-    switch (activeSkill.slug) {
-      case 'reading':
-        return <FluencyExercise isTableauMode={true} />;
-      default:
-        return <ExerciseWorkspace skill={activeSkill} isTableauMode={true} />;
-    }
+    return <ExerciseWorkspace skill={activeSkill} isTableauMode={true} />;
   };
 
   if (isUserLoading || isLoading) {
