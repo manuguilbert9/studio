@@ -11,6 +11,7 @@ import { ExerciseWorkspace } from '@/components/exercise-workspace';
 import { Button } from '@/components/ui/button';
 import { LongCalculationExercise } from '@/components/long-calculation-exercise';
 import { WordFamiliesExercise } from '@/components/word-families-exercise';
+import { MentalCalculationExercise } from '@/components/mental-calculation-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -27,6 +28,8 @@ export default function ExercisePage() {
         return <LongCalculationExercise />;
       case 'word-families':
         return <WordFamiliesExercise />;
+      case 'mental-calculation':
+        return <MentalCalculationExercise />;
       default:
         return <ExerciseWorkspace skill={skill} />;
     }

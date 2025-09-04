@@ -43,6 +43,12 @@ export const skills: Skill[] = [
     description: "Additionner/soustraire en colonnes avec ou sans retenue.",
     icon: <SquarePen />,
   },
+  {
+    name: 'Calcul mental',
+    slug: 'mental-calculation',
+    description: 'Calculer de tête des additions, soustractions, multiplications et divisions.',
+    icon: <Calculator />,
+  },
 ];
 
 export function getSkillBySlug(slug: string): Skill | undefined {
