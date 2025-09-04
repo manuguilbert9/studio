@@ -3,7 +3,7 @@
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
-import { useState, useMemo, useEffect, useContext } from 'react';
+import { useState, useMemo, useEffect, useContext, useRef } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
