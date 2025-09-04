@@ -7,9 +7,9 @@ import { useState, useMemo, useEffect, useContext } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, currency as currencyData, formatCurrency } from '@/lib/questions';
+import { generateQuestions, type Question, type TimeSettings as TimeSettingsType } from '@/lib/questions';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryDisplay } from './score-history-display';
 import { Skeleton } from './ui/skeleton';
@@ -55,14 +55,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
   
-  // State for compose-sum
-  const [composedAmount, setComposedAmount] = useState(0);
-  const [selectedCoins, setSelectedCoins] = useState<{ src: string; alt: string; value: number }[]>([]);
-
-  // State for select-multiple
-  const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
-
-
   useEffect(() => {
     if (skill.slug !== 'time') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
@@ -82,9 +74,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   }, [currentQuestionIndex, questions]);
   
   const resetInteractiveStates = () => {
-    setComposedAmount(0);
-    setSelectedCoins([]);
-    setSelectedIndices([]);
     setFeedback(null);
   }
 
@@ -349,7 +338,7 @@ const renderSetTime = () => (
             <div className="text-2xl font-bold text-red-600 animate-shake">Oups ! Essaye encore.</div>
           )}
         </CardFooter>
-        <style jsx>{\`
+        <style jsx>{`
           @keyframes fall {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
             100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
@@ -362,7 +351,7 @@ const renderSetTime = () => (
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        \`}</style>
+        `}</style>
       </Card>
     </div>
   );
