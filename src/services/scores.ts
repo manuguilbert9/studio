@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
-import type { TimeSettings } from '@/lib/questions';
+import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
 
 export interface Score {
     id: string;
@@ -12,6 +12,8 @@ export interface Score {
     score: number;
     createdAt: string; 
     timeSettings?: TimeSettings;
+    calculationSettings?: CalculationSettings;
+    currencySettings?: CurrencySettings;
 }
 
 // Adds a new score document to the 'scores' collection.
@@ -40,9 +42,11 @@ export async function getScoresForUser(userId: string, skillSlug?: string): Prom
         return [];
     }
     try {
-        let q = query(collection(db, "scores"), where("userId", "==", userId), orderBy("createdAt", "desc"));
+        let q;
         if(skillSlug){
             q = query(collection(db, "scores"), where("userId", "==", userId), where("skill", "==", skillSlug), orderBy("createdAt", "desc"));
+        } else {
+            q = query(collection(db, "scores"), where("userId", "==", userId), orderBy("createdAt", "desc"));
         }
         
         const querySnapshot = await getDocs(q);

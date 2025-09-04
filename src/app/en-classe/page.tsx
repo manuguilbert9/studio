@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { skills as allSkills, type Skill } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { Home, Presentation } from 'lucide-react';
+import { Home, Presentation, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { getEnabledSkills } from '@/services/teacher';
@@ -78,6 +78,12 @@ export default function EnClassePage() {
                 <Link href="/tableau">
                     <Presentation className="mr-2" />
                     Tableau
+                </Link>
+            </Button>
+             <Button asChild variant="outline" size="sm">
+                <Link href="/results">
+                    <BarChart3 className="mr-2" />
+                    Mes Résultats
                 </Link>
             </Button>
         </div>
