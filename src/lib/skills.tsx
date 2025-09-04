@@ -27,6 +27,12 @@ export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
   {
+    name: 'Écoute les nombres',
+    slug: 'ecoute-les-nombres',
+    description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
+    icon: <Ear />,
+  },
+  {
     name: 'Dénombrement',
     slug: 'denombrement',
     description: "Dénombrer une quantité inférieure à 20.",

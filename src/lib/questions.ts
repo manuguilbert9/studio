@@ -1,7 +1,9 @@
 
 
+import { textToSpeech } from "@/ai/flows/tts-flow";
+
 export interface Question {
-  type: 'qcm' | 'set-time' | 'count';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm';
   question: string;
   // For QCM
   options?: string[];
@@ -16,6 +18,8 @@ export interface Question {
   // For count questions
   countEmoji?: string;
   countNumber?: number;
+  // For audio questions
+  audioDataUri?: string;
 }
 
 export interface CalculationSettings {
@@ -43,6 +47,13 @@ export interface AllSettings {
   time?: TimeSettings;
   count?: CountSettings;
 }
+
+const numberToFrench: { [key: number]: string } = {
+    0: "zéro", 1: "un", 2: "deux", 3: "trois", 4: "quatre", 5: "cinq",
+    6: "six", 7: "sept", 8: "huit", 9: "neuf", 10: "dix",
+    11: "onze", 12: "douze", 13: "treize", 14: "quatorze", 15: "quinze",
+    16: "seize", 17: "dix-sept", 18: "dix-huit", 19: "dix-neuf", 20: "vingt"
+};
 
 function generateTimeQuestion(settings: TimeSettings): Question {
   const { difficulty } = settings;
@@ -181,12 +192,34 @@ function generateDénombrementQuestion(settings: CountSettings): Question {
   };
 }
 
+async function generateEcouteLesNombresQuestion(): Promise<Question> {
+  const answerNumber = Math.floor(Math.random() * 20) + 1; // 1 to 20
+  const answerText = String(answerNumber);
+  
+  const options = new Set<string>([answerText]);
+  while (options.size < 4) {
+    const wrongNumber = Math.floor(Math.random() * 20) + 1;
+    options.add(String(wrongNumber));
+  }
+  
+  const numberInFrench = numberToFrench[answerNumber] || answerText;
+  const audioResponse = await textToSpeech(numberInFrench);
 
-export function generateQuestions(
+  return {
+    type: 'audio-qcm',
+    question: "Clique sur le nombre que tu entends.",
+    options: Array.from(options).sort(() => Math.random() - 0.5),
+    answer: answerText,
+    audioDataUri: audioResponse.media,
+  };
+}
+
+
+export async function generateQuestions(
   skill: string,
   count: number,
   settings?: AllSettings
-): Question[] {
+): Promise<Question[]> {
   if (skill === 'time' && settings?.time) {
     return Array.from({ length: count }, () =>
       generateTimeQuestion(settings.time!)
@@ -195,6 +228,14 @@ export function generateQuestions(
   
   if (skill === 'denombrement' && settings?.count) {
       return Array.from({ length: count }, () => generateDénombrementQuestion(settings.count!));
+  }
+
+  if (skill === 'ecoute-les-nombres') {
+      const questionPromises: Promise<Question>[] = [];
+      for (let i = 0; i < count; i++) {
+          questionPromises.push(generateEcouteLesNombresQuestion());
+      }
+      return Promise.all(questionPromises);
   }
 
   // Fallback

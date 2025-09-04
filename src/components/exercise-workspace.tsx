@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -6,7 +7,7 @@ import { useState, useMemo, useEffect, useContext } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Volume2 } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType } from '@/lib/questions';
 import { Progress } from '@/components/ui/progress';
@@ -56,22 +57,28 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [countSettings, setCountSettings] = useState<CountSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
   
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
   useEffect(() => {
-    if (skill.slug !== 'time' && skill.slug !== 'denombrement') {
-      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-      setIsReadyToStart(true);
+    async function loadQuestions() {
+      if (skill.slug !== 'time' && skill.slug !== 'denombrement') {
+        const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
+        setQuestions(generatedQuestions);
+        setIsReadyToStart(true);
+      }
     }
+    loadQuestions();
   }, [skill.slug]);
   
   const startTimeExercise = (settings: TimeSettingsType) => {
+    generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }).then(setQuestions);
     setTimeSettings(settings);
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }));
     setIsReadyToStart(true);
   }
   
   const startCountExercise = (settings: CountSettingsType) => {
+    generateQuestions(skill.slug, NUM_QUESTIONS, { count: settings }).then(setQuestions);
     setCountSettings(settings);
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { count: settings }));
     setIsReadyToStart(true);
   };
 
@@ -181,9 +188,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setTimeSettings(null);
     setCountSettings(null);
     resetInteractiveStates();
-    if (skill.slug !== 'time' && skill.slug !== 'denombrement') {
-      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-      setIsReadyToStart(true);
+     if (skill.slug !== 'time' && skill.slug !== 'denombrement') {
+       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
+       setIsReadyToStart(true);
     }
   };
 
@@ -299,6 +306,51 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     </>
   );
 
+  const renderAudioQCM = () => {
+    const playAudio = () => {
+      if (audioRef.current) {
+        audioRef.current.play();
+      }
+    };
+    
+    // Play audio automatically when question changes
+    useEffect(() => {
+        if(exerciseData?.audioDataUri) {
+            playAudio();
+        }
+    }, [exerciseData?.audioDataUri]);
+
+    return (
+        <div className="flex flex-col items-center justify-center w-full space-y-8">
+            {exerciseData.audioDataUri && (
+                 <audio ref={audioRef} src={exerciseData.audioDataUri} className="hidden" />
+            )}
+            <Button onClick={playAudio} size="lg" variant="outline" className="h-24 w-24 rounded-full">
+                <Volume2 className="h-12 w-12" />
+            </Button>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-lg">
+                {exerciseData.options?.map((option: string, index: number) => (
+                    <Button
+                        key={`${option}-${index}`}
+                        variant="outline"
+                        onClick={() => handleQcmAnswer(option)}
+                        className={cn(
+                        "text-5xl font-numbers h-24 p-4 justify-center transition-all duration-300 transform active:scale-95",
+                        feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                        feedback === 'incorrect' && option !== exerciseData.answer && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                        feedback && option !== exerciseData.answer && 'opacity-50',
+                        feedback && option === exerciseData.answer && 'opacity-100'
+                        )}
+                        disabled={!!feedback}
+                    >
+                        {option}
+                    </Button>
+                ))}
+            </div>
+        </div>
+    );
+  };
+
   const renderCount = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-6">
       <div className="grid grid-cols-5 gap-2 text-4xl" style={{ gridTemplateRows: 'repeat(4, 1fr)' }}>
@@ -369,6 +421,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
+          {exerciseData.type === 'audio-qcm' && renderAudioQCM()}
           {exerciseData.type === 'set-time' && renderSetTime()}
           {exerciseData.type === 'count' && renderCount()}
         </CardContent>
