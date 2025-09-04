@@ -71,6 +71,10 @@ const textToSpeechFlow = ai.defineFlow(
 
     const cand = response?.candidates?.[0];
     if (!cand) {
+        const blockReason = (response as any)?.promptFeedback?.blockReason;
+        if (blockReason) {
+            throw new Error(`TTS request was blocked. Reason: ${blockReason}`);
+        }
         throw new Error(`TTS: no candidates returned from model.`);
     }
     
