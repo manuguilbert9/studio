@@ -35,6 +35,7 @@ export default function ResultsPage() {
             const allScores = await getScoresForUser(student.id);
 
             const scoresBySkill: Record<string, Score[]> = {};
+            // Group scores by skill
             allScores.forEach(score => {
                 if (!scoresBySkill[score.skill]) {
                     scoresBySkill[score.skill] = [];
@@ -43,26 +44,29 @@ export default function ResultsPage() {
             });
 
             const calculatedAverages: SkillAverage[] = [];
+            // Calculate average for each skill group
             for (const skillSlug in scoresBySkill) {
-                const relevantScores = scoresBySkill[skillSlug] || [];
                 const skillInfo = getSkillBySlug(skillSlug);
-
-                if (skillInfo && relevantScores.length > 0) {
-                     // Sort by date and take the last 10
-                    const last10Scores = relevantScores
+                if (skillInfo) {
+                    const skillScores = scoresBySkill[skillSlug];
+                    
+                    // Sort by date and take the last 10 scores
+                    const last10Scores = skillScores
                         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                         .slice(0, 10);
-
-                    const sum = last10Scores.reduce((acc, s) => acc + s.score, 0);
-                    const average = sum / last10Scores.length;
                     
-                    calculatedAverages.push({
-                        slug: skillSlug,
-                        name: skillInfo.name,
-                        icon: skillInfo.icon,
-                        average: Math.round(average),
-                        count: last10Scores.length
-                    });
+                    if (last10Scores.length > 0) {
+                        const sum = last10Scores.reduce((acc, s) => acc + s.score, 0);
+                        const average = sum / last10Scores.length;
+                        
+                        calculatedAverages.push({
+                            slug: skillSlug,
+                            name: skillInfo.name,
+                            icon: skillInfo.icon,
+                            average: Math.round(average),
+                            count: last10Scores.length
+                        });
+                    }
                 }
             }
 
@@ -73,7 +77,7 @@ export default function ResultsPage() {
         fetchAndCalculateScores();
     }, [student, isUserLoading]);
 
-    if (isLoading) {
+    if (isLoading || isUserLoading) {
         return (
             <div className="flex flex-col min-h-screen items-center justify-center text-center p-4">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
