@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
-import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
+import type { TimeSettings } from '@/lib/questions';
 
 export interface Score {
     id: string;
@@ -11,8 +11,6 @@ export interface Score {
     skill: string;
     score: number;
     createdAt: string; 
-    calculationSettings?: CalculationSettings;
-    currencySettings?: CurrencySettings;
     timeSettings?: TimeSettings;
 }
 

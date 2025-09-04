@@ -120,7 +120,7 @@ export default function ResultsPage() {
                                 Total exercices : <span className="font-bold">{scores.length}</span>
                             </p>
                              <Badge variant="secondary" className="mt-2">
-                                {difficultyLevelToString(latestScore.skill, latestScore.calculationSettings, latestScore.currencySettings, latestScore.timeSettings) || "Niveau Standard"}
+                                {difficultyLevelToString(latestScore.skill, undefined, undefined, latestScore.timeSettings) || "Niveau Standard"}
                             </Badge>
                         </>
                     )}

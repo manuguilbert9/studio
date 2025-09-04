@@ -14,10 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryDisplay } from './score-history-display';
 import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
-import { CalculationSettings } from './calculation-settings';
-import { CurrencySettings } from './currency-settings';
 import { TimeSettings } from './time-settings';
-import { PriceTag } from './price-tag';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score } from '@/services/scores';
@@ -55,8 +52,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   const [scoreHistory, setScoreHistory] = useState<Score[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
-  const [calculationSettings, setCalculationSettings] = useState<CalcSettings | null>(null);
-  const [currencySettings, setCurrencySettings] = useState<CurrSettings | null>(null);
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
   
@@ -69,24 +64,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
 
   useEffect(() => {
-    if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+    if (skill.slug !== 'time') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
   }, [skill.slug]);
   
-  const startCalculationExercise = (settings: CalcSettings) => {
-    setCalculationSettings(settings);
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { calculation: settings }));
-    setIsReadyToStart(true);
-  };
-  
-  const startCurrencyExercise = (settings: CurrSettings) => {
-    setCurrencySettings(settings);
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { currency: settings }));
-    setIsReadyToStart(true);
-  };
-
   const startTimeExercise = (settings: TimeSettingsType) => {
     setTimeSettings(settings);
     setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }));
@@ -143,39 +126,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     }
   };
   
-  const handleComposeSumSubmit = () => {
-    if (!exerciseData || feedback || typeof exerciseData.targetAmount === 'undefined') return;
-    
-    if (composedAmount === exerciseData.targetAmount) {
-      processCorrectAnswer();
-    } else {
-      processIncorrectAnswer();
-    }
-  }
-
-  const handleSelectMultipleSubmit = () => {
-    if (!exerciseData || feedback || !exerciseData.items || typeof exerciseData.correctValue === 'undefined') return;
-    
-    // Find all indices of correct items
-    const correctIndices = exerciseData.items.reduce((acc: number[], item, index) => {
-        if (item.value === exerciseData.correctValue) {
-            acc.push(index);
-        }
-        return acc;
-    }, []);
-
-    // Check if the selected indices match the correct indices perfectly
-    const isCorrect = selectedIndices.length === correctIndices.length && 
-                      selectedIndices.every(index => correctIndices.includes(index)) &&
-                      correctIndices.every(index => selectedIndices.includes(index));
-
-    if (isCorrect) {
-        processCorrectAnswer();
-    } else {
-        processIncorrectAnswer();
-    }
-  }
-
   const handleSetTimeSubmit = (h: number, m: number) => {
     if (!exerciseData || feedback) return;
     const { hour, minute } = exerciseData;
@@ -186,19 +136,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       processIncorrectAnswer();
     }
   }
-
-  const handleAddToSum = (item: { name: string; value: number; image: string; hint?: string }) => {
-    setComposedAmount(prev => prev + item.value);
-    setSelectedCoins(prev => [...prev, {src: item.image, alt: item.name, value: item.value}].sort((a,b) => b.value - a.value));
-  }
-  
-  const handleToggleSelectItem = (index: number) => {
-    setSelectedIndices(prev => 
-        prev.includes(index) 
-            ? prev.filter(i => i !== index)
-            : [...prev, index]
-    );
-  };
   
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
@@ -214,12 +151,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             score: newScoreValue,
         };
 
-        if (skill.slug === 'calculation' && calculationSettings) {
-            scoreData.calculationSettings = calculationSettings;
-        }
-        if (skill.slug === 'currency' && currencySettings) {
-            scoreData.currencySettings = currencySettings;
-        }
         if (skill.slug === 'time' && timeSettings) {
             scoreData.timeSettings = timeSettings;
         }
@@ -238,7 +169,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode, hasBeenSaved]);
+  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, isTableauMode, hasBeenSaved]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -251,23 +182,15 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setIsLoadingHistory(true);
     setHasBeenSaved(false);
     setIsReadyToStart(false);
-    setCalculationSettings(null);
-    setCurrencySettings(null);
     setTimeSettings(null);
     resetInteractiveStates();
-     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+     if (skill.slug !== 'time') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
     }
   };
 
   if (!isReadyToStart) {
-      if (skill.slug === 'calculation') {
-        return <CalculationSettings onStart={startCalculationExercise} />;
-      }
-      if (skill.slug === 'currency') {
-        return <CurrencySettings onStart={startCurrencyExercise} />;
-      }
       if (skill.slug === 'time') {
         return <TimeSettings onStart={startTimeExercise} />;
       }
@@ -376,124 +299,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     </>
   );
 
-  const renderComposeSum = () => (
-    <div className="flex flex-col items-center justify-center w-full space-y-4">
-        
-        {/* Visual context for Level 4 */}
-        {typeof exerciseData.cost !== 'undefined' && exerciseData.paymentImages && (
-          <div className="w-full flex flex-col sm:flex-row items-center justify-around gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
-              <div className="flex flex-col items-center gap-2">
-                  <p className="text-muted-foreground font-semibold">Prix de l'article</p>
-                  <PriceTag price={formatCurrency(exerciseData.cost)} />
-              </div>
-              <ArrowRight className="h-8 w-8 text-muted-foreground hidden sm:block" />
-              <div className="flex flex-col items-center gap-2">
-                  <p className="text-muted-foreground font-semibold">Argent donné</p>
-                  <div className="flex gap-2">
-                  {exerciseData.paymentImages.map((item, index) => (
-                      <Image key={index} src={item.image} alt={item.name} width={120} height={64} className="h-16 object-contain" />
-                  ))}
-                  </div>
-              </div>
-          </div>
-        )}
-
-        {/* Current sum display */}
-        <div className={cn("rounded-lg border-2 p-4 w-full text-center mb-4 transition-colors",
-            feedback === 'correct' ? 'bg-green-100 border-green-500' :
-            feedback === 'incorrect' ? 'bg-red-100 border-red-500' :
-            'bg-secondary'
-        )}>
-            <p className="text-muted-foreground">Votre somme</p>
-            <p className="text-4xl font-bold font-numbers">{formatCurrency(composedAmount)}</p>
-            <div className="h-16 mt-2 flex flex-wrap gap-1 justify-center items-center overflow-y-auto">
-                {selectedCoins.map((coin, index) => (
-                    <Image key={index} src={coin.src} alt={coin.alt} width={32} height={32} className="h-8 object-contain" />
-                ))}
-            </div>
-        </div>
-
-        {/* Currency selection */}
-        <Card className="w-full p-4">
-            <CardContent className="flex flex-wrap items-center justify-center gap-2 p-0">
-                {currencyData.map((item) => (
-                    <Button 
-                        key={item.name} 
-                        variant="ghost" 
-                        onClick={() => handleAddToSum(item)}
-                        disabled={!!feedback}
-                        className="h-auto p-1 flex flex-col gap-1 items-center transform active:scale-95 hover:bg-accent/50"
-                    >
-                        <Image src={item.image} alt={item.name} width={48} height={48} className="h-12 object-contain" />
-                        <span className="text-xs font-numbers">{item.name}</span>
-                    </Button>
-                ))}
-            </CardContent>
-        </Card>
-
-        {/* Action buttons */}
-        <div className="flex w-full gap-4">
-             <Button
-                variant="outline"
-                size="lg"
-                className="w-full"
-                onClick={() => { setComposedAmount(0); setSelectedCoins([]); }}
-                disabled={!!feedback}
-            >
-                <Trash2 className="mr-2" />
-                Effacer
-            </Button>
-            <Button
-                size="lg"
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={handleComposeSumSubmit}
-                disabled={!!feedback}
-            >
-                <Check className="mr-2" />
-                Valider
-            </Button>
-        </div>
-    </div>
-);
-
-const renderSelectMultiple = () => (
-    <div className="flex flex-col items-center justify-center w-full space-y-4">
-        {/* Item cloud */}
-        <Card className="w-full p-4">
-            <CardContent className="flex flex-wrap items-center justify-center gap-3 p-0">
-                {exerciseData.items?.map((item, index) => (
-                    <button
-                        key={index}
-                        onClick={() => handleToggleSelectItem(index)}
-                        disabled={!!feedback}
-                        className={cn("h-auto p-1 rounded-md transform active:scale-95 transition-all",
-                            selectedIndices.includes(index) ? 'ring-4 ring-accent' : 'ring-2 ring-transparent',
-                            feedback === 'correct' && selectedIndices.includes(index) && 'ring-green-500',
-                            feedback === 'incorrect' && selectedIndices.includes(index) && 'ring-red-500 animate-shake',
-                            feedback && !selectedIndices.includes(index) && 'opacity-50'
-                        )}
-                    >
-                        <Image src={item.image} alt={item.name} width={56} height={56} className="h-14 object-contain" />
-                    </button>
-                ))}
-            </CardContent>
-        </Card>
-
-        {/* Action buttons */}
-        <div className="flex w-full gap-4 pt-4">
-            <Button
-                size="lg"
-                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                onClick={handleSelectMultipleSubmit}
-                disabled={!!feedback || selectedIndices.length === 0}
-            >
-                <Check className="mr-2" />
-                Valider
-            </Button>
-        </div>
-    </div>
-);
-
 const renderSetTime = () => (
     <InteractiveClock
       hour={exerciseData.hour!}
@@ -534,8 +339,6 @@ const renderSetTime = () => (
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
-          {exerciseData.type === 'compose-sum' && renderComposeSum()}
-          {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
           {exerciseData.type === 'set-time' && renderSetTime()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">

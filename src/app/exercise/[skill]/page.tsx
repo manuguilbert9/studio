@@ -8,12 +8,11 @@ import { ArrowLeft } from 'lucide-react';
 import { getSkillBySlug } from '@/lib/skills';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ExerciseWorkspace } from '@/components/exercise-workspace';
-import { FluencyExercise } from '@/components/fluency-exercise';
 import { Button } from '@/components/ui/button';
-import { DictationExercise } from '@/components/dictation-exercise';
 import { LongCalculationExercise } from '@/components/long-calculation-exercise';
 import { WordFamiliesExercise } from '@/components/word-families-exercise';
 import { OppositesExercise } from '@/components/opposites-exercise';
+import { PhonologyExercise } from '@/components/phonology-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -26,16 +25,14 @@ export default function ExercisePage() {
 
   const renderExercise = () => {
     switch (skill.slug) {
-      case 'reading':
-        return <FluencyExercise />;
-      case 'dictation':
-        return <DictationExercise isTableauMode={false} />;
       case 'long-calculation':
         return <LongCalculationExercise />;
       case 'word-families':
         return <WordFamiliesExercise />;
       case 'opposites':
         return <OppositesExercise />;
+       case 'phonology':
+        return <PhonologyExercise />;
       default:
         return <ExerciseWorkspace skill={skill} />;
     }

@@ -11,6 +11,7 @@ import {
   SquarePen,
   Spline,
   GitCompareArrows,
+  Waves,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from './questions';
 
@@ -25,11 +26,11 @@ export interface Skill {
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
-  {
-    name: 'Dictée',
-    slug: 'dictation',
-    description: "Écoutez le mot et écrivez-le correctement.",
-    icon: <Ear />,
+    {
+    name: 'Phonologie',
+    slug: 'phonology',
+    description: 'Écoutez la syllabe et choisissez la bonne réponse.',
+    icon: <Waves />,
   },
   {
     name: 'Contraires',
@@ -49,29 +50,11 @@ export const skills: Skill[] = [
     description: 'Apprenez à lire les horloges analogiques et numériques.',
     icon: <Clock />,
   },
-  {
-    name: 'Monnaie',
-    slug: 'currency',
-    description: "Entraînez-vous à compter l'argent et à rendre la monnaie.",
-    icon: <PiggyBank />,
-  },
    {
     name: 'Calcul Posé',
     slug: 'long-calculation',
     description: 'Entraînez-vous aux additions et soustractions posées.',
     icon: <SquarePen />,
-  },
-  {
-    name: 'Lecture',
-    slug: 'reading',
-    description: 'Améliorez vos compétences en compréhension de lecture.',
-    icon: <BookOpenText />,
-  },
-  {
-    name: 'Calcul',
-    slug: 'calculation',
-    description: "Aiguisez vos compétences en addition et soustraction.",
-    icon: <Calculator />,
   },
 ];
 
