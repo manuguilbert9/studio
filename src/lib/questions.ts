@@ -1,13 +1,9 @@
 
-
-
-
-
 import { numberToFrench, numberToWords } from "./utils";
 
 
 export interface Question {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input';
   question: string;
   // For QCM
   options?: string[];
@@ -26,6 +22,8 @@ export interface Question {
   textToSpeak?: string;
   // For written-to-audio questions
   optionsWithAudio?: { text: string; audio: string }[];
+  // For audio-to-text-input questions
+  answerInWords?: string;
 }
 
 export interface CalculationSettings {
@@ -318,6 +316,17 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     const answerText = String(answerNumber);
     const answerAudio = numberToWords(answerNumber);
     
+    // For levels C and D, randomly choose between QCM and text input
+    if (settings.difficulty >= 2 && Math.random() > 0.5) {
+        return {
+            type: 'audio-to-text-input',
+            question: "Écris en chiffres le nombre que tu entends.",
+            textToSpeak: answerAudio,
+            answer: answerText,
+            answerInWords: answerAudio
+        };
+    }
+
     const options = new Set<number>([answerNumber]);
 
     // Generate trap options

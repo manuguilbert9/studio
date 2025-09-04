@@ -23,6 +23,7 @@ import { addScore, getScoresForUser, Score } from '@/services/scores';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
+import { Input } from './ui/input';
 
 
 const motivationalMessages = [
@@ -62,6 +63,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [isReadyToStart, setIsReadyToStart] = useState(false);
   
   const [selectedAudioOption, setSelectedAudioOption] = useState<string | null>(null);
+  const [textInput, setTextInput] = useState('');
 
 
   const playAudio = (text: string) => {
@@ -85,10 +87,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     loadQuestions();
   }, [skill.slug]);
   
-  // This effect handles auto-playing audio for audio-qcm questions
+  // This effect handles auto-playing audio for audio questions
   useEffect(() => {
     const question = questions[currentQuestionIndex];
-    if (question?.type === 'audio-qcm' && question.textToSpeak) {
+    if ((question?.type === 'audio-qcm' || question?.type === 'audio-to-text-input') && question.textToSpeak) {
         playAudio(question.textToSpeak);
     }
   }, [currentQuestionIndex, questions]);
@@ -119,6 +121,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const resetInteractiveStates = () => {
     setFeedback(null);
     setSelectedAudioOption(null);
+    setTextInput('');
   }
 
   const handleNextQuestion = () => {
@@ -167,6 +170,21 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       processCorrectAnswer();
     } else {
       processIncorrectAnswer();
+    }
+  }
+
+  const handleAudioToTextInputSubmit = () => {
+    if (!exerciseData || feedback) return;
+    
+    // Normalize and compare
+    const userAnswer = textInput.trim().toLowerCase();
+    const correctAnswerNum = exerciseData.answer; // e.g. "105"
+    const correctAnswerWords = exerciseData.answerInWords?.trim().toLowerCase(); // e.g. "cent cinq"
+    
+    if (userAnswer === correctAnswerNum || userAnswer === correctAnswerWords) {
+        processCorrectAnswer();
+    } else {
+        processIncorrectAnswer();
     }
   }
   
@@ -420,6 +438,36 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     )
   }
 
+  const renderAudioToTextInput = () => (
+    <div className="flex flex-col items-center justify-center w-full space-y-8">
+      <Button onClick={() => playAudio(exerciseData.textToSpeak!)} size="lg" variant="outline" className="h-24 w-24 rounded-full">
+        <Volume2 className="h-12 w-12" />
+      </Button>
+      <div className="w-full max-w-md">
+        <Input
+          value={textInput}
+          onChange={(e) => setTextInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAudioToTextInputSubmit()}
+          placeholder="Ta réponse..."
+          className={cn("h-16 text-2xl text-center",
+            feedback === 'correct' && 'border-green-500 ring-green-500',
+            feedback === 'incorrect' && 'border-red-500 ring-red-500 animate-shake'
+          )}
+          disabled={!!feedback}
+          autoFocus
+        />
+      </div>
+      <Button
+        size="lg"
+        className="w-full max-w-md"
+        onClick={handleAudioToTextInputSubmit}
+        disabled={!textInput || !!feedback}
+      >
+        <Check className="mr-2" /> Valider
+      </Button>
+    </div>
+  );
+
   const renderCount = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-6">
       <div className="grid grid-cols-5 gap-2 text-4xl" style={{ gridTemplateRows: 'repeat(4, 1fr)' }}>
@@ -492,6 +540,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           {exerciseData.type === 'qcm' && renderQCM()}
           {exerciseData.type === 'audio-qcm' && renderAudioQCM()}
           {exerciseData.type === 'written-to-audio-qcm' && renderWrittenToAudioQCM()}
+          {exerciseData.type === 'audio-to-text-input' && renderAudioToTextInput()}
           {exerciseData.type === 'set-time' && renderSetTime()}
           {exerciseData.type === 'count' && renderCount()}
         </CardContent>
@@ -500,7 +549,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             <div className="text-2xl font-bold text-green-600 animate-pulse">{motivationalMessage}</div>
           )}
            {feedback === 'incorrect' && (
-            <div className="text-2xl font-bold text-red-600 animate-shake">Oups ! Essaye encore.</div>
+            <div className="text-2xl font-bold text-red-600 animate-shake">
+                Oups ! La bonne réponse était {exerciseData.answer}.
+            </div>
           )}
         </CardFooter>
         <style jsx>{`
