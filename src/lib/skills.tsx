@@ -1,5 +1,4 @@
 
-
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -29,19 +28,19 @@ export const skills: Skill[] = [
   {
     name: 'Familles de mots',
     slug: 'word-families',
-    description: "Relie les mots qui appartiennent à la même famille.",
+    description: "Identifier des mots de la même famille. Utiliser les familles de mots pour mémoriser l'orthographe.",
     icon: <Spline />,
   },
   {
     name: 'L\'heure',
     slug: 'time',
-    description: 'Apprenez à lire les horloges analogiques et numériques.',
+    description: "Lire l'heure sur une horloge à aiguilles.",
     icon: <Clock />,
   },
    {
     name: 'Calcul Posé',
     slug: 'long-calculation',
-    description: 'Entraînez-vous aux additions et soustractions posées.',
+    description: "Additionner/soustraire en colonnes avec ou sans retenue.",
     icon: <SquarePen />,
   },
 ];
