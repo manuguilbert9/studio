@@ -5,7 +5,7 @@ import { useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { UserContext } from '@/context/user-context';
 import { Score, getScoresForUser } from '@/services/scores';
-import { skills, getSkillBySlug } from '@/lib/skills';
+import { getSkillBySlug } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2 } from 'lucide-react';
@@ -43,25 +43,29 @@ export default function ResultsPage() {
             });
 
             const calculatedAverages: SkillAverage[] = [];
-            for (const skill of skills) {
-                const relevantScores = scoresBySkill[skill.slug] || [];
-                // Sort by date and take the last 10
-                const last10Scores = relevantScores
-                    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                    .slice(0, 10);
-                
-                if (last10Scores.length > 0) {
+            for (const skillSlug in scoresBySkill) {
+                const relevantScores = scoresBySkill[skillSlug] || [];
+                const skillInfo = getSkillBySlug(skillSlug);
+
+                if (skillInfo && relevantScores.length > 0) {
+                     // Sort by date and take the last 10
+                    const last10Scores = relevantScores
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                        .slice(0, 10);
+
                     const sum = last10Scores.reduce((acc, s) => acc + s.score, 0);
                     const average = sum / last10Scores.length;
+                    
                     calculatedAverages.push({
-                        slug: skill.slug,
-                        name: skill.name,
-                        icon: skill.icon,
+                        slug: skillSlug,
+                        name: skillInfo.name,
+                        icon: skillInfo.icon,
                         average: Math.round(average),
                         count: last10Scores.length
                     });
                 }
             }
+
             setAverages(calculatedAverages);
             setIsLoading(false);
         }
