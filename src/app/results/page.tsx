@@ -24,6 +24,7 @@ export default function ResultsPage() {
     const { student, isLoading: isUserLoading } = useContext(UserContext);
     const [averages, setAverages] = useState<SkillAverage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [rawScoresForDebug, setRawScoresForDebug] = useState<Score[]>([]);
 
     useEffect(() => {
         async function fetchAndCalculateScores() {
@@ -32,39 +33,47 @@ export default function ResultsPage() {
                 return;
             }
             setIsLoading(true);
+
+            // 1. Fetch all scores for the student.
             const allScores = await getScoresForUser(student.id);
+            setRawScoresForDebug(allScores); // Save raw data for debugging.
 
-            const scoresBySkill: Record<string, Score[]> = {};
-            // Group scores by skill
-            allScores.forEach(score => {
-                if (!scoresBySkill[score.skill]) {
-                    scoresBySkill[score.skill] = [];
+            if (allScores.length === 0) {
+                setAverages([]);
+                setIsLoading(false);
+                return;
+            }
+
+            // 2. Group scores by skill slug.
+            const scoresBySkill: Record<string, number[]> = {};
+            for (const score of allScores) {
+                if (score && score.skill && typeof score.score === 'number') {
+                    if (!scoresBySkill[score.skill]) {
+                        scoresBySkill[score.skill] = [];
+                    }
+                    // We only care about the score value. The list is already sorted by date desc.
+                    scoresBySkill[score.skill].push(score.score);
                 }
-                scoresBySkill[score.skill].push(score);
-            });
-
+            }
+            
+            // 3. Calculate average for each skill group.
             const calculatedAverages: SkillAverage[] = [];
-            // Calculate average for each skill group
             for (const skillSlug in scoresBySkill) {
                 const skillInfo = getSkillBySlug(skillSlug);
                 if (skillInfo) {
                     const skillScores = scoresBySkill[skillSlug];
+                    const lastScores = skillScores.slice(0, 10); // Take the last 10 scores (or fewer)
                     
-                    // Sort by date and take the last 10 scores
-                    const last10Scores = skillScores
-                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                        .slice(0, 10);
-                    
-                    if (last10Scores.length > 0) {
-                        const sum = last10Scores.reduce((acc, s) => acc + s.score, 0);
-                        const average = sum / last10Scores.length;
+                    if (lastScores.length > 0) {
+                        const sum = lastScores.reduce((acc, s) => acc + s, 0);
+                        const average = sum / lastScores.length;
                         
                         calculatedAverages.push({
                             slug: skillSlug,
                             name: skillInfo.name,
                             icon: skillInfo.icon,
                             average: Math.round(average),
-                            count: last10Scores.length
+                            count: lastScores.length
                         });
                     }
                 }
@@ -74,7 +83,9 @@ export default function ResultsPage() {
             setIsLoading(false);
         }
 
-        fetchAndCalculateScores();
+        if (!isUserLoading) {
+            fetchAndCalculateScores();
+        }
     }, [student, isUserLoading]);
 
     if (isLoading || isUserLoading) {
@@ -138,6 +149,14 @@ export default function ResultsPage() {
                     </p>
                 </Card>
             )}
+
+            {/* --- DEBUG VIEW --- */}
+            <div className="mt-8 p-4 bg-slate-100 rounded-lg">
+                <h3 className="font-bold text-sm text-slate-600">Données brutes de Firestore (pour débogage)</h3>
+                <pre className="text-xs text-slate-500 overflow-auto max-h-64 mt-2">
+                    {JSON.stringify(rawScoresForDebug, null, 2)}
+                </pre>
+            </div>
         </main>
     );
 }
