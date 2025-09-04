@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -21,6 +20,8 @@ import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score } from '@/services/scores';
 import Image from 'next/image';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Label } from './ui/label';
 
 
 const motivationalMessages = [
@@ -57,6 +58,19 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [countSettings, setCountSettings] = useState<CountSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
+  
+  const [selectedAudioOption, setSelectedAudioOption] = useState<string | null>(null);
+
+
+  const playAudio = (text: string) => {
+    if (text && 'speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'fr-FR';
+      // Stop any previously playing audio before starting a new one
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+  }
 
   useEffect(() => {
     async function loadQuestions() {
@@ -68,6 +82,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     }
     loadQuestions();
   }, [skill.slug]);
+  
+  // This effect handles auto-playing audio for audio-qcm questions
+  useEffect(() => {
+    const question = questions[currentQuestionIndex];
+    if (question?.type === 'audio-qcm' && question.textToSpeak) {
+        playAudio(question.textToSpeak);
+    }
+  }, [currentQuestionIndex, questions]);
   
   const startTimeExercise = (settings: TimeSettingsType) => {
     generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }).then(setQuestions);
@@ -86,23 +108,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     return questions[currentQuestionIndex];
   }, [currentQuestionIndex, questions]);
   
-  const playAudio = (text: string) => {
-    if (text && 'speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'fr-FR';
-      window.speechSynthesis.speak(utterance);
-    }
-  }
-  
-  // Effect for auto-playing audio questions
-  useEffect(() => {
-    if (exerciseData?.type === 'audio-qcm' && exerciseData.textToSpeak) {
-        playAudio(exerciseData.textToSpeak);
-    }
-  }, [exerciseData]);
-
   const resetInteractiveStates = () => {
     setFeedback(null);
+    setSelectedAudioOption(null);
   }
 
   const handleNextQuestion = () => {
@@ -355,28 +363,47 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             <div className="font-numbers text-8xl font-bold text-primary">
                 {exerciseData.textToSpeak}
             </div>
-             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-lg">
-                 {exerciseData.optionsWithAudio?.map((option, index) => (
-                     <Button
-                        key={`${option.text}-${index}`}
-                        variant="outline"
-                        onClick={() => {
-                            playAudio(option.audio);
-                            handleQcmAnswer(option.text);
-                        }}
-                        className={cn(
-                        "h-24 p-4 justify-center transition-all duration-300 transform active:scale-95",
-                        feedback === 'correct' && option.text === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
-                        feedback === 'incorrect' && option.text !== exerciseData.answer && 'bg-red-500/80 text-white border-red-600 animate-shake',
-                        feedback && option.text !== exerciseData.answer && 'opacity-50',
-                        feedback && option.text === exerciseData.answer && 'opacity-100'
-                        )}
-                        disabled={!!feedback}
-                    >
-                        <Volume2 className="h-10 w-10"/>
-                    </Button>
-                ))}
-            </div>
+             <RadioGroup
+                value={selectedAudioOption ?? undefined}
+                onValueChange={setSelectedAudioOption}
+                className="grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-lg"
+                disabled={!!feedback}
+            >
+                 {exerciseData.optionsWithAudio?.map((option, index) => {
+                    const isCorrect = feedback === 'correct' && option.text === exerciseData.answer;
+                    const isSelectedIncorrect = feedback === 'incorrect' && option.text === selectedAudioOption;
+                    
+                    return (
+                        <div key={option.text} className="flex flex-col items-center gap-2">
+                             <Button
+                                variant="outline"
+                                onClick={() => playAudio(option.audio)}
+                                className={cn(
+                                "h-24 w-full justify-center transition-all duration-300 transform active:scale-95",
+                                 isCorrect && 'bg-green-500/80 text-white border-green-600 scale-105',
+                                 isSelectedIncorrect && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                                 feedback && !isCorrect && !isSelectedIncorrect && 'opacity-50',
+                                )}
+                                disabled={!!feedback}
+                            >
+                                <Volume2 className="h-10 w-10"/>
+                            </Button>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value={option.text} id={`r-${option.text}`} />
+                                <Label htmlFor={`r-${option.text}`} className="sr-only">{option.text}</Label>
+                            </div>
+                        </div>
+                    )
+                })}
+            </RadioGroup>
+            <Button
+                size="lg"
+                className="w-full max-w-lg"
+                onClick={() => handleQcmAnswer(selectedAudioOption!)}
+                disabled={!selectedAudioOption || !!feedback}
+            >
+                <Check className="mr-2"/> Valider
+            </Button>
         </div>
     )
   }
