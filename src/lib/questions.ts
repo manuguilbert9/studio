@@ -2,6 +2,7 @@
 
 
 
+
 import { numberToFrench, numberToWords } from "./utils";
 
 
@@ -48,15 +49,14 @@ export interface CountSettings {
     maxNumber: number;
 }
 
-export interface NumberRangeSettings {
-    min: number;
-    max: number;
+export interface NumberLevelSettings {
+    difficulty: number; // 0-3
 }
 
 export interface AllSettings {
   time?: TimeSettings;
   count?: CountSettings;
-  numberRange?: NumberRangeSettings;
+  numberLevel?: NumberLevelSettings;
 }
 
 function generateTimeQuestion(settings: TimeSettings): Question {
@@ -275,11 +275,46 @@ function generateNombresComplexesQuestion(): Question {
     }
 }
 
-function generateLireLesNombresQuestion(settings: NumberRangeSettings): Question {
-    const { min, max } = settings;
+function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question {
     const isReverse = Math.random() > 0.5;
+    let min, max: number;
+
+    switch(settings.difficulty) {
+        case 0: min = 0; max = 20; break;
+        case 1: min = 0; max = 69; break;
+        case 2: min = 70; max = 999; break;
+        case 3: min = 1000; max = 999999; break;
+        default: min = 0; max = 100;
+    }
     
-    const answerNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+    let answerNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+    
+    // Logic for injecting zeros
+    if (settings.difficulty === 2 && Math.random() > 0.4) { // 60% chance for C
+        let s = String(answerNumber);
+        if (s.length === 3) {
+            s = s[0] + '0' + s[2];
+            answerNumber = parseInt(s);
+        }
+    } else if (settings.difficulty === 3 && Math.random() > 0.2) { // 80% chance for D
+        let s = String(answerNumber);
+        const len = s.length;
+        if (len > 3) {
+            // Replace one or two non-zero, non-leading digits with '0'
+            const zeroPos = Math.floor(Math.random() * (len - 2)) + 1;
+            s = s.substring(0, zeroPos) + '0' + s.substring(zeroPos + 1);
+             if (len > 4 && Math.random() > 0.5) {
+                 let zeroPos2 = Math.floor(Math.random() * (len - 2)) + 1;
+                 while(zeroPos2 === zeroPos) {
+                    zeroPos2 = Math.floor(Math.random() * (len - 2)) + 1;
+                 }
+                 s = s.substring(0, zeroPos2) + '0' + s.substring(zeroPos2 + 1);
+             }
+            answerNumber = parseInt(s);
+        }
+    }
+
+
     const answerText = String(answerNumber);
     const answerAudio = numberToWords(answerNumber);
     
@@ -351,8 +386,8 @@ export async function generateQuestions(
       return Array.from({ length: count }, () => generateNombresComplexesQuestion());
   }
   
-  if (skill === 'lire-les-nombres' && settings?.numberRange) {
-      return Array.from({ length: count }, () => generateLireLesNombresQuestion(settings.numberRange!));
+  if (skill === 'lire-les-nombres' && settings?.numberLevel) {
+      return Array.from({ length: count }, () => generateLireLesNombresQuestion(settings.numberLevel!));
   }
 
   // Fallback
