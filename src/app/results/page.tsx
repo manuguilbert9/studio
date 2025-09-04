@@ -25,6 +25,7 @@ export default function ResultsPage() {
     const [averages, setAverages] = useState<SkillAverage[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [rawScoresForDebug, setRawScoresForDebug] = useState<Score[]>([]);
+    const [queryDebugInfo, setQueryDebugInfo] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchAndCalculateScores() {
@@ -33,6 +34,9 @@ export default function ResultsPage() {
                 return;
             }
             setIsLoading(true);
+
+            // For debugging: Capture query parameters
+            setQueryDebugInfo(`Collection: 'scores', Where: 'userId' == '${student.id}'`);
 
             // 1. Fetch all scores for the student.
             const allScores = await getScoresForUser(student.id);
@@ -155,6 +159,10 @@ export default function ResultsPage() {
                 <h3 className="font-bold text-sm text-slate-600">Données brutes de Firestore (pour débogage)</h3>
                 <pre className="text-xs text-slate-500 overflow-auto max-h-64 mt-2">
                     {JSON.stringify(rawScoresForDebug, null, 2)}
+                </pre>
+                 <h3 className="font-bold text-sm text-slate-600 mt-4">Paramètres de la requête Firestore</h3>
+                <pre className="text-xs text-slate-500 overflow-auto mt-2">
+                    {queryDebugInfo || "Aucune requête exécutée."}
                 </pre>
             </div>
         </main>
