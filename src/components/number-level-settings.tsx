@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -18,7 +19,7 @@ interface NumberLevelSettingsProps {
 const difficultyMap = {
     0: { label: "Niveau A", range: "0 à 20", description: "Les nombres de base, sans complexité." },
     1: { label: "Niveau B", range: "0 à 69", description: "Nombres courants avant les premières exceptions." },
-    2: { label: "Niveau C", range: "70 à 999", description: "Inclut les nombres complexes (70, 90) et les centaines avec des zéros (ex: 105, 201)." },
+    2: { label: "Niveau C", range: "70 à 9 999", description: "Inclut les nombres complexes (70, 90) et les centaines/milliers." },
     3: { label: "Niveau D", range: "1 000 à 9 999 999", description: "Grands nombres, milliers et millions, avec plusieurs zéros." }
 }
 

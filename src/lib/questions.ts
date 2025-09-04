@@ -1,4 +1,5 @@
 
+
 import { numberToFrench, numberToWords } from "./utils";
 
 
@@ -280,7 +281,7 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     switch(settings.difficulty) {
         case 0: min = 0; max = 20; break;
         case 1: min = 0; max = 69; break;
-        case 2: min = 70; max = 999; break;
+        case 2: min = 70; max = 9999; break; // Max changed here
         case 3: min = 1000; max = 999999; break;
         default: min = 0; max = 100;
     }
@@ -288,10 +289,12 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     let answerNumber = Math.floor(Math.random() * (max - min + 1)) + min;
     
     // Logic for injecting zeros
-    if (settings.difficulty === 2 && Math.random() > 0.4) { // 60% chance for C
+    // Reduced chance for level C
+    if (settings.difficulty === 2 && Math.random() > 0.7) { // 30% chance for C
         let s = String(answerNumber);
-        if (s.length === 3) {
-            s = s[0] + '0' + s[2];
+        if (s.length >= 3) {
+            const zeroPos = Math.floor(Math.random() * (s.length - 2)) + 1; // Avoid first/last digit
+            s = s.substring(0, zeroPos) + '0' + s.substring(zeroPos + 1);
             answerNumber = parseInt(s);
         }
     } else if (settings.difficulty === 3 && Math.random() > 0.2) { // 80% chance for D
