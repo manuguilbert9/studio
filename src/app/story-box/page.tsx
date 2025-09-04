@@ -14,15 +14,15 @@ import Link from 'next/link';
 // Base emojis, always present
 const baseEmojis = [
   '👑', '🏰', '🐉', '🦄', '🏴‍☠️', '🚀', '👽', '🤖',
-  ' détective', '🌲', '🦊', '🦉', '🔑', '🗺️', '💎', '🕰️',
+  'détective', '🌲', '🦊', '🦉', '🔑', '🗺️', '💎', '🕰️',
   '🎩', '🧪', '✨', '🍪', '🎈', '⚽', '🎨', '🎤'
 ];
 
 // Pool of extra emojis for random selection
 const extraEmojiPool = [
-  '🧛', '🧟', '👻', '🧜‍♀️', '🧞', ' fairies', '🌊', '🌋', '🏜️', '🏝️',
+  '🧛', '🧟', '👻', '🧜‍♀️', '🧞', 'fées', '🌊', '🌋', '🏜️', '🏝️',
   '🧭', '🏆', '🎁', '🍭', '🍕', '🍰', '🎸', '🎻', '🎭', '🎪',
-  '🚂', '⛵', '🚁', 'SUBMARINE', 'Amulette', 'Potion', 'Sort', 'Trésor'
+  '🚂', '⛵', '🚁', 'sous-marin', 'amulette', 'potion', 'sortilège', 'trésor'
 ];
 
 // Function to get a unique random subset of emojis
@@ -96,7 +96,7 @@ export default function StoryBoxPage() {
     switch (length) {
       case 'courte': return 'text-xl leading-relaxed';
       case 'moyenne': return 'text-lg leading-relaxed';
-      case 'longue': return 'text-base leading-relaxed'; // 16px
+      case 'longue': return 'text-base leading-relaxed';
       default: return 'text-lg';
     }
   }
