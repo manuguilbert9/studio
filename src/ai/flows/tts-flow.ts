@@ -7,7 +7,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { googleAI } from '@genkit-ai/googleai';
+import { googleAI, Part } from '@genkit-ai/googleai';
 import { z } from 'zod';
 import wav from 'wav';
 
@@ -56,26 +56,30 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TTSOutputSchema,
   },
   async (text) => {
-    const { media } = await ai.generate({
+    const response = await ai.generate({
       model: googleAI.model('gemini-2.5-flash-preview-tts'),
       config: {
         responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: { 
-            prebuiltVoiceConfig: { voiceName: 'Algenib' } 
-          },
+        speechConfig: { 
+            voiceConfig: { 
+                prebuiltVoiceConfig: { voiceName: 'Algenib' } 
+            } 
         },
       },
-      prompt: text,
+      prompt: `Parle en français métropolitain. ${text}`,
     });
 
-    if (!media) {
+    const audioPart = response.candidates[0]?.output?.content?.parts?.find(
+        (part: Part) => part.media
+    );
+
+    if (!audioPart || !audioPart.media) {
       throw new Error('No audio media was returned from the TTS model.');
     }
 
     // The media URL is a data URI with base64 encoded PCM data. We need to extract it.
     const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
+      audioPart.media.url.substring(audioPart.media.url.indexOf(',') + 1),
       'base64'
     );
 
