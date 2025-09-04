@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
@@ -9,13 +8,14 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Volume2 } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType } from '@/lib/questions';
+import { generateQuestions, type Question, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberRangeSettings as NumberRangeSettingsType } from '@/lib/questions';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryDisplay } from './score-history-display';
 import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
 import { TimeSettings } from './time-settings';
 import { CountSettings } from './count-settings';
+import { NumberRangeSettings } from './number-range-settings';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score } from '@/services/scores';
@@ -57,6 +57,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [countSettings, setCountSettings] = useState<CountSettingsType | null>(null);
+  const [numberRangeSettings, setNumberRangeSettings] = useState<NumberRangeSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
   
   const [selectedAudioOption, setSelectedAudioOption] = useState<string | null>(null);
@@ -74,7 +75,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   useEffect(() => {
     async function loadQuestions() {
-      if (skill.slug !== 'time' && skill.slug !== 'denombrement') {
+      if (skill.slug !== 'time' && skill.slug !== 'denombrement' && skill.slug !== 'lire-les-nombres') {
         const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
         setQuestions(generatedQuestions);
         setIsReadyToStart(true);
@@ -102,6 +103,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setCountSettings(settings);
     setIsReadyToStart(true);
   };
+  
+  const startNumberRangeExercise = (settings: NumberRangeSettingsType) => {
+    generateQuestions(skill.slug, NUM_QUESTIONS, { numberRange: settings }).then(setQuestions);
+    setNumberRangeSettings(settings);
+    setIsReadyToStart(true);
+  }
 
   const exerciseData = useMemo(() => {
     if (questions.length === 0) return null;
@@ -170,7 +177,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         
         const newScoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
         
-        const scoreData: Omit<Score, 'createdAt' | 'id'> = {
+        const scoreData: Omit<Score, 'id' | 'createdAt'> = {
             userId: student.id,
             skill: skill.slug,
             score: newScoreValue,
@@ -209,8 +216,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setIsReadyToStart(false);
     setTimeSettings(null);
     setCountSettings(null);
+    setNumberRangeSettings(null);
     resetInteractiveStates();
-     if (skill.slug !== 'time' && skill.slug !== 'denombrement') {
+     if (skill.slug !== 'time' && skill.slug !== 'denombrement' && skill.slug !== 'lire-les-nombres') {
        generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
        setIsReadyToStart(true);
     }
@@ -222,6 +230,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       }
       if (skill.slug === 'denombrement') {
         return <CountSettings onStart={startCountExercise} />;
+      }
+      if (skill.slug === 'lire-les-nombres') {
+        return <NumberRangeSettings onStart={startNumberRangeExercise} />
       }
       // For other skills, this will show a loading state until questions are set.
        return (

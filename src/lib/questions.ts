@@ -1,7 +1,8 @@
 
 
 
-import { numberToFrench } from "./utils";
+
+import { numberToFrench, numberToWords } from "./utils";
 
 
 export interface Question {
@@ -47,9 +48,15 @@ export interface CountSettings {
     maxNumber: number;
 }
 
+export interface NumberRangeSettings {
+    min: number;
+    max: number;
+}
+
 export interface AllSettings {
   time?: TimeSettings;
   count?: CountSettings;
+  numberRange?: NumberRangeSettings;
 }
 
 function generateTimeQuestion(settings: TimeSettings): Question {
@@ -268,6 +275,58 @@ function generateNombresComplexesQuestion(): Question {
     }
 }
 
+function generateLireLesNombresQuestion(settings: NumberRangeSettings): Question {
+    const { min, max } = settings;
+    const isReverse = Math.random() > 0.5;
+    
+    const answerNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+    const answerText = String(answerNumber);
+    const answerAudio = numberToWords(answerNumber);
+    
+    const options = new Set<number>([answerNumber]);
+
+    // Generate trap options
+    while (options.size < 4) {
+        let trapNumber: number;
+        const magnitude = String(answerNumber).length;
+        // Try to generate a similarly-sized number
+        if (magnitude > 1) {
+            const trapMin = Math.max(min, Math.pow(10, magnitude - 1));
+            const trapMax = Math.min(max, Math.pow(10, magnitude) - 1);
+            trapNumber = Math.floor(Math.random() * (trapMax - trapMin + 1)) + trapMin;
+        } else {
+             trapNumber = Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        if (trapNumber !== answerNumber) {
+            options.add(trapNumber);
+        }
+    }
+
+    const allOptions = Array.from(options);
+
+    if (isReverse) {
+         return {
+            type: 'written-to-audio-qcm',
+            question: "Comment se prononce ce nombre ?",
+            answer: answerText,
+            textToSpeak: answerText,
+            optionsWithAudio: allOptions.sort(() => Math.random() - 0.5).map(num => ({
+                text: String(num),
+                audio: numberToWords(num)
+            }))
+        };
+    } else {
+        return {
+            type: 'audio-qcm',
+            question: "Clique sur le nombre que tu entends.",
+            options: allOptions.map(String).sort(() => Math.random() - 0.5),
+            answer: answerText,
+            textToSpeak: answerAudio,
+        };
+    }
+}
+
 
 export async function generateQuestions(
   skill: string,
@@ -290,6 +349,10 @@ export async function generateQuestions(
 
   if (skill === 'nombres-complexes') {
       return Array.from({ length: count }, () => generateNombresComplexesQuestion());
+  }
+  
+  if (skill === 'lire-les-nombres' && settings?.numberRange) {
+      return Array.from({ length: count }, () => generateLireLesNombresQuestion(settings.numberRange!));
   }
 
   // Fallback

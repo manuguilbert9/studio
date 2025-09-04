@@ -39,10 +39,16 @@ export const skills: Skill[] = [
     icon: <ListOrdered />,
   },
   {
-    name: "J'entends, je choisis",
+    name: "J'écoute entre 70 et 99",
     slug: 'nombres-complexes',
     description: 'Reconnaître les nombres complexes (70-99) à l\'oral et à l\'écrit.',
     icon: <GitCompareArrows />,
+  },
+  {
+    name: 'Lire les nombres',
+    slug: 'lire-les-nombres',
+    description: "Associer un nombre écrit en chiffres à son énoncé oral.",
+    icon: <BookOpenText />,
   },
   {
     name: 'Familles de mots',

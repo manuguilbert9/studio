@@ -28,3 +28,58 @@ export const numberToFrench: { [key: number]: string } = {
     91: "quatre-vingt-onze", 92: "quatre-vingt-douze", 93: "quatre-vingt-treize", 94: "quatre-vingt-quatorze", 95: "quatre-vingt-quinze",
     96: "quatre-vingt-seize", 97: "quatre-vingt-dix-sept", 98: "quatre-vingt-dix-huit", 99: "quatre-vingt-dix-neuf", 100: "cent"
 };
+
+
+// A more generic function to convert any number to French words
+export function numberToWords(num: number): string {
+    if (numberToFrench[num] !== undefined) {
+        return numberToFrench[num];
+    }
+
+    if (num < 0 || num > 9999999) {
+        return "nombre hors limites";
+    }
+
+    if (num === 0) return "zéro";
+
+    let words = "";
+
+    if (num >= 1000000) {
+        const millions = Math.floor(num / 1000000);
+        words += (millions > 1 ? numberToWords(millions) : "") + " million" + (millions > 1 ? "s" : "");
+        num %= 1000000;
+        if (num > 0) words += " ";
+    }
+    
+    if (num >= 1000) {
+        const thousands = Math.floor(num / 1000);
+        if (thousands > 1) {
+            words += numberToWords(thousands) + " ";
+        }
+        words += "mille";
+        num %= 1000;
+        if (num > 0) words += " ";
+    }
+
+    if (num >= 100) {
+        const hundreds = Math.floor(num / 100);
+        if (hundreds > 1) {
+             words += numberToFrench[hundreds] + " ";
+        }
+        words += "cent";
+        if (num % 100 !== 0) words += " "; else if (hundreds > 1) words += "s";
+        num %= 100;
+    }
+
+    if (num > 0) {
+        if (words !== "") words += "";
+        if (num < 20 || num % 10 === 0) {
+            words += numberToFrench[num];
+        } else {
+            const tens = Math.floor(num / 10) * 10;
+            const units = num % 10;
+            words += numberToFrench[tens] + (units === 1 ? "-et-" : "-") + numberToFrench[units];
+        }
+    }
+    return words.trim();
+}
