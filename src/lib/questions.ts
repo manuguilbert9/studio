@@ -1,6 +1,7 @@
 
 
-import { textToSpeech } from "@/ai/flows/tts-flow";
+import { numberToFrench } from "./utils";
+
 
 export interface Question {
   type: 'qcm' | 'set-time' | 'count' | 'audio-qcm';
@@ -19,7 +20,7 @@ export interface Question {
   countEmoji?: string;
   countNumber?: number;
   // For audio questions
-  audioDataUri?: string;
+  textToSpeak?: string;
 }
 
 export interface CalculationSettings {
@@ -47,13 +48,6 @@ export interface AllSettings {
   time?: TimeSettings;
   count?: CountSettings;
 }
-
-const numberToFrench: { [key: number]: string } = {
-    0: "zéro", 1: "un", 2: "deux", 3: "trois", 4: "quatre", 5: "cinq",
-    6: "six", 7: "sept", 8: "huit", 9: "neuf", 10: "dix",
-    11: "onze", 12: "douze", 13: "treize", 14: "quatorze", 15: "quinze",
-    16: "seize", 17: "dix-sept", 18: "dix-huit", 19: "dix-neuf", 20: "vingt"
-};
 
 function generateTimeQuestion(settings: TimeSettings): Question {
   const { difficulty } = settings;
@@ -192,7 +186,7 @@ function generateDénombrementQuestion(settings: CountSettings): Question {
   };
 }
 
-async function generateEcouteLesNombresQuestion(): Promise<Question> {
+function generateEcouteLesNombresQuestion(): Question {
   const answerNumber = Math.floor(Math.random() * 20) + 1; // 1 to 20
   const answerText = String(answerNumber);
   
@@ -203,14 +197,13 @@ async function generateEcouteLesNombresQuestion(): Promise<Question> {
   }
   
   const numberInFrench = numberToFrench[answerNumber] || answerText;
-  const audioResponse = await textToSpeech(numberInFrench);
 
   return {
     type: 'audio-qcm',
     question: "Clique sur le nombre que tu entends.",
     options: Array.from(options).sort(() => Math.random() - 0.5),
     answer: answerText,
-    audioDataUri: audioResponse.media,
+    textToSpeak: numberInFrench,
   };
 }
 
@@ -231,11 +224,7 @@ export async function generateQuestions(
   }
 
   if (skill === 'ecoute-les-nombres') {
-      const questionPromises: Promise<Question>[] = [];
-      for (let i = 0; i < count; i++) {
-          questionPromises.push(generateEcouteLesNombresQuestion());
-      }
-      return Promise.all(questionPromises);
+      return Array.from({ length: count }, () => generateEcouteLesNombresQuestion());
   }
 
   // Fallback

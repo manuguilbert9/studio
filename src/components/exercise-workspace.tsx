@@ -3,7 +3,7 @@
 'use client';
 
 import type { Skill } from '@/lib/skills.tsx';
-import { useState, useMemo, useEffect, useContext, useRef } from 'react';
+import { useState, useMemo, useEffect, useContext } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
@@ -56,8 +56,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [countSettings, setCountSettings] = useState<CountSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
-  
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     async function loadQuestions() {
@@ -308,23 +306,23 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   const renderAudioQCM = () => {
     const playAudio = () => {
-      if (audioRef.current) {
-        audioRef.current.play();
-      }
+        if (exerciseData.textToSpeak && 'speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(exerciseData.textToSpeak);
+            utterance.lang = 'fr-FR';
+            window.speechSynthesis.speak(utterance);
+        }
     };
     
     // Play audio automatically when question changes
     useEffect(() => {
-        if(exerciseData?.audioDataUri) {
+        if(exerciseData?.textToSpeak) {
             playAudio();
         }
-    }, [exerciseData?.audioDataUri]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [exerciseData?.textToSpeak]);
 
     return (
         <div className="flex flex-col items-center justify-center w-full space-y-8">
-            {exerciseData.audioDataUri && (
-                 <audio ref={audioRef} src={exerciseData.audioDataUri} className="hidden" />
-            )}
             <Button onClick={playAudio} size="lg" variant="outline" className="h-24 w-24 rounded-full">
                 <Volume2 className="h-12 w-12" />
             </Button>
