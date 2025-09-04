@@ -6,19 +6,25 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
-import { Loader2, Home, CheckCircle, List } from 'lucide-react';
+import { Loader2, Home, CheckCircle, List, BookOpen, Calculator } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { getSpellingLists, getSpellingProgress, SpellingList } from '@/services/spelling';
 import { UserContext } from '@/context/user-context';
-import { getCurrentSpellingListId } from '@/services/teacher';
+import { getCurrentHomeworkConfig } from '@/services/teacher';
+import { getSkillBySlug } from '@/lib/skills';
+import { getScoresForUser } from '@/services/scores';
 
-function DevoirsList() {
+function HomeworkList() {
   const router = useRouter();
   const { student, isLoading: isUserLoading } = useContext(UserContext);
 
-  const [lists, setLists] = useState<SpellingList[]>([]);
-  const [progress, setProgress] = useState<Record<string, boolean>>({});
+  const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
+  const [spellingProgress, setSpellingProgress] = useState<Record<string, boolean>>({});
+  
   const [currentListId, setCurrentListId] = useState<string | null>(null);
+  const [currentMathSkillSlug, setCurrentMathSkillSlug] = useState<string | null>(null);
+  const [isMathExerciseDone, setIsMathExerciseDone] = useState(false);
+  
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,15 +35,24 @@ function DevoirsList() {
       };
 
       setIsLoading(true);
-      const [spellingLists, userProgress, currentId] = await Promise.all([
+      const [lists, progress, { listId, skillSlug }] = await Promise.all([
         getSpellingLists(),
         getSpellingProgress(student.id),
-        getCurrentSpellingListId()
+        getCurrentHomeworkConfig()
       ]);
       
-      setLists(spellingLists);
-      setProgress(userProgress);
-      setCurrentListId(currentId);
+      setSpellingLists(lists);
+      setSpellingProgress(progress);
+      setCurrentListId(listId);
+      setCurrentMathSkillSlug(skillSlug);
+
+      if (skillSlug) {
+        const mathScores = await getScoresForUser(student.id, skillSlug);
+        if (mathScores.length > 0) {
+            setIsMathExerciseDone(true);
+        }
+      }
+
       setIsLoading(false);
     }
     
@@ -69,49 +84,86 @@ function DevoirsList() {
     );
   }
   
-  const currentList = lists.find(list => list.id === currentListId);
+  const currentList = spellingLists.find(list => list.id === currentListId);
+  const currentMathSkill = getSkillBySlug(currentMathSkillSlug || '');
 
   return (
     <div className="space-y-8">
-        {currentList && (
-            <Card className="w-full bg-secondary/50 border-primary/50">
-                <CardHeader>
-                    <CardTitle className="font-headline text-3xl sm:text-4xl text-center">Devoirs de la semaine</CardTitle>
-                    <CardDescription className="text-center">{currentList.id} – {currentList.title}</CardDescription>
-                </CardHeader>
-                 <CardContent>
-                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {[
-                        { session: 'Lundi', exerciseId: `${currentList.id}-lundi` },
-                        { session: 'Jeudi', exerciseId: `${currentList.id}-jeudi` }
-                        ].map(({ session, exerciseId }) => {
-                        const isCompleted = progress[exerciseId.toLowerCase()] || false;
-                        return (
-                            <Button 
-                                key={exerciseId} 
-                                variant={isCompleted ? "secondary" : "default"} 
-                                className="h-16 text-lg justify-between"
-                                onClick={() => router.push(`/devoirs/${exerciseId}`)}
+        <Card className="w-full bg-secondary/50 border-primary/50">
+            <CardHeader>
+                <CardTitle className="font-headline text-3xl sm:text-4xl text-center">Devoirs de la semaine</CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 {/* Spelling Card */}
+                 {currentList ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-3 font-headline text-2xl">
+                                <BookOpen className="text-primary" />
+                                <span>Orthographe</span>
+                            </CardTitle>
+                            <CardDescription>{currentList.id} – {currentList.title}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {[
+                            { session: 'Lundi', exerciseId: `${currentList.id}-lundi` },
+                            { session: 'Jeudi', exerciseId: `${currentList.id}-jeudi` }
+                            ].map(({ session, exerciseId }) => {
+                            const isCompleted = spellingProgress[exerciseId.toLowerCase()] || false;
+                            return (
+                                <Button 
+                                    key={exerciseId} 
+                                    variant={isCompleted ? "secondary" : "default"} 
+                                    className="w-full h-14 text-base justify-between"
+                                    onClick={() => router.push(`/devoirs/${exerciseId}`)}
+                                >
+                                    <span>{currentList.id} : {session}</span>
+                                    {isCompleted && <CheckCircle className="text-green-500"/>}
+                                </Button>
+                            )
+                            })}
+                        </CardContent>
+                    </Card>
+                 ) : (
+                     <Card className="flex items-center justify-center p-8"><p className="text-muted-foreground">Aucun devoir d'orthographe assigné.</p></Card>
+                 )}
+
+                 {/* Math Card */}
+                 {currentMathSkill ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-3 font-headline text-2xl">
+                                <Calculator className="text-primary" />
+                                <span>Mathématiques</span>
+                            </CardTitle>
+                            <CardDescription>{currentMathSkill.name}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <Button 
+                                variant={isMathExerciseDone ? "secondary" : "default"} 
+                                className="w-full h-14 text-base justify-between"
+                                onClick={() => router.push(`/exercise/${currentMathSkill.slug}`)}
                             >
-                                <span>{currentList.id} : {session}</span>
-                                {isCompleted && <CheckCircle className="text-green-500"/>}
+                                <span>Faire l'exercice</span>
+                                {isMathExerciseDone && <CheckCircle className="text-green-500"/>}
                             </Button>
-                        )
-                        })}
-                    </div>
-                </CardContent>
-            </Card>
-        )}
+                        </CardContent>
+                    </Card>
+                 ) : (
+                     <Card className="flex items-center justify-center p-8"><p className="text-muted-foreground">Aucun exercice de maths assigné.</p></Card>
+                 )}
+            </CardContent>
+        </Card>
 
         <Card className="w-full">
         <CardHeader>
             <CardTitle className="font-headline text-3xl sm:text-4xl text-center flex items-center justify-center gap-4">
-                <List /> Toutes les listes
+                <List /> Toutes les listes d'orthographe
             </CardTitle>
         </CardHeader>
         <CardContent>
             <div className="space-y-4">
-            {lists.map(list => (
+            {spellingLists.map(list => (
                 <Card key={list.id} className="p-4">
                 <h3 className="font-headline text-xl mb-2">{list.id} – {list.title}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -119,7 +171,7 @@ function DevoirsList() {
                     { session: 'Lundi', exerciseId: `${list.id}-lundi` },
                     { session: 'Jeudi', exerciseId: `${list.id}-jeudi` }
                     ].map(({ session, exerciseId }) => {
-                    const isCompleted = progress[exerciseId.toLowerCase()] || false;
+                    const isCompleted = spellingProgress[exerciseId.toLowerCase()] || false;
                     return (
                         <Button 
                             key={exerciseId} 
@@ -169,7 +221,7 @@ export default function DevoirsPage() {
                         </Link>
                      </Button>
                 </header>
-                <DevoirsList />
+                <HomeworkList />
             </div>
         </main>
     );

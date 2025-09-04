@@ -10,6 +10,7 @@ const SETTINGS_DOC_ID = 'settings';
 
 interface TeacherSettings {
     currentSpellingListId?: string;
+    currentMathSkillSlug?: string;
     enabledSkills?: Record<string, boolean>;
 }
 
@@ -29,22 +30,30 @@ async function getSettingsDoc(): Promise<TeacherSettings | null> {
 }
 
 
-export async function getCurrentSpellingListId(): Promise<string | null> {
+export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlug: string | null }> {
     const settings = await getSettingsDoc();
-    return settings?.currentSpellingListId || null;
+    return {
+        listId: settings?.currentSpellingListId || null,
+        skillSlug: settings?.currentMathSkillSlug || null
+    };
 }
 
-export async function setCurrentSpellingListId(listId: string): Promise<{ success: boolean; error?: string }> {
-    try {
+
+export async function setCurrentHomeworkConfig(listId: string | null, skillSlug: string | null): Promise<{ success: boolean; error?: string }> {
+     try {
         const settingsRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
-        await setDoc(settingsRef, { currentSpellingListId: listId }, { merge: true });
+        await setDoc(settingsRef, { 
+            currentSpellingListId: listId,
+            currentMathSkillSlug: skillSlug 
+        }, { merge: true });
         return { success: true };
     } catch (e) {
-        console.error("Error setting current spelling list:", e);
+        console.error("Error setting current homework config:", e);
         if (e instanceof Error) return { success: false, error: e.message };
         return { success: false, error: "An unknown error occurred." };
     }
 }
+
 
 export async function getGloballyEnabledSkills(): Promise<Record<string, boolean>> {
     const settings = await getSettingsDoc();
