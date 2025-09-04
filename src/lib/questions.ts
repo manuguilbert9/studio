@@ -281,7 +281,7 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     switch(settings.difficulty) {
         case 0: min = 0; max = 20; break;
         case 1: min = 0; max = 69; break;
-        case 2: min = 70; max = 9999; break; // Max changed here
+        case 2: min = 70; max = 9999; break;
         case 3: min = 1000; max = 999999; break;
         default: min = 0; max = 100;
     }
@@ -290,7 +290,7 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     
     // Logic for injecting zeros
     // Reduced chance for level C
-    if (settings.difficulty === 2 && Math.random() > 0.7) { // 30% chance for C
+    if (settings.difficulty === 2 && Math.random() > 0.7) {
         let s = String(answerNumber);
         if (s.length >= 3) {
             const zeroPos = Math.floor(Math.random() * (s.length - 2)) + 1; // Avoid first/last digit
