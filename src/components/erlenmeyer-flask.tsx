@@ -9,7 +9,7 @@ interface ErlenmeyerFlaskProps {
 }
 
 const getLiquidColor = (score: number) => {
-  if (score >= 100) return 'rainbow';
+  if (score >= 100) return 'highlight';
 
   const colors = [
     { score: 0, color: { r: 239, g: 68, b: 68 } },      // red-500
@@ -47,7 +47,7 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
   }, [score]);
   
   const liquidColor = getLiquidColor(score);
-  const isRainbow = liquidColor === 'rainbow';
+  const isPerfectScore = score >= 100;
 
   const viewBoxWidth = 120;
   const viewBoxHeight = 150;
@@ -68,14 +68,10 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
           <clipPath id="erlenmeyerClip">
             <path d={flaskPath} />
           </clipPath>
-           {isRainbow && (
-            <linearGradient id="rainbowGradientFlask" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style={{ stopColor: '#f43f5e' }} />
-              <stop offset="20%" style={{ stopColor: '#f97316' }} />
-              <stop offset="40%" style={{ stopColor: '#eab308' }} />
-              <stop offset="60%" style={{ stopColor: '#22c55e' }} />
-              <stop offset="80%" style={{ stopColor: '#3b82f6' }} />
-              <stop offset="100%" style={{ stopColor: '#8b5cf6' }} />
+           {isPerfectScore && (
+            <linearGradient id="highlightGradientFlask" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))' }} />
+                <stop offset="100%" style={{ stopColor: 'hsl(270, 90%, 65%)' }} />
             </linearGradient>
           )}
         </defs>
@@ -95,11 +91,9 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
                 y={liquidY}
                 width={viewBoxWidth}
                 height={liquidHeight}
-                fill={isRainbow ? "url(#rainbowGradientFlask)" : liquidColor}
-                className={cn(isRainbow && 'animate-shimmer-flask')}
+                fill={isPerfectScore ? "url(#highlightGradientFlask)" : liquidColor}
                 style={{ 
                     transition: 'y 1.5s ease-out, height 1.5s ease-out',
-                    backgroundSize: isRainbow ? '200% 200%' : undefined,
                 }}
             />
         </g>
@@ -119,16 +113,6 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
           {Math.round(fillHeight)}%
         </text>
       </svg>
-      <style jsx>{`
-        @keyframes shimmer-flask {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-shimmer-flask {
-          animation: shimmer-flask 4s linear infinite;
-        }
-      `}</style>
     </div>
   );
 }

@@ -49,7 +49,7 @@ export function ScoreTube({ score }: ScoreTubeProps) {
   }, [score]);
   
   const liquidColor = getLiquidColor(score);
-  const isRainbow = liquidColor === 'rainbow';
+  const isPerfectScore = score >= 100;
 
   const tubeHeight = 150;
   const tubeWidth = 60;
@@ -71,14 +71,10 @@ export function ScoreTube({ score }: ScoreTubeProps) {
           <clipPath id="tubeClip">
             <path d={tubePath} />
           </clipPath>
-           {isRainbow && (
-            <linearGradient id="rainbowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" style={{ stopColor: 'red' }} />
-              <stop offset="20%" style={{ stopColor: 'orange' }} />
-              <stop offset="40%" style={{ stopColor: 'yellow' }} />
-              <stop offset="60%" style={{ stopColor: 'green' }} />
-              <stop offset="80%" style={{ stopColor: 'blue' }} />
-              <stop offset="100%" style={{ stopColor: 'purple' }} />
+           {isPerfectScore && (
+            <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))' }} />
+              <stop offset="100%" style={{ stopColor: 'hsl(270, 90%, 65%)' }} />
             </linearGradient>
           )}
         </defs>
@@ -98,11 +94,9 @@ export function ScoreTube({ score }: ScoreTubeProps) {
                 y={liquidY}
                 width={tubeWidth}
                 height={liquidHeight}
-                fill={isRainbow ? "url(#rainbowGradient)" : liquidColor}
-                className={cn(isRainbow && 'animate-shimmer')}
+                fill={isPerfectScore ? "url(#highlightGradient)" : liquidColor}
                 style={{ 
                     transition: 'y 1.5s ease-out, height 1.5s ease-out',
-                    backgroundSize: isRainbow ? '200% 200%' : undefined,
                 }}
             />
         </g>
@@ -121,16 +115,6 @@ export function ScoreTube({ score }: ScoreTubeProps) {
           {Math.round(fillHeight)}%
         </text>
       </svg>
-      <style jsx>{`
-        @keyframes shimmer {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-shimmer {
-          animation: shimmer 4s linear infinite;
-        }
-      `}</style>
     </div>
   );
 }
