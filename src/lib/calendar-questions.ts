@@ -1,4 +1,6 @@
 
+'use server';
+
 import type { SkillLevel } from "./skills";
 import { addDays, getDay, format, startOfMonth, lastDayOfMonth, differenceInDays } from "date-fns";
 import { fr } from 'date-fns/locale';

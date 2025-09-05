@@ -242,6 +242,18 @@ export function CalendarExercise() {
           case 'count-days':
                 return (
                      <div className="flex flex-col items-center gap-4">
+                        {currentQuestion.month && (
+                            <DayPicker
+                                mode="single"
+                                locale={fr}
+                                month={currentQuestion.month}
+                                className="p-4 rounded-md border bg-card"
+                                classNames={{
+                                    day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                                    day_today: "font-bold text-accent",
+                                }}
+                            />
+                        )}
                         <InputOTP maxLength={2} value={inputValue} onChange={setInputValue}>
                             <InputOTPGroup>
                                 <InputOTPSlot index={0} />
@@ -304,6 +316,16 @@ export function CalendarExercise() {
                 )}
             </CardFooter>
         </Card>
+         <style jsx>{`
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+          }
+          .animate-shake {
+            animation: shake 0.5s ease-in-out;
+          }
+        `}</style>
     </div>
   );
 }
