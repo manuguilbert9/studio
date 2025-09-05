@@ -84,7 +84,7 @@ export const skills: Skill[] = [
     slug: 'lire-les-nombres',
     description: "Associer un nombre écrit en chiffres à son énoncé oral.",
     icon: <BookOpenText />,
-    category: 'Lecture / compréhension',
+    category: 'Nombres et calcul',
   },
   {
     name: 'Familles de mots',
