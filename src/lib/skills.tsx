@@ -16,12 +16,27 @@ import {
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings } from './questions';
 
+export type SkillCategory =
+  | "Phonologie"
+  | "Lecture / compréhension"
+  | "Ecriture"
+  | "Orthographe"
+  | "Grammaire"
+  | "Conjugaison"
+  | "Vocabulaire"
+  | "Nombres et calcul"
+  | "Grandeurs et mesures"
+  | "Organisation et gestion de données"
+  | "Espace et géométrie"
+  | "Problèmes";
+
 
 export interface Skill {
   name: string;
   slug: string;
   description: string;
   icon: ReactElement;
+  category: SkillCategory;
 }
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
@@ -32,54 +47,63 @@ export const skills: Skill[] = [
     slug: 'ecoute-les-nombres',
     description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
     icon: <Ear />,
+    category: 'Nombres et calcul',
   },
   {
     name: 'Dénombrement',
     slug: 'denombrement',
     description: "Dénombrer une quantité inférieure à 20.",
     icon: <ListOrdered />,
+    category: 'Nombres et calcul',
   },
   {
     name: "J'écoute entre 70 et 99",
     slug: 'nombres-complexes',
     description: 'Reconnaître les nombres complexes (70-99) à l\'oral et à l\'écrit.',
     icon: <GitCompareArrows />,
+    category: 'Nombres et calcul',
   },
   {
     name: 'Lire les nombres',
     slug: 'lire-les-nombres',
     description: "Associer un nombre écrit en chiffres à son énoncé oral.",
     icon: <BookOpenText />,
+    category: 'Nombres et calcul',
   },
   {
     name: 'Familles de mots',
     slug: 'word-families',
     description: "Identifier des mots de la même famille. Utiliser les familles de mots pour mémoriser l'orthographe.",
     icon: <Spline />,
+    category: 'Vocabulaire',
   },
   {
     name: 'L\'heure',
     slug: 'time',
     description: "Lire l'heure sur une horloge à aiguilles.",
     icon: <Clock />,
+    category: 'Grandeurs et mesures',
   },
    {
     name: 'Calcul Posé',
     slug: 'long-calculation',
     description: "Additionner/soustraire en colonnes avec ou sans retenue.",
     icon: <SquarePen />,
+    category: 'Nombres et calcul',
   },
   {
     name: 'Calcul mental',
     slug: 'mental-calculation',
     description: 'Calculer de tête des additions, soustractions, multiplications et divisions.',
     icon: <Calculator />,
+    category: 'Nombres et calcul',
   },
   {
     name: 'Calendrier',
     slug: 'calendar',
     description: 'Se repérer dans le temps, lire les dates et les durées.',
     icon: <CalendarDays />,
+    category: 'Grandeurs et mesures',
   },
 ];
 

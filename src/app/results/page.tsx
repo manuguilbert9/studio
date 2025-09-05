@@ -1,12 +1,11 @@
 
-
 'use client';
 
-import { useContext, useState, useEffect } from 'react';
+import { useContext, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { UserContext } from '@/context/user-context';
 import { Score, getScoresForUser } from '@/services/scores';
-import { getSkillBySlug, difficultyLevelToString } from '@/lib/skills';
+import { getSkillBySlug, difficultyLevelToString, SkillCategory } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2 } from 'lucide-react';
@@ -19,6 +18,7 @@ interface SkillResult {
     level: string;
     average: number;
     count: number;
+    category: SkillCategory;
 }
 
 export default function ResultsPage() {
@@ -75,7 +75,8 @@ export default function ResultsPage() {
                             name: skillInfo.name,
                             level: level,
                             average: Math.round(average),
-                            count: lastScores.length
+                            count: lastScores.length,
+                            category: skillInfo.category,
                         });
                     }
                 }
@@ -99,6 +100,17 @@ export default function ResultsPage() {
             fetchAndCalculateScores();
         }
     }, [student, isUserLoading]);
+
+    const resultsByCategory = useMemo(() => {
+        const grouped: Record<string, SkillResult[]> = {};
+        results.forEach(result => {
+            if (!grouped[result.category]) {
+                grouped[result.category] = [];
+            }
+            grouped[result.category].push(result);
+        });
+        return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
+    }, [results]);
 
     if (isLoading || isUserLoading) {
         return (
@@ -143,16 +155,23 @@ export default function ResultsPage() {
                 </p>
             </header>
             
-            {results.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                    {results.map(result => (
-                        <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                            <ErlenmeyerFlask score={result.average} />
-                            <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
-                            <p className="font-semibold text-sm text-primary">{result.level}</p>
-                            <p className="text-xs text-muted-foreground">({result.count} exercices)</p>
-                        </Card>
-                    ))}
+            {resultsByCategory.length > 0 ? (
+                <div className="space-y-12">
+                   {resultsByCategory.map(([category, categoryResults]) => (
+                     <div key={category}>
+                        <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                             {categoryResults.map(result => (
+                                <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                                    <ErlenmeyerFlask score={result.average} />
+                                    <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
+                                    <p className="font-semibold text-sm text-primary">{result.level}</p>
+                                    <p className="text-xs text-muted-foreground">({result.count} exercices)</p>
+                                </Card>
+                            ))}
+                        </div>
+                     </div>
+                   ))}
                 </div>
             ) : (
                 <Card className="w-full max-w-xl mx-auto p-12 text-center">
