@@ -100,7 +100,7 @@ export default function EnClassePage() {
         </div>
         <Logo />
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
-        <p className="text-lg sm:text-xl text-muted-foreground">Que voudriez-vous pratiquer aujourd'hui ?</p>
+        <p className="text-lg sm:text-xl text-muted-foreground">Que voudrais-tu pratiquer aujourd'hui ?</p>
          <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
              <Button asChild variant="outline" size="sm">
                 <Link href="/tableau">
@@ -133,7 +133,7 @@ export default function EnClassePage() {
       ) : (
         <Card className="w-full max-w-2xl mx-auto p-8 text-center">
             <h3 className="font-headline text-2xl">Aucun exercice n'est disponible</h3>
-            <p className="text-muted-foreground mt-2">Votre enseignant n'a pas encore activé d'exercices pour le mode "En classe".</p>
+            <p className="text-muted-foreground mt-2">Ton enseignant n'a pas encore activé d'exercices pour le mode "En classe".</p>
         </Card>
       )}
     </main>
