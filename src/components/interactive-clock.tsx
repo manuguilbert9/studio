@@ -49,7 +49,7 @@ export function InteractiveClock({ hour, minute, settings, onSubmit, feedback }:
   return (
     <div className="flex flex-col items-center justify-center w-full space-y-6">
       <p className="text-2xl font-semibold font-body">
-        Réglez l'horloge sur <span className="font-bold font-numbers text-primary">{targetTime}</span>
+        Règle l'horloge sur <span className="font-bold font-numbers text-primary">{targetTime}</span>
       </p>
       
       <div className="cursor-pointer">

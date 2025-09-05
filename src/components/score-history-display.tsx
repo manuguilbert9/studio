@@ -24,8 +24,8 @@ export function ScoreHistoryDisplay({ scoreHistory }: ScoreHistoryDisplayProps) 
   return (
     <Card className="w-full mt-4 bg-muted/50">
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl">Historique récent</CardTitle>
-        <CardDescription>Vos 5 derniers exercices.</CardDescription>
+        <CardTitle className="text-xl">Ton historique récent</CardTitle>
+        <CardDescription>Tes 5 derniers exercices.</CardDescription>
       </CardHeader>
       <CardContent>
         {chartData.length > 0 ? (
