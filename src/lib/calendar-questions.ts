@@ -165,16 +165,34 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
         const weekNumberText = ['premier', 'deuxième', 'troisième'][weekNumber - 1];
 
         // Find the date
-        let date = startOfMonth(referenceDate);
-        let count = 0;
-        while(count < weekNumber) {
-            if (getDay(date) === dayOfWeekIndex) {
-                count++;
+        let currentDate = startOfMonth(referenceDate);
+        let dayOfWeekCount = 0;
+        let answerDate: Date | null = null;
+        
+        // Loop through the month to find the correct occurrence of the day
+        while (currentDate.getMonth() === referenceDate.getMonth()) {
+            if (getDay(currentDate) === dayOfWeekIndex) {
+                dayOfWeekCount++;
+                if (dayOfWeekCount === weekNumber) {
+                    answerDate = currentDate;
+                    break;
+                }
             }
-            if (count < weekNumber) {
-                date = addDays(date, 1);
+            currentDate = addDays(currentDate, 1);
+        }
+        
+        // Fallback in case we somehow didn't find the date (e.g. 5th friday)
+        if (!answerDate) {
+            currentDate = startOfMonth(referenceDate);
+             while (currentDate.getMonth() === referenceDate.getMonth()) {
+                if (getDay(currentDate) === dayOfWeekIndex) {
+                    answerDate = currentDate;
+                    break;
+                }
+                currentDate = addDays(currentDate, 1);
             }
         }
+
 
         return {
             id: Date.now() + Math.random(),
@@ -182,7 +200,7 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
             type: 'click-date',
             question: `Trouve le ${weekNumberText} ${dayOfWeekName} du mois de ${monthName}.`,
             month: startOfMonth(referenceDate),
-            answerDate: date
+            answerDate: answerDate!
         };
     } 
     // Type 2: How many days in the month?
