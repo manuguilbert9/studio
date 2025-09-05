@@ -108,7 +108,13 @@ export function CalendarExercise() {
             isCorrect = selectedOption === currentQuestion.answer;
             break;
         case 'click-date':
-            isCorrect = selectedDay?.toISOString().split('T')[0] === currentQuestion.answerDate?.toISOString().split('T')[0];
+             if (selectedDay && currentQuestion.answerDate) {
+                const selected = selectedDay;
+                const answer = new Date(currentQuestion.answerDate); // Ensure it's a Date object
+                isCorrect = selected.getFullYear() === answer.getFullYear() &&
+                            selected.getMonth() === answer.getMonth() &&
+                            selected.getDate() === answer.getDate();
+            }
             break;
         case 'count-days':
              isCorrect = parseInt(inputValue, 10) === currentQuestion.answerNumber;
@@ -225,14 +231,14 @@ export function CalendarExercise() {
                     selected={selectedDay}
                     onSelect={setSelectedDay}
                     locale={fr}
-                    month={currentQuestion.month}
+                    month={currentQuestion.month ? new Date(currentQuestion.month) : undefined}
                     className="p-4 rounded-md border bg-card"
                     classNames={{
                         day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                         day_today: "font-bold text-accent",
                     }}
                     modifiers={{
-                        highlighted: currentQuestion.highlightedDays || [],
+                        highlighted: currentQuestion.highlightedDays?.map(d => new Date(d)) || [],
                     }}
                     modifiersClassNames={{
                         highlighted: "bg-accent/20 rounded-full",
@@ -246,7 +252,7 @@ export function CalendarExercise() {
                             <DayPicker
                                 mode="single"
                                 locale={fr}
-                                month={currentQuestion.month}
+                                month={new Date(currentQuestion.month)}
                                 className="p-4 rounded-md border bg-card"
                                 classNames={{
                                     day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
@@ -270,7 +276,7 @@ export function CalendarExercise() {
       case 'qcm':
         return currentQuestion.answer;
       case 'click-date':
-        return currentQuestion.answerDate?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+        return currentQuestion.answerDate ? new Date(currentQuestion.answerDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '';
       case 'count-days':
         return currentQuestion.answerNumber;
       default:

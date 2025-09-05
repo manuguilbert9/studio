@@ -15,10 +15,10 @@ export interface CalendarQuestion {
     // For QCM
     options?: string[];
     answer?: string;
-    // For click-date
-    month?: Date;
-    answerDate?: Date;
-    highlightedDays?: Date[];
+    // For click-date. Dates are stored as ISO strings for serialization.
+    month?: string; 
+    answerDate?: string;
+    highlightedDays?: string[];
     // For count-days
     answerNumber?: number;
 }
@@ -117,13 +117,13 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
             level: 'B',
             type: 'click-date',
             question: `Sur le calendrier, clique sur le ${day} ${monthName}.`,
-            month: startOfMonth(referenceDate),
-            answerDate: referenceDate,
+            month: startOfMonth(referenceDate).toISOString(),
+            answerDate: referenceDate.toISOString(),
         };
     }
     // Type 2: Order of days
     else {
-        const date1 = referenceDate;
+        let date1 = referenceDate;
         // ensure date1 is not too close to the end of the month for this question type
         if(date1.getDate() > 25) {
             date1.setDate(15);
@@ -169,28 +169,26 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
         let dayOfWeekCount = 0;
         let answerDate: Date | null = null;
         
-        // Loop through the month to find the correct occurrence of the day
-        while (currentDate.getMonth() === referenceDate.getMonth()) {
-            if (getDay(currentDate) === dayOfWeekIndex) {
-                dayOfWeekCount++;
-                if (dayOfWeekCount === weekNumber) {
-                    answerDate = currentDate;
-                    break;
-                }
-            }
-            currentDate = addDays(currentDate, 1);
+        const daysInMonth = lastDayOfMonth(referenceDate).getDate();
+
+        for (let day = 1; day <= daysInMonth; day++) {
+             currentDate.setDate(day);
+             if (getDay(currentDate) === dayOfWeekIndex) {
+                 dayOfWeekCount++;
+                 if (dayOfWeekCount === weekNumber) {
+                     answerDate = new Date(currentDate); // Create a new date object
+                     break;
+                 }
+             }
         }
         
         // Fallback in case we somehow didn't find the date (e.g. 5th friday)
         if (!answerDate) {
-            currentDate = startOfMonth(referenceDate);
-             while (currentDate.getMonth() === referenceDate.getMonth()) {
-                if (getDay(currentDate) === dayOfWeekIndex) {
-                    answerDate = currentDate;
-                    break;
-                }
-                currentDate = addDays(currentDate, 1);
+             let firstOccurrenceDate = startOfMonth(referenceDate);
+             while (getDay(firstOccurrenceDate) !== dayOfWeekIndex) {
+                firstOccurrenceDate = addDays(firstOccurrenceDate, 1);
             }
+            answerDate = firstOccurrenceDate;
         }
 
 
@@ -199,8 +197,8 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
             level: 'C',
             type: 'click-date',
             question: `Trouve le ${weekNumberText} ${dayOfWeekName} du mois de ${monthName}.`,
-            month: startOfMonth(referenceDate),
-            answerDate: answerDate!
+            month: startOfMonth(referenceDate).toISOString(),
+            answerDate: answerDate!.toISOString()
         };
     } 
     // Type 2: How many days in the month?
@@ -214,7 +212,7 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
             type: 'count-days',
             question: `Combien de jours y a-t-il dans le mois de ${monthName} ?`,
             description: `Aide-toi du calendrier pour compter.`,
-            month: startOfMonth(referenceDate),
+            month: startOfMonth(referenceDate).toISOString(),
             answerNumber: answer
         }
     }
