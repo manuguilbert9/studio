@@ -106,14 +106,17 @@ export default function ResultsPage() {
 
     const resultsByCategory = useMemo(() => {
         const grouped: Record<string, SkillResult[]> = {};
-        allCategories.forEach(cat => grouped[cat] = []); // Initialize all categories
+        allCategories.forEach(cat => {
+            grouped[cat] = [];
+        });
 
         results.forEach(result => {
-            if (grouped[result.category]) { // Check if category exists
-                 grouped[result.category].push(result);
+            if (grouped[result.category]) {
+                grouped[result.category].push(result);
             }
         });
-        return Object.entries(grouped);
+        
+        return grouped;
     }, [results]);
 
     if (isLoading || isUserLoading) {
@@ -160,7 +163,7 @@ export default function ResultsPage() {
             </header>
             
             <div className="space-y-12">
-                {resultsByCategory.map(([category, categoryResults]) => (
+                {Object.entries(resultsByCategory).map(([category, categoryResults]) => (
                     <div key={category}>
                     <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
                     {categoryResults.length > 0 ? (
@@ -187,3 +190,4 @@ export default function ResultsPage() {
         </main>
     );
 }
+
