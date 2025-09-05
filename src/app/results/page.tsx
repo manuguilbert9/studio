@@ -163,29 +163,32 @@ export default function ResultsPage() {
             </header>
             
             <div className="space-y-12">
-                {Object.entries(resultsByCategory).map(([category, categoryResults]) => (
-                    <div key={category}>
-                    <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
-                    {categoryResults.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                            {categoryResults.map(result => (
-                            <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                                <ErlenmeyerFlask score={result.average} />
-                                <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
-                                <p className="font-semibold text-sm text-primary">{result.level}</p>
-                                <p className="text-xs text-muted-foreground">({result.count} exercices)</p>
+                {allCategories.map((category) => {
+                    const categoryResults = resultsByCategory[category] || [];
+                    return (
+                        <div key={category}>
+                        <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
+                        {categoryResults.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                                {categoryResults.map(result => (
+                                <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                                    <ErlenmeyerFlask score={result.average} />
+                                    <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
+                                    <p className="font-semibold text-sm text-primary">{result.level}</p>
+                                    <p className="text-xs text-muted-foreground">({result.count} exercices)</p>
+                                </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <Card className="w-full border-dashed">
+                                <CardContent className="p-8 text-center text-muted-foreground">
+                                    Aucun exercice réalisé dans cette matière pour le moment.
+                                </CardContent>
                             </Card>
-                            ))}
+                        )}
                         </div>
-                    ) : (
-                        <Card className="w-full border-dashed">
-                             <CardContent className="p-8 text-center text-muted-foreground">
-                                Aucun exercice réalisé dans cette matière pour le moment.
-                            </CardContent>
-                        </Card>
-                    )}
-                    </div>
-                ))}
+                    );
+                })}
             </div>
         </main>
     );
