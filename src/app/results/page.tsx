@@ -5,7 +5,7 @@ import { useContext, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { UserContext } from '@/context/user-context';
 import { Score, getScoresForUser } from '@/services/scores';
-import { getSkillBySlug, difficultyLevelToString, SkillCategory, skills } from '@/lib/skills';
+import { getSkillBySlug, difficultyLevelToString, SkillCategory, allSkillCategories } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2 } from 'lucide-react';
@@ -20,9 +20,6 @@ interface SkillResult {
     count: number;
     category: SkillCategory;
 }
-
-const allCategories: SkillCategory[] = Array.from(new Set(skills.map(s => s.category))).sort();
-
 
 export default function ResultsPage() {
     const { student, isLoading: isUserLoading } = useContext(UserContext);
@@ -106,7 +103,7 @@ export default function ResultsPage() {
 
     const resultsByCategory = useMemo(() => {
         const grouped: Record<string, SkillResult[]> = {};
-        allCategories.forEach(cat => {
+        allSkillCategories.forEach(cat => {
             grouped[cat] = [];
         });
 
@@ -163,7 +160,7 @@ export default function ResultsPage() {
             </header>
             
             <div className="space-y-12">
-                {allCategories.map((category) => {
+                {allSkillCategories.map((category) => {
                     const categoryResults = resultsByCategory[category] || [];
                     return (
                         <div key={category}>
@@ -193,4 +190,3 @@ export default function ResultsPage() {
         </main>
     );
 }
-

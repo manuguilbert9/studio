@@ -1,4 +1,5 @@
 
+
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -29,6 +30,21 @@ export type SkillCategory =
   | "Organisation et gestion de données"
   | "Espace et géométrie"
   | "Problèmes";
+
+export const allSkillCategories: SkillCategory[] = [
+    "Phonologie",
+    "Lecture / compréhension",
+    "Ecriture",
+    "Orthographe",
+    "Grammaire",
+    "Conjugaison",
+    "Vocabulaire",
+    "Nombres et calcul",
+    "Grandeurs et mesures",
+    "Organisation et gestion de données",
+    "Espace et géométrie",
+    "Problèmes"
+];
 
 
 export interface Skill {
