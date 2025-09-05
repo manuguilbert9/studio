@@ -79,7 +79,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
 
   useEffect(() => {
     async function loadQuestions() {
-      if (skill.slug !== 'time' && skill.slug !== 'denombrement' && skill.slug !== 'lire-les-nombres') {
+      // For skills that don't need settings, generate questions immediately
+      if (!['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
         const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
         setQuestions(generatedQuestions);
         setIsReadyToStart(true);
@@ -203,13 +204,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
             score: newScoreValue,
         };
 
-        if (skill.slug === 'time' && timeSettings) {
-            scoreData.timeSettings = timeSettings;
-        }
-
-        if (homeworkSession) {
-            scoreData.homeworkSession = homeworkSession;
-        }
+        if (timeSettings) scoreData.timeSettings = timeSettings;
+        if (countSettings) scoreData.countSettings = countSettings;
+        if (numberLevelSettings) scoreData.numberLevelSettings = numberLevelSettings;
+        if (homeworkSession) scoreData.homeworkSession = homeworkSession;
 
         await addScore(scoreData);
         
@@ -225,7 +223,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, isTableauMode, hasBeenSaved, homeworkSession]);
+  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, countSettings, numberLevelSettings, isTableauMode, hasBeenSaved, homeworkSession]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -242,7 +240,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     setCountSettings(null);
     setNumberLevelSettings(null);
     resetInteractiveStates();
-     if (skill.slug !== 'time' && skill.slug !== 'denombrement' && skill.slug !== 'lire-les-nombres') {
+    if (!['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
        generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
        setIsReadyToStart(true);
     }
@@ -483,7 +481,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         ))}
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl">
-        {Array.from({ length: 21 }, (_, i) => i).map((num) => (
+        {Array.from({ length: (countSettings?.maxNumber ?? 20) + 1 }, (_, i) => i).map((num) => (
           <Button
             key={num}
             variant="outline"

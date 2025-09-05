@@ -14,7 +14,7 @@ import {
   ListOrdered,
   CalendarDays,
 } from 'lucide-react';
-import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings } from './questions';
+import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings } from './questions';
 
 
 export interface Skill {
@@ -93,24 +93,38 @@ export function difficultyLevelToString(
     calcSettings?: CalculationSettings,
     currSettings?: CurrencySettings,
     timeSettings?: TimeSettings,
-    calendarSettings?: CalendarSettings
+    calendarSettings?: CalendarSettings,
+    numberLevelSettings?: NumberLevelSettings,
+    countSettings?: CountSettings
 ): string | null {
-    if (skillSlug === 'calculation' && calcSettings) {
-        const { operations, numberSize, complexity } = calcSettings;
-        const total = operations + numberSize + complexity;
-        if (total <= 3) return "Niveau 1";
-        if (total <= 6) return "Niveau 2";
-        if (total <= 9) return "Niveau 3";
-        return "Niveau 4";
-    }
-    if (skillSlug === 'currency' && currSettings) {
-        return `Niveau ${currSettings.difficulty + 1}`;
-    }
     if (skillSlug === 'time' && timeSettings) {
         return `Niveau ${timeSettings.difficulty + 1}`;
     }
     if (skillSlug === 'calendar' && calendarSettings) {
         return `Niveau ${calendarSettings.level}`;
     }
-    return null;
+     if (skillSlug === 'lire-les-nombres' && numberLevelSettings) {
+        const levels = ['A', 'B', 'C', 'D'];
+        return `Niveau ${levels[numberLevelSettings.difficulty] || 'A'}`;
+    }
+     if (skillSlug === 'denombrement') {
+        return "Niveau A";
+    }
+    if (skillSlug === 'ecoute-les-nombres') {
+        return "Niveau A";
+    }
+    if (skillSlug === 'nombres-complexes') {
+        return "Niveau B";
+    }
+    if (skillSlug === 'word-families') {
+        return "Niveau B";
+    }
+    if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation') {
+        // These exercises are controlled by a SkillLevel A-D set on the student
+        // This should be retrieved from student data, not settings object.
+        // For now, let's assume a default if no other info.
+        return "Niveau B";
+    }
+    // Fallback for any other case
+    return "Niveau A";
 }

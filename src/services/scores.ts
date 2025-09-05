@@ -1,9 +1,10 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
-import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings } from '@/lib/questions';
+import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, CountSettings, NumberLevelSettings } from '@/lib/questions';
 
 export type HomeworkSession = 'lundi' | 'jeudi';
 
@@ -17,6 +18,8 @@ export interface Score {
     calculationSettings?: CalculationSettings;
     currencySettings?: CurrencySettings;
     calendarSettings?: CalendarSettings;
+    countSettings?: CountSettings;
+    numberLevelSettings?: NumberLevelSettings;
     homeworkSession?: HomeworkSession; // To mark which homework was done
 }
 

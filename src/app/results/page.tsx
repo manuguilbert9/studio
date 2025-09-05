@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useContext, useState, useEffect } from 'react';
@@ -45,7 +46,7 @@ export default function ResultsPage() {
             const scoresBySkillAndLevel: Record<string, Score[]> = {};
 
             for (const score of allScores) {
-                const difficulty = difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings) || 'Standard';
+                const difficulty = difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings) || 'N/A';
                 const key = `${score.skill}::${difficulty}`;
                 
                 if (!scoresBySkillAndLevel[key]) {
@@ -62,6 +63,7 @@ export default function ResultsPage() {
 
                 if (skillInfo) {
                     const skillScores = scoresBySkillAndLevel[key];
+                    // Use last 10 scores *per level*
                     const lastScores = skillScores.slice(0, 10).map(s => s.score);
                     
                     if (lastScores.length > 0) {
