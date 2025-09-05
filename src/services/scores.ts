@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
-import type { CalculationSettings, CurrencySettings, TimeSettings } from '@/lib/questions';
+import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings } from '@/lib/questions';
 
 export type HomeworkSession = 'lundi' | 'jeudi';
 
@@ -16,6 +16,7 @@ export interface Score {
     timeSettings?: TimeSettings;
     calculationSettings?: CalculationSettings;
     currencySettings?: CurrencySettings;
+    calendarSettings?: CalendarSettings;
     homeworkSession?: HomeworkSession; // To mark which homework was done
 }
 

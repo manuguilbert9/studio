@@ -109,11 +109,9 @@ export function CalendarExercise() {
             break;
         case 'click-date':
              if (selectedDay && currentQuestion.answerDate) {
-                const selected = selectedDay;
-                const answer = new Date(currentQuestion.answerDate); // Ensure it's a Date object
-                isCorrect = selected.getFullYear() === answer.getFullYear() &&
-                            selected.getMonth() === answer.getMonth() &&
-                            selected.getDate() === answer.getDate();
+                const selected = new Date(selectedDay.setHours(12, 0, 0, 0));
+                const answer = new Date(new Date(currentQuestion.answerDate).setHours(12, 0, 0, 0));
+                isCorrect = selected.getTime() === answer.getTime();
             }
             break;
         case 'count-days':
@@ -133,19 +131,19 @@ export function CalendarExercise() {
   
   useEffect(() => {
       const saveFinalScore = async () => {
-           if (isFinished && student && !hasBeenSaved) {
+           if (isFinished && student && !hasBeenSaved && level) {
               setHasBeenSaved(true);
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
               await addScore({
                   userId: student.id,
                   skill: 'calendar',
                   score: score,
-                  // TODO: add level/settings to score
+                  calendarSettings: { level: level },
               });
           }
       }
       saveFinalScore();
-  }, [isFinished, student, correctAnswers, hasBeenSaved]);
+  }, [isFinished, student, correctAnswers, hasBeenSaved, level]);
 
   const restartExercise = () => {
     if(level) {

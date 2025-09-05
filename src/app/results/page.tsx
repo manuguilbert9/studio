@@ -45,7 +45,7 @@ export default function ResultsPage() {
             const scoresBySkillAndLevel: Record<string, Score[]> = {};
 
             for (const score of allScores) {
-                const difficulty = difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard';
+                const difficulty = difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings) || 'Standard';
                 const key = `${score.skill}::${difficulty}`;
                 
                 if (!scoresBySkillAndLevel[key]) {

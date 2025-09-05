@@ -14,7 +14,7 @@ import {
   ListOrdered,
   CalendarDays,
 } from 'lucide-react';
-import type { CalculationSettings, CurrencySettings, TimeSettings } from './questions';
+import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings } from './questions';
 
 
 export interface Skill {
@@ -92,7 +92,8 @@ export function difficultyLevelToString(
     skillSlug: string,
     calcSettings?: CalculationSettings,
     currSettings?: CurrencySettings,
-    timeSettings?: TimeSettings
+    timeSettings?: TimeSettings,
+    calendarSettings?: CalendarSettings
 ): string | null {
     if (skillSlug === 'calculation' && calcSettings) {
         const { operations, numberSize, complexity } = calcSettings;
@@ -107,6 +108,9 @@ export function difficultyLevelToString(
     }
     if (skillSlug === 'time' && timeSettings) {
         return `Niveau ${timeSettings.difficulty + 1}`;
+    }
+    if (skillSlug === 'calendar' && calendarSettings) {
+        return `Niveau ${calendarSettings.level}`;
     }
     return null;
 }

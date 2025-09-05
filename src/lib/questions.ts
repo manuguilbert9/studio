@@ -1,6 +1,7 @@
 
 
 import { numberToFrench, numberToWords } from "./utils";
+import type { SkillLevel } from './skills';
 
 
 export interface Question {
@@ -50,6 +51,10 @@ export interface CountSettings {
 
 export interface NumberLevelSettings {
     difficulty: number; // 0-3
+}
+
+export interface CalendarSettings {
+    level: SkillLevel;
 }
 
 export interface AllSettings {
