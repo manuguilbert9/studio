@@ -5,24 +5,24 @@ import { useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { UserContext } from '@/context/user-context';
 import { Score, getScoresForUser } from '@/services/scores';
-import { getSkillBySlug } from '@/lib/skills';
+import { getSkillBySlug, difficultyLevelToString } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2 } from 'lucide-react';
 import { ErlenmeyerFlask } from '@/components/erlenmeyer-flask';
 import { Logo } from '@/components/logo';
 
-interface SkillAverage {
+interface SkillResult {
     slug: string;
     name: string;
-    icon: React.ReactElement;
+    level: string;
     average: number;
     count: number;
 }
 
 export default function ResultsPage() {
     const { student, isLoading: isUserLoading } = useContext(UserContext);
-    const [averages, setAverages] = useState<SkillAverage[]>([]);
+    const [results, setResults] = useState<SkillResult[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -33,43 +33,45 @@ export default function ResultsPage() {
             }
             setIsLoading(true);
 
-            // 1. Fetch all scores for the student.
             const allScores = await getScoresForUser(student.id);
 
             if (allScores.length === 0) {
-                setAverages([]);
+                setResults([]);
                 setIsLoading(false);
                 return;
             }
 
-            // 2. Group scores by skill slug.
-            const scoresBySkill: Record<string, number[]> = {};
+            // Group scores by a composite key of skillSlug and difficultyLevel
+            const scoresBySkillAndLevel: Record<string, Score[]> = {};
+
             for (const score of allScores) {
-                if (score && score.skill && typeof score.score === 'number') {
-                    if (!scoresBySkill[score.skill]) {
-                        scoresBySkill[score.skill] = [];
-                    }
-                    // We only care about the score value. The list is already sorted by date desc.
-                    scoresBySkill[score.skill].push(score.score);
+                const difficulty = difficultyLevelToString(score.skill, score.calculationSettings, score.currencySettings, score.timeSettings) || 'Standard';
+                const key = `${score.skill}::${difficulty}`;
+                
+                if (!scoresBySkillAndLevel[key]) {
+                    scoresBySkillAndLevel[key] = [];
                 }
+                scoresBySkillAndLevel[key].push(score);
             }
             
-            // 3. Calculate average for each skill group.
-            const calculatedAverages: SkillAverage[] = [];
-            for (const skillSlug in scoresBySkill) {
+            // Calculate average for each group
+            const calculatedResults: SkillResult[] = [];
+            for (const key in scoresBySkillAndLevel) {
+                const [skillSlug, level] = key.split('::');
                 const skillInfo = getSkillBySlug(skillSlug);
+
                 if (skillInfo) {
-                    const skillScores = scoresBySkill[skillSlug];
-                    const lastScores = skillScores.slice(0, 10); // Take the last 10 scores (or fewer)
+                    const skillScores = scoresBySkillAndLevel[key];
+                    const lastScores = skillScores.slice(0, 10).map(s => s.score);
                     
                     if (lastScores.length > 0) {
                         const sum = lastScores.reduce((acc, s) => acc + s, 0);
                         const average = sum / lastScores.length;
                         
-                        calculatedAverages.push({
+                        calculatedResults.push({
                             slug: skillSlug,
                             name: skillInfo.name,
-                            icon: skillInfo.icon,
+                            level: level,
                             average: Math.round(average),
                             count: lastScores.length
                         });
@@ -77,7 +79,17 @@ export default function ResultsPage() {
                 }
             }
 
-            setAverages(calculatedAverages);
+            // Sort results by name, then by level
+            calculatedResults.sort((a, b) => {
+                if (a.name < b.name) return -1;
+                if (a.name > b.name) return 1;
+                if (a.level < b.level) return -1;
+                if (a.level > b.level) return 1;
+                return 0;
+            });
+
+
+            setResults(calculatedResults);
             setIsLoading(false);
         }
 
@@ -90,7 +102,7 @@ export default function ResultsPage() {
         return (
             <div className="flex flex-col min-h-screen items-center justify-center text-center p-4">
                 <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                <p className="mt-4 text-muted-foreground">Chargement de vos résultats...</p>
+                <p className="mt-4 text-muted-foreground">Chargement de tes résultats...</p>
             </div>
         );
     }
@@ -99,7 +111,7 @@ export default function ResultsPage() {
         return (
             <div className="flex flex-col min-h-screen items-center justify-center text-center p-4">
                 <Card className="p-8">
-                    <h2 className="text-xl font-semibold text-destructive">Vous n'êtes pas connecté.</h2>
+                    <h2 className="text-xl font-semibold text-destructive">Tu n'es pas connecté.</h2>
                     <Button asChild className="mt-4">
                         <Link href="/">
                             <Home className="mr-2 h-4 w-4" />
@@ -129,13 +141,14 @@ export default function ResultsPage() {
                 </p>
             </header>
             
-            {averages.length > 0 ? (
+            {results.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                    {averages.map(skillAverage => (
-                        <Card key={skillAverage.slug} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                            <ErlenmeyerFlask score={skillAverage.average} />
-                            <h3 className="font-headline text-2xl mt-[-1rem]">{skillAverage.name}</h3>
-                            <p className="text-xs text-muted-foreground">({skillAverage.count} exercices)</p>
+                    {results.map(result => (
+                        <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                            <ErlenmeyerFlask score={result.average} />
+                            <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
+                            <p className="font-semibold text-sm text-primary">{result.level}</p>
+                            <p className="text-xs text-muted-foreground">({result.count} exercices)</p>
                         </Card>
                     ))}
                 </div>
