@@ -2,6 +2,7 @@
 import type { SkillLevel } from "./skills";
 import { addDays, getDay, format, startOfMonth, lastDayOfMonth, differenceInDays } from "date-fns";
 import { fr } from 'date-fns/locale';
+import { getCurrentSchoolYear } from "@/services/teacher";
 
 export interface CalendarQuestion {
     id: number;
@@ -21,18 +22,29 @@ export interface CalendarQuestion {
 }
 
 const daysOfWeek = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
-const months = Array.from({length: 12}, (_, i) => new Date(2024, i, 1));
 
+// --- Utility function to get a random date within the current school year ---
+async function getRandomDateInSchoolYear(): Promise<Date> {
+    const yearStr = await getCurrentSchoolYear();
+    const startYear = parseInt(yearStr, 10);
+
+    // School year starts on Sept 1st
+    const startDate = new Date(startYear, 8, 1); 
+    // Ends 365 days later
+    const randomDayOffset = Math.floor(Math.random() * 365);
+    
+    return addDays(startDate, randomDayOffset);
+}
 
 // --- Question Generators by Level ---
 
-const generateLevelA = (): CalendarQuestion => {
+const generateLevelA = async (): Promise<CalendarQuestion> => {
     const questionType = Math.random();
+    const referenceDate = await getRandomDateInSchoolYear();
 
     // Type 1: Hier / Demain
     if (questionType < 0.5) {
-        const today = new Date();
-        const todayIndex = getDay(today);
+        const todayIndex = getDay(referenceDate);
         const type = Math.random() > 0.5 ? 'hier' : 'demain';
 
         if(type === 'demain') {
@@ -69,11 +81,9 @@ const generateLevelA = (): CalendarQuestion => {
     }
     // Type 2: Which day is it?
     else {
-        const monthDate = months[Math.floor(Math.random() * 12)];
-        const day = Math.floor(Math.random() * 28) + 1; 
-        const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
-        const answer = daysOfWeek[getDay(date)];
-        const monthName = format(date, 'MMMM', { locale: fr });
+        const day = referenceDate.getDate();
+        const answer = daysOfWeek[getDay(referenceDate)];
+        const monthName = format(referenceDate, 'MMMM', { locale: fr });
 
         const options = new Set([answer]);
         while(options.size < 4) {
@@ -91,30 +101,32 @@ const generateLevelA = (): CalendarQuestion => {
     }
 };
 
-const generateLevelB = (): CalendarQuestion => {
+const generateLevelB = async (): Promise<CalendarQuestion> => {
     const questionType = Math.random();
+    const referenceDate = await getRandomDateInSchoolYear();
 
     // Type 1: Find a date
     if (questionType < 0.5) {
-        const monthDate = months[Math.floor(Math.random() * 12)];
-        const day = Math.floor(Math.random() * 28) + 1;
-        const answerDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
-        const monthName = format(monthDate, 'MMMM', { locale: fr });
+        const day = referenceDate.getDate();
+        const monthName = format(referenceDate, 'MMMM', { locale: fr });
         
         return {
             id: Date.now() + Math.random(),
             level: 'B',
             type: 'click-date',
             question: `Sur le calendrier, clique sur le ${day} ${monthName}.`,
-            month: startOfMonth(answerDate),
-            answerDate: answerDate,
+            month: startOfMonth(referenceDate),
+            answerDate: referenceDate,
         };
     }
     // Type 2: Order of days
     else {
-        const monthDate = months[Math.floor(Math.random() * 12)];
-        const day1 = Math.floor(Math.random() * 20) + 1; // Start early in the month
-        const date1 = new Date(monthDate.getFullYear(), monthDate.getMonth(), day1);
+        const date1 = referenceDate;
+        // ensure date1 is not too close to the end of the month for this question type
+        if(date1.getDate() > 25) {
+            date1.setDate(15);
+        }
+        const day1 = date1.getDate();
         const dayOfWeek1 = daysOfWeek[getDay(date1)];
         
         const dayOffset = Math.floor(Math.random() * 4) + 2; // 2-5 days later
@@ -138,20 +150,20 @@ const generateLevelB = (): CalendarQuestion => {
     }
 };
 
-const generateLevelC = (): CalendarQuestion => {
+const generateLevelC = async (): Promise<CalendarQuestion> => {
     const questionType = Math.random();
+    const referenceDate = await getRandomDateInSchoolYear();
 
     // Type 1: Find date by clues
     if (questionType < 0.5) {
-        const monthDate = months[Math.floor(Math.random() * 12)];
-        const monthName = format(monthDate, 'MMMM', { locale: fr });
+        const monthName = format(referenceDate, 'MMMM', { locale: fr });
         const dayOfWeekIndex = Math.floor(Math.random() * 5) + 1; // Monday to Friday
         const dayOfWeekName = daysOfWeek[dayOfWeekIndex];
         const weekNumber = Math.floor(Math.random() * 3) + 1; // 1st, 2nd or 3rd
         const weekNumberText = ['premier', 'deuxième', 'troisième'][weekNumber - 1];
 
         // Find the date
-        let date = startOfMonth(monthDate);
+        let date = startOfMonth(referenceDate);
         let count = 0;
         while(count < weekNumber) {
             if (getDay(date) === dayOfWeekIndex) {
@@ -167,15 +179,14 @@ const generateLevelC = (): CalendarQuestion => {
             level: 'C',
             type: 'click-date',
             question: `Trouve le ${weekNumberText} ${dayOfWeekName} du mois de ${monthName}.`,
-            month: startOfMonth(monthDate),
+            month: startOfMonth(referenceDate),
             answerDate: date
         };
     } 
     // Type 2: How many days in the month?
     else {
-        const monthDate = months[Math.floor(Math.random() * 12)];
-        const monthName = format(monthDate, 'MMMM', { locale: fr });
-        const answer = differenceInDays(lastDayOfMonth(monthDate), startOfMonth(monthDate)) + 1;
+        const monthName = format(referenceDate, 'MMMM', { locale: fr });
+        const answer = differenceInDays(lastDayOfMonth(referenceDate), startOfMonth(referenceDate)) + 1;
 
         return {
             id: Date.now() + Math.random(),
@@ -183,18 +194,18 @@ const generateLevelC = (): CalendarQuestion => {
             type: 'count-days',
             question: `Combien de jours y a-t-il dans le mois de ${monthName} ?`,
             description: `Aide-toi du calendrier pour compter.`,
-            month: startOfMonth(monthDate),
+            month: startOfMonth(referenceDate),
             answerNumber: answer
         }
     }
 };
 
-const generateLevelD = (): CalendarQuestion => {
-    return generateLevelC(); // Placeholder
+const generateLevelD = async (): Promise<CalendarQuestion> => {
+    return generateLevelC(); // Placeholder - For now, Level D uses Level C questions
 };
 
 
-export function generateCalendarQuestions(level: SkillLevel, count: number): CalendarQuestion[] {
+export async function generateCalendarQuestions(level: SkillLevel, count: number): Promise<CalendarQuestion[]> {
     const generators = {
         'A': generateLevelA,
         'B': generateLevelB,
@@ -207,7 +218,7 @@ export function generateCalendarQuestions(level: SkillLevel, count: number): Cal
     const questionSet = new Set<string>();
 
     while (questions.length < count) {
-        const newQ = generator();
+        const newQ = await generator();
         if (!questionSet.has(newQ.question)) {
             questionSet.add(newQ.question);
             questions.push(newQ);

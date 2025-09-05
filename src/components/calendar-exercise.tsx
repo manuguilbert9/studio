@@ -58,9 +58,10 @@ export function CalendarExercise() {
     }
   }, [student]);
 
-  const startExercise = (lvl: SkillLevel) => {
+  const startExercise = async (lvl: SkillLevel) => {
     setIsLoading(true);
-    setQuestions(generateCalendarQuestions(lvl, NUM_QUESTIONS));
+    const generatedQuestions = await generateCalendarQuestions(lvl, NUM_QUESTIONS);
+    setQuestions(generatedQuestions);
     setCurrentQuestionIndex(0);
     setCorrectAnswers(0);
     setFeedback(null);

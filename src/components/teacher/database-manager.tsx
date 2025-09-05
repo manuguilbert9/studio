@@ -4,14 +4,87 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, Loader2, AlertTriangle, ListCollapse } from 'lucide-react';
+import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportAllData, importAllData } from '@/services/database';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { getGloballyEnabledSkills, setGloballyEnabledSkills } from '@/services/teacher';
+import { getGloballyEnabledSkills, setGloballyEnabledSkills, getCurrentSchoolYear, setCurrentSchoolYear } from '@/services/teacher';
 import { skills as availableSkills } from '@/lib/skills';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+
+function GeneralSettingsManager() {
+    const [schoolYear, setSchoolYear] = useState<string>('');
+    const [isLoading, setIsLoading] = useState(true);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        getCurrentSchoolYear().then(year => {
+            setSchoolYear(year);
+            setIsLoading(false);
+        });
+    }, []);
+
+    const handleYearChange = async (year: string) => {
+        setSchoolYear(year);
+        const result = await setCurrentSchoolYear(year);
+        if (result.success) {
+            toast({
+                title: "Année scolaire mise à jour",
+                description: `L'année de référence est maintenant ${year}-${parseInt(year) + 1}.`,
+            });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de sauvegarder le réglage." });
+        }
+    };
+    
+    // Generate school year options (e.g., 2023-2024, 2024-2025, etc.)
+    const currentYear = new Date().getFullYear();
+    const schoolYearOptions = Array.from({ length: 5 }, (_, i) => {
+        const startYear = currentYear - 2 + i;
+        return { value: String(startYear), label: `${startYear}-${startYear + 1}`};
+    });
+
+    if (isLoading) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Settings /> Réglages Généraux</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center p-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Settings /> Réglages Généraux</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="max-w-xs space-y-2">
+                    <Label htmlFor="school-year">Année scolaire de référence</Label>
+                    <Select value={schoolYear} onValueChange={handleYearChange}>
+                        <SelectTrigger id="school-year">
+                            <SelectValue placeholder="Choisir une année..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {schoolYearOptions.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                     <CardDescription>
+                        Cette année est utilisée comme point de départ pour les exercices de calendrier.
+                    </CardDescription>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 function ExercisesManager() {
     const [enabledSkills, setEnabledSkills] = useState<Record<string, boolean>>({});
@@ -178,6 +251,7 @@ export function DatabaseManager() {
 
     return (
         <div className="space-y-8">
+            <GeneralSettingsManager />
             <ExercisesManager />
             <Card>
                 <CardHeader>

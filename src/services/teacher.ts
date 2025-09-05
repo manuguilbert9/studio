@@ -13,6 +13,7 @@ interface TeacherSettings {
     currentMathSkillSlugLundi?: string;
     currentMathSkillSlugJeudi?: string;
     enabledSkills?: Record<string, boolean>;
+    currentSchoolYear?: string; // e.g., "2024"
 }
 
 // Helper function to get the settings document
@@ -80,6 +81,28 @@ export async function setGloballyEnabledSkills(enabledSkills: Record<string, boo
         return { success: true };
     } catch (e) {
         console.error("Error setting enabled skills:", e);
+        if (e instanceof Error) return { success: false, error: e.message };
+        return { success: false, error: "An unknown error occurred." };
+    }
+}
+
+export async function getCurrentSchoolYear(): Promise<string> {
+    const settings = await getSettingsDoc();
+    // Default to the current year if not set. A school year starting in 2023 ends in 2024.
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    // If it's before september, the school year is the previous one.
+    const defaultYear = currentMonth < 8 ? String(currentYear - 1) : String(currentYear);
+    return settings?.currentSchoolYear || defaultYear;
+}
+
+export async function setCurrentSchoolYear(year: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        const settingsRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
+        await setDoc(settingsRef, { currentSchoolYear: year }, { merge: true });
+        return { success: true };
+    } catch (e) {
+        console.error("Error setting school year:", e);
         if (e instanceof Error) return { success: false, error: e.message };
         return { success: false, error: "An unknown error occurred." };
     }
