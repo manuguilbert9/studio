@@ -1,0 +1,273 @@
+
+'use client';
+
+import { useState, useMemo, useEffect, useContext } from 'react';
+import type { SkillLevel } from '@/lib/skills';
+import { generateCalendarQuestions, type CalendarQuestion } from '@/lib/calendar-questions';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { cn } from '@/lib/utils';
+import { Check, RefreshCw, X, Loader2, Star, Calendar } from 'lucide-react';
+import Confetti from 'react-dom-confetti';
+import { Progress } from '@/components/ui/progress';
+import { UserContext } from '@/context/user-context';
+import { addScore } from '@/services/scores';
+import { ScoreTube } from './score-tube';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
+import { DayPicker } from 'react-day-picker';
+import { fr } from 'date-fns/locale';
+import 'react-day-picker/dist/style.css';
+
+const NUM_QUESTIONS = 5;
+
+const skillLevels: { value: SkillLevel, label: string }[] = [
+    { value: 'A', label: 'Niveau A - Maternelle' },
+    { value: 'B', label: 'Niveau B - CP/CE1' },
+    { value: 'C', label: 'Niveau C - CE2/CM1' },
+    { value: 'D', label: 'Niveau D - CM2/6ème' },
+];
+
+export function CalendarExercise() {
+  const { student } = useContext(UserContext);
+  const [level, setLevel] = useState<SkillLevel | null>(null);
+  
+  const [questions, setQuestions] = useState<CalendarQuestion[]>([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  const [isFinished, setIsFinished] = useState(false);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
+
+  // User input states
+  const [selectedDay, setSelectedDay] = useState<Date | undefined>();
+  const [selectedOption, setSelectedOption] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (student?.levels?.['calendar']) {
+      setLevel(student.levels['calendar']);
+    } else {
+      setLevel('A'); // Default level if not logged in or no level set
+    }
+  }, [student]);
+
+  const startExercise = (lvl: SkillLevel) => {
+    setIsLoading(true);
+    setQuestions(generateCalendarQuestions(lvl, NUM_QUESTIONS));
+    setCurrentQuestionIndex(0);
+    setCorrectAnswers(0);
+    setFeedback(null);
+    setIsFinished(false);
+    setHasBeenSaved(false);
+    setSelectedDay(undefined);
+    setSelectedOption(undefined);
+    setIsLoading(false);
+  };
+  
+  useEffect(() => {
+    if (level) {
+        startExercise(level);
+    }
+  }, [level]);
+
+  const currentQuestion = useMemo(() => {
+    if (questions.length > 0) {
+      return questions[currentQuestionIndex];
+    }
+    return null;
+  }, [questions, currentQuestionIndex]);
+
+  const handleNextQuestion = () => {
+    setShowConfetti(false);
+    if (currentQuestionIndex < NUM_QUESTIONS - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+      setFeedback(null);
+      setSelectedDay(undefined);
+      setSelectedOption(undefined);
+    } else {
+      setIsFinished(true);
+    }
+  };
+
+  const checkAnswer = () => {
+    if (!currentQuestion || feedback) return;
+    
+    let isCorrect = false;
+    switch(currentQuestion.type) {
+        case 'qcm':
+            isCorrect = selectedOption === currentQuestion.answer;
+            break;
+        case 'click-date':
+            isCorrect = selectedDay?.toISOString().split('T')[0] === currentQuestion.answerDate?.toISOString().split('T')[0];
+            break;
+    }
+
+    if (isCorrect) {
+      setFeedback('correct');
+      setCorrectAnswers(prev => prev + 1);
+      setShowConfetti(true);
+    } else {
+      setFeedback('incorrect');
+    }
+    setTimeout(handleNextQuestion, 2000);
+  };
+  
+  useEffect(() => {
+      const saveFinalScore = async () => {
+           if (isFinished && student && !hasBeenSaved) {
+              setHasBeenSaved(true);
+              const score = (correctAnswers / NUM_QUESTIONS) * 100;
+              await addScore({
+                  userId: student.id,
+                  skill: 'calendar',
+                  score: score,
+                  // TODO: add level/settings to score
+              });
+          }
+      }
+      saveFinalScore();
+  }, [isFinished, student, correctAnswers, hasBeenSaved]);
+
+  const restartExercise = () => {
+    if(level) {
+        startExercise(level);
+    }
+  };
+
+  if (!level) {
+      // Level selector if no student level is found
+      return (
+        <Card className="w-full max-w-lg mx-auto shadow-2xl p-6">
+            <CardHeader>
+                <CardTitle>Choisis ton niveau</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Label>Niveau de difficulté</Label>
+                 <Select onValueChange={(val) => setLevel(val as SkillLevel)}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Choisir un niveau..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {skillLevels.map(lvl => (
+                            <SelectItem key={lvl.value} value={lvl.value}>{lvl.label}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </CardContent>
+        </Card>
+      );
+  }
+
+  if (isLoading || !currentQuestion) {
+    return <Card className="w-full shadow-2xl p-8 text-center"><Loader2 className="mx-auto animate-spin" /></Card>;
+  }
+
+  if (isFinished) {
+    const score = (correctAnswers / NUM_QUESTIONS) * 100;
+    return (
+      <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
+        <CardHeader>
+          <CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-2xl">
+            Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
+          </p>
+          <ScoreTube score={score} />
+          <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+            <RefreshCw className="mr-2" />
+            Recommencer
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const renderQuestion = () => {
+      switch(currentQuestion.type) {
+          case 'qcm':
+              return (
+                  <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+                      {currentQuestion.options?.map(option => (
+                           <Button
+                            key={option}
+                            variant={selectedOption === option ? 'default' : 'outline'}
+                            onClick={() => setSelectedOption(option)}
+                            className={cn(
+                                "text-xl h-20 p-4 justify-center",
+                                feedback === 'correct' && option === currentQuestion.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
+                                feedback === 'incorrect' && selectedOption === option && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                            )}
+                            disabled={!!feedback}
+                           >
+                               {option}
+                           </Button>
+                      ))}
+                  </div>
+              )
+          case 'click-date':
+              return (
+                  <DayPicker
+                    mode="single"
+                    selected={selectedDay}
+                    onSelect={setSelectedDay}
+                    locale={fr}
+                    month={currentQuestion.month}
+                    className="p-4 rounded-md border bg-card"
+                    classNames={{
+                        day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                        day_today: "font-bold text-accent",
+                    }}
+                    modifiers={{
+                        highlighted: currentQuestion.highlightedDays || [],
+                    }}
+                    modifiersClassNames={{
+                        highlighted: "bg-accent/20 rounded-full",
+                    }}
+                   />
+              )
+      }
+  }
+
+  return (
+    <div className="w-full max-w-2xl mx-auto">
+       <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mb-4" />
+        <Card className="shadow-2xl text-center relative overflow-hidden">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px"}} />
+            </div>
+
+            <CardHeader>
+                <CardTitle className="font-headline text-2xl">{currentQuestion.question}</CardTitle>
+            </CardHeader>
+            <CardContent className="min-h-[350px] flex flex-col items-center justify-center gap-8 p-6">
+                {renderQuestion()}
+            </CardContent>
+            <CardFooter className="h-24 flex flex-col items-center justify-center gap-2">
+                 <Button
+                    onClick={checkAnswer}
+                    disabled={!!feedback || (!selectedDay && !selectedOption)}
+                    size="lg"
+                    className="w-full max-w-md"
+                  >
+                    Valider
+                </Button>
+                 {feedback === 'incorrect' && (
+                    <div className="text-md font-bold text-red-600 animate-shake pt-2">
+                        Oups ! La bonne réponse était {currentQuestion.answer || currentQuestion.answerDate?.toLocaleDateString('fr-FR', {day: 'numeric', month: 'long'})}.
+                    </div>
+                )}
+                 {feedback === 'correct' && (
+                    <div className="text-xl font-bold text-green-600 animate-pulse pt-2">
+                        Excellent !
+                    </div>
+                )}
+            </CardFooter>
+        </Card>
+    </div>
+  );
+}

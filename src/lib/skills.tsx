@@ -12,6 +12,7 @@ import {
   GitCompareArrows,
   Waves,
   ListOrdered,
+  CalendarDays,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings } from './questions';
 
@@ -73,6 +74,12 @@ export const skills: Skill[] = [
     slug: 'mental-calculation',
     description: 'Calculer de tête des additions, soustractions, multiplications et divisions.',
     icon: <Calculator />,
+  },
+  {
+    name: 'Calendrier',
+    slug: 'calendar',
+    description: 'Se repérer dans le temps, lire les dates et les durées.',
+    icon: <CalendarDays />,
   },
 ];
 
