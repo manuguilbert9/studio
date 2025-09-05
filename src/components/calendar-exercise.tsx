@@ -19,6 +19,7 @@ import { Label } from './ui/label';
 import { DayPicker } from 'react-day-picker';
 import { fr } from 'date-fns/locale';
 import 'react-day-picker/dist/style.css';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
 
 const NUM_QUESTIONS = 5;
 
@@ -46,6 +47,8 @@ export function CalendarExercise() {
   // User input states
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
   const [selectedOption, setSelectedOption] = useState<string | undefined>();
+  const [inputValue, setInputValue] = useState<string>('');
+
 
   useEffect(() => {
     if (student?.levels?.['calendar']) {
@@ -65,6 +68,7 @@ export function CalendarExercise() {
     setHasBeenSaved(false);
     setSelectedDay(undefined);
     setSelectedOption(undefined);
+    setInputValue('');
     setIsLoading(false);
   };
   
@@ -88,6 +92,7 @@ export function CalendarExercise() {
       setFeedback(null);
       setSelectedDay(undefined);
       setSelectedOption(undefined);
+      setInputValue('');
     } else {
       setIsFinished(true);
     }
@@ -104,6 +109,9 @@ export function CalendarExercise() {
         case 'click-date':
             isCorrect = selectedDay?.toISOString().split('T')[0] === currentQuestion.answerDate?.toISOString().split('T')[0];
             break;
+        case 'count-days':
+             isCorrect = parseInt(inputValue, 10) === currentQuestion.answerNumber;
+             break;
     }
 
     if (isCorrect) {
@@ -198,7 +206,7 @@ export function CalendarExercise() {
                             variant={selectedOption === option ? 'default' : 'outline'}
                             onClick={() => setSelectedOption(option)}
                             className={cn(
-                                "text-xl h-20 p-4 justify-center",
+                                "text-xl h-20 p-4 justify-center capitalize",
                                 feedback === 'correct' && option === currentQuestion.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
                                 feedback === 'incorrect' && selectedOption === option && 'bg-red-500/80 text-white border-red-600 animate-shake',
                             )}
@@ -230,8 +238,32 @@ export function CalendarExercise() {
                     }}
                    />
               )
+          case 'count-days':
+                return (
+                     <div className="flex flex-col items-center gap-4">
+                        <InputOTP maxLength={2} value={inputValue} onChange={setInputValue}>
+                            <InputOTPGroup>
+                                <InputOTPSlot index={0} />
+                                <InputOTPSlot index={1} />
+                            </InputOTPGroup>
+                        </InputOTP>
+                     </div>
+                )
       }
   }
+  
+  const getCorrectAnswerText = () => {
+    switch (currentQuestion.type) {
+      case 'qcm':
+        return currentQuestion.answer;
+      case 'click-date':
+        return currentQuestion.answerDate?.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+      case 'count-days':
+        return currentQuestion.answerNumber;
+      default:
+        return '';
+    }
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto">
@@ -243,6 +275,9 @@ export function CalendarExercise() {
 
             <CardHeader>
                 <CardTitle className="font-headline text-2xl">{currentQuestion.question}</CardTitle>
+                {currentQuestion.description && (
+                     <CardDescription>{currentQuestion.description}</CardDescription>
+                )}
             </CardHeader>
             <CardContent className="min-h-[350px] flex flex-col items-center justify-center gap-8 p-6">
                 {renderQuestion()}
@@ -250,15 +285,15 @@ export function CalendarExercise() {
             <CardFooter className="h-24 flex flex-col items-center justify-center gap-2">
                  <Button
                     onClick={checkAnswer}
-                    disabled={!!feedback || (!selectedDay && !selectedOption)}
+                    disabled={!!feedback || (!selectedDay && !selectedOption && !inputValue)}
                     size="lg"
                     className="w-full max-w-md"
                   >
                     Valider
                 </Button>
                  {feedback === 'incorrect' && (
-                    <div className="text-md font-bold text-red-600 animate-shake pt-2">
-                        Oups ! La bonne réponse était {currentQuestion.answer || currentQuestion.answerDate?.toLocaleDateString('fr-FR', {day: 'numeric', month: 'long'})}.
+                    <div className="text-md font-bold text-red-600 animate-shake pt-2 capitalize">
+                        Oups ! La bonne réponse était {getCorrectAnswerText()}.
                     </div>
                 )}
                  {feedback === 'correct' && (
