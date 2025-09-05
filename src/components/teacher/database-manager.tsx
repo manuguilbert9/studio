@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings } from 'lucide-react';
@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { exportAllData, importAllData } from '@/services/database';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { getGloballyEnabledSkills, setGloballyEnabledSkills, getCurrentSchoolYear, setCurrentSchoolYear } from '@/services/teacher';
-import { skills as availableSkills } from '@/lib/skills';
+import { availableSkills, allSkillCategories } from '@/lib/skills';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -122,6 +122,18 @@ function ExercisesManager() {
         setGloballyEnabledSkills(newEnabledSkills);
     };
 
+    const skillsByCategory = useMemo(() => {
+        const grouped: Record<string, typeof availableSkills> = {};
+        allSkillCategories.forEach(cat => grouped[cat] = []);
+        availableSkills.forEach(skill => {
+            if (grouped[skill.category]) {
+                grouped[skill.category].push(skill);
+            }
+        });
+        return grouped;
+    }, []);
+
+
     if (isLoading) {
         return (
             <Card>
@@ -146,19 +158,31 @@ function ExercisesManager() {
                     <Button onClick={() => toggleAll(true)} variant="outline" size="sm">Tout activer</Button>
                     <Button onClick={() => toggleAll(false)} variant="outline" size="sm">Tout désactiver</Button>
                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 rounded-lg bg-secondary/50">
-                    {availableSkills.map(skill => (
-                        <div key={skill.slug} className="flex items-center justify-between p-3 bg-card rounded-lg shadow-sm">
-                            <Label htmlFor={`skill-${skill.slug}`} className="text-sm font-medium">
-                                {skill.name}
-                            </Label>
-                            <Switch
-                                id={`skill-${skill.slug}`}
-                                checked={enabledSkills[skill.slug] ?? false}
-                                onCheckedChange={(checked) => handleToggleSkill(skill.slug, checked)}
-                            />
-                        </div>
-                    ))}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {allSkillCategories.map(category => {
+                        const skillsInCategory = skillsByCategory[category];
+                        if (skillsInCategory.length === 0) return null;
+
+                        return (
+                             <div key={category} className="space-y-3">
+                                <h3 className="font-semibold text-md border-b pb-2">{category}</h3>
+                                <div className="space-y-2">
+                                {skillsInCategory.map(skill => (
+                                    <div key={skill.slug} className="flex items-center justify-between p-2 bg-background rounded-lg">
+                                        <Label htmlFor={`global-skill-${skill.slug}`} className="text-sm font-medium">
+                                            {skill.name}
+                                        </Label>
+                                        <Switch
+                                            id={`global-skill-${skill.slug}`}
+                                            checked={enabledSkills[skill.slug] ?? false}
+                                            onCheckedChange={(checked) => handleToggleSkill(skill.slug, checked)}
+                                        />
+                                    </div>
+                                ))}
+                                </div>
+                            </div>
+                        )
+                    })}
                 </div>
             </CardContent>
         </Card>

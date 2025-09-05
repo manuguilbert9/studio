@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, FormEvent, useEffect, useCallback } from 'react';
+import { useState, FormEvent, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -15,8 +15,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { skills as availableSkills, type SkillLevel } from '@/lib/skills';
+import { availableSkills, type SkillLevel, allSkillCategories } from '@/lib/skills';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
@@ -141,6 +142,17 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
     const handleEnabledSkillChange = (skillSlug: string, isEnabled: boolean) => {
         setEditedEnabledSkills(prev => ({...prev, [skillSlug]: isEnabled}));
     };
+    
+    const skillsByCategory = useMemo(() => {
+        const grouped: Record<string, typeof availableSkills> = {};
+        allSkillCategories.forEach(cat => grouped[cat] = []);
+        availableSkills.forEach(skill => {
+            if (grouped[skill.category]) {
+                grouped[skill.category].push(skill);
+            }
+        });
+        return grouped;
+    }, []);
 
     return (
         <>
@@ -256,12 +268,13 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
 
             {/* Dialog for editing student */}
             <Dialog open={!!editingStudent} onOpenChange={(isOpen) => !isOpen && closeEditModal()}>
-                <DialogContent className="sm:max-w-2xl">
+                <DialogContent className="max-w-4xl h-[90vh]">
                     <DialogHeader>
                         <DialogTitle>Modifier les informations de {editingStudent?.name}</DialogTitle>
                     </DialogHeader>
-                    <div className="grid gap-6 py-4">
-                        <div className='grid grid-cols-2 gap-4'>
+                    <ScrollArea className="h-full">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 py-4 pr-6">
+                        <div className='space-y-4 md:col-span-2 grid grid-cols-2 gap-4'>
                             <div className="space-y-2">
                                 <Label htmlFor="edit-name">Prénom</Label>
                                 <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
@@ -273,50 +286,73 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                         </div>
 
                         <div className="space-y-4">
-                            <h3 className="font-semibold">Niveaux de compétence</h3>
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                {availableSkills.map(skill => (
-                                    <div key={skill.slug} className="grid grid-cols-3 items-center gap-2">
-                                        <Label htmlFor={`level-${skill.slug}`} className="text-right text-xs sm:text-sm">
-                                            {skill.name}
-                                        </Label>
-                                        <Select 
-                                            value={editedLevels[skill.slug]} 
-                                            onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
-                                        >
-                                            <SelectTrigger className="col-span-2 h-9">
-                                                <SelectValue placeholder="Choisir..." />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {skillLevels.map(level => (
-                                                    <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                            <h3 className="font-semibold border-b pb-2">Niveaux de compétence</h3>
+                            <div className="space-y-4">
+                                {allSkillCategories.map(category => {
+                                    const skillsInCategory = skillsByCategory[category];
+                                    if (!skillsInCategory || skillsInCategory.length === 0) return null;
+                                    return (
+                                        <div key={category}>
+                                            <h4 className="font-medium text-sm text-muted-foreground mb-2">{category}</h4>
+                                            <div className="space-y-2">
+                                                {skillsInCategory.map(skill => (
+                                                    <div key={skill.slug} className="grid grid-cols-3 items-center gap-2">
+                                                        <Label htmlFor={`level-${skill.slug}`} className="text-right text-xs sm:text-sm">
+                                                            {skill.name}
+                                                        </Label>
+                                                        <Select 
+                                                            value={editedLevels[skill.slug]} 
+                                                            onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
+                                                        >
+                                                            <SelectTrigger className="col-span-2 h-9">
+                                                                <SelectValue placeholder="Choisir..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {skillLevels.map(level => (
+                                                                    <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
                                                 ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                ))}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
                         
                         <div className="space-y-4">
-                            <h3 className="font-semibold">Exercices activés</h3>
-                             <div className="grid grid-cols-2 gap-4 p-4 rounded-lg bg-secondary/50">
-                                {availableSkills.map(skill => (
-                                    <div key={skill.slug} className="flex items-center justify-between p-3 bg-card rounded-lg shadow-sm">
-                                        <Label htmlFor={`skill-${skill.slug}`} className="text-sm font-medium">
-                                            {skill.name}
-                                        </Label>
-                                        <Switch
-                                            id={`skill-${skill.slug}`}
-                                            checked={editedEnabledSkills[skill.slug] ?? false}
-                                            onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
-                                        />
-                                    </div>
-                                ))}
+                            <h3 className="font-semibold border-b pb-2">Exercices activés</h3>
+                            <div className="space-y-4">
+                                {allSkillCategories.map(category => {
+                                    const skillsInCategory = skillsByCategory[category];
+                                    if (!skillsInCategory || skillsInCategory.length === 0) return null;
+                                    return (
+                                        <div key={category}>
+                                            <h4 className="font-medium text-sm text-muted-foreground mb-2">{category}</h4>
+                                             <div className="space-y-2 p-3 rounded-lg bg-secondary/30">
+                                                {skillsInCategory.map(skill => (
+                                                    <div key={skill.slug} className="flex items-center justify-between p-2 bg-card rounded-lg shadow-sm">
+                                                        <Label htmlFor={`skill-switch-${skill.slug}`} className="text-sm font-medium">
+                                                            {skill.name}
+                                                        </Label>
+                                                        <Switch
+                                                            id={`skill-switch-${skill.slug}`}
+                                                            checked={editedEnabledSkills[skill.slug] ?? false}
+                                                            onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
 
                     </div>
+                    </ScrollArea>
                     <DialogFooter>
                         <DialogClose asChild>
                             <Button type="button" variant="secondary">Annuler</Button>

@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { skills as allSkills, type Skill } from '@/lib/skills';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { skills as allSkills, type Skill, allSkillCategories, SkillCategory } from '@/lib/skills';
 import { Logo } from '@/components/logo';
 import { Home, Presentation, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,7 +22,8 @@ export default function EnClassePage() {
       async function determineEnabledSkills() {
         if (!student) {
             if (!isUserLoading) {
-                setEnabledSkillsList(allSkills); // Default for non-logged in state
+                // For non-logged in state, we might show a default set or nothing
+                setEnabledSkillsList([]); 
                 setIsLoading(false);
             }
             return;
@@ -30,11 +31,7 @@ export default function EnClassePage() {
 
         setIsLoading(true);
         const globalSkills = await getGloballyEnabledSkills();
-        
-        // Student's specific settings
         const studentSkills = student.enabledSkills;
-
-        // If student has no specific settings, use global ones
         const studentEnabled = studentSkills ? studentSkills : globalSkills;
 
         const filteredSkills = allSkills.filter(skill => 
@@ -50,6 +47,17 @@ export default function EnClassePage() {
       }
   }, [student, isUserLoading]);
 
+  const skillsByCategory = useMemo(() => {
+    if (!enabledSkillsList) return {};
+    const grouped: Record<string, Skill[]> = {};
+    for (const skill of enabledSkillsList) {
+        if (!grouped[skill.category]) {
+            grouped[skill.category] = [];
+        }
+        grouped[skill.category].push(skill);
+    }
+    return grouped;
+  }, [enabledSkillsList]);
 
   if (isLoading || isUserLoading) {
     return (
@@ -100,7 +108,7 @@ export default function EnClassePage() {
         </div>
         <Logo />
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
-        <p className="text-lg sm:text-xl text-muted-foreground">Que voudrais-tu pratiquer aujourd'hui ?</p>
+        <p className="text-lg sm:text-xl text-muted-foreground">Que veux-tu pratiquer aujourd'hui ?</p>
          <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
              <Button asChild variant="outline" size="sm">
                 <Link href="/tableau">
@@ -116,19 +124,32 @@ export default function EnClassePage() {
             </Button>
         </div>
       </header>
+      
       {enabledSkillsList && enabledSkillsList.length > 0 ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
-          {enabledSkillsList.map((skill) => (
-            <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
-              <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
-                <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
-                  {skill.icon}
+        <div className="space-y-12">
+          {allSkillCategories.map(category => {
+            const categorySkills = skillsByCategory[category] || [];
+            if (categorySkills.length === 0) return null; // Hide category if no skills are enabled for it
+            
+            return (
+              <div key={category}>
+                <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
+                  {categorySkills.map((skill) => (
+                    <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
+                      <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
+                        <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
+                          {skill.icon}
+                        </div>
+                        <h3 className="font-headline text-2xl sm:text-3xl mb-2">{skill.name}</h3>
+                        <p className="text-muted-foreground text-sm sm:text-base">{skill.description}</p>
+                      </Card>
+                    </Link>
+                  ))}
                 </div>
-                <h3 className="font-headline text-2xl sm:text-3xl mb-2">{skill.name}</h3>
-                <p className="text-muted-foreground text-sm sm:text-base">{skill.description}</p>
-              </Card>
-            </Link>
-          ))}
+              </div>
+            );
+          })}
         </div>
       ) : (
         <Card className="w-full max-w-2xl mx-auto p-8 text-center">
