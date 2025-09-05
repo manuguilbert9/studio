@@ -5,8 +5,8 @@ import { useContext, useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { UserContext } from '@/context/user-context';
 import { Score, getScoresForUser } from '@/services/scores';
-import { getSkillBySlug, difficultyLevelToString, SkillCategory } from '@/lib/skills';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { getSkillBySlug, difficultyLevelToString, SkillCategory, skills } from '@/lib/skills';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2 } from 'lucide-react';
 import { ErlenmeyerFlask } from '@/components/erlenmeyer-flask';
@@ -20,6 +20,9 @@ interface SkillResult {
     count: number;
     category: SkillCategory;
 }
+
+const allCategories: SkillCategory[] = Array.from(new Set(skills.map(s => s.category))).sort();
+
 
 export default function ResultsPage() {
     const { student, isLoading: isUserLoading } = useContext(UserContext);
@@ -103,13 +106,14 @@ export default function ResultsPage() {
 
     const resultsByCategory = useMemo(() => {
         const grouped: Record<string, SkillResult[]> = {};
+        allCategories.forEach(cat => grouped[cat] = []); // Initialize all categories
+
         results.forEach(result => {
-            if (!grouped[result.category]) {
-                grouped[result.category] = [];
+            if (grouped[result.category]) { // Check if category exists
+                 grouped[result.category].push(result);
             }
-            grouped[result.category].push(result);
         });
-        return Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b));
+        return Object.entries(grouped);
     }, [results]);
 
     if (isLoading || isUserLoading) {
@@ -155,32 +159,31 @@ export default function ResultsPage() {
                 </p>
             </header>
             
-            {resultsByCategory.length > 0 ? (
-                <div className="space-y-12">
-                   {resultsByCategory.map(([category, categoryResults]) => (
-                     <div key={category}>
-                        <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
+            <div className="space-y-12">
+                {resultsByCategory.map(([category, categoryResults]) => (
+                    <div key={category}>
+                    <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
+                    {categoryResults.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                             {categoryResults.map(result => (
-                                <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                                    <ErlenmeyerFlask score={result.average} />
-                                    <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
-                                    <p className="font-semibold text-sm text-primary">{result.level}</p>
-                                    <p className="text-xs text-muted-foreground">({result.count} exercices)</p>
-                                </Card>
+                            {categoryResults.map(result => (
+                            <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                                <ErlenmeyerFlask score={result.average} />
+                                <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
+                                <p className="font-semibold text-sm text-primary">{result.level}</p>
+                                <p className="text-xs text-muted-foreground">({result.count} exercices)</p>
+                            </Card>
                             ))}
                         </div>
-                     </div>
-                   ))}
-                </div>
-            ) : (
-                <Card className="w-full max-w-xl mx-auto p-12 text-center">
-                    <h3 className="font-headline text-2xl">Aucun résultat pour le moment</h3>
-                    <p className="text-muted-foreground mt-2">
-                        Fais quelques exercices en classe pour voir tes progrès s'afficher ici !
-                    </p>
-                </Card>
-            )}
+                    ) : (
+                        <Card className="w-full border-dashed">
+                             <CardContent className="p-8 text-center text-muted-foreground">
+                                Aucun exercice réalisé dans cette matière pour le moment.
+                            </CardContent>
+                        </Card>
+                    )}
+                    </div>
+                ))}
+            </div>
         </main>
     );
 }
