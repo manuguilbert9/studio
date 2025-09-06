@@ -10,31 +10,14 @@ import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore } from '@/services/scores';
-
-// Sample texts for the exercise
-const readingTexts = [
-    {
-        level: 'CP',
-        title: 'Le chat et le soleil',
-        text: "Le chat est sur le mur. Il voit le soleil. Le chat aime le soleil. Il fait une sieste."
-    },
-    {
-        level: 'CE1',
-        title: 'La petite graine',
-        text: "Une petite graine est tombée dans le jardin. La pluie est venue, puis le soleil a brillé. La graine a commencé à pousser. Une jolie fleur est apparue."
-    },
-    {
-        level: 'CE2',
-        title: 'Le voyage de la goutte d\'eau',
-        text: "Je suis une petite goutte d'eau. Je vis dans un grand nuage avec des millions d'amies. Quand le nuage devient trop lourd, nous tombons sur la terre. C'est ce qu'on appelle la pluie. Notre voyage nous amène dans les rivières, puis jusqu'à la mer. Le soleil nous chauffe et nous remontons dans le ciel. Le voyage recommence !"
-    }
-];
+import { readingTexts, ReadingText } from '@/lib/reading-texts';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 type ExerciseState = 'selecting' | 'ready' | 'racing' | 'finished';
 
 export function ReadingRaceExercise() {
   const { student } = useContext(UserContext);
-  const [selectedText, setSelectedText] = useState<(typeof readingTexts)[0] | null>(null);
+  const [selectedText, setSelectedText] = useState<ReadingText | null>(null);
   const [exerciseState, setExerciseState] = useState<ExerciseState>('selecting');
   
   const [transcript, setTranscript] = useState('');
@@ -43,7 +26,15 @@ export function ReadingRaceExercise() {
   const [finalWPM, setFinalWPM] = useState(0);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
-  const textWords = useMemo(() => selectedText?.text.toLowerCase().replace(/[.,]/g, '').split(/\s+/) || [], [selectedText]);
+  const textToDisplay = useMemo(() => {
+    if (!selectedText) return '';
+    return selectedText.level === 'Niveau A' ? selectedText.text.toUpperCase() : selectedText.text;
+  }, [selectedText]);
+
+  const textWords = useMemo(() => {
+    // Comparison is always done in lowercase to avoid issues.
+    return selectedText?.text.toLowerCase().replace(/[.,]/g, '').split(/\s+/) || [];
+  }, [selectedText]);
   
   const wordsRead = useMemo(() => {
     return transcript.toLowerCase().replace(/[.,]/g, '').split(/\s+/).filter(Boolean);
@@ -109,7 +100,7 @@ export function ReadingRaceExercise() {
   }, [transcript, selectedText, stopRace, exerciseState]);
 
   
-  const handleSelectText = (text: (typeof readingTexts)[0]) => {
+  const handleSelectText = (text: ReadingText) => {
     setSelectedText(text);
     setExerciseState('ready');
   };
@@ -142,6 +133,17 @@ export function ReadingRaceExercise() {
     setExerciseState('ready');
   }
 
+  const textsByLevel = useMemo(() => {
+    const grouped: Record<string, ReadingText[]> = {};
+    readingTexts.forEach(text => {
+        if (!grouped[text.level]) {
+            grouped[text.level] = [];
+        }
+        grouped[text.level].push(text);
+    });
+    return grouped;
+  }, []);
+
   // --- Render Logic ---
 
   if (exerciseState === 'selecting' || !selectedText) {
@@ -151,15 +153,21 @@ export function ReadingRaceExercise() {
           <CardTitle className="font-headline text-3xl text-center">Choisis ton texte</CardTitle>
           <CardDescription className="text-center">Choisis un texte pour commencer la course de lecture.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {readingTexts.map((item, index) => (
-            <Button key={index} onClick={() => handleSelectText(item)} variant="outline" size="lg" className="h-auto py-3">
-              <div className='flex flex-col'>
-                <span className='font-bold text-base'>{item.level}</span>
-                <span className='font-normal text-lg'>{item.title}</span>
-              </div>
-            </Button>
-          ))}
+        <CardContent>
+            <Accordion type="multiple" className="w-full">
+                {Object.entries(textsByLevel).map(([level, texts]) => (
+                     <AccordionItem value={level} key={level}>
+                        <AccordionTrigger className="text-xl font-semibold">{level}</AccordionTrigger>
+                        <AccordionContent className="flex flex-col gap-2">
+                             {texts.map((item, index) => (
+                                <Button key={index} onClick={() => handleSelectText(item)} variant="outline" size="lg" className="h-auto py-3 justify-start">
+                                    <span className='font-normal text-lg'>{item.title}</span>
+                                </Button>
+                            ))}
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
         </CardContent>
       </Card>
     );
@@ -173,7 +181,7 @@ export function ReadingRaceExercise() {
                 <CardDescription className="text-center">Prépare-toi à lire le texte suivant à voix haute.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <p className="text-lg p-4 bg-muted/50 rounded-lg">{selectedText.text}</p>
+                <p className="text-lg p-4 bg-muted/50 rounded-lg">{textToDisplay}</p>
                  {!isSupported ? (
                     <p className="text-center text-destructive font-semibold">Désolé, la reconnaissance vocale n'est pas supportée par votre navigateur.</p>
                  ) : (
@@ -212,12 +220,15 @@ export function ReadingRaceExercise() {
                         if (spokenWord) {
                             status = spokenWord === word ? 'correct' : 'incorrect';
                         }
+                        
+                        const displayWord = selectedText.level === 'Niveau A' ? word.toUpperCase() : word;
+
                         return (
                             <span key={index} className={cn(
                                 status === 'correct' && "text-green-600 font-bold",
                                 status === 'incorrect' && "text-red-500 font-bold line-through"
                             )}>
-                                {word}{' '}
+                                {displayWord}{' '}
                             </span>
                         )
                     })}
