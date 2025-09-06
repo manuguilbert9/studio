@@ -259,8 +259,8 @@ export function ReadingRaceExercise() {
                         <p className="text-3xl font-bold">{timeElapsed}s</p>
                     </Card>
                      <Card className="p-4">
-                        <CardDescription>Mots par minute</CardDescription>
-                        <p className="text-3xl font-bold">{finalWPM}</p>
+                        <CardDescription>Mots Correctement Lus / Minute</CardDescription>
+                        <p className="text-3xl font-bold">{finalWPM} <span className="text-lg">MCLM</span></p>
                     </Card>
                 </div>
                 {mistakes.length > 0 && (

@@ -81,7 +81,7 @@ export function ResultsManager({ students, allScores, onDataRefresh }: ResultsMa
                                     {studentScores.map(score => (
                                         <TableRow key={score.id}>
                                             <TableCell className="font-medium">{getSkillBySlug(score.skill)?.name || score.skill}</TableCell>
-                                            <TableCell>{score.skill === 'reading-race' ? `${score.score} MCLM/min` : `${Math.round(score.score)} %`}</TableCell>
+                                            <TableCell>{score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`}</TableCell>
                                             <TableCell>{difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings)}</TableCell>
                                             <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
                                             <TableCell className="text-right">
