@@ -116,7 +116,7 @@ export default function TeacherDashboardPage() {
                     <ResultsManager students={students} allScores={allScores} onDataRefresh={loadData} />
                 </TabsContent>
                  <TabsContent value="reports" className="mt-6">
-                    <ReportGenerator students={students} allScores={allScores} allSpellingProgress={allProgress} />
+                    <ReportGenerator students={students} allScores={allScores} allSpellingProgress={allSpellingProgress} />
                 </TabsContent>
                  <TabsContent value="database" className="mt-6">
                     <DatabaseManager />
