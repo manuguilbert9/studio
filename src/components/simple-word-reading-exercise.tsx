@@ -29,7 +29,7 @@ export function SimpleWordReadingExercise() {
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
   const [detectedWord, setDetectedWord] = useState('');
 
-  const { transcript, isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+  const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
       onResult: (result) => {
         checkAnswer(result);
       },
@@ -64,12 +64,21 @@ export function SimpleWordReadingExercise() {
 
     setExerciseState('checking');
     stopListening();
-
-    // Normalize both strings for comparison
-    const expected = currentWord.toLowerCase().trim().replace(/[.,-]/g, '');
-    const actual = spokenText.toLowerCase().trim().replace(/[.,-]/g, '');
     
     setDetectedWord(spokenText); // Store what was heard
+
+    // Normalize both strings for comparison to handle homophones and silent letters
+    const normalize = (str: string) => {
+        return str
+            .toLowerCase()
+            .trim()
+            .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
+            .replace(/[.,-]/g, '')
+            .replace(/[stdpxz]$/, ''); // remove common silent final letters
+    }
+
+    const expected = normalize(currentWord);
+    const actual = normalize(spokenText);
 
     if (expected === actual) {
       setFeedback('correct');
@@ -78,7 +87,7 @@ export function SimpleWordReadingExercise() {
     } else {
       setFeedback('incorrect');
     }
-    setTimeout(handleNextWord, 2500); // Increased timeout to see the detected word
+    setTimeout(handleNextWord, 2500);
   };
   
   const handleMicClick = () => {
