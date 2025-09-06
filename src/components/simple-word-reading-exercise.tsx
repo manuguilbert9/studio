@@ -84,6 +84,7 @@ export function SimpleWordReadingExercise() {
             .trim()
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
             .replace(/[.,'-]/g, '') // remove punctuation
+            .replace(/y/g, 'i') // Treat 'y' and 'i' as the same
             .replace(/[stdpxz]$/, ''); // remove common silent final letters
     }
 
