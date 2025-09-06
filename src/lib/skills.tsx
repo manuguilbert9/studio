@@ -98,6 +98,7 @@ export const skills: Skill[] = [
     description: "Dénombrer une quantité inférieure à 20.",
     icon: <ListOrdered />,
     category: 'Nombres et calcul',
+    isFixedLevel: 'A',
   },
   {
     name: "J'écoute entre 70 et 99",
@@ -113,7 +114,6 @@ export const skills: Skill[] = [
     description: "Identifier des mots de la même famille. Utiliser les familles de mots pour mémoriser l'orthographe.",
     icon: <Spline />,
     category: 'Vocabulaire',
-    isFixedLevel: 'B',
   },
   {
     name: 'L\'heure',
