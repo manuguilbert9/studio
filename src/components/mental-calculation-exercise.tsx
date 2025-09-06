@@ -102,19 +102,20 @@ export function MentalCalculationExercise() {
 
   useEffect(() => {
       const saveFinalScore = async () => {
-           if (isFinished && student && !hasBeenSaved) {
+           if (isFinished && student && !hasBeenSaved && level) {
               setHasBeenSaved(true);
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
               await addScore({
                   userId: student.id,
                   skill: 'mental-calculation',
                   score: score,
-                  details: sessionDetails
+                  details: sessionDetails,
+                  numberLevelSettings: { level: level } // <-- This was missing
               });
           }
       }
       saveFinalScore();
-  }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails]);
+  }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, level]);
 
   const restartExercise = () => {
     setIsFinished(false);
@@ -212,7 +213,7 @@ export function MentalCalculationExercise() {
                 )}
             </CardFooter>
         </Card>
-        <style jsx>{`
+        <style jsx>{\`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -221,7 +222,7 @@ export function MentalCalculationExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        `}</style>
+        \`}</style>
     </div>
   );
 }
