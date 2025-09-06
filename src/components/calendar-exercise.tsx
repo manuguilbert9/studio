@@ -248,7 +248,6 @@ export function CalendarExercise() {
                          <DayPicker
                             mode="single"
                             locale={fr}
-                            month={new Date()}
                             className="p-4 rounded-md border bg-card"
                             classNames={{
                                 day_today: "font-bold text-accent",
@@ -281,7 +280,6 @@ export function CalendarExercise() {
                     selected={selectedDay}
                     onSelect={setSelectedDay}
                     locale={fr}
-                    month={new Date()}
                     className="p-4 rounded-md border bg-card"
                     classNames={{
                         day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
@@ -351,7 +349,7 @@ export function CalendarExercise() {
                 )}
             </CardFooter>
         </Card>
-         <style jsx>{`
+        <style jsx>{`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -364,3 +362,4 @@ export function CalendarExercise() {
     </div>
   );
 }
+
