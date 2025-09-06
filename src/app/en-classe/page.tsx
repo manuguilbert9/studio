@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { skills as allSkills, type Skill, allSkillCategories, SkillCategory } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { Home, Presentation, BarChart3 } from 'lucide-react';
+import { Home, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
@@ -110,12 +110,6 @@ export default function EnClassePage() {
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
         <p className="text-lg sm:text-xl text-muted-foreground">Que veux-tu pratiquer aujourd'hui ?</p>
          <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
-             <Button asChild variant="outline" size="sm">
-                <Link href="/tableau">
-                    <Presentation className="mr-2" />
-                    Tableau
-                </Link>
-            </Button>
              <Button asChild variant="outline" size="sm">
                 <Link href="/results">
                     <BarChart3 className="mr-2" />

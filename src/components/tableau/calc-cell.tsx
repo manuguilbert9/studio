@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
@@ -33,14 +32,12 @@ export function CalcCell({
   const [internalValue, setInternalValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
   
-  const inputRef = useRef<HTMLInputElement>(null);
-  
   const value = onValueChange !== undefined ? propValue || '' : internalValue;
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
     
-    const setter = onValueChange || setInternalValue;
+    const setter = onValueChange ? (id: string, val: string) => onValueChange(id, val) : (id: string, val: string) => setInternalValue(val);
     const rawInput = e.target.value;
     const maxLength = isMinuend ? 2 : 1;
     
@@ -67,19 +64,18 @@ export function CalcCell({
       onContextMenu={handleRightClick}
     >
       <input
-        ref={inputRef}
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
         maxLength={isMinuend ? 2 : 1}
-        value={value}
+        value={isReadOnly ? '' : value} // Show nothing if readonly, text is shown via span
         onChange={handleChange}
         tabIndex={tabIndex}
         readOnly={isReadOnly}
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
-          hasBorrowedOne && 'text-transparent caret-transparent',
+          (hasBorrowedOne && !isReadOnly) && 'text-transparent caret-transparent',
           isReadOnly && "cursor-default ring-0 focus-visible:ring-0 focus:ring-0 focus:ring-offset-0 border-gray-300 bg-slate-50/50"
         )}
         style={{
@@ -87,7 +83,7 @@ export function CalcCell({
         }}
       />
       
-      {hasBorrowedOne ? (
+      {hasBorrowedOne && !isReadOnly ? (
          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
             <span 
               className="absolute font-bold font-mono"

@@ -1,11 +1,9 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect, useContext } from 'react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw, Loader2, Check, X } from 'lucide-react';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
@@ -379,8 +377,6 @@ export function LongCalculationExercise() {
                             {operation === 'addition' ? (
                                 <AdditionWidget
                                     initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands)).length }}
-                                    onUpdate={()=>{}}
-                                    onClose={()=>{}}
                                     isExerciseMode={true}
                                     operands={currentProblem.operands}
                                     exerciseInputs={userInputs}
@@ -390,8 +386,6 @@ export function LongCalculationExercise() {
                             ) : (
                                 <SoustractionWidget
                                     initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length }}
-                                    onUpdate={()=>{}}
-                                    onClose={()=>{}}
                                     isExerciseMode={true}
                                     operands={currentProblem.operands}
                                     exerciseInputs={userInputs}
@@ -407,7 +401,7 @@ export function LongCalculationExercise() {
             <div className="w-full">
                 <Button onClick={handleValidate} size="lg" className={cn("w-full text-lg",
                     feedback === 'correct' && 'bg-green-500 hover:bg-green-600',
-                    feedback === 'incorrect' && 'bg-red-500 hover:bg-red-600',
+                    feedback === 'incorrect' && 'bg-red-500 hover:bg-red-500',
                 )} disabled={!!feedback}>
                     {feedback === 'correct' && <Check className="mr-2"/>}
                     {feedback === 'incorrect' && <X className="mr-2"/>}

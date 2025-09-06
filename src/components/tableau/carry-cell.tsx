@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CarryCellProps {
@@ -36,7 +35,7 @@ export function CarryCell({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
 
-    const setter = onValueChange || setInternalValue;
+    const setter = onValueChange ? (id: string, val: string) => onValueChange(id, val) : (id: string, val: string) => setInternalValue(val);
     const val = e.target.value;
     if (/^\d{0,2}$/.test(val)) {
       setter(id, val);
