@@ -6,12 +6,15 @@ export interface MentalMathQuestion {
     question: string;
     answer: number;
     level: SkillLevel;
+    visuals?: { emoji: string; count: number }[];
 }
 
 // --- Helper Functions ---
 
 const randInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 const choice = <T>(arr: T[]): T => arr[randInt(0, arr.length - 1)];
+const emojiPool = ['🍎', '🍌', '🚗', '🍓', '🍊', '🚓', '🚑', '⚽️', '🧸', '⭐'];
+
 
 // --- Question Generators by Level ---
 
@@ -20,25 +23,29 @@ const generateLevelA = (): MentalMathQuestion => {
     const type = choice(['addUnits', 'removeUnits', 'complement']);
     let question = '';
     let answer = 0;
+    let visuals: { emoji: string; count: number }[] = [];
+    const emoji1 = choice(emojiPool);
 
     switch (type) {
         case 'addUnits': {
             const a = randInt(1, 5);
             const b = randInt(1, 4);
             const result = a + b;
-            // Ensure result is <= 9
             if (result > 9) {
                 return generateLevelA(); // Recurse to get a valid question
             }
+            const emoji2 = choice(emojiPool.filter(e => e !== emoji1));
             question = `${a} + ${b} = ?`;
             answer = result;
+            visuals = [{ emoji: emoji1, count: a }, { emoji: emoji2, count: b }];
             break;
         }
         case 'removeUnits': {
             const a = randInt(2, 9);
-            const b = randInt(1, a);
+            const b = randInt(1, a - 1);
             question = `${a} - ${b} = ?`;
             answer = a - b;
+            visuals = [{ emoji: emoji1, count: a }];
             break;
         }
         case 'complement': {
@@ -46,10 +53,11 @@ const generateLevelA = (): MentalMathQuestion => {
             const a = randInt(1, target - 1);
             question = `Combien pour aller de ${a} à ${target} ?`;
             answer = target - a;
+            visuals = [{ emoji: emoji1, count: a }];
             break;
         }
     }
-    return { id: Date.now() + Math.random(), question, answer, level: 'A' };
+    return { id: Date.now() + Math.random(), question, answer, level: 'A', visuals };
 };
 
 // Niveau B – CP / CE1

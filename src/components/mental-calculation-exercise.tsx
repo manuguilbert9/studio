@@ -168,6 +168,20 @@ export function MentalCalculationExercise() {
                 <CardTitle className="font-headline text-2xl">Question {currentQuestionIndex + 1}</CardTitle>
             </CardHeader>
             <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
+                {currentQuestion.visuals && (
+                    <div className="flex items-center justify-center gap-4 my-4 text-4xl">
+                        {currentQuestion.visuals.map((vis, index) => (
+                           <div key={index} className="flex items-center gap-2">
+                                {Array.from({ length: vis.count }).map((_, i) => (
+                                    <span key={i}>{vis.emoji}</span>
+                                ))}
+                                {index < currentQuestion.visuals!.length - 1 && currentQuestion.question.includes('+') && (
+                                  <span className="text-2xl font-bold mx-2">+</span>
+                                )}
+                           </div>
+                        ))}
+                    </div>
+                )}
                 <p className="font-body text-5xl sm:text-6xl font-bold tracking-wider">{currentQuestion.question}</p>
                 <div className="relative w-full max-w-sm">
                     <Input
