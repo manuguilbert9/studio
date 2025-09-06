@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -19,6 +20,7 @@ interface SoustractionWidgetProps {
   onUpdate: (state: SoustractionWidgetState) => void;
   onClose: () => void;
   isExerciseMode?: boolean;
+  operands?: number[];
   exerciseInputs?: Record<string, string>;
   onInputChange?: (id: string, value: string) => void;
   feedback?: 'correct' | 'incorrect' | null;
@@ -40,6 +42,7 @@ export function SoustractionWidget({
     onUpdate, 
     onClose, 
     isExerciseMode = false,
+    operands,
     exerciseInputs,
     onInputChange,
     feedback
@@ -201,9 +204,9 @@ export function SoustractionWidget({
                         allowCrossing={true} 
                         isMinuend={true} 
                         tabIndex={getTabIndex(0, col)} 
-                        value={isExerciseMode ? exerciseInputs?.[`op-0-${colFromRight}`] : undefined}
+                        value={isExerciseMode ? String(operands?.[0] || '').padStart(numCols, '0')[col] : undefined}
                         onValueChange={isExerciseMode ? onInputChange : undefined}
-                        isReadOnly={!!feedback}
+                        isReadOnly={isExerciseMode || !!feedback}
                     />
                 </div>
                 {/* Subtrahend */}
@@ -214,9 +217,9 @@ export function SoustractionWidget({
                         size={cellSize} 
                         fontSize={fontSize} 
                         tabIndex={getTabIndex(1, col)}
-                        value={isExerciseMode ? exerciseInputs?.[`op-1-${colFromRight}`] : undefined}
+                        value={isExerciseMode ? String(operands?.[1] || '').padStart(numCols, '0')[col] : undefined}
                         onValueChange={isExerciseMode ? onInputChange : undefined}
-                        isReadOnly={!!feedback}
+                        isReadOnly={isExerciseMode || !!feedback}
                     />
                 </div>
                 {/* Equals line */}

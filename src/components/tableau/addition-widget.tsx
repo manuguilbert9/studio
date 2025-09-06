@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -19,6 +20,7 @@ interface AdditionWidgetProps {
   onUpdate: (state: AdditionWidgetState) => void;
   onClose: () => void;
   isExerciseMode?: boolean;
+  operands?: number[];
   exerciseInputs?: Record<string, string>;
   onInputChange?: (id: string, value: string) => void;
   feedback?: 'correct' | 'incorrect' | null;
@@ -40,6 +42,7 @@ export function AdditionWidget({
     onUpdate, 
     onClose, 
     isExerciseMode = false,
+    operands,
     exerciseInputs,
     onInputChange,
     feedback
@@ -218,9 +221,9 @@ export function AdditionWidget({
                             size={cellSize} 
                             fontSize={fontSize} 
                             tabIndex={getTabIndex(rowIndex, col + 1)}
-                            value={isExerciseMode ? exerciseInputs?.[`op-${rowIndex}-${colFromRight}`] : undefined}
+                            value={isExerciseMode ? String(operands?.[rowIndex] || '').padStart(numCols, '0')[col] : undefined}
                             onValueChange={isExerciseMode ? onInputChange : undefined}
-                            isReadOnly={!!feedback}
+                            isReadOnly={isExerciseMode || !!feedback}
                         />
                     </div>
                 ))}

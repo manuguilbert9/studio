@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -117,8 +118,7 @@ export function CalcCell({
       ) : (
         <span 
             className="absolute font-bold font-mono pointer-events-none"
-            style={{ fontSize: `${fontSize}px`, color: 'transparent' }}
-            aria-hidden
+            style={{ fontSize: `${fontSize}px` }}
         >
             {value}
         </span>

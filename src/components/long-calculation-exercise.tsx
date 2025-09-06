@@ -261,18 +261,19 @@ export function LongCalculationExercise() {
 
     useEffect(() => {
         const saveFinalScore = async () => {
-             if (isFinished && student && !hasBeenSaved) {
+             if (isFinished && student && !hasBeenSaved && level) {
                 setHasBeenSaved(true);
                 const score = (correctAnswers / NUM_PROBLEMS) * 100;
                 await addScore({
                     userId: student.id,
                     skill: 'long-calculation',
                     score: score,
+                    numberLevelSettings: { level: level },
                 });
             }
         }
         saveFinalScore();
-    }, [isFinished, student, correctAnswers, hasBeenSaved]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, level]);
 
     const restartExercise = () => {
         setIsLoading(true);
@@ -373,20 +374,22 @@ export function LongCalculationExercise() {
                         <div className="flex justify-center items-center scale-90 sm:scale-100 transform">
                             {operation === 'addition' ? (
                                 <AdditionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands)).length, operands: currentProblem.operands }}
+                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands)).length }}
                                     onUpdate={()=>{}}
                                     onClose={()=>{}}
                                     isExerciseMode={true}
+                                    operands={currentProblem.operands}
                                     exerciseInputs={userInputs}
                                     onInputChange={handleInputChange}
                                     feedback={feedback}
                                 />
                             ) : (
                                 <SoustractionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length, operands: currentProblem.operands }}
+                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length }}
                                     onUpdate={()=>{}}
                                     onClose={()=>{}}
                                     isExerciseMode={true}
+                                    operands={currentProblem.operands}
                                     exerciseInputs={userInputs}
                                     onInputChange={handleInputChange}
                                     feedback={feedback}
@@ -410,5 +413,3 @@ export function LongCalculationExercise() {
         </div>
     );
 }
-
-    
