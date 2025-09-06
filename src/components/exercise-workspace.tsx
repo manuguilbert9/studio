@@ -16,7 +16,6 @@ import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
 import { TimeSettings } from './time-settings';
 import { CountSettings } from './count-settings';
-import { NumberLevelSettings } from './number-level-settings';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score, HomeworkSession, ScoreDetail } from '@/services/scores';
@@ -88,19 +87,22 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     startTimeExercise(settings);
   };
   
-  const startNumberExerciseWithLevel = (level: number) => {
-    startNumberLevelExercise({ difficulty: level });
+  const startNumberLevelExercise = (level: SkillLevel) => {
+    generateQuestions(skill.slug, NUM_QUESTIONS, { numberLevel: { level: level } }).then(setQuestions);
+    setNumberLevelSettings({ level: level });
+    setIsReadyToStart(true);
   }
 
   useEffect(() => {
     async function loadQuestions() {
         const studentLevelSlug = student?.levels?.[skill.slug];
         if (studentLevelSlug) {
-            const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-            const difficulty = difficultyMap[studentLevelSlug] ?? 0;
-            
-            if (skill.slug === 'time') return startExerciseWithLevel(difficulty);
-            if (skill.slug === 'lire-les-nombres') return startNumberExerciseWithLevel(difficulty);
+            if (skill.slug === 'time') {
+              const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+              const difficulty = difficultyMap[studentLevelSlug] ?? 0;
+              return startExerciseWithLevel(difficulty);
+            }
+            if (skill.slug === 'lire-les-nombres') return startNumberLevelExercise(studentLevelSlug);
         }
 
         if (!['denombrement', 'time', 'lire-les-nombres'].includes(skill.slug)) {
@@ -135,11 +137,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     setIsReadyToStart(true);
   };
   
-  const startNumberLevelExercise = (settings: NumberLevelSettingsType) => {
-    generateQuestions(skill.slug, NUM_QUESTIONS, { numberLevel: settings }).then(setQuestions);
-    setNumberLevelSettings(settings);
-    setIsReadyToStart(true);
-  }
 
   const exerciseData = useMemo(() => {
     if (questions.length === 0) return null;
@@ -311,11 +308,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
        if (!isUserLoading) {
             const studentLevel = student?.levels?.[skill.slug];
             if (studentLevel) {
-                const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                const difficulty = difficultyMap[studentLevel] ?? 0;
-                
-                if(skill.slug === 'time') startExerciseWithLevel(difficulty);
-                if(skill.slug === 'lire-les-nombres') startNumberExerciseWithLevel(difficulty);
+                if(skill.slug === 'time') {
+                    const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                    const difficulty = difficultyMap[studentLevel] ?? 0;
+                    startExerciseWithLevel(difficulty);
+                }
+                 if(skill.slug === 'lire-les-nombres') startNumberLevelExercise(studentLevel);
 
             } else {
                 setIsReadyToStart(false); // Go back to settings screen
@@ -332,7 +330,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         return <CountSettings onStart={startCountExercise} />;
       }
       if (skill.slug === 'lire-les-nombres') {
-        return <NumberLevelSettings onStart={startNumberLevelExercise} />
+         // This state should ideally not be reached for "lire-les-nombres"
+         // as it should auto-start with a level. But as a fallback:
+         return <Card className="w-full shadow-2xl p-8 text-center">Chargement du niveau...</Card>;
       }
       // For other skills, this will show a loading state until questions are set.
        return (
@@ -653,5 +653,3 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     </div>
   );
 }
-
-    

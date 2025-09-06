@@ -50,7 +50,7 @@ export interface CountSettings {
 }
 
 export interface NumberLevelSettings {
-    difficulty: number; // 0-3
+    level: SkillLevel;
 }
 
 export interface CalendarSettings {
@@ -285,26 +285,25 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     const isReverse = Math.random() > 0.5;
     let min, max: number;
 
-    switch(settings.difficulty) {
-        case 0: min = 0; max = 20; break;
-        case 1: min = 0; max = 69; break;
-        case 2: min = 70; max = 9999; break;
-        case 3: min = 1000; max = 999999; break;
+    switch(settings.level) {
+        case 'A': min = 1; max = 30; break;
+        case 'B': min = 11; max = 1000; break;
+        case 'C': min = 69; max = 100000; break;
+        case 'D': min = 1001; max = 1000000; break;
         default: min = 0; max = 100;
     }
     
     let answerNumber = Math.floor(Math.random() * (max - min + 1)) + min;
     
     // Logic for injecting zeros
-    // Reduced chance for level C
-    if (settings.difficulty === 2 && Math.random() > 0.7) {
+    if (settings.level === 'C' && Math.random() > 0.7) {
         let s = String(answerNumber);
         if (s.length >= 3) {
             const zeroPos = Math.floor(Math.random() * (s.length - 2)) + 1; // Avoid first/last digit
             s = s.substring(0, zeroPos) + '0' + s.substring(zeroPos + 1);
             answerNumber = parseInt(s);
         }
-    } else if (settings.difficulty === 3 && Math.random() > 0.2) { // 80% chance for D
+    } else if (settings.level === 'D' && Math.random() > 0.2) { // 80% chance
         let s = String(answerNumber);
         const len = s.length;
         if (len > 3) {
@@ -326,8 +325,7 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     const answerText = String(answerNumber);
     const answerAudio = numberToWords(answerNumber);
     
-    // For levels C and D, randomly choose between QCM and text input
-    if (settings.difficulty >= 2 && Math.random() > 0.5) {
+    if ((settings.level === 'C' || settings.level === 'D') && Math.random() > 0.5) {
         return {
             type: 'audio-to-text-input',
             question: "Écris en chiffres le nombre que tu entends.",

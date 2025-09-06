@@ -84,6 +84,7 @@ export const skills: Skill[] = [
     description: "Associer un nombre écrit en chiffres à son énoncé oral.",
     icon: <BookOpenText />,
     category: 'Nombres et calcul',
+    allowedLevels: ['A', 'B', 'C', 'D'],
   },
   {
     name: 'Écoute les nombres',
@@ -91,6 +92,7 @@ export const skills: Skill[] = [
     description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
     icon: <Ear />,
     category: 'Nombres et calcul',
+    isFixedLevel: 'A',
   },
   {
     name: 'Dénombrement',
@@ -174,8 +176,7 @@ export function difficultyLevelToString(
         return `Niveau ${calendarSettings.level}`;
     }
      if (skillSlug === 'lire-les-nombres' && numberLevelSettings) {
-        const levels = ['A', 'B', 'C', 'D'];
-        return `Niveau ${levels[numberLevelSettings.difficulty] || 'A'}`;
+        return `Niveau ${numberLevelSettings.level}`;
     }
     if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation' || skillSlug === 'denombrement') {
         // These exercises are controlled by a SkillLevel A-D set on the student
