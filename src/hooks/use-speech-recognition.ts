@@ -78,6 +78,11 @@ export function useSpeechRecognition({ onResult, onEnd, onError }: SpeechRecogni
     };
     
     recognition.onerror = (event: any) => {
+      // The "aborted" error is thrown when stopListening is called manually.
+      // It's not a true error in our case, so we can safely ignore it.
+      if (event.error === 'aborted') {
+        return;
+      }
       console.error('Speech recognition error', event.error);
       if (onError) onError(event.error);
       setIsListening(false);
