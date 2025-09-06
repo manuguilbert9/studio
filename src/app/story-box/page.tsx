@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
@@ -101,13 +101,40 @@ export default function StoryBoxPage() {
     }
   }
 
+  const openImmersiveReader = () => {
+    if (!story) return;
+
+    // The read: protocol is specific to Microsoft Edge.
+    // This creates a data URI with simple HTML content to launch.
+    const content = `
+        <!DOCTYPE html>
+        <html>
+        <head><title>${story.title}</title></head>
+        <body>
+            <h1>${story.title}</h1>
+            <p>${story.story.replace(/\n/g, '<br/>')}</p>
+            <hr>
+            <h2>Morale de l'histoire</h2>
+            <p><em>${story.moral}</em></p>
+        </body>
+        </html>
+    `;
+    const encodedContent = encodeURIComponent(content);
+    window.location.href = `read:data:text/html,${encodedContent}`;
+  };
+
   if (story) {
     return (
       <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
         <div className="w-full max-w-3xl">
-           <Button onClick={() => setStory(null)} variant="outline">
-             <ArrowLeft className="mr-2 h-4 w-4" /> Retourner pour créer une nouvelle histoire
-           </Button>
+           <div className="flex gap-2">
+             <Button onClick={() => setStory(null)} variant="outline">
+               <ArrowLeft className="mr-2 h-4 w-4" /> Retourner
+             </Button>
+             <Button onClick={openImmersiveReader} variant="secondary">
+                <BookOpen className="mr-2 h-4 w-4" /> Lire avec le lecteur immersif
+             </Button>
+           </div>
            <Card className="mt-8 shadow-xl">
              <CardHeader className="text-center">
                 <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
