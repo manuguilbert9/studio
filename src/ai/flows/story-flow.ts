@@ -12,7 +12,8 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const StoryInputSchema = z.object({
-  emojis: z.array(z.string()).describe('An array of emojis to inspire the story. Up to 6.'),
+  emojis: z.array(z.string()).optional().describe('An array of emojis to inspire the story. Up to 6.'),
+  description: z.string().optional().describe('A vocal description of the story to generate.'),
   length: z.enum(['courte', 'moyenne', 'longue']).describe('The desired length of the story.'),
   tone: z.enum(['aventure', 'comique', 'effrayante']).describe('The tone of the story.'),
 });
@@ -48,7 +49,13 @@ Ta mission est de rédiger une histoire originale en français.
 
 Voici les instructions à suivre :
 
-1.  **Inspiration** : Inspire-toi des thèmes, personnages ou objets représentés par les emojis suivants : {{#each emojis}}{{this}} {{/each}}. Ne mentionne pas les emojis directement dans le texte.
+1.  **Inspiration** : Inspire-toi des thèmes, personnages ou objets décrits ci-dessous.
+{{#if description}}
+    **Idée de l'enfant :** {{{description}}}
+{{else}}
+    **Emojis choisis :** {{#each emojis}}{{this}} {{/each}}
+{{/if}}
+Ne mentionne pas les emojis ou la description directement dans le texte, utilise-les comme source d'inspiration.
 
 2.  **Longueur** : L'histoire doit être de longueur "{{length}}", c'est-à-dire {{lookup ../lengthInstructionMap length}}.
 
