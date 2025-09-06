@@ -26,9 +26,6 @@ interface ReportGeneratorProps {
     allSpellingProgress: SpellingProgress[];
 }
 
-// Simple PNG logo as a base64 data URI
-const logoPngDataUri = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAfuSURBVHhe7Vt7bFRVGP+de+1u63a72kL5gGJtqU3BNEo+EFEjxUQoFh9QtEGDAUW8EFT8wERj0EhrNBjFg4AfeEcNGI0xER+q8AeiEUSsQA0aFqxGixaiRYsttXS73d2Z6e7s7u3szpy7687u/3SSmZ299/vN/Oacec6kJCz2jA4ICwsLNzY2/k5RUXG1lFL3CiEj8H4mIuY+9/f331VVVflJRESilLqxsbG/p6enZ0rJvjOwG4kQ6bSzs/NXVVX1V6s/IeG8dOrUqb1nz5592hIrGwe+g4iYbYyNDf9/29vbfyYhMhJjY+PftbW1/R1E3gXeycDAwE7K37NnT3f8+fP/M+aJgE+fPj3LzMxMLxgZGS9I+YWFBSMiIm9nZ+eTTCaTyWQyl4qKiqqsrCwzMzP9lStX/iw4MhIEvIeIiP1sNrscy7L6/f5sLpfrT58+fWlpaemVlStX/jQ4MhLg4MGD9zEajZfS7/f/Oysr63fMEYG+vj6/devWn2uS+Jg6nU4ikfjk1q1bH4yNjbm5ufkLEiKTMW3atLslEong+fPnvzIyMjL6+vo+k5CZCT+SJMnlcn0pEokgIuYoKSmpqqoqnU6nkch8kYiIS+l0+kN4PF5y9uzZzc3NzdLS0vILoiL7CwsLCwO+j4iY4+Hh4Xp6evLz83POnj17c3NzMzMzs7Kysra2tp+QkN8rIqKSyWQ+GRoa6u3t7WloaGhtbW1tbW1ubm5hYWFlZWUDAwMjIyNHR0d/jI6O/iwyMvKzsrKyzMzMzM3Nzc/Pz8/PzyeTyXw8PDy8qKiou7u7yWQymUwmk8nk6urq7u7u7u7urq6u8vl8Pp/P5/P5/P5sNpvNZjKZTCaTyWQymUwmk0lEHBwcLC8vLzU1NTc3t6ampqamJiYmhoWF+fvvvz906NChtWvX/jY2Nl7hS/B/E3mXy+U+nU5fXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXf/8+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/78+fPnz58/f/7gAAAAASUVORK5CYII=";
-
 
 export function ReportGenerator({ students, allScores, allSpellingProgress }: ReportGeneratorProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -57,7 +54,6 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         const primaryColor = '#ea588b'; // Extracted from CSS var --primary hsl(340, 85%, 65%)
 
         // --- HEADER ---
-        doc.addImage(logoPngDataUri, 'PNG', 15, 15, 10, 10);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(22);
         doc.text(student.name, 105, 25, { align: 'center' });
@@ -104,9 +100,8 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                 let errorsText = '';
                 // Find spelling errors if applicable
                 const spellingProgressForStudent = allSpellingProgress.find(p => p.userId === student.id);
-                if (spellingProgressForStudent) {
-                    const exerciseIdPrefix = `liste`; // This is a guess, should be improved
-                    const relevantResult = Object.entries(spellingProgressForStudent.progress).find(([key, _]) => key.startsWith(exerciseIdPrefix));
+                if (score.skill === 'spelling' && spellingProgressForStudent) {
+                    const relevantResult = Object.entries(spellingProgressForStudent.progress).find(([key, result]) => new Date(result.completedAt).getTime() === new Date(score.createdAt).getTime());
                      if (relevantResult && relevantResult[1].errors.length > 0) {
                         errorsText = relevantResult[1].errors.join(', ');
                      }
