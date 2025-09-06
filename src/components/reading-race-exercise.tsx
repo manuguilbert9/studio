@@ -74,10 +74,11 @@ export function ReadingRaceExercise() {
   
   const stopRace = useCallback(() => {
     stopListening();
-    const wpm = timeElapsed > 0 ? Math.round((wordsRead.length / timeElapsed) * 60) : 0;
+    const correctWordsCount = wordsRead.filter((word, index) => textWords[index] && word.toLowerCase() === textWords[index].toLowerCase()).length;
+    const wpm = timeElapsed > 0 ? Math.round((correctWordsCount / timeElapsed) * 60) : 0;
     setFinalWPM(wpm);
     setExerciseState('finished');
-  }, [stopListening, timeElapsed, wordsRead.length]);
+  }, [stopListening, timeElapsed, wordsRead, textWords]);
 
    useEffect(() => {
       const saveResult = async () => {
