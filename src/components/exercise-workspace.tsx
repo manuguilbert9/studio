@@ -87,35 +87,43 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     startTimeExercise(settings);
   };
   
-  const startNumberLevelExercise = (level: SkillLevel) => {
-    generateQuestions(skill.slug, NUM_QUESTIONS, { numberLevel: { level: level } }).then(setQuestions);
+  const startNumberLevelExercise = async (level: SkillLevel) => {
+    const newQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { numberLevel: { level: level } });
+    setQuestions(newQuestions);
     setNumberLevelSettings({ level: level });
     setIsReadyToStart(true);
   }
 
   useEffect(() => {
     async function loadQuestions() {
+        // For tableau mode, it's always ready, just doesn't have questions until a skill is picked.
+        if (isTableauMode) {
+          setIsReadyToStart(true);
+          return;
+        }
+
         const studentLevel = student?.levels?.[skill.slug] ?? 'B';
 
         if (skill.allowedLevels) {
-             startNumberLevelExercise(studentLevel);
+             await startNumberLevelExercise(studentLevel);
         } else if (skill.slug === 'time') {
               const difficultyMap: Record<SkillLevel, number> = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
               const difficulty = difficultyMap[studentLevel] ?? 0;
               return startExerciseWithLevel(difficulty);
         } else if (skill.slug === 'denombrement' && !isTableauMode) {
              // Let it fall through to settings screen
-        } else if (!['denombrement', 'time'].includes(skill.slug)) {
-            const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
-            setQuestions(generatedQuestions);
-            setIsReadyToStart(true);
+             setIsReadyToStart(false);
+        } else {
+             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
+             setQuestions(generatedQuestions);
+             setIsReadyToStart(true);
         }
     }
     if (!isUserLoading) {
         loadQuestions();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [skill.slug, student, isUserLoading]);
+  }, [skill.slug, student, isUserLoading, isTableauMode]);
   
   // This effect handles auto-playing audio for audio questions
   useEffect(() => {
@@ -125,14 +133,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     }
   }, [currentQuestionIndex, questions]);
   
-  const startTimeExercise = (settings: TimeSettingsType) => {
-    generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }).then(setQuestions);
+  const startTimeExercise = async (settings: TimeSettingsType) => {
+    const newQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings });
+    setQuestions(newQuestions);
     setTimeSettings(settings);
     setIsReadyToStart(true);
   }
   
-  const startCountExercise = (settings: CountSettingsType) => {
-    generateQuestions(skill.slug, NUM_QUESTIONS, { count: settings }).then(setQuestions);
+  const startCountExercise = async (settings: CountSettingsType) => {
+    const newQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS, { count: settings });
+    setQuestions(newQuestions);
     setCountSettings(settings);
     setIsReadyToStart(true);
   };
@@ -287,7 +297,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     saveScoreAndFetchHistory();
   }, [isFinished, student, skill.slug, correctAnswers, timeSettings, countSettings, numberLevelSettings, isTableauMode, hasBeenSaved, homeworkSession, sessionDetails]);
   
-  const restartExercise = () => {
+  const restartExercise = async () => {
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setCorrectAnswers(0);
@@ -312,22 +322,23 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                 const difficulty = difficultyMap[studentLevel];
                 startExerciseWithLevel(difficulty);
             } else if (skill.allowedLevels) {
-                startNumberLevelExercise(studentLevel);
+                await startNumberLevelExercise(studentLevel);
             }
        }
     } else if (skill.slug === 'denombrement') {
         setIsReadyToStart(false); // Go back to settings screen
     } else {
-       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
+       const newQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
+       setQuestions(newQuestions);
        setIsReadyToStart(true);
     }
   };
 
   if (!isReadyToStart) {
-      if (skill.slug === 'time') {
+      if (skill.slug === 'time' && !isTableauMode) {
         return <TimeSettings onStart={startTimeExercise} />;
       }
-      if (skill.slug === 'denombrement') {
+      if (skill.slug === 'denombrement' && !isTableauMode) {
         return <CountSettings onStart={startCountExercise} />;
       }
        return (
@@ -450,8 +461,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                         "text-5xl font-numbers h-24 p-4 justify-center transition-all duration-300 transform active:scale-95",
                         feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
                         feedback === 'incorrect' && option !== exerciseData.answer && 'bg-red-500/80 text-white border-red-600 animate-shake',
-                        feedback && option !== exerciseData.answer && 'opacity-50',
-                        feedback && option === exerciseData.answer && 'opacity-100'
+                        feedback && !isCorrect && !isSelectedIncorrect && 'opacity-50'
                         )}
                         disabled={!!feedback}
                     >
