@@ -27,6 +27,7 @@ export function SimpleWordReadingExercise() {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  const [detectedWord, setDetectedWord] = useState('');
 
   const { transcript, isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
       onResult: (result) => {
@@ -51,6 +52,7 @@ export function SimpleWordReadingExercise() {
     if (currentWordIndex < WORDS_PER_EXERCISE - 1) {
       setCurrentWordIndex(prev => prev + 1);
       setFeedback(null);
+      setDetectedWord('');
       setExerciseState('ready');
     } else {
       setExerciseState('finished');
@@ -66,6 +68,8 @@ export function SimpleWordReadingExercise() {
     // Normalize both strings for comparison
     const expected = currentWord.toLowerCase().trim().replace(/[.,-]/g, '');
     const actual = spokenText.toLowerCase().trim().replace(/[.,-]/g, '');
+    
+    setDetectedWord(spokenText); // Store what was heard
 
     if (expected === actual) {
       setFeedback('correct');
@@ -74,7 +78,7 @@ export function SimpleWordReadingExercise() {
     } else {
       setFeedback('incorrect');
     }
-    setTimeout(handleNextWord, 2000);
+    setTimeout(handleNextWord, 2500); // Increased timeout to see the detected word
   };
   
   const handleMicClick = () => {
@@ -110,6 +114,7 @@ export function SimpleWordReadingExercise() {
     setCorrectAnswers(0);
     setShowConfetti(false);
     setHasBeenSaved(false);
+    setDetectedWord('');
   };
   
   if (!isSupported) {
@@ -176,8 +181,11 @@ export function SimpleWordReadingExercise() {
             </div>
           )}
           {feedback === 'incorrect' && (
-            <div className="flex items-center gap-4 text-2xl font-bold text-red-600 animate-shake">
-                <X className='h-8 w-8'/> Oups ! Le mot était "{currentWord}".
+            <div className="flex flex-col items-center gap-2 text-xl font-bold text-red-600 animate-shake">
+                <div className="flex items-center gap-2">
+                    <X className='h-6 w-6'/> Oups ! Le mot était "{currentWord}".
+                </div>
+                {detectedWord && <p className="text-sm text-muted-foreground">(J'ai entendu : "{detectedWord}")</p>}
             </div>
           )}
         </CardFooter>
