@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -83,7 +84,7 @@ export function CarryCell({
             'border text-center font-bold font-mono bg-white rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 w-full h-full p-0',
             borderColor,
             borderStyle === 'dotted' && 'border-dotted',
-            hasBorrowedOne && 'text-transparent',
+            hasBorrowedOne && 'text-transparent caret-transparent',
         )}
         style={{
             fontSize: `${fontSize}px`
@@ -109,7 +110,7 @@ export function CarryCell({
             </span>
         </div>
       )}
-        {isCrossed && value && !hasBorrowedOne && (
+        {isCrossed && value && (
             <span className="absolute left-0 top-1/2 w-full h-0.5 bg-slate-700 transform -translate-y-1/2 rotate-[-20deg] pointer-events-none"></span>
         )}
     </div>

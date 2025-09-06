@@ -39,6 +39,8 @@ export function CalcCell({
   const setValue = onValueChange ? (val: string) => onValueChange(id, val) : setInternalValue;
 
   useEffect(() => {
+    // This effect ensures that if a value is passed as a prop (exercise mode),
+    // it overrides the internal state. This is primarily for displaying the problem.
     if (propValue !== undefined) {
       setInternalValue(propValue);
     }
@@ -65,8 +67,7 @@ export function CalcCell({
   
   // Logic to display number with borrowed '1'
   const hasBorrowedOne = value.length === 2 && value.startsWith('1');
-  const displayValue = hasBorrowedOne ? value.substring(1) : value;
-
+  
   return (
     <div
       className="relative flex items-center justify-center"
@@ -78,7 +79,7 @@ export function CalcCell({
         type="text"
         inputMode="numeric"
         pattern="[0-9]*"
-        maxLength={2}
+        maxLength={isMinuend ? 2 : 1}
         value={value}
         onChange={handleChange}
         tabIndex={tabIndex}
@@ -87,8 +88,8 @@ export function CalcCell({
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
           // Hide the raw text input if we are using the special borrowed one display
-          hasBorrowedOne && 'text-transparent',
-          isReadOnly && "cursor-default ring-0 focus-visible:ring-0 focus:ring-0 focus:ring-offset-0 border-gray-300"
+          hasBorrowedOne && 'text-transparent caret-transparent',
+          isReadOnly && "cursor-default ring-0 focus-visible:ring-0 focus:ring-0 focus:ring-offset-0 border-gray-300 bg-slate-50/50"
         )}
         style={{
           fontSize: `${fontSize}px`,
@@ -112,17 +113,18 @@ export function CalcCell({
               className="font-bold font-mono"
               style={{ fontSize: `${fontSize}px` }}
             >
-              {displayValue}
+              {value.substring(1)}
             </span>
         </div>
-      ) : (
-        <span 
+      ) : isReadOnly ? (
+        // For exercise mode, just display the prop value directly
+         <span 
             className="absolute font-bold font-mono pointer-events-none"
             style={{ fontSize: `${fontSize}px` }}
         >
             {value}
         </span>
-      )}
+      ) : null}
 
 
       {/* Crossed value display */}
@@ -132,7 +134,7 @@ export function CalcCell({
                 className="absolute text-slate-500 font-bold font-mono pointer-events-none"
                 style={{ fontSize: `${fontSize}px` }}
             >
-                {hasBorrowedOne ? displayValue : value}
+                {hasBorrowedOne ? value.substring(1) : value}
             </span>
             <span 
                 className="absolute left-0 top-1/2 w-full h-0.5 bg-slate-700 transform -translate-y-1/2 rotate-[-20deg] pointer-events-none"
