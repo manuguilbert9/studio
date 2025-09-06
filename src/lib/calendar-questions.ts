@@ -15,7 +15,7 @@ export interface CalendarQuestion {
     // For QCM
     options?: string[];
     answer?: string;
-    // For click-date. Dates are stored as ISO strings for serialization.
+    // For click-date and some QCMs. Dates are stored as ISO strings for serialization.
     month?: string; 
     answerDate?: string;
     highlightedDays?: string[];
@@ -147,7 +147,9 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
             type: 'qcm',
             question: `Le ${day1} ${format(date1, 'MMMM', {locale:fr})} tombe un ${dayOfWeek1}. Quel jour sera le ${day2} ?`,
             options: Array.from(options).sort(() => Math.random() - 0.5),
-            answer: answer
+            answer: answer,
+            month: startOfMonth(referenceDate).toISOString(),
+            highlightedDays: [date1.toISOString()],
         }
     }
 };

@@ -6,9 +6,8 @@ import type { SkillLevel } from '@/lib/skills';
 import { generateCalendarQuestions, type CalendarQuestion } from '@/lib/calendar-questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { cn } from '@/lib/utils';
-import { Check, RefreshCw, X, Loader2, Star, Calendar } from 'lucide-react';
+import { Check, RefreshCw, X, Loader2 } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
@@ -244,9 +243,27 @@ export function CalendarExercise() {
       switch(currentQuestion.type) {
           case 'qcm':
               return (
-                  <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
-                      {currentQuestion.options?.map(option => (
-                           <Button
+                  <div className='flex flex-col items-center gap-4'>
+                    {currentQuestion.month && (
+                         <DayPicker
+                            mode="single"
+                            locale={fr}
+                            month={new Date(currentQuestion.month)}
+                            className="p-4 rounded-md border bg-card"
+                            classNames={{
+                                day_today: "font-bold text-accent",
+                            }}
+                            modifiers={{
+                                highlighted: currentQuestion.highlightedDays?.map(d => new Date(d)) || [],
+                            }}
+                            modifiersClassNames={{
+                                highlighted: "bg-accent/20 rounded-full font-bold",
+                            }}
+                        />
+                    )}
+                    <div className="grid grid-cols-2 gap-4 w-full max-w-lg">
+                        {currentQuestion.options?.map(option => (
+                            <Button
                             key={option}
                             variant={selectedOption === option ? 'default' : 'outline'}
                             onClick={() => setSelectedOption(option)}
@@ -256,10 +273,11 @@ export function CalendarExercise() {
                                 feedback === 'incorrect' && selectedOption === option && 'bg-red-500/80 text-white border-red-600 animate-shake',
                             )}
                             disabled={!!feedback}
-                           >
-                               {option}
-                           </Button>
-                      ))}
+                            >
+                                {option}
+                            </Button>
+                        ))}
+                    </div>
                   </div>
               )
           case 'click-date':
