@@ -92,7 +92,7 @@ export const skills: Skill[] = [
     description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
     icon: <Ear />,
     category: 'Nombres et calcul',
-    allowedLevels: ['A', 'B', 'C', 'D'],
+    isFixedLevel: 'A',
   },
   {
     name: 'Dénombrement',
@@ -103,9 +103,9 @@ export const skills: Skill[] = [
     isFixedLevel: 'A',
   },
   {
-    name: "J'écoute entre 70 et 99",
+    name: "J'écoute entre 60 et 99",
     slug: 'nombres-complexes',
-    description: 'Reconnaître les nombres complexes (70-99) à l\'oral et à l\'écrit.',
+    description: 'Reconnaître les nombres complexes (60-99) à l\'oral et à l\'écrit.',
     icon: <GitCompareArrows />,
     category: 'Nombres et calcul',
     isFixedLevel: 'B',

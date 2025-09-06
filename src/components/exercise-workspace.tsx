@@ -176,7 +176,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation'].includes(skill.slug)) {
+      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, true);
       }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -187,7 +187,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setFeedback('incorrect');
-       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation'].includes(skill.slug)) {
+       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, false);
       }
       setTimeout(handleNextQuestion, 2000);
