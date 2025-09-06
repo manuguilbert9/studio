@@ -14,6 +14,7 @@ import {
   Waves,
   ListOrdered,
   CalendarDays,
+  Rocket,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings } from './questions';
 
@@ -59,6 +60,20 @@ export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
   {
+    name: 'Course de lecture',
+    slug: 'reading-race',
+    description: "Lis un texte à voix haute et fais avancer ton personnage jusqu'à la ligne d'arrivée.",
+    icon: <Rocket />,
+    category: 'Lecture / compréhension',
+  },
+  {
+    name: 'Lire les nombres',
+    slug: 'lire-les-nombres',
+    description: "Associer un nombre écrit en chiffres à son énoncé oral.",
+    icon: <BookOpenText />,
+    category: 'Nombres et calcul',
+  },
+  {
     name: 'Écoute les nombres',
     slug: 'ecoute-les-nombres',
     description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
@@ -77,13 +92,6 @@ export const skills: Skill[] = [
     slug: 'nombres-complexes',
     description: 'Reconnaître les nombres complexes (70-99) à l\'oral et à l\'écrit.',
     icon: <GitCompareArrows />,
-    category: 'Nombres et calcul',
-  },
-  {
-    name: 'Lire les nombres',
-    slug: 'lire-les-nombres',
-    description: "Associer un nombre écrit en chiffres à son énoncé oral.",
-    icon: <BookOpenText />,
     category: 'Nombres et calcul',
   },
   {
