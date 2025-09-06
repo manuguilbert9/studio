@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,6 +11,10 @@ import { generateWordFamilies } from '@/ai/flows/generate-word-families-flow';
 import Confetti from 'react-dom-confetti';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
+import { UserContext } from '@/context/user-context';
+import { addScore, ScoreDetail } from '@/services/scores';
+import { ScoreTube } from './score-tube';
+import type { SkillLevel } from '@/lib/skills';
 
 type WordPair = {
   original: string;
@@ -27,6 +31,9 @@ type FeedbackState = 'correct' | 'incorrect' | null;
 const PAIRS_PER_ROUND = 8;
 
 export function WordFamiliesExercise() {
+  const { student } = useContext(UserContext);
+  const [level, setLevel] = useState<SkillLevel | null>(null);
+  
   const [availableLists, setAvailableLists] = useState<SpellingList[]>([]);
   const [isLoadingLists, setIsLoadingLists] = useState(true);
   const [selectedList, setSelectedList] = useState<SpellingList | null>(null);
@@ -45,6 +52,10 @@ export function WordFamiliesExercise() {
   
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [correctPairsInRound, setCorrectPairsInRound] = useState(0);
+  const [incorrectPairsCount, setIncorrectPairsCount] = useState(0);
+  const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  
   const [showConfetti, setShowConfetti] = useState(false);
   
   const currentRoundPairs = useMemo(() => rounds[currentRoundIndex] || [], [rounds, currentRoundIndex]);
@@ -58,6 +69,14 @@ export function WordFamiliesExercise() {
     return rounds.length > 0 && currentRoundIndex === rounds.length - 1 && isRoundFinished;
   }, [rounds, currentRoundIndex, isRoundFinished]);
   
+  useEffect(() => {
+    if(student?.levels?.['word-families']) {
+        setLevel(student.levels['word-families']);
+    } else {
+        setLevel('B');
+    }
+  }, [student]);
+
   // Fisher-Yates shuffle algorithm
   const shuffleArray = (array: any[]) => {
     let currentIndex = array.length, randomIndex;
@@ -73,11 +92,21 @@ export function WordFamiliesExercise() {
     async function loadLists() {
       setIsLoadingLists(true);
       const lists = await getSpellingLists();
-      setAvailableLists(lists);
+      // Filter lists based on selected level
+      const filteredLists = lists.filter(list => {
+          const listNum = parseInt(list.id.substring(1));
+          if (level === 'B') return listNum <= 12;
+          if (level === 'C') return listNum > 12 && listNum <= 24;
+          if (level === 'D') return listNum > 24;
+          return true;
+      });
+      setAvailableLists(filteredLists);
       setIsLoadingLists(false);
     }
-    loadLists();
-  }, []);
+    if (level) {
+        loadLists();
+    }
+  }, [level]);
   
   const setupRound = (roundIndex: number, pairsForSetup: WordPair[][]) => {
     const pairsForRound = pairsForSetup[roundIndex];
@@ -100,6 +129,9 @@ export function WordFamiliesExercise() {
     setAllPairs([]);
     setRounds([]);
     setCurrentRoundIndex(0);
+    setSessionDetails([]);
+    setIncorrectPairsCount(0);
+    setHasBeenSaved(false);
     
     try {
       const result = await generateWordFamilies({ words: list.words });
@@ -123,10 +155,22 @@ export function WordFamiliesExercise() {
       setIsLoadingPairs(false);
     }
   };
+  
+   const addDetail = (wordA: string, wordB: string, isCorrect: boolean) => {
+      const detail: ScoreDetail = {
+        question: `Relier ${wordA} et ${wordB}`,
+        userAnswer: `${wordA} - ${wordB}`,
+        correctAnswer: isCorrect ? 'Correct' : 'Incorrect',
+        status: isCorrect ? 'correct' : 'incorrect',
+      };
+      setSessionDetails(prev => [...prev, detail]);
+    };
 
   const checkPair = (wordA: string, wordB: string) => {
     const isCorrect = currentRoundPairs.some(p => (p.original === wordA && p.familyMember === wordB));
     
+    addDetail(wordA, wordB, isCorrect);
+
     if (isCorrect) {
       setFeedback('correct');
       setCorrectPairsInRound(prev => prev + 1);
@@ -134,6 +178,7 @@ export function WordFamiliesExercise() {
       setColumnA(prev => prev.map(item => item.word === wordA ? { ...item, isPaired: true } : item));
       setColumnB(prev => prev.map(item => item.word === wordB ? { ...item, isPaired: true } : item));
     } else {
+      setIncorrectPairsCount(prev => prev + 1);
       setFeedback('incorrect');
     }
 
@@ -151,6 +196,29 @@ export function WordFamiliesExercise() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedA, selectedB]);
+  
+  useEffect(() => {
+      const saveResult = async () => {
+          if (isExerciseFinished && student && !hasBeenSaved && level) {
+              setHasBeenSaved(true);
+              const correctCount = sessionDetails.filter(d => d.status === 'correct').length;
+              const incorrectCount = incorrectPairsCount;
+              const totalPairs = allPairs.length;
+              
+              const rawScore = totalPairs > 0 ? ((correctCount - incorrectCount) / totalPairs) * 100 : 0;
+              const finalScore = Math.max(0, rawScore); // Ensure score is not negative
+
+              await addScore({
+                  userId: student.id,
+                  skill: 'word-families',
+                  score: finalScore,
+                  details: sessionDetails,
+                  numberLevelSettings: { level: level }
+              });
+          }
+      };
+      saveResult();
+   }, [isExerciseFinished, student, hasBeenSaved, sessionDetails, level, allPairs.length, incorrectPairsCount]);
 
   const goToNextRound = () => {
     if (currentRoundIndex < rounds.length - 1) {
@@ -170,6 +238,9 @@ export function WordFamiliesExercise() {
     setSelectedA(null);
     setSelectedB(null);
     setCorrectPairsInRound(0);
+    setIncorrectPairsCount(0);
+    setSessionDetails([]);
+    setHasBeenSaved(false);
   };
 
   if (isLoadingLists) {
@@ -181,15 +252,16 @@ export function WordFamiliesExercise() {
       <Card className="w-full max-w-lg mx-auto shadow-2xl">
         <CardHeader>
           <CardTitle className="font-headline text-2xl text-center">Choisir une liste de mots</CardTitle>
+          <CardDescription className="text-center">Le niveau des listes est déterminé par le niveau que vous avez réglé dans le tableau de bord de l'enseignant.</CardDescription>
           {availableLists.length === 0 && (
-            <CardDescription className="text-destructive text-center">
-              Aucune liste de mots n'a été trouvée.
+            <CardDescription className="text-destructive text-center pt-2">
+              Aucune liste de mots n'a été trouvée pour le niveau <span className='font-bold'>{level}</span>.
             </CardDescription>
           )}
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {availableLists.map(list => (
-            <Button key={list.id} onClick={() => handleStartExercise(list.id)} variant="outline" size="lg">
+            <Button key={list.id} onClick={() => handleStartExercise(list.id)} variant="outline" size="lg" disabled={availableLists.length === 0}>
               {list.id} – {list.title}
             </Button>
           ))}
@@ -208,6 +280,8 @@ export function WordFamiliesExercise() {
   }
 
   if (isExerciseFinished) {
+    const finalScore = allPairs.length > 0 ? Math.max(0, ((allPairs.length - incorrectPairsCount) / allPairs.length) * 100) : 0;
+    
     return (
          <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8 relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -218,8 +292,10 @@ export function WordFamiliesExercise() {
             </CardHeader>
             <CardContent className="space-y-6">
                 <p className="text-2xl">
-                    Tu as trouvé toutes les paires !
+                    Tu as terminé l'exercice !
                 </p>
+                <ScoreTube score={finalScore} />
+                <p className="text-sm text-muted-foreground">{allPairs.length} paires correctes, {incorrectPairsCount} erreurs.</p>
                 <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
                     <RefreshCw className="mr-2" />
                     Faire un autre exercice
