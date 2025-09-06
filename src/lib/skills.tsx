@@ -57,6 +57,7 @@ export interface Skill {
   icon: ReactElement;
   category: SkillCategory;
   isFixedLevel?: SkillLevel;
+  allowedLevels?: SkillLevel[];
 }
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
@@ -90,7 +91,6 @@ export const skills: Skill[] = [
     description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
     icon: <Ear />,
     category: 'Nombres et calcul',
-    isFixedLevel: 'A',
   },
   {
     name: 'Dénombrement',
@@ -114,6 +114,7 @@ export const skills: Skill[] = [
     description: "Identifier des mots de la même famille. Utiliser les familles de mots pour mémoriser l'orthographe.",
     icon: <Spline />,
     category: 'Vocabulaire',
+    allowedLevels: ['B', 'C', 'D'],
   },
   {
     name: 'L\'heure',
