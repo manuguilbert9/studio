@@ -248,6 +248,7 @@ export function CalendarExercise() {
                          <DayPicker
                             mode="single"
                             locale={fr}
+                            month={new Date()}
                             className="p-4 rounded-md border bg-card"
                             classNames={{
                                 day_today: "font-bold text-accent",
