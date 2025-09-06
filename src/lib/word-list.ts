@@ -5,7 +5,7 @@ const simpleWords = [
   'vélo', 'rat', 'riz', 'sac', 'sol', 'mur', 'lit', 'bus', 'dame', 'rue', 'niche',
   'page', 'neige', 'fille', 'roi', 'loi', 'plat', 'train', 'fleur', 'chat', 'chien',
   'table', 'chaise', 'pomme', 'poire', 'banane', 'sucre', 'café', 'lettre', 'chou',
-  'feu', 'jeu', 'balle', 'os', 'jus', 'lait', 'pain', 'vin', 'fort', 'doux', 'bébé'
+  'feu', 'jeu', 'balle', 'os', 'jus', 'lait', 'vin', 'fort', 'doux', 'bébé'
 ];
 
 
