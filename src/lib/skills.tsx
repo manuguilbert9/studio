@@ -146,6 +146,7 @@ export const skills: Skill[] = [
     description: 'Se repérer dans le temps, lire les dates et les durées.',
     icon: <CalendarDays />,
     category: 'Grandeurs et mesures',
+    allowedLevels: ['A', 'B', 'C', 'D'],
   },
 ];
 
@@ -173,6 +174,9 @@ export function difficultyLevelToString(
     if (numberLevelSettings?.level) {
         return `Niveau ${numberLevelSettings.level}`;
     }
+     if (calendarSettings?.level) {
+        return `Niveau ${calendarSettings.level}`;
+    }
 
     if (skill?.allowedLevels) {
         // This is a student-level-dependent skill. The level *should* be stored
@@ -183,9 +187,6 @@ export function difficultyLevelToString(
     if (skillSlug === 'time' && timeSettings) {
         const levels: SkillLevel[] = ['A', 'B', 'C', 'D'];
         return `Niveau ${levels[timeSettings.difficulty] || 'A'}`;
-    }
-    if (skillSlug === 'calendar' && calendarSettings) {
-        return `Niveau ${calendarSettings.level}`;
     }
 
     if (skillSlug === 'denombrement') {

@@ -61,6 +61,7 @@ export interface AllSettings {
   time?: TimeSettings;
   count?: CountSettings;
   numberLevel?: NumberLevelSettings;
+  calendar?: CalendarSettings;
 }
 
 function generateTimeQuestion(settings: TimeSettings): Question {

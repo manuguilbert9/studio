@@ -320,7 +320,7 @@ export function CalendarExercise() {
                 )}
             </CardFooter>
         </Card>
-         <style jsx>{`
+         <style jsx>{\`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -329,7 +329,7 @@ export function CalendarExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        `}</style>
+        \`}</style>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { LongCalculationExercise } from '@/components/long-calculation-exercise'
 import { WordFamiliesExercise } from '@/components/word-families-exercise';
 import { MentalCalculationExercise } from '@/components/mental-calculation-exercise';
 import { HomeworkSession } from '@/services/scores';
+import { CalendarExercise } from '@/components/calendar-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -34,6 +35,8 @@ export default function ExercisePage() {
         return <WordFamiliesExercise />;
       case 'mental-calculation':
         return <MentalCalculationExercise />;
+      case 'calendar':
+        return <CalendarExercise />;
       default:
         return <ExerciseWorkspace skill={skill} homeworkSession={homeworkSession}/>;
     }
