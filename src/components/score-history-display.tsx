@@ -19,7 +19,7 @@ export function ScoreHistoryDisplay({ scoreHistory }: ScoreHistoryDisplayProps) 
   const chartData = scoreHistory.slice(0, 5).map(item => ({
     date: item.createdAt ? format(new Date(item.createdAt), 'd MMM yyyy', { locale: fr }) : 'N/A',
     score: item.score,
-    difficulty: difficultyLevelToString(item.skill, item.calculationSettings, item.currencySettings, item.timeSettings, item.calendarSettings, item.numberLevelSettings, item.countSettings)
+    difficulty: difficultyLevelToString(item.skill, item.score, item.calculationSettings, item.currencySettings, item.timeSettings, item.calendarSettings, item.numberLevelSettings, item.countSettings)
   }));
 
   return (

@@ -138,6 +138,7 @@ export function getSkillBySlug(slug: string): Skill | undefined {
 
 export function difficultyLevelToString(
     skillSlug: string,
+    scoreValue: number, // Pass the score value directly
     calcSettings?: CalculationSettings,
     currSettings?: CurrencySettings,
     timeSettings?: TimeSettings,
@@ -172,6 +173,11 @@ export function difficultyLevelToString(
         // This should be retrieved from student data, not settings object.
         // For now, let's assume a default if no other info.
         return "Niveau B";
+    }
+     if (skillSlug === 'reading-race') {
+        if (scoreValue >= 130) return 'Niveau D';
+        if (scoreValue >= 90) return 'Niveau C';
+        return 'Niveau B'; // Default for any score below 90, as A is not applicable.
     }
     // Fallback for any other case
     return "Niveau A";
