@@ -92,7 +92,7 @@ export const skills: Skill[] = [
     description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
     icon: <Ear />,
     category: 'Nombres et calcul',
-    isFixedLevel: 'A',
+    allowedLevels: ['A', 'B', 'C', 'D'],
   },
   {
     name: 'Dénombrement',
@@ -138,6 +138,7 @@ export const skills: Skill[] = [
     description: 'Calculer de tête des additions, soustractions, multiplications et divisions.',
     icon: <Calculator />,
     category: 'Nombres et calcul',
+    allowedLevels: ['A', 'B', 'C', 'D'],
   },
   {
     name: 'Calendrier',
@@ -166,6 +167,12 @@ export function difficultyLevelToString(
     const skill = getSkillBySlug(skillSlug);
     if (skill?.isFixedLevel) {
         return `Niveau ${skill.isFixedLevel}`;
+    }
+    if (skill?.allowedLevels) {
+        // This is a student-level-dependent skill. We need the student's level for it.
+        // This part would ideally be called with the student's level for that skill.
+        // For now, we will return null, and the UI should handle it.
+        return null;
     }
 
     if (skillSlug === 'time' && timeSettings) {
