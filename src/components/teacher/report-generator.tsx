@@ -83,14 +83,13 @@ const drawCalculationWidget = (doc: jsPDF, score: Score, startY: number): number
 
         for (let i = 0; i < numCols; i++) {
             const colFromRight = numCols - 1 - i;
-            const digit = operand.padStart(numCols, ' ')[i];
             const id = `op-${opIndex}-${colFromRight}`;
             const cellState = state[id];
 
             doc.setDrawColor(150);
             doc.rect(x, y, CELL_SIZE, CELL_SIZE, 'S');
 
-            const valueToDraw = isExercise ? cellState?.value || '' : digit;
+            const valueToDraw = cellState?.value || '';
 
             if (valueToDraw) {
                 doc.setFontSize(FONT_SIZE);
@@ -152,8 +151,6 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         to: new Date(),
     });
     
-    const isExercise = true; // Helper for drawing logic
-
     const generatePdfForStudent = (doc: jsPDF, student: Student, dateRange: DateRange) => {
         const studentScores = allScores.filter(s =>
             s.userId === student.id &&
@@ -376,3 +373,5 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         </Card>
     );
 }
+
+    
