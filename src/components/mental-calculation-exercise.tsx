@@ -12,7 +12,7 @@ import { Check, RefreshCw, X, Loader2, Star } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
-import { addScore } from '@/services/scores';
+import { addScore, ScoreDetail } from '@/services/scores';
 import { ScoreTube } from './score-tube';
 
 const NUM_QUESTIONS = 10;
@@ -32,6 +32,7 @@ export function MentalCalculationExercise() {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -72,11 +73,18 @@ export function MentalCalculationExercise() {
   const checkAnswer = () => {
     if (!currentQuestion || feedback) return;
     
-    // Normalize user input and answer for comparison
-    const userAnswer = parseFloat(userInput.replace(',', '.'));
-    const correctAnswer = currentQuestion.answer;
+    const userAnswer = userInput.replace(',', '.').trim();
+    const isCorrect = parseFloat(userAnswer) === currentQuestion.answer;
+    
+    const detail: ScoreDetail = {
+      question: currentQuestion.question,
+      userAnswer: userAnswer || "vide",
+      correctAnswer: String(currentQuestion.answer),
+      status: isCorrect ? 'correct' : 'incorrect',
+    };
+    setSessionDetails(prev => [...prev, detail]);
 
-    if (userAnswer === correctAnswer) {
+    if (isCorrect) {
       setFeedback('correct');
       setCorrectAnswers(prev => prev + 1);
       setShowConfetti(true);
@@ -101,11 +109,12 @@ export function MentalCalculationExercise() {
                   userId: student.id,
                   skill: 'mental-calculation',
                   score: score,
+                  details: sessionDetails
               });
           }
       }
       saveFinalScore();
-  }, [isFinished, student, correctAnswers, hasBeenSaved]);
+  }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails]);
 
   const restartExercise = () => {
     setIsFinished(false);
@@ -114,6 +123,7 @@ export function MentalCalculationExercise() {
     setUserInput('');
     setFeedback(null);
     setHasBeenSaved(false);
+    setSessionDetails([]);
     if (level) {
       setIsLoading(true);
       setQuestions(generateMentalMathQuestions(level, NUM_QUESTIONS));

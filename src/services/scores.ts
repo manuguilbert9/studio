@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -8,12 +7,20 @@ import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSetti
 
 export type HomeworkSession = 'lundi' | 'jeudi';
 
+export interface ScoreDetail {
+    question: string;
+    userAnswer: string;
+    correctAnswer: string;
+    status: 'correct' | 'incorrect';
+}
+
 export interface Score {
     id: string;
     userId: string;
     skill: string;
     score: number;
     createdAt: string; 
+    details?: ScoreDetail[];
     timeSettings?: TimeSettings;
     calculationSettings?: CalculationSettings;
     currencySettings?: CurrencySettings;
