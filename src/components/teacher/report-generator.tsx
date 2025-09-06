@@ -17,7 +17,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Student } from '@/services/students';
 import { type Score } from '@/services/scores';
-import { type SpellingProgress, type SpellingResult } from '@/services/spelling';
+import { type SpellingProgress } from '@/services/spelling';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 
 interface ReportGeneratorProps {
@@ -34,33 +34,23 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         to: new Date(),
     });
 
-    const generatePdf = () => {
-        if (!selectedStudentId || !dateRange?.from || !dateRange?.to) {
-            return;
-        }
-
-        const student = students.find(s => s.id === selectedStudentId);
-        if (!student) return;
-
-        const studentScores = allScores.filter(s => 
-            s.userId === selectedStudentId &&
+    const generatePdfForStudent = (doc: jsPDF, student: Student, dateRange: DateRange) => {
+        const studentScores = allScores.filter(s =>
+            s.userId === student.id &&
             new Date(s.createdAt) >= dateRange.from! &&
             new Date(s.createdAt) <= dateRange.to!
-        ).sort((a,b) => a.skill.localeCompare(b.skill));
-        
-        const studentSpellingProgress = allSpellingProgress.find(p => p.userId === selectedStudentId)?.progress || {};
+        ).sort((a, b) => a.skill.localeCompare(b.skill));
 
-        const doc = new jsPDF();
-        const primaryColor = '#ea588b'; // Extracted from CSS var --primary hsl(340, 85%, 65%)
+        const primaryColor = '#ea588b';
 
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(22);
         doc.text(student.name, 105, 25, { align: 'center' });
-        
+
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
-        const dateString = `Bilan du ${format(dateRange.from, 'd MMMM yyyy', { locale: fr })} au ${format(dateRange.to, 'd MMMM yyyy', { locale: fr })}`;
+        const dateString = `Bilan du ${format(dateRange.from!, 'd MMMM yyyy', { locale: fr })} au ${format(dateRange.to!, 'd MMMM yyyy', { locale: fr })}`;
         doc.text(dateString, 105, 35, { align: 'center' });
 
         let yPos = 50;
@@ -75,11 +65,13 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
             }
         });
 
+        let hasContent = false;
         for (const category of allSkillCategories) {
             const categoryScores = scoresByCategory[category];
             if (categoryScores.length === 0) continue;
+            hasContent = true;
 
-            if (yPos > 250) { // Add new page if content gets too long
+            if (yPos > 250) {
                 doc.addPage();
                 yPos = 20;
             }
@@ -98,12 +90,15 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                 const date = format(new Date(score.createdAt), 'dd/MM/yy');
 
                 let errorsText = '';
-                // Find spelling errors if applicable
                 const spellingProgressForStudent = allSpellingProgress.find(p => p.userId === student.id);
                 if (score.skill === 'spelling' && spellingProgressForStudent) {
-                    const relevantResult = Object.entries(spellingProgressForStudent.progress).find(([key, result]) => new Date(result.completedAt).getTime() === new Date(score.createdAt).getTime());
-                     if (relevantResult && relevantResult[1].errors.length > 0) {
-                        errorsText = relevantResult[1].errors.join(', ');
+                    const relevantResult = Object.values(spellingProgressForStudent.progress).find(result => {
+                         const resultDate = new Date(result.completedAt).setMilliseconds(0);
+                         const scoreDate = new Date(score.createdAt).setMilliseconds(0);
+                         return resultDate === scoreDate;
+                    });
+                     if (relevantResult && relevantResult.errors.length > 0) {
+                        errorsText = relevantResult.errors.join(', ');
                      }
                 }
 
@@ -116,27 +111,44 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                 body: body,
                 theme: 'striped',
                 headStyles: { fillColor: [51, 65, 85] },
-                columnStyles: {
-                    4: { cellWidth: 50 } // Widen errors column
-                },
-                didDrawPage: (data) => {
-                    yPos = data.cursor?.y || 20;
-                }
+                columnStyles: { 4: { cellWidth: 50 } },
+                didDrawPage: (data) => { yPos = data.cursor?.y || 20; }
             });
             yPos = (doc as any).lastAutoTable.finalY + 10;
         }
 
-        // --- FOOTER ---
-        const pageCount = (doc as any).internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(10);
-            doc.text("L'enseignant, M. Manu", 15, doc.internal.pageSize.height - 15);
+        if (!hasContent) {
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text("Aucune donnée de score pour cet élève sur la période sélectionnée.", 105, 60, { align: 'center' });
         }
+    };
+    
+    const generateSinglePdf = () => {
+        if (!selectedStudentId || !dateRange?.from || !dateRange?.to) return;
+        const student = students.find(s => s.id === selectedStudentId);
+        if (!student) return;
 
-
+        const doc = new jsPDF();
+        generatePdfForStudent(doc, student, dateRange);
         doc.save(`Bilan-${student.name.replace(' ', '_')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     };
+
+    const generateClassPdf = () => {
+        if (!dateRange?.from || !dateRange?.to) return;
+
+        const doc = new jsPDF();
+        
+        students.forEach((student, index) => {
+            if (index > 0) {
+                doc.addPage();
+            }
+            generatePdfForStudent(doc, student, dateRange);
+        });
+
+        doc.save(`Bilan-Classe-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    };
+
 
     return (
         <Card>
@@ -200,14 +212,25 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                         </PopoverContent>
                     </Popover>
                 </div>
-                <Button
-                    onClick={generatePdf}
-                    disabled={!selectedStudentId || !dateRange?.from || !dateRange?.to}
-                    className="w-full sm:w-auto self-end"
-                >
-                    <FileDown className="mr-2" />
-                    Générer le PDF
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto self-end">
+                    <Button
+                        onClick={generateSinglePdf}
+                        disabled={!selectedStudentId || !dateRange?.from || !dateRange?.to}
+                        className="w-full sm:w-auto"
+                    >
+                        <FileDown className="mr-2" />
+                        PDF Individuel
+                    </Button>
+                     <Button
+                        onClick={generateClassPdf}
+                        disabled={!dateRange?.from || !dateRange?.to}
+                        className="w-full sm:w-auto"
+                        variant="secondary"
+                    >
+                        <FileDown className="mr-2" />
+                        Bilan de Classe
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );
