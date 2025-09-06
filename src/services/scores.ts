@@ -8,11 +8,19 @@ import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSetti
 
 export type HomeworkSession = 'lundi' | 'jeudi';
 
+export interface CalculationState {
+  [cellId: string]: {
+    value: string;
+    isCrossed?: boolean;
+  };
+}
+
 export interface ScoreDetail {
     question: string;
     userAnswer: string;
     correctAnswer: string;
     status: 'correct' | 'incorrect';
+    calculationState?: CalculationState;
 }
 
 export interface Score {
@@ -22,6 +30,7 @@ export interface Score {
     score: number;
     createdAt: string; 
     details?: ScoreDetail[];
+    calculationState?: CalculationState; // For storing the state of the whole widget if needed
     timeSettings?: TimeSettings;
     calculationSettings?: CalculationSettings;
     currencySettings?: CurrencySettings;

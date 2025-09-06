@@ -11,13 +11,15 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import { type Student } from '@/services/students';
-import { type Score, deleteScore } from '@/services/scores';
+import { type Score, deleteScore, CalculationState } from '@/services/scores';
 import { getSkillBySlug, difficultyLevelToString } from '@/lib/skills';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ReportGenerator } from './report-generator';
 import type { SpellingProgress } from '@/services/spelling';
 import { cn } from '@/lib/utils';
+import { AdditionWidget } from '../tableau/addition-widget';
+import { SoustractionWidget } from '../tableau/soustraction-widget';
 
 interface ResultsManagerProps {
     students: Student[];
@@ -25,6 +27,29 @@ interface ResultsManagerProps {
     allSpellingProgress: SpellingProgress[];
     onDataRefresh: () => void;
 }
+
+const ReadOnlyCalculationWidget = ({ score }: { score: Score }) => {
+    if (!score.calculationState) return null;
+
+    const operands = score.details
+        ?.find(d => d.calculationState)
+        ?.question.split(/[+-]/).map(s => parseInt(s.trim(), 10)) || [];
+    
+    if (operands.length < 2) return null;
+
+    const operation = score.details?.find(d => d.calculationState)?.question.includes('+') ? 'addition' : 'subtraction';
+
+    if (operation === 'addition') {
+        return <AdditionWidget isExercise={false} operands={operands} calculationState={score.calculationState} />;
+    }
+    
+    if (operation === 'subtraction') {
+        return <SoustractionWidget isExercise={false} operands={operands} calculationState={score.calculationState} />;
+    }
+
+    return null;
+}
+
 
 export function ResultsManager({ students, allScores, allSpellingProgress, onDataRefresh }: ResultsManagerProps) {
     const { toast } = useToast();
@@ -134,29 +159,41 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                         <TableCell colSpan={5} className="p-0">
                                                             <div className="p-4 bg-secondary/50">
                                                                 <h4 className="font-semibold mb-2">Détail de la session</h4>
-                                                                <Table>
-                                                                    <TableHeader>
-                                                                        <TableRow>
-                                                                            <TableHead>Question</TableHead>
-                                                                            <TableHead>Réponse de l'élève</TableHead>
-                                                                            <TableHead>Statut</TableHead>
-                                                                        </TableRow>
-                                                                    </TableHeader>
-                                                                    <TableBody>
-                                                                        {score.details?.map((detail, index) => (
-                                                                            <TableRow key={index} className={cn(detail.status === 'incorrect' && 'bg-red-100/50')}>
-                                                                                <TableCell>{detail.question}</TableCell>
-                                                                                <TableCell>{detail.userAnswer}</TableCell>
-                                                                                <TableCell>
-                                                                                    {detail.status === 'correct' ?
-                                                                                        <CheckCircle className="h-5 w-5 text-green-600" /> :
-                                                                                        <XCircle className="h-5 w-5 text-red-600" />
-                                                                                    }
-                                                                                </TableCell>
+                                                                {score.skill === 'long-calculation' ? (
+                                                                    score.details?.map((detail, index) => (
+                                                                        <div key={index} className="mb-4 p-4 border rounded-lg bg-background">
+                                                                            <p>Calcul: <span className="font-mono">{detail.question}</span></p>
+                                                                            <p>Réponse attendue: <span className="font-mono">{detail.correctAnswer}</span></p>
+                                                                            <div className="flex justify-center items-center mt-2 scale-75 transform -translate-x-12">
+                                                                                <ReadOnlyCalculationWidget score={{...score, calculationState: detail.calculationState}} />
+                                                                            </div>
+                                                                        </div>
+                                                                    ))
+                                                                ) : (
+                                                                    <Table>
+                                                                        <TableHeader>
+                                                                            <TableRow>
+                                                                                <TableHead>Question</TableHead>
+                                                                                <TableHead>Réponse de l'élève</TableHead>
+                                                                                <TableHead>Statut</TableHead>
                                                                             </TableRow>
-                                                                        ))}
-                                                                    </TableBody>
-                                                                </Table>
+                                                                        </TableHeader>
+                                                                        <TableBody>
+                                                                            {score.details?.map((detail, index) => (
+                                                                                <TableRow key={index} className={cn(detail.status === 'incorrect' && 'bg-red-100/50')}>
+                                                                                    <TableCell>{detail.question}</TableCell>
+                                                                                    <TableCell>{detail.userAnswer}</TableCell>
+                                                                                    <TableCell>
+                                                                                        {detail.status === 'correct' ?
+                                                                                            <CheckCircle className="h-5 w-5 text-green-600" /> :
+                                                                                            <XCircle className="h-5 w-5 text-red-600" />
+                                                                                        }
+                                                                                    </TableCell>
+                                                                                </TableRow>
+                                                                            ))}
+                                                                        </TableBody>
+                                                                    </Table>
+                                                                )}
                                                             </div>
                                                         </TableCell>
                                                      </TableRow>

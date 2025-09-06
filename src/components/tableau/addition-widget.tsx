@@ -5,13 +5,15 @@ import * as React from 'react';
 import { Card } from '@/components/ui/card';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
-import type { AdditionWidgetState } from '@/services/tableau.types';
+import { type CalculationState } from '@/services/scores';
 
 interface AdditionWidgetProps {
-  initialState: AdditionWidgetState;
-  exerciseInputs: Record<string, string>;
-  onInputChange: (id: string, value: string) => void;
-  feedback: 'correct' | 'incorrect' | null;
+  isExercise: boolean;
+  operands?: number[];
+  calculationState?: CalculationState;
+  onInputChange?: (id: string, value: string) => void;
+  onToggleCrossed?: (id: string) => void;
+  feedback?: 'correct' | 'incorrect' | null;
 }
 
 // Units: Blue, Tens: Red, Hundreds: Green
@@ -26,19 +28,22 @@ const getBorderColor = (colIndexFromRight: number) =>
   colors[colIndexFromRight] || 'border-slate-900';
 
 export function AdditionWidget({ 
-    initialState, 
-    exerciseInputs,
-    onInputChange,
-    feedback
+    isExercise,
+    operands = [0, 0],
+    calculationState = {},
+    onInputChange = () => {},
+    onToggleCrossed = () => {},
+    feedback = null,
 }: AdditionWidgetProps) {
-  const { numOperands, numCols, size } = initialState;
+  const numOperands = operands.length;
+  const numCols = String(Math.max(...operands)).length;
 
   const colsToRender = React.useMemo(
     () => Array.from({ length: numCols }, (_, i) => i),
     [numCols]
   );
   
-  const cellSize = Math.max(20, Math.min(size.width / (numCols + 3), size.height / (numOperands + 4)));
+  const cellSize = 60;
   const fontSize = cellSize * 0.6;
   const carrySize = cellSize * 0.8;
   const carryFontSize = carrySize * 0.5;
@@ -50,7 +55,7 @@ export function AdditionWidget({
   };
 
   return (
-    <div style={{ width: size.width, height: size.height }}>
+    <div style={{ width: (numCols + 2) * (cellSize + 8), height: (numOperands + 2) * (cellSize + 8) }}>
     <Card className="w-full h-full p-4 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center select-none">
       <div className="flex flex-col items-center flex-grow h-full justify-center">
         <div className="flex items-start">
@@ -80,7 +85,7 @@ export function AdditionWidget({
                 size={cellSize} 
                 fontSize={fontSize}
                 tabIndex={getTabIndex(numOperands, 0)}
-                value={exerciseInputs?.[`result-${numCols}`]}
+                value={calculationState?.[`result-${numCols}`]?.value}
                 onValueChange={onInputChange}
                 isReadOnly={!!feedback}
               />
@@ -98,7 +103,7 @@ export function AdditionWidget({
                     borderColor={borderColor} 
                     size={carrySize} 
                     fontSize={carryFontSize} 
-                    value={exerciseInputs?.[`carry-${colFromRight}`]}
+                    value={calculationState?.[`carry-${colFromRight}`]?.value}
                     onValueChange={onInputChange}
                     isReadOnly={!!feedback}
                   />}
@@ -112,7 +117,7 @@ export function AdditionWidget({
                             size={cellSize} 
                             fontSize={fontSize} 
                             tabIndex={getTabIndex(rowIndex, col + 1)}
-                            value={exerciseInputs?.[`op-${rowIndex}-${colFromRight}`]}
+                            value={calculationState?.[`op-${rowIndex}-${colFromRight}`]?.value}
                             onValueChange={onInputChange}
                             isReadOnly={!!feedback}
                         />
@@ -128,7 +133,7 @@ export function AdditionWidget({
                     size={cellSize} 
                     fontSize={fontSize}
                     tabIndex={getTabIndex(numOperands, col + 1)}
-                    value={exerciseInputs?.[`result-${colFromRight}`]}
+                    value={calculationState?.[`result-${colFromRight}`]?.value}
                     onValueChange={onInputChange}
                     isReadOnly={!!feedback}
                   />

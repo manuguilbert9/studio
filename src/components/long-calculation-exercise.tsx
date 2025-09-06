@@ -1,19 +1,20 @@
 
 'use client';
 
-import { useState, useMemo, useEffect, useContext } from 'react';
+import { useState, useMemo, useEffect, useContext, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw, Loader2, Check, X } from 'lucide-react';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
 import { UserContext } from '@/context/user-context';
-import { addScore } from '@/services/scores';
+import { addScore, ScoreDetail } from '@/services/scores';
 import { Progress } from '@/components/ui/progress';
 import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
 import type { SkillLevel } from '@/lib/skills';
 import { Input } from './ui/input';
+import { type CalculationState } from '@/services/scores';
 
 
 type OperationType = 'addition' | 'subtraction' | 'count';
@@ -142,13 +143,14 @@ export function LongCalculationExercise() {
     
     const [problems, setProblems] = useState<Problem[]>([]);
     const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
-    const [userInputs, setUserInputs] = useState<Record<string, string>>({});
+    const [calculationState, setCalculationState] = useState<CalculationState>({});
     const [feedback, setFeedback] = useState<Feedback>(null);
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [userCount, setUserCount] = useState('');
+    const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
     const generateProblemsForLevel = (lvl: SkillLevel) => {
         let newProblems: Problem[] = [];
@@ -210,25 +212,34 @@ export function LongCalculationExercise() {
         return null;
     }, [problems, currentProblemIndex]);
 
-    const handleInputChange = (cellId: string, value: string) => {
-        setUserInputs(prev => ({
+    const handleInputChange = useCallback((id: string, value: string) => {
+        setCalculationState(prev => ({
             ...prev,
-            [cellId]: value
+            [id]: { ...(prev[id] || { isCrossed: false }), value }
         }));
-    };
+    }, []);
+
+    const handleToggleCrossed = useCallback((id: string) => {
+        setCalculationState(prev => ({
+            ...prev,
+            [id]: { ...(prev[id] || { value: '' }), isCrossed: !(prev[id]?.isCrossed) }
+        }));
+    }, []);
 
     const handleValidate = () => {
         if (!currentProblem) return;
 
         let isCorrect = false;
+        let userAnswerStr = '';
+
         if (currentProblem.operation === 'count') {
             isCorrect = parseInt(userCount, 10) === currentProblem.answer;
+            userAnswerStr = userCount;
         } else {
             // Reconstruct user's answer from input cells
             const numCols = String(Math.max(...currentProblem.operands, currentProblem.answer)).length;
-            let userAnswerStr = '';
             for (let i = numCols; i >= 0; i--) { // Start from potential highest-order column
-                 const cellValue = userInputs[`result-${i}`] || '';
+                 const cellValue = calculationState[`result-${i}`]?.value || '';
                  // Handle borrowed '1' (e.g. "13" -> "3")
                  const cleanValue = cellValue.length === 2 && cellValue.startsWith('1') ? cellValue.substring(1) : cellValue;
                  userAnswerStr += cleanValue;
@@ -237,6 +248,14 @@ export function LongCalculationExercise() {
             isCorrect = userAnswerNum === currentProblem.answer;
         }
 
+         const detail: ScoreDetail = {
+            question: currentProblem.operands.join(` ${currentProblem.operation === 'addition' ? '+' : '-'} `),
+            userAnswer: userAnswerStr,
+            correctAnswer: String(currentProblem.answer),
+            status: isCorrect ? 'correct' : 'incorrect',
+            calculationState: currentProblem.operation !== 'count' ? calculationState : undefined
+        };
+        setSessionDetails(prev => [...prev, detail]);
 
         if (isCorrect) {
             setFeedback('correct');
@@ -248,7 +267,7 @@ export function LongCalculationExercise() {
         setTimeout(() => {
             if (currentProblemIndex < NUM_PROBLEMS - 1) {
                 setCurrentProblemIndex(prev => prev + 1);
-                setUserInputs({});
+                setCalculationState({});
                 setUserCount('');
                 setFeedback(null);
             } else {
@@ -267,11 +286,12 @@ export function LongCalculationExercise() {
                     skill: 'long-calculation',
                     score: score,
                     numberLevelSettings: { level: level },
+                    details: sessionDetails,
                 });
             }
         }
         saveFinalScore();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, level]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, level, sessionDetails]);
 
     const restartExercise = () => {
         setIsLoading(true);
@@ -279,12 +299,13 @@ export function LongCalculationExercise() {
             generateProblemsForLevel(level);
         }
         setCurrentProblemIndex(0);
-        setUserInputs({});
+        setCalculationState({});
         setUserCount('');
         setFeedback(null);
         setIsFinished(false);
         setCorrectAnswers(0);
         setHasBeenSaved(false);
+        setSessionDetails([]);
     };
 
     if (isLoading || !level || problems.length === 0) {
@@ -376,16 +397,20 @@ export function LongCalculationExercise() {
                         <div className="flex justify-center items-center scale-90 sm:scale-100 transform">
                             {operation === 'addition' ? (
                                 <AdditionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands, currentProblem.answer)).length }}
-                                    exerciseInputs={userInputs}
+                                    isExercise={true}
+                                    operands={operands}
+                                    calculationState={calculationState}
                                     onInputChange={handleInputChange}
+                                    onToggleCrossed={handleToggleCrossed}
                                     feedback={feedback}
                                 />
                             ) : (
                                 <SoustractionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length }}
-                                    exerciseInputs={userInputs}
+                                    isExercise={true}
+                                    operands={operands}
+                                    calculationState={calculationState}
                                     onInputChange={handleInputChange}
+                                    onToggleCrossed={handleToggleCrossed}
                                     feedback={feedback}
                                 />
                             )}

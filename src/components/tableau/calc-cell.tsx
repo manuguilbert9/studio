@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CalcCellProps {
@@ -14,7 +13,9 @@ interface CalcCellProps {
   tabIndex?: number;
   isReadOnly?: boolean;
   value?: string;
-  onValueChange?: (id: string, value: string) => void;
+  isCrossed?: boolean;
+  onValueChange: (id: string, value: string) => void;
+  onToggleCrossed?: (id: string) => void;
 }
 
 export function CalcCell({ 
@@ -26,33 +27,27 @@ export function CalcCell({
     isMinuend = false, 
     tabIndex, 
     isReadOnly = false, 
-    value: propValue,
-    onValueChange
+    value = '',
+    isCrossed = false,
+    onValueChange,
+    onToggleCrossed
 }: CalcCellProps) {
-  const [internalValue, setInternalValue] = useState('');
-  const [isCrossed, setIsCrossed] = useState(false);
-  
-  const value = onValueChange !== undefined ? propValue || '' : internalValue;
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
     
-    const setter = onValueChange ? (id: string, val: string) => onValueChange(id, val) : (id: string, val: string) => setInternalValue(val);
     const rawInput = e.target.value;
     const maxLength = isMinuend ? 2 : 1;
     
     if (/^\d*$/.test(rawInput) && rawInput.length <= maxLength) {
-      setter(id, rawInput);
-      if (isCrossed) {
-        setIsCrossed(false);
-      }
+      onValueChange(id, rawInput);
     }
   };
 
   const handleRightClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isReadOnly || !allowCrossing || !value) return;
+    if (isReadOnly || !allowCrossing || !value || !onToggleCrossed) return;
     e.preventDefault();
-    setIsCrossed(prev => !prev);
+    onToggleCrossed(id);
   };
   
   const hasBorrowedOne = isMinuend && value.length === 2 && value.startsWith('1');
@@ -83,7 +78,7 @@ export function CalcCell({
         }}
       />
       
-      {hasBorrowedOne && !isReadOnly && (
+      {hasBorrowedOne && (
          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
             <span 
               className="absolute font-bold font-mono"

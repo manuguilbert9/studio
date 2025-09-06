@@ -5,13 +5,15 @@ import * as React from 'react';
 import { Card } from '@/components/ui/card';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
-import type { SoustractionWidgetState } from '@/services/tableau.types';
+import { type CalculationState } from '@/services/scores';
 
 interface SoustractionWidgetProps {
-  initialState: SoustractionWidgetState;
-  exerciseInputs: Record<string, string>;
-  onInputChange: (id: string, value: string) => void;
-  feedback: 'correct' | 'incorrect' | null;
+  isExercise: boolean;
+  operands?: number[];
+  calculationState?: CalculationState;
+  onInputChange?: (id: string, value: string) => void;
+  onToggleCrossed?: (id: string) => void;
+  feedback?: 'correct' | 'incorrect' | null;
 }
 
 const colors = [
@@ -25,19 +27,21 @@ const getBorderColor = (colIndexFromRight: number) =>
   colors[colIndexFromRight] || 'border-slate-900';
 
 export function SoustractionWidget({ 
-    initialState, 
-    exerciseInputs,
-    onInputChange,
-    feedback
+    isExercise,
+    operands = [0, 0],
+    calculationState = {},
+    onInputChange = () => {},
+    onToggleCrossed = () => {},
+    feedback = null,
 }: SoustractionWidgetProps) {
-  const { numCols, size } = initialState;
+  const numCols = String(Math.max(...operands)).length;
 
   const colsToRender = React.useMemo(
     () => Array.from({ length: numCols }, (_, i) => i),
     [numCols]
   );
   
-  const cellSize = Math.max(20, Math.min(size.width / (numCols + 2), size.height / 5));
+  const cellSize = 60;
   const fontSize = cellSize * 0.6;
   const carrySize = cellSize * 0.8;
   const carryFontSize = carrySize * 0.5;
@@ -51,7 +55,7 @@ export function SoustractionWidget({
   };
   
   return (
-    <div style={{ width: size.width, height: size.height }}>
+    <div style={{ width: (numCols + 1) * (cellSize + 8), height: 4 * (cellSize + 8) }}>
     <Card className="w-full h-full p-4 bg-white/95 backdrop-blur-sm rounded-lg flex items-center justify-center select-none">
       <div className="flex flex-col items-center flex-grow h-full justify-center">
         <div className="flex items-start">
@@ -79,8 +83,10 @@ export function SoustractionWidget({
                         fontSize={carryFontSize} 
                         borderStyle="dotted"
                         tabIndex={getTabIndex(-1, col)}
-                        value={exerciseInputs?.[`carry-${colFromRight}`]}
+                        value={calculationState?.[`carry-${colFromRight}`]?.value}
+                        isCrossed={calculationState?.[`carry-${colFromRight}`]?.isCrossed}
                         onValueChange={onInputChange}
+                        onToggleCrossed={onToggleCrossed}
                         isReadOnly={!!feedback}
                     />
                   )}
@@ -94,8 +100,10 @@ export function SoustractionWidget({
                         allowCrossing={true} 
                         isMinuend={true} 
                         tabIndex={getTabIndex(0, col)} 
-                        value={exerciseInputs?.[`op-0-${colFromRight}`]}
+                        value={calculationState?.[`op-0-${colFromRight}`]?.value}
+                        isCrossed={calculationState?.[`op-0-${colFromRight}`]?.isCrossed}
                         onValueChange={onInputChange}
+                        onToggleCrossed={onToggleCrossed}
                         isReadOnly={!!feedback}
                     />
                 </div>
@@ -106,7 +114,7 @@ export function SoustractionWidget({
                         size={cellSize} 
                         fontSize={fontSize} 
                         tabIndex={getTabIndex(1, col)}
-                        value={exerciseInputs?.[`op-1-${colFromRight}`]}
+                        value={calculationState?.[`op-1-${colFromRight}`]?.value}
                         onValueChange={onInputChange}
                         isReadOnly={!!feedback}
                     />
@@ -119,7 +127,7 @@ export function SoustractionWidget({
                     size={cellSize} 
                     fontSize={fontSize} 
                     tabIndex={getTabIndex(2, col)}
-                    value={exerciseInputs?.[`result-${colFromRight}`]}
+                    value={calculationState?.[`result-${colFromRight}`]?.value}
                     onValueChange={onInputChange}
                     isReadOnly={!!feedback}
                   />

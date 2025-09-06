@@ -1,7 +1,6 @@
 
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CarryCellProps {
@@ -12,7 +11,9 @@ interface CarryCellProps {
     borderStyle?: 'solid' | 'dotted';
     tabIndex?: number;
     value?: string;
-    onValueChange?: (id: string, value: string) => void;
+    isCrossed?: boolean;
+    onValueChange: (id: string, value: string) => void;
+    onToggleCrossed?: (id: string) => void;
     isReadOnly?: boolean;
 }
 
@@ -23,34 +24,26 @@ export function CarryCell({
     fontSize, 
     borderStyle = 'solid', 
     tabIndex,
-    value: propValue,
+    value = '',
+    isCrossed = false,
     onValueChange,
+    onToggleCrossed,
     isReadOnly = false,
 }: CarryCellProps) {
-  const [internalValue, setInternalValue] = useState('');
-  const [isCrossed, setIsCrossed] = useState(false);
   
-  const value = onValueChange !== undefined ? propValue || '' : internalValue;
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
 
-    const setter = onValueChange ? (id: string, val: string) => onValueChange(id, val) : (id: string, val: string) => setInternalValue(val);
     const val = e.target.value;
     if (/^\d{0,2}$/.test(val)) {
-      setter(id, val);
-       if (isCrossed) {
-        setIsCrossed(false);
-      }
+      onValueChange(id, val);
     }
   };
 
   const handleRightClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isReadOnly) return;
+    if (isReadOnly || !value || !onToggleCrossed) return;
     e.preventDefault();
-    if (value) {
-      setIsCrossed(prev => !prev);
-    }
+    onToggleCrossed(id);
   };
 
   const hasBorrowedOne = value.length === 2 && value.startsWith('1');
