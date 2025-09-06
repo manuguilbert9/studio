@@ -123,7 +123,7 @@ export default function StoryBoxPage() {
         </html>
     `;
     
-    const dataUri = `data:text/html;charset=utf-8,${content}`;
+    const dataUri = `data:text/html,${encodeURIComponent(content)}`;
     window.location.href = `read:${dataUri}`;
   };
 
@@ -141,6 +141,12 @@ export default function StoryBoxPage() {
            </div>
            <Card className="mt-8 shadow-xl">
              <CardHeader className="text-center">
+                 <div className="mb-4 flex justify-center items-center gap-2 text-3xl">
+                    <span className="text-sm font-medium text-muted-foreground">Inspiration :</span>
+                    {selectedEmojis.map(emoji => (
+                      <span key={emoji}>{emoji}</span>
+                    ))}
+                  </div>
                 <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
              </CardHeader>
              <CardContent className="space-y-6">

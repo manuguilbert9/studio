@@ -48,10 +48,7 @@ Ta mission est de rédiger une histoire originale en français.
 
 Voici les instructions à suivre :
 
-1.  **Personnages et Objets** : L'histoire doit impérativement inclure les éléments représentés par les emojis suivants. Sois créatif dans leur intégration.
-    {{#each emojis}}
-    - {{this}}
-    {{/each}}
+1.  **Inspiration** : Inspire-toi des thèmes, personnages ou objets représentés par les emojis suivants : {{#each emojis}}{{this}} {{/each}}. Ne mentionne pas les emojis directement dans le texte.
 
 2.  **Longueur** : L'histoire doit être de longueur "{{length}}", c'est-à-dire {{lookup ../lengthInstructionMap length}}.
 
