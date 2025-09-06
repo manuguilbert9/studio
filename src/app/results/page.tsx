@@ -8,7 +8,7 @@ import { Score, getScoresForUser } from '@/services/scores';
 import { getSkillBySlug, difficultyLevelToString, SkillCategory, allSkillCategories } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Home, Loader2 } from 'lucide-react';
+import { Home, Loader2, Rocket } from 'lucide-react';
 import { ErlenmeyerFlask } from '@/components/erlenmeyer-flask';
 import { Logo } from '@/components/logo';
 
@@ -19,6 +19,7 @@ interface SkillResult {
     average: number;
     count: number;
     category: SkillCategory;
+    lastScore?: number; // To store the last MCLM score
 }
 
 export default function ResultsPage() {
@@ -70,14 +71,20 @@ export default function ResultsPage() {
                         const sum = lastScores.reduce((acc, s) => acc + s, 0);
                         const average = sum / lastScores.length;
                         
-                        calculatedResults.push({
+                        const result: SkillResult = {
                             slug: skillSlug,
                             name: skillInfo.name,
                             level: level,
                             average: Math.round(average),
                             count: lastScores.length,
                             category: skillInfo.category,
-                        });
+                        };
+
+                        if (skillSlug === 'reading-race') {
+                           result.lastScore = lastScores[0]; // The last score is the first in the sorted array
+                        }
+                        
+                        calculatedResults.push(result);
                     }
                 }
             }
@@ -169,7 +176,15 @@ export default function ResultsPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                                 {categoryResults.map(result => (
                                 <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                                    <ErlenmeyerFlask score={result.average} />
+                                    {result.slug === 'reading-race' ? (
+                                        <div className="relative flex flex-col items-center justify-center mb-6 h-[150px] w-[120px]">
+                                             <Rocket className="h-16 w-16 text-primary" />
+                                             <p className="text-4xl font-bold font-headline mt-4">{result.lastScore}</p>
+                                             <p className="text-sm text-muted-foreground">MCLM</p>
+                                        </div>
+                                    ) : (
+                                        <ErlenmeyerFlask score={result.average} />
+                                    )}
                                     <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
                                     <p className="font-semibold text-sm text-primary">{result.level}</p>
                                     <p className="text-xs text-muted-foreground">({result.count} exercices)</p>

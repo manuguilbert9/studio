@@ -8,7 +8,7 @@ import { Score, getScoresForUser } from '@/services/scores';
 import { getSkillBySlug } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Home, Loader2 } from 'lucide-react';
+import { Home, Loader2, Rocket } from 'lucide-react';
 import { ErlenmeyerFlask } from '@/components/erlenmeyer-flask';
 import { Logo } from '@/components/logo';
 
@@ -18,6 +18,7 @@ interface SkillAverage {
     icon: React.ReactElement;
     average: number;
     count: number;
+    lastScore?: number;
 }
 
 export default function ResultsPage() {
@@ -44,15 +45,14 @@ export default function ResultsPage() {
 
             // 2. Group scores by skill slug.
             const scoresBySkill: Record<string, number[]> = {};
-            for (const score of allScores) {
+            allScores.forEach(score => {
                 if (score && score.skill && typeof score.score === 'number') {
                     if (!scoresBySkill[score.skill]) {
                         scoresBySkill[score.skill] = [];
                     }
-                    // We only care about the score value. The list is already sorted by date desc.
                     scoresBySkill[score.skill].push(score.score);
                 }
-            }
+            });
             
             // 3. Calculate average for each skill group.
             const calculatedAverages: SkillAverage[] = [];
@@ -60,19 +60,25 @@ export default function ResultsPage() {
                 const skillInfo = getSkillBySlug(skillSlug);
                 if (skillInfo) {
                     const skillScores = scoresBySkill[skillSlug];
-                    const lastScores = skillScores.slice(0, 10); // Take the last 10 scores (or fewer)
+                    const lastScores = skillScores.slice(0, 10);
                     
                     if (lastScores.length > 0) {
                         const sum = lastScores.reduce((acc, s) => acc + s, 0);
                         const average = sum / lastScores.length;
                         
-                        calculatedAverages.push({
+                        const avg: SkillAverage = {
                             slug: skillSlug,
                             name: skillInfo.name,
                             icon: skillInfo.icon,
                             average: Math.round(average),
                             count: lastScores.length
-                        });
+                        };
+
+                        if (skillSlug === 'reading-race') {
+                            avg.lastScore = lastScores[0];
+                        }
+                        
+                        calculatedAverages.push(avg);
                     }
                 }
             }
@@ -133,7 +139,15 @@ export default function ResultsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     {averages.map(skillAverage => (
                         <Card key={skillAverage.slug} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                            <ErlenmeyerFlask score={skillAverage.average} />
+                             {skillAverage.slug === 'reading-race' ? (
+                                <div className="relative flex flex-col items-center justify-center mb-6 h-[150px] w-[120px]">
+                                     <Rocket className="h-16 w-16 text-primary" />
+                                     <p className="text-4xl font-bold font-headline mt-4">{skillAverage.lastScore}</p>
+                                     <p className="text-sm text-muted-foreground">MCLM</p>
+                                </div>
+                            ) : (
+                                <ErlenmeyerFlask score={skillAverage.average} />
+                            )}
                             <h3 className="font-headline text-2xl mt-[-1rem]">{skillAverage.name}</h3>
                             <p className="text-xs text-muted-foreground">({skillAverage.count} exercices)</p>
                         </Card>
