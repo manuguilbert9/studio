@@ -18,7 +18,6 @@ export interface CalendarQuestion {
     // For click-date and some QCMs. Dates are stored as ISO strings for serialization.
     month?: string; 
     answerDate?: string;
-    highlightedDays?: string[];
     // For count-days
     answerNumber?: number;
 }
@@ -149,7 +148,6 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
             options: Array.from(options).sort(() => Math.random() - 0.5),
             answer: answer,
             month: startOfMonth(referenceDate).toISOString(),
-            highlightedDays: [date1.toISOString()],
         }
     }
 };

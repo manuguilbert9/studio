@@ -248,16 +248,9 @@ export function CalendarExercise() {
                          <DayPicker
                             mode="single"
                             locale={fr}
-                            month={new Date(currentQuestion.month)}
                             className="p-4 rounded-md border bg-card"
                             classNames={{
                                 day_today: "font-bold text-accent",
-                            }}
-                            modifiers={{
-                                highlighted: currentQuestion.highlightedDays?.map(d => new Date(d)) || [],
-                            }}
-                            modifiersClassNames={{
-                                highlighted: "bg-primary/20 ring-2 ring-primary rounded-full",
                             }}
                         />
                     )}
@@ -292,12 +285,6 @@ export function CalendarExercise() {
                     classNames={{
                         day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
                         day_today: "font-bold text-accent",
-                    }}
-                    modifiers={{
-                        highlighted: currentQuestion.highlightedDays?.map(d => new Date(d)) || [],
-                    }}
-                    modifiersClassNames={{
-                        highlighted: "bg-accent/20 rounded-full",
                     }}
                    />
               )
@@ -378,4 +365,3 @@ export function CalendarExercise() {
     </div>
   );
 }
-
