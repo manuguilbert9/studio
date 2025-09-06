@@ -109,18 +109,21 @@ export default function StoryBoxPage() {
     const content = `
         <!DOCTYPE html>
         <html>
-        <head><title>${story.title}</title></head>
+        <head><title>${story.title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</title></head>
         <body>
-            <h1>${story.title}</h1>
-            <p>${story.story.replace(/\n/g, '<br/>')}</p>
+            <h1>${story.title.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</h1>
+            <p>${story.story.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br/>')}</p>
             <hr>
             <h2>Morale de l'histoire</h2>
-            <p><em>${story.moral}</em></p>
+            <p><em>${story.moral.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</em></p>
         </body>
         </html>
     `;
-    const encodedContent = encodeURIComponent(content);
-    window.location.href = `read:data:text/html,${encodedContent}`;
+    
+    // We create a data URI, but we don't URI-encode the HTML content itself,
+    // as Edge's `read:` protocol expects raw HTML after the comma.
+    const dataUri = `data:text/html;charset=utf-8,${content}`;
+    window.location.href = `read:${dataUri}`;
   };
 
   if (story) {
