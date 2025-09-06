@@ -168,10 +168,15 @@ export function difficultyLevelToString(
     if (skill?.isFixedLevel) {
         return `Niveau ${skill.isFixedLevel}`;
     }
+
+    // Check for level saved directly in score data first
+    if (numberLevelSettings?.level) {
+        return `Niveau ${numberLevelSettings.level}`;
+    }
+
     if (skill?.allowedLevels) {
-        // This is a student-level-dependent skill. We need the student's level for it.
-        // This part would ideally be called with the student's level for that skill.
-        // For now, we will return null, and the UI should handle it.
+        // This is a student-level-dependent skill. The level *should* be stored
+        // in the score's numberLevelSettings. If not, we can't determine it here.
         return null;
     }
 
@@ -182,20 +187,15 @@ export function difficultyLevelToString(
     if (skillSlug === 'calendar' && calendarSettings) {
         return `Niveau ${calendarSettings.level}`;
     }
-     if (skillSlug === 'lire-les-nombres' && numberLevelSettings) {
-        return `Niveau ${numberLevelSettings.level}`;
-    }
-    if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation' || skillSlug === 'denombrement') {
-        // These exercises are controlled by a SkillLevel A-D set on the student
-        // This should be retrieved from student data, not settings object.
-        // For now, let's assume a default if no other info.
-        return "Niveau A"; // Defaulting to A, can be improved with student context
+
+    if (skillSlug === 'denombrement') {
+        return "Niveau A"; // isFixedLevel handles this, but as a fallback.
     }
      if (skillSlug === 'reading-race') {
         if (scoreValue >= 130) return 'Niveau D';
         if (scoreValue >= 90) return 'Niveau C';
         return 'Niveau B'; // Default for any score below 90, as A is not applicable.
     }
-    // Fallback for any other case
-    return "Niveau A";
+    // Fallback for any other case where level can't be determined
+    return null;
 }

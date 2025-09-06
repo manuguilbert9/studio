@@ -95,17 +95,17 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
 
   useEffect(() => {
     async function loadQuestions() {
-        const studentLevelSlug = student?.levels?.[skill.slug];
-        if (studentLevelSlug) {
-            if (skill.slug === 'time') {
-              const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-              const difficulty = difficultyMap[studentLevelSlug] ?? 0;
-              return startExerciseWithLevel(difficulty);
-            }
-            if (skill.slug === 'lire-les-nombres') return startNumberLevelExercise(studentLevelSlug);
-        }
+        const studentLevel = student?.levels?.[skill.slug] ?? 'B';
 
-        if (!['denombrement', 'time', 'lire-les-nombres'].includes(skill.slug)) {
+        if (skill.allowedLevels) {
+             startNumberLevelExercise(studentLevel);
+        } else if (skill.slug === 'time') {
+              const difficultyMap: Record<SkillLevel, number> = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+              const difficulty = difficultyMap[studentLevel] ?? 0;
+              return startExerciseWithLevel(difficulty);
+        } else if (skill.slug === 'denombrement' && !isTableauMode) {
+             // Let it fall through to settings screen
+        } else if (!['denombrement', 'time'].includes(skill.slug)) {
             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
             setQuestions(generatedQuestions);
             setIsReadyToStart(true);
@@ -176,7 +176,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
+      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, true);
       }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -187,7 +187,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setFeedback('incorrect');
-       if (['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
+       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, false);
       }
       setTimeout(handleNextQuestion, 2000);
@@ -300,25 +300,23 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     setNumberLevelSettings(null);
     setSessionDetails([]);
     resetInteractiveStates();
-     if (!['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
-       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
-       setIsReadyToStart(true);
-    } else {
+    if (skill.isFixedLevel || skill.allowedLevels) {
        // Re-trigger the useEffect to load questions based on student level
        if (!isUserLoading) {
-            const studentLevel = student?.levels?.[skill.slug];
-            if (studentLevel) {
-                if(skill.slug === 'time') {
-                    const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                    const difficulty = difficultyMap[studentLevel] ?? 0;
-                    startExerciseWithLevel(difficulty);
-                }
-                 if(skill.slug === 'lire-les-nombres') startNumberLevelExercise(studentLevel);
-
-            } else {
-                setIsReadyToStart(false); // Go back to settings screen
+            const studentLevel = student?.levels?.[skill.slug] ?? 'B';
+            if (skill.slug === 'time') {
+                const difficultyMap: Record<SkillLevel, number> = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                const difficulty = difficultyMap[studentLevel];
+                startExerciseWithLevel(difficulty);
+            } else if (skill.allowedLevels) {
+                startNumberLevelExercise(studentLevel);
             }
        }
+    } else if (skill.slug === 'denombrement') {
+        setIsReadyToStart(false); // Go back to settings screen
+    } else {
+       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
+       setIsReadyToStart(true);
     }
   };
 
@@ -329,12 +327,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
       if (skill.slug === 'denombrement') {
         return <CountSettings onStart={startCountExercise} />;
       }
-      if (skill.slug === 'lire-les-nombres') {
-         // This state should ideally not be reached for "lire-les-nombres"
-         // as it should auto-start with a level. But as a fallback:
-         return <Card className="w-full shadow-2xl p-8 text-center">Chargement du niveau...</Card>;
-      }
-      // For other skills, this will show a loading state until questions are set.
        return (
             <Card className="w-full shadow-2xl p-8 text-center">
                 Chargement de l'exercice...
