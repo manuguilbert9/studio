@@ -9,7 +9,7 @@ import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import { UserContext } from '@/context/user-context';
-import { addScore } from '@/services/scores';
+import { addScore, ScoreDetail } from '@/services/scores';
 import { getSimpleWords } from '@/lib/word-list';
 import Confetti from 'react-dom-confetti';
 import { ScoreTube } from './score-tube';
@@ -28,6 +28,8 @@ export function SimpleWordReadingExercise() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
   const [detectedWord, setDetectedWord] = useState('');
+  const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
+
 
   const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
       onResult: (result) => {
@@ -68,7 +70,7 @@ export function SimpleWordReadingExercise() {
   }, [currentWordIndex]);
   
   const checkAnswer = (spokenText: string) => {
-    if (exerciseState !== 'listening') return;
+    if (exerciseState !== 'listening' || !currentWord) return;
 
     setExerciseState('checking');
     stopListening();
@@ -87,8 +89,17 @@ export function SimpleWordReadingExercise() {
 
     const expected = normalize(currentWord);
     const actual = normalize(spokenText);
+    const isCorrect = expected === actual;
+    
+    const detail: ScoreDetail = {
+        question: `Lire le mot "${currentWord}"`,
+        userAnswer: spokenText,
+        correctAnswer: currentWord,
+        status: isCorrect ? 'correct' : 'incorrect',
+    };
+    setSessionDetails(prev => [...prev, detail]);
 
-    if (expected === actual) {
+    if (isCorrect) {
       setFeedback('correct');
       setCorrectAnswers(prev => prev + 1);
       setShowConfetti(true);
@@ -117,11 +128,12 @@ export function SimpleWordReadingExercise() {
                   userId: student.id,
                   skill: 'simple-word-reading',
                   score: score,
+                  details: sessionDetails
               });
           }
       };
       saveResult();
-   }, [exerciseState, student, correctAnswers, hasBeenSaved]);
+   }, [exerciseState, student, correctAnswers, hasBeenSaved, sessionDetails]);
 
   const restartExercise = () => {
     setWords(getSimpleWords(WORDS_PER_EXERCISE));
@@ -132,6 +144,7 @@ export function SimpleWordReadingExercise() {
     setShowConfetti(false);
     setHasBeenSaved(false);
     setDetectedWord('');
+    setSessionDetails([]);
   };
   
   if (!isSupported) {
