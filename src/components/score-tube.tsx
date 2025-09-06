@@ -51,22 +51,19 @@ export function ScoreTube({ score }: ScoreTubeProps) {
   const liquidColor = getLiquidColor(score);
   const isPerfectScore = score >= 100;
 
-  const tubeHeight = 150;
-  const tubeWidth = 60;
+  const tubeHeight = 75; // Reduced by 50%
+  const tubeWidth = 30; // Reduced by 50%
   const tubeRadius = tubeWidth / 2;
   const liquidY = tubeHeight - (tubeHeight * fillHeight) / 100;
   const liquidHeight = (tubeHeight * fillHeight) / 100;
 
   const tubePath = `M0,0 V${tubeHeight-tubeRadius} A${tubeRadius},${tubeRadius} 0 0 0 ${tubeWidth},${tubeHeight-tubeRadius} V0 Z`;
-
-  // Determine text color and position
-  const textColor = fillHeight < 40 ? 'hsl(var(--foreground))' : 'hsl(var(--accent-foreground))';
-  const textY = fillHeight < 20 ? liquidY - 10 : liquidY + 25;
-
+  
+  const textStyle: React.CSSProperties = isPerfectScore ? {} : { color: liquidColor };
 
   return (
-    <div className="relative flex flex-col items-center justify-center my-4">
-      <svg width={tubeWidth + 20} height={tubeHeight + 20} viewBox={`-10 -10 ${tubeWidth + 20} ${tubeHeight + 20}`}>
+    <div className="relative flex flex-col items-center justify-center my-2 gap-1">
+      <svg width={tubeWidth + 10} height={tubeHeight + 10} viewBox={`-5 -5 ${tubeWidth + 10} ${tubeHeight + 10}`}>
         <defs>
           <clipPath id="tubeClip">
             <path d={tubePath} />
@@ -83,7 +80,7 @@ export function ScoreTube({ score }: ScoreTubeProps) {
         <path
           d={tubePath}
           stroke="hsl(var(--foreground) / 0.5)"
-          strokeWidth="3"
+          strokeWidth="2"
           fill="hsl(var(--card))"
         />
 
@@ -100,21 +97,16 @@ export function ScoreTube({ score }: ScoreTubeProps) {
                 }}
             />
         </g>
-        
-        {/* Score Text */}
-        <text
-          x={tubeWidth / 2}
-          y={textY}
-          textAnchor="middle"
-          fontSize="20"
-          fontWeight="bold"
-          fill={textColor}
-          className="font-headline"
-          style={{ transition: 'y 1.5s ease-out' }}
-        >
-          {Math.round(fillHeight)}%
-        </text>
       </svg>
+      <p 
+        className={cn(
+            "font-headline text-2xl font-bold",
+            isPerfectScore && "bg-gradient-highlight text-transparent bg-clip-text"
+        )}
+        style={textStyle}
+       >
+        {Math.round(score)}%
+      </p>
     </div>
   );
 }
