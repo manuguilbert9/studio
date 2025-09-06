@@ -30,10 +30,8 @@ export function SyllableReadingExercise() {
 
   const { transcript, isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
       onResult: (result) => {
-        if(isListening){
-            checkAnswer(result);
-            stopListening();
-        }
+        // We let the user finish speaking, checkAnswer will be triggered by button or other event
+        checkAnswer(result);
       },
       onError: (err) => {
         console.error(err);
@@ -59,7 +57,11 @@ export function SyllableReadingExercise() {
   }, [currentSyllableIndex]);
   
   const checkAnswer = (spokenText: string) => {
+    if (exerciseState !== 'listening') return; // Prevent multiple checks
+
     setExerciseState('checking');
+    stopListening();
+
     const expected = currentSyllable.toLowerCase().trim();
     const actual = spokenText.toLowerCase().trim();
 
