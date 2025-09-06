@@ -333,7 +333,8 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
             question: "Écris en chiffres le nombre que tu entends.",
             textToSpeak: answerAudio,
             answer: answerText,
-            answerInWords: answerAudio
+            answerInWords: answerAudio,
+            numberLevelSettings: settings
         };
     }
 
@@ -368,7 +369,8 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
             optionsWithAudio: allOptions.sort(() => Math.random() - 0.5).map(num => ({
                 text: String(num),
                 audio: numberToWords(num)
-            }))
+            })),
+            numberLevelSettings: settings
         };
     } else {
         return {
@@ -377,6 +379,7 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
             options: allOptions.map(String).sort(() => Math.random() - 0.5),
             answer: answerText,
             textToSpeak: answerAudio,
+            numberLevelSettings: settings
         };
     }
 }

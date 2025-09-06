@@ -88,15 +88,22 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     startTimeExercise(settings);
   };
   
+  const startNumberExerciseWithLevel = (level: number) => {
+    startNumberLevelExercise({ difficulty: level });
+  }
+
   useEffect(() => {
     async function loadQuestions() {
-        if (skill.slug === 'time') {
-            const studentLevel = student?.levels?.[skill.slug];
-            if (studentLevel) {
-                const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
-            }
-        } else if (!['denombrement', 'lire-les-nombres'].includes(skill.slug)) {
+        const studentLevelSlug = student?.levels?.[skill.slug];
+        if (studentLevelSlug) {
+            const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+            const difficulty = difficultyMap[studentLevelSlug] ?? 0;
+            
+            if (skill.slug === 'time') return startExerciseWithLevel(difficulty);
+            if (skill.slug === 'lire-les-nombres') return startNumberExerciseWithLevel(difficulty);
+        }
+
+        if (!['denombrement', 'time', 'lire-les-nombres'].includes(skill.slug)) {
             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
             setQuestions(generatedQuestions);
             setIsReadyToStart(true);
@@ -172,7 +179,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (['time', 'mental-calculation', 'denombrement'].includes(skill.slug)) {
+      if (['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, true);
       }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -183,7 +190,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setFeedback('incorrect');
-      if (['time', 'mental-calculation', 'denombrement'].includes(skill.slug)) {
+       if (['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, false);
       }
       setTimeout(handleNextQuestion, 2000);
@@ -193,10 +200,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     if (!exerciseData || feedback || !exerciseData.answer) return;
     
     let questionText = exerciseData.question;
+    
+    // Customize question text for detailed results
     if (skill.slug === 'time' && exerciseData.hour !== undefined && exerciseData.minute !== undefined) {
         questionText = `Quelle heure est-il ? (Aiguilles sur ${exerciseData.hour}:${exerciseData.minute})`
-    } else if (skill.slug === 'denombrement') {
+    } else if (skill.slug === 'denombrement' && exerciseData.countEmoji) {
         questionText = `Combien de ${exerciseData.countEmoji} ?`
+    } else if (exerciseData.textToSpeak && exerciseData.type === 'audio-qcm') {
+        questionText = `Écoute: "${exerciseData.textToSpeak}"`
+    } else if (exerciseData.textToSpeak && exerciseData.type === 'written-to-audio-qcm') {
+        questionText = `Lis: "${exerciseData.textToSpeak}"`
     }
 
     if (option === exerciseData.answer) {
@@ -221,17 +234,19 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   }
 
   const handleAudioToTextInputSubmit = () => {
-    if (!exerciseData || feedback) return;
+    if (!exerciseData || feedback || !exerciseData.answer) return;
     
     // Normalize and compare
     const userAnswer = textInput.trim().toLowerCase();
     const correctAnswerNum = exerciseData.answer; // e.g. "105"
     const correctAnswerWords = exerciseData.answerInWords?.trim().toLowerCase(); // e.g. "cent cinq"
     
+    const questionText = `Écoute: "${exerciseData.textToSpeak}"`
+
     if (userAnswer === correctAnswerNum || userAnswer === correctAnswerWords) {
-        processCorrectAnswer(exerciseData.question, userAnswer, correctAnswerNum!);
+        processCorrectAnswer(questionText, userAnswer, correctAnswerNum!);
     } else {
-        processIncorrectAnswer(exerciseData.question, userAnswer, correctAnswerNum!);
+        processIncorrectAnswer(questionText, userAnswer, correctAnswerNum!);
     }
   }
   
@@ -294,16 +309,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     } else {
        // Re-trigger the useEffect to load questions based on student level
        if (!isUserLoading) {
-            if (skill.slug === 'time') {
-                const studentLevel = student?.levels?.[skill.slug];
-                 if (studentLevel) {
-                    const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                    startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
-                } else {
-                    setIsReadyToStart(false); // Go back to settings screen
-                }
+            const studentLevel = student?.levels?.[skill.slug];
+            if (studentLevel) {
+                const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                const difficulty = difficultyMap[studentLevel] ?? 0;
+                
+                if(skill.slug === 'time') startExerciseWithLevel(difficulty);
+                if(skill.slug === 'lire-les-nombres') startNumberExerciseWithLevel(difficulty);
+
             } else {
-                setIsReadyToStart(false);
+                setIsReadyToStart(false); // Go back to settings screen
             }
        }
     }
@@ -616,7 +631,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
           )}
            {feedback === 'incorrect' && (
             <div className="text-2xl font-bold text-red-600 animate-shake">
-                Oups ! La bonne réponse était {exerciseData.answer}.
+                Oups ! La bonne réponse était {exerciseData.answerInWords || exerciseData.answer}.
             </div>
           )}
         </CardFooter>
