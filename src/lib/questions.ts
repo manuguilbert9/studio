@@ -197,6 +197,8 @@ function generateDénombrementQuestion(settings: CountSettings): Question {
     countEmoji: selectedItem.emoji,
     countNumber: count,
     answer: String(count),
+    // Pass settings for result analysis
+    countSettings: settings,
   };
 }
 

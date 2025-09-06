@@ -87,6 +87,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     };
     startTimeExercise(settings);
   };
+
+  const startCountExerciseWithLevel = (level: string) => {
+    const levelMap: { [key: string]: number } = { 'A': 10, 'B': 15, 'C': 20, 'D': 20 };
+    const maxNumber = levelMap[level] || 10;
+    const settings = { maxNumber };
+    startCountExercise(settings);
+  };
   
   useEffect(() => {
     async function loadQuestions() {
@@ -96,7 +103,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                 const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
                 startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
             }
-        } else if (!['denombrement', 'lire-les-nombres'].includes(skill.slug)) {
+        } else if (skill.slug === 'denombrement') {
+             const studentLevel = student?.levels?.[skill.slug];
+             if (studentLevel) {
+                startCountExerciseWithLevel(studentLevel);
+             }
+        } else if (!['lire-les-nombres'].includes(skill.slug)) {
             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
             setQuestions(generatedQuestions);
             setIsReadyToStart(true);
@@ -172,7 +184,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (['time', 'mental-calculation'].includes(skill.slug)) {
+      if (['time', 'mental-calculation', 'denombrement'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, true);
       }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -183,7 +195,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setFeedback('incorrect');
-      if (['time', 'mental-calculation'].includes(skill.slug)) {
+      if (['time', 'mental-calculation', 'denombrement'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, false);
       }
       setTimeout(handleNextQuestion, 2000);
@@ -195,6 +207,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     let questionText = exerciseData.question;
     if (skill.slug === 'time' && exerciseData.hour !== undefined && exerciseData.minute !== undefined) {
         questionText = `Quelle heure est-il ? (Aiguilles sur ${exerciseData.hour}:${exerciseData.minute})`
+    } else if (skill.slug === 'denombrement') {
+        questionText = `Combien de ${exerciseData.countEmoji} ?`
     }
 
     if (option === exerciseData.answer) {
@@ -292,11 +306,15 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     } else {
        // Re-trigger the useEffect to load questions based on student level
        if (!isUserLoading) {
-            if (skill.slug === 'time') {
+            if (skill.slug === 'time' || skill.slug === 'denombrement') {
                 const studentLevel = student?.levels?.[skill.slug];
                  if (studentLevel) {
-                    const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                    startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
+                    if (skill.slug === 'time') {
+                        const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                        startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
+                    } else {
+                        startCountExerciseWithLevel(studentLevel);
+                    }
                 } else {
                     setIsReadyToStart(false); // Go back to settings screen
                 }
