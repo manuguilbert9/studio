@@ -18,7 +18,7 @@ import {
   Mic,
   Smile,
 } from 'lucide-react';
-import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings } from './questions';
+import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
 export type SkillCategory =
   | "Phonologie"
@@ -163,14 +163,17 @@ export function difficultyLevelToString(
     timeSettings?: TimeSettings,
     calendarSettings?: CalendarSettings,
     numberLevelSettings?: NumberLevelSettings,
-    countSettings?: CountSettings
+    countSettings?: CountSettings,
+    readingRaceSettings?: ReadingRaceSettings
 ): string | null {
     const skill = getSkillBySlug(skillSlug);
     if (skill?.isFixedLevel) {
         return `Niveau ${skill.isFixedLevel}`;
     }
 
-    // Check for level saved directly in score data first
+    if (readingRaceSettings?.level) {
+        return readingRaceSettings.level;
+    }
     if (numberLevelSettings?.level) {
         return `Niveau ${numberLevelSettings.level}`;
     }
@@ -179,8 +182,6 @@ export function difficultyLevelToString(
     }
 
     if (skill?.allowedLevels) {
-        // This is a student-level-dependent skill. The level *should* be stored
-        // in the score's numberLevelSettings. If not, we can't determine it here.
         return null;
     }
 
@@ -192,11 +193,7 @@ export function difficultyLevelToString(
     if (skillSlug === 'denombrement') {
         return "Niveau A"; // isFixedLevel handles this, but as a fallback.
     }
-     if (skillSlug === 'reading-race') {
-        if (scoreValue >= 130) return 'Niveau D';
-        if (scoreValue >= 90) return 'Niveau C';
-        return 'Niveau B'; // Default for any score below 90, as A is not applicable.
-    }
+
     // Fallback for any other case where level can't be determined
     return null;
 }

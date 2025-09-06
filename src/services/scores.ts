@@ -4,7 +4,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
-import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, CountSettings, NumberLevelSettings } from '@/lib/questions';
+import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, CountSettings, NumberLevelSettings, ReadingRaceSettings } from '@/lib/questions';
 
 export type HomeworkSession = 'lundi' | 'jeudi';
 
@@ -38,6 +38,7 @@ export interface Score {
     calendarSettings?: CalendarSettings;
     countSettings?: CountSettings;
     numberLevelSettings?: NumberLevelSettings;
+    readingRaceSettings?: ReadingRaceSettings;
     homeworkSession?: HomeworkSession; // To mark which homework was done
 }
 

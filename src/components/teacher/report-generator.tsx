@@ -86,7 +86,7 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
             const body = categoryScores.map(score => {
                 const skill = getSkillBySlug(score.skill);
                 const scoreText = score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
-                const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
+                const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings);
                 const date = format(new Date(score.createdAt), 'dd/MM/yy');
 
                 let errorsText = '';

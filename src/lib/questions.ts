@@ -57,11 +57,16 @@ export interface CalendarSettings {
     level: SkillLevel;
 }
 
+export interface ReadingRaceSettings {
+  level: 'Niveau A' | 'Niveau B' | 'Niveau C' | 'Niveau D';
+}
+
 export interface AllSettings {
   time?: TimeSettings;
   count?: CountSettings;
   numberLevel?: NumberLevelSettings;
   calendar?: CalendarSettings;
+  readingRace?: ReadingRaceSettings;
 }
 
 function generateTimeQuestion(settings: TimeSettings): Question {

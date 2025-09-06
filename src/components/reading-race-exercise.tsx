@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useContext } from 'react';
@@ -36,7 +37,7 @@ export function ReadingRaceExercise() {
   const wordsWithPunctuation = useMemo(() => {
     if (!selectedText) return [];
     return textToDisplay.split(/\s+/);
-  }, [textToDisplay, selectedText]);
+  }, [textToDisplay]);
   
   // Words without punctuation for comparison
   const textWordsForComparison = useMemo(() => {
@@ -99,18 +100,19 @@ export function ReadingRaceExercise() {
 
    useEffect(() => {
       const saveResult = async () => {
-          if (exerciseState === 'finished' && student && !hasBeenSaved) {
+          if (exerciseState === 'finished' && student && !hasBeenSaved && selectedText) {
               setHasBeenSaved(true);
               await addScore({
                   userId: student.id,
                   skill: 'reading-race',
                   score: finalWPM,
                   details: sessionDetails,
+                  readingRaceSettings: { level: selectedText.level }
               });
           }
       };
       saveResult();
-   }, [exerciseState, student, finalWPM, hasBeenSaved, sessionDetails]);
+   }, [exerciseState, student, finalWPM, hasBeenSaved, sessionDetails, selectedText]);
   
   useEffect(() => {
       if (!selectedText || exerciseState !== 'racing') return;
