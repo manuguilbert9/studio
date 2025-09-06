@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
@@ -22,7 +22,11 @@ const baseEmojis = [
 const extraEmojiPool = [
   '🧛', '🧟', '👻', '🧜‍♀️', '🧞', 'fées', '🌊', '🌋', '🏜️', '🏝️',
   '🧭', '🏆', '🎁', '🍭', '🍕', '🍰', '🎸', '🎻', '🎭', '🎪',
-  '🚂', '⛵', '🚁', 'sous-marin', 'amulette', 'potion', 'sortilège', 'trésor'
+  '🚂', '⛵', '🚁', 'sous-marin', 'amulette', 'potion', 'sortilège', 'trésor',
+  'sorcière', 'ogre', 'loup', 'prince', 'princesse', 'chevalier', 'navire', 'forêt hantée',
+  'grotte secrète', 'montagne', 'désert', 'planète lointaine', 'robot ami', 'extraterrestre farceur',
+  'école de magie', 'cirque', 'zoo', 'musée', 'parc d\'attractions', 'bibliothèque', 'laboratoire',
+  'bague magique', 'épée légendaire', 'tapis volant', 'grimoire ancien', 'portail mystérieux'
 ];
 
 // Function to get a unique random subset of emojis
@@ -49,7 +53,7 @@ export default function StoryBoxPage() {
 
   useEffect(() => {
     // Generate the list on component mount
-    const randomEmojis = getRandomEmojis(extraEmojiPool, 8); // Add 8 random emojis
+    const randomEmojis = getRandomEmojis(extraEmojiPool, 24); // Increased from 8 to 24
     setAvailableEmojis([...baseEmojis, ...randomEmojis]);
   }, []);
 
@@ -104,8 +108,7 @@ export default function StoryBoxPage() {
   const openImmersiveReader = () => {
     if (!story) return;
 
-    // The read: protocol is specific to Microsoft Edge.
-    // This creates a data URI with simple HTML content to launch.
+    // This creates a data URI with simple HTML content to launch in Edge's immersive reader.
     const content = `
         <!DOCTYPE html>
         <html>
@@ -120,8 +123,6 @@ export default function StoryBoxPage() {
         </html>
     `;
     
-    // We create a data URI, but we don't URI-encode the HTML content itself,
-    // as Edge's `read:` protocol expects raw HTML after the comma.
     const dataUri = `data:text/html;charset=utf-8,${content}`;
     window.location.href = `read:${dataUri}`;
   };
@@ -206,20 +207,20 @@ export default function StoryBoxPage() {
                  <RadioGroup value={length} onValueChange={(v) => setLength(v as StoryLength)} className="grid grid-cols-3 gap-4">
                     <div>
                         <RadioGroupItem value="courte" id="courte" className="sr-only" />
-                        <Label htmlFor="courte" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", length === 'courte' && 'border-primary')}>
-                            Courte
+                        <Label htmlFor="courte" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'courte' && 'border-primary')}>
+                            <File className="h-8 w-8 mb-2"/> Courte
                         </Label>
                     </div>
                      <div>
                         <RadioGroupItem value="moyenne" id="moyenne" className="sr-only" />
-                        <Label htmlFor="moyenne" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", length === 'moyenne' && 'border-primary')}>
-                            Moyenne
+                        <Label htmlFor="moyenne" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'moyenne' && 'border-primary')}>
+                            <FileText className="h-8 w-8 mb-2"/> Moyenne
                         </Label>
                     </div>
                      <div>
                         <RadioGroupItem value="longue" id="longue" className="sr-only" />
-                        <Label htmlFor="longue" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", length === 'longue' && 'border-primary')}>
-                            Longue
+                        <Label htmlFor="longue" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", length === 'longue' && 'border-primary')}>
+                           <FilePlus className="h-8 w-8 mb-2"/> Longue
                         </Label>
                     </div>
                  </RadioGroup>
@@ -231,20 +232,20 @@ export default function StoryBoxPage() {
                  <RadioGroup value={tone} onValueChange={(v) => setTone(v as StoryTone)} className="grid grid-cols-3 gap-4">
                     <div>
                         <RadioGroupItem value="aventure" id="aventure" className="sr-only" />
-                        <Label htmlFor="aventure" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", tone === 'aventure' && 'border-primary')}>
-                            Aventure
+                        <Label htmlFor="aventure" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'aventure' && 'border-primary')}>
+                            <Swords className="h-8 w-8 mb-2"/> Aventure
                         </Label>
                     </div>
                      <div>
                         <RadioGroupItem value="comique" id="comique" className="sr-only" />
-                        <Label htmlFor="comique" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", tone === 'comique' && 'border-primary')}>
-                            Comique
+                        <Label htmlFor="comique" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'comique' && 'border-primary')}>
+                           <Drama className="h-8 w-8 mb-2"/> Comique
                         </Label>
                     </div>
                      <div>
                         <RadioGroupItem value="effrayante" id="effrayante" className="sr-only" />
-                        <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", tone === 'effrayante' && 'border-primary')}>
-                            Effrayante
+                        <Label htmlFor="effrayante" className={cn("flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer", tone === 'effrayante' && 'border-primary')}>
+                            <Ghost className="h-8 w-8 mb-2"/> Effrayante
                         </Label>
                     </div>
                  </RadioGroup>
