@@ -169,6 +169,10 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                             </div>
                                                                         </div>
                                                                     ))
+                                                                ) : score.skill === 'reading-race' ? (
+                                                                     <div className="p-2">
+                                                                        <p><span className="font-semibold">Mots mal lus ou manqués:</span> {score.details?.[0]?.mistakes?.join(', ') || 'Aucun'}</p>
+                                                                     </div>
                                                                 ) : (
                                                                     <Table>
                                                                         <TableHeader>

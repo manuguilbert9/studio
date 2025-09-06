@@ -9,7 +9,7 @@ import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import { UserContext } from '@/context/user-context';
-import { addScore } from '@/services/scores';
+import { addScore, ScoreDetail } from '@/services/scores';
 import { readingTexts, ReadingText } from '@/lib/reading-texts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
@@ -25,6 +25,7 @@ export function ReadingRaceExercise() {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [finalWPM, setFinalWPM] = useState(0);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
   const textToDisplay = useMemo(() => {
     if (!selectedText) return '';
@@ -74,9 +75,27 @@ export function ReadingRaceExercise() {
     stopListening();
     const correctWordsCount = spokenWordsForComparison.filter((word, index) => textWordsForComparison[index] && word === textWordsForComparison[index]).length;
     const wpm = timeElapsed > 0 ? Math.round((correctWordsCount / timeElapsed) * 60) : 0;
+    
+    const mistakes = textWordsForComparison.reduce((acc: string[], expectedWord, index) => {
+        const spokenWord = spokenWordsForComparison[index];
+        if (!spokenWord || spokenWord !== expectedWord) {
+            acc.push(expectedWord);
+        }
+        return acc;
+    }, []);
+
+    const details: ScoreDetail[] = [{
+        question: selectedText?.title || 'Course de lecture',
+        userAnswer: transcript,
+        correctAnswer: selectedText?.text || '',
+        status: 'completed',
+        mistakes: mistakes,
+    }];
+    setSessionDetails(details);
+
     setFinalWPM(wpm);
     setExerciseState('finished');
-  }, [stopListening, timeElapsed, spokenWordsForComparison, textWordsForComparison]);
+  }, [stopListening, timeElapsed, spokenWordsForComparison, textWordsForComparison, selectedText]);
 
    useEffect(() => {
       const saveResult = async () => {
@@ -86,11 +105,12 @@ export function ReadingRaceExercise() {
                   userId: student.id,
                   skill: 'reading-race',
                   score: finalWPM,
+                  details: sessionDetails,
               });
           }
       };
       saveResult();
-   }, [exerciseState, student, finalWPM, hasBeenSaved]);
+   }, [exerciseState, student, finalWPM, hasBeenSaved, sessionDetails]);
   
   useEffect(() => {
       if (!selectedText || exerciseState !== 'racing') return;
@@ -115,6 +135,7 @@ export function ReadingRaceExercise() {
     setError(null);
     setFinalWPM(0);
     setHasBeenSaved(false);
+    setSessionDetails([]);
     setExerciseState('racing');
     startListening();
   };
@@ -255,12 +276,7 @@ export function ReadingRaceExercise() {
   }
 
   if (exerciseState === 'finished') {
-      const mistakes = spokenWordsForComparison.reduce((acc: string[], word, index) => {
-        if (textWordsForComparison[index] && word !== textWordsForComparison[index]) {
-            acc.push(textWordsForComparison[index]);
-        }
-        return acc;
-      }, []);
+      const mistakes = sessionDetails[0]?.mistakes || [];
 
       return (
         <Card className="w-full max-w-2xl mx-auto shadow-2xl text-center">

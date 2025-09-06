@@ -19,8 +19,9 @@ export interface ScoreDetail {
     question: string;
     userAnswer: string;
     correctAnswer: string;
-    status: 'correct' | 'incorrect';
+    status: 'correct' | 'incorrect' | 'completed'; // Added 'completed' for non-binary results like reading race
     calculationState?: CalculationState;
+    mistakes?: string[]; // For storing reading or spelling mistakes
 }
 
 export interface Score {
