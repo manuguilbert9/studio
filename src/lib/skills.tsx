@@ -56,6 +56,7 @@ export interface Skill {
   description: string;
   icon: ReactElement;
   category: SkillCategory;
+  isFixedLevel?: SkillLevel;
 }
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
@@ -88,6 +89,7 @@ export const skills: Skill[] = [
     description: "Associer un nombre à l'oral < 20 à sa représentation chiffrée.",
     icon: <Ear />,
     category: 'Nombres et calcul',
+    isFixedLevel: 'A',
   },
   {
     name: 'Dénombrement',
@@ -95,6 +97,7 @@ export const skills: Skill[] = [
     description: "Dénombrer une quantité inférieure à 20.",
     icon: <ListOrdered />,
     category: 'Nombres et calcul',
+    isFixedLevel: 'A',
   },
   {
     name: "J'écoute entre 70 et 99",
@@ -102,6 +105,7 @@ export const skills: Skill[] = [
     description: 'Reconnaître les nombres complexes (70-99) à l\'oral et à l\'écrit.',
     icon: <GitCompareArrows />,
     category: 'Nombres et calcul',
+    isFixedLevel: 'B',
   },
   {
     name: 'Familles de mots',
@@ -109,6 +113,7 @@ export const skills: Skill[] = [
     description: "Identifier des mots de la même famille. Utiliser les familles de mots pour mémoriser l'orthographe.",
     icon: <Spline />,
     category: 'Vocabulaire',
+    isFixedLevel: 'B',
   },
   {
     name: 'L\'heure',
@@ -155,8 +160,14 @@ export function difficultyLevelToString(
     numberLevelSettings?: NumberLevelSettings,
     countSettings?: CountSettings
 ): string | null {
+    const skill = getSkillBySlug(skillSlug);
+    if (skill?.isFixedLevel) {
+        return `Niveau ${skill.isFixedLevel}`;
+    }
+
     if (skillSlug === 'time' && timeSettings) {
-        return `Niveau ${timeSettings.difficulty + 1}`;
+        const levels: SkillLevel[] = ['A', 'B', 'C', 'D'];
+        return `Niveau ${levels[timeSettings.difficulty] || 'A'}`;
     }
     if (skillSlug === 'calendar' && calendarSettings) {
         return `Niveau ${calendarSettings.level}`;
@@ -164,18 +175,6 @@ export function difficultyLevelToString(
      if (skillSlug === 'lire-les-nombres' && numberLevelSettings) {
         const levels = ['A', 'B', 'C', 'D'];
         return `Niveau ${levels[numberLevelSettings.difficulty] || 'A'}`;
-    }
-     if (skillSlug === 'denombrement') {
-        return "Niveau A";
-    }
-    if (skillSlug === 'ecoute-les-nombres') {
-        return "Niveau A";
-    }
-    if (skillSlug === 'nombres-complexes') {
-        return "Niveau B";
-    }
-    if (skillSlug === 'word-families') {
-        return "Niveau B";
     }
     if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation' || skillSlug === 'simple-word-reading') {
         // These exercises are controlled by a SkillLevel A-D set on the student

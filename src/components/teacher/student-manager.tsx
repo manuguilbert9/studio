@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, FormEvent, useEffect, useCallback, useMemo } from 'react';
@@ -300,19 +301,25 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                                         <Label htmlFor={`level-${skill.slug}`} className="text-right text-xs sm:text-sm">
                                                             {skill.name}
                                                         </Label>
-                                                        <Select 
-                                                            value={editedLevels[skill.slug]} 
-                                                            onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
-                                                        >
-                                                            <SelectTrigger className="col-span-2 h-9">
-                                                                <SelectValue placeholder="Choisir..." />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {skillLevels.map(level => (
-                                                                    <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        {skill.isFixedLevel ? (
+                                                            <div className="col-span-2">
+                                                                <Badge variant="secondary">Niveau {skill.isFixedLevel}</Badge>
+                                                            </div>
+                                                        ) : (
+                                                            <Select 
+                                                                value={editedLevels[skill.slug]} 
+                                                                onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
+                                                            >
+                                                                <SelectTrigger className="col-span-2 h-9">
+                                                                    <SelectValue placeholder="Choisir..." />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {skillLevels.map(level => (
+                                                                        <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
