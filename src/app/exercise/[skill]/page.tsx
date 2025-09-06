@@ -15,7 +15,7 @@ import { MentalCalculationExercise } from '@/components/mental-calculation-exerc
 import { HomeworkSession } from '@/services/scores';
 import { CalendarExercise } from '@/components/calendar-exercise';
 import { ReadingRaceExercise } from '@/components/reading-race-exercise';
-import { SyllableReadingExercise } from '@/components/syllable-reading-exercise';
+import { SimpleWordReadingExercise } from '@/components/simple-word-reading-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -41,8 +41,8 @@ export default function ExercisePage() {
         return <CalendarExercise />;
       case 'reading-race':
         return <ReadingRaceExercise />;
-      case 'syllable-reading':
-        return <SyllableReadingExercise />;
+      case 'simple-word-reading':
+        return <SimpleWordReadingExercise />;
       default:
         return <ExerciseWorkspace skill={skill} homeworkSession={homeworkSession}/>;
     }

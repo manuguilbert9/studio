@@ -16,6 +16,7 @@ import {
   CalendarDays,
   Rocket,
   Mic,
+  Smile,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings } from './questions';
 
@@ -61,10 +62,10 @@ export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
   {
-    name: 'Lecture de syllabes',
-    slug: 'syllable-reading',
-    description: 'Lire des syllabes simples à voix haute pour s\'entraîner.',
-    icon: <Mic />,
+    name: 'Premiers mots',
+    slug: 'simple-word-reading',
+    description: 'Lire des mots simples à voix haute pour s\'entraîner.',
+    icon: <Smile />,
     category: 'Lecture / compréhension',
   },
   {
@@ -176,7 +177,7 @@ export function difficultyLevelToString(
     if (skillSlug === 'word-families') {
         return "Niveau B";
     }
-    if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation' || skillSlug === 'syllable-reading') {
+    if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation' || skillSlug === 'simple-word-reading') {
         // These exercises are controlled by a SkillLevel A-D set on the student
         // This should be retrieved from student data, not settings object.
         // For now, let's assume a default if no other info.
