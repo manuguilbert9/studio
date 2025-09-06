@@ -44,6 +44,14 @@ export function SimpleWordReadingExercise() {
   useEffect(() => {
     setWords(getSimpleWords(WORDS_PER_EXERCISE));
   }, []);
+  
+  // Effect to auto-start listening when a new word is ready
+  useEffect(() => {
+    if(exerciseState === 'ready' && currentWordIndex < WORDS_PER_EXERCISE) {
+      handleMicClick();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exerciseState, currentWordIndex]);
 
   const currentWord = useMemo(() => words[currentWordIndex], [words, currentWordIndex]);
 
@@ -53,7 +61,7 @@ export function SimpleWordReadingExercise() {
       setCurrentWordIndex(prev => prev + 1);
       setFeedback(null);
       setDetectedWord('');
-      setExerciseState('ready');
+      setExerciseState('ready'); // This will trigger the useEffect to start listening again
     } else {
       setExerciseState('finished');
     }
@@ -171,14 +179,14 @@ export function SimpleWordReadingExercise() {
           <CardTitle className="font-headline text-3xl">Lis le mot à voix haute</CardTitle>
         </CardHeader>
         <CardContent className="min-h-[300px] flex flex-col items-center justify-center gap-8 p-6">
-            <p className="font-body text-8xl sm:text-9xl font-bold tracking-wider capitalize">{currentWord}</p>
+            <p className="font-body text-8xl sm:text-9xl font-bold tracking-wider uppercase">{currentWord}</p>
              <Button
                 onClick={handleMicClick}
                 size="lg"
                 className={cn("rounded-full h-24 w-24", 
                     isListening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-primary hover:bg-primary/90'
                 )}
-                disabled={exerciseState === 'checking'}
+                disabled={exerciseState === 'checking' || isListening}
              >
                 {exerciseState === 'checking' ? <Loader2 className="h-10 w-10 animate-spin" /> : <Mic className="h-10 w-10"/>}
             </Button>
