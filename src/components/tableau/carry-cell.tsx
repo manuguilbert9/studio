@@ -31,20 +31,13 @@ export function CarryCell({
   const [internalValue, setInternalValue] = useState('');
   const [isCrossed, setIsCrossed] = useState(false);
   
-  const value = onValueChange ? propValue || '' : internalValue;
-  const setValue = onValueChange ? (val: string) => onValueChange(id, val) : setInternalValue;
-
-  useEffect(() => {
-    if (propValue !== undefined) {
-      setInternalValue(propValue);
-    }
-  }, [propValue]);
-
+  const value = onValueChange !== undefined ? propValue || '' : internalValue;
+  const setValue = onValueChange || setInternalValue;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
     const val = e.target.value;
-     // Allow up to two digits, to handle "1" for borrowing
+     // Allow up to two digits, to handle borrowing
     if (/^\d{0,2}$/.test(val)) {
       setValue(val);
        if (isCrossed) {
@@ -111,7 +104,15 @@ export function CarryCell({
         </div>
       )}
         {isCrossed && value && (
-            <span className="absolute left-0 top-1/2 w-full h-0.5 bg-slate-700 transform -translate-y-1/2 rotate-[-20deg] pointer-events-none"></span>
+            <>
+                <span 
+                    className="absolute text-slate-500 font-bold font-mono pointer-events-none"
+                    style={{ fontSize: `${fontSize}px` }}
+                >
+                    {displayValue}
+                </span>
+                <span className="absolute left-0 top-1/2 w-full h-0.5 bg-slate-700 transform -translate-y-1/2 rotate-[-20deg] pointer-events-none"></span>
+            </>
         )}
     </div>
   );

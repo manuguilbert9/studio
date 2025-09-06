@@ -35,23 +35,16 @@ export function CalcCell({
   
   const inputRef = useRef<HTMLInputElement>(null);
   
-  const value = onValueChange ? propValue || '' : internalValue;
-  const setValue = onValueChange ? (val: string) => onValueChange(id, val) : setInternalValue;
-
-  useEffect(() => {
-    // This effect ensures that if a value is passed as a prop (exercise mode),
-    // it overrides the internal state. This is primarily for displaying the problem.
-    if (propValue !== undefined) {
-      setInternalValue(propValue);
-    }
-  }, [propValue]);
-
+  // Use propValue if in controlled mode (exercise), otherwise use internal state (tableau)
+  const value = onValueChange !== undefined ? propValue || '' : internalValue;
+  const setValue = onValueChange || setInternalValue;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
     const rawInput = e.target.value;
-    // Allow up to two digits, to handle "1" for borrowing
-    if (/^\d{0,2}$/.test(rawInput)) {
+    // Allow up to two digits for minuend (for borrowing), one for others.
+    const maxLength = isMinuend ? 2 : 1;
+    if (/^\d*$/.test(rawInput) && rawInput.length <= maxLength) {
       setValue(rawInput);
       if (isCrossed) {
         setIsCrossed(false);
@@ -66,7 +59,7 @@ export function CalcCell({
   };
   
   // Logic to display number with borrowed '1'
-  const hasBorrowedOne = value.length === 2 && value.startsWith('1');
+  const hasBorrowedOne = isMinuend && value.length === 2 && value.startsWith('1');
   
   return (
     <div

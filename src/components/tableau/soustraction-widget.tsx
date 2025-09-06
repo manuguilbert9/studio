@@ -206,7 +206,7 @@ export function SoustractionWidget({
                         tabIndex={getTabIndex(0, col)} 
                         value={isExerciseMode ? String(operands?.[0] || '').padStart(numCols, '0')[col] : undefined}
                         onValueChange={isExerciseMode ? onInputChange : undefined}
-                        isReadOnly={isExerciseMode || !!feedback}
+                        isReadOnly={isExerciseMode}
                     />
                 </div>
                 {/* Subtrahend */}
@@ -219,7 +219,7 @@ export function SoustractionWidget({
                         tabIndex={getTabIndex(1, col)}
                         value={isExerciseMode ? String(operands?.[1] || '').padStart(numCols, '0')[col] : undefined}
                         onValueChange={isExerciseMode ? onInputChange : undefined}
-                        isReadOnly={isExerciseMode || !!feedback}
+                        isReadOnly={isExerciseMode}
                     />
                 </div>
                 {/* Equals line */}

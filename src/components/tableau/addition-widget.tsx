@@ -223,7 +223,7 @@ export function AdditionWidget({
                             tabIndex={getTabIndex(rowIndex, col + 1)}
                             value={isExerciseMode ? String(operands?.[rowIndex] || '').padStart(numCols, '0')[col] : undefined}
                             onValueChange={isExerciseMode ? onInputChange : undefined}
-                            isReadOnly={isExerciseMode || !!feedback}
+                            isReadOnly={isExerciseMode}
                         />
                     </div>
                 ))}
