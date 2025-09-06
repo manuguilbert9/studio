@@ -81,7 +81,7 @@ export function SimpleWordReadingExercise() {
             .toLowerCase()
             .trim()
             .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove accents
-            .replace(/[.,-]/g, '')
+            .replace(/[.,'-]/g, '') // remove punctuation
             .replace(/[stdpxz]$/, ''); // remove common silent final letters
     }
 
