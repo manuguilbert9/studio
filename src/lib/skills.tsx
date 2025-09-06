@@ -68,6 +68,7 @@ export const skills: Skill[] = [
     description: 'Lire des mots simples à voix haute pour s\'entraîner.',
     icon: <Smile />,
     category: 'Lecture / compréhension',
+    isFixedLevel: 'B',
   },
   {
     name: 'Course de lecture',
@@ -176,7 +177,7 @@ export function difficultyLevelToString(
         const levels = ['A', 'B', 'C', 'D'];
         return `Niveau ${levels[numberLevelSettings.difficulty] || 'A'}`;
     }
-    if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation' || skillSlug === 'simple-word-reading') {
+    if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation') {
         // These exercises are controlled by a SkillLevel A-D set on the student
         // This should be retrieved from student data, not settings object.
         // For now, let's assume a default if no other info.
