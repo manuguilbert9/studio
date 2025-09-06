@@ -169,9 +169,10 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                             </div>
                                                                         </div>
                                                                     ))
-                                                                ) : score.skill === 'reading-race' ? (
+                                                                ) : score.skill === 'reading-race' && score.details?.[0] ? (
                                                                      <div className="p-2">
-                                                                        <p><span className="font-semibold">Mots mal lus ou manqués:</span> {score.details?.[0]?.mistakes?.join(', ') || 'Aucun'}</p>
+                                                                        <p><span className="font-semibold">Texte Lu:</span> {score.details[0].question}</p>
+                                                                        <p><span className="font-semibold">Mots mal lus ou manqués:</span> {score.details[0]?.mistakes?.join(', ') || 'Aucun'}</p>
                                                                      </div>
                                                                 ) : (
                                                                     <Table>

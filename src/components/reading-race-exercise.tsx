@@ -85,7 +85,7 @@ export function ReadingRaceExercise() {
     }, []);
 
     const details: ScoreDetail[] = [{
-        question: selectedText?.title || 'Course de lecture',
+        question: `Course : "${selectedText?.title}"`,
         userAnswer: transcript,
         correctAnswer: selectedText?.text || '',
         status: 'completed',
