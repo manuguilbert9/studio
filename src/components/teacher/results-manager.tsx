@@ -40,11 +40,11 @@ const ReadOnlyCalculationWidget = ({ score }: { score: Score }) => {
     const operation = score.details?.find(d => d.calculationState)?.question.includes('+') ? 'addition' : 'subtraction';
 
     if (operation === 'addition') {
-        return <AdditionWidget isExercise={false} operands={operands} calculationState={score.calculationState} />;
+        return <AdditionWidget isExercise={true} operands={operands} calculationState={score.calculationState} feedback="correct"/>;
     }
     
     if (operation === 'subtraction') {
-        return <SoustractionWidget isExercise={false} operands={operands} calculationState={score.calculationState} />;
+        return <SoustractionWidget isExercise={true} operands={operands} calculationState={score.calculationState} feedback="correct" />;
     }
 
     return null;
@@ -175,14 +175,16 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                             <TableRow>
                                                                                 <TableHead>Question</TableHead>
                                                                                 <TableHead>Réponse de l'élève</TableHead>
+                                                                                <TableHead>Bonne réponse</TableHead>
                                                                                 <TableHead>Statut</TableHead>
                                                                             </TableRow>
                                                                         </TableHeader>
                                                                         <TableBody>
                                                                             {score.details?.map((detail, index) => (
                                                                                 <TableRow key={index} className={cn(detail.status === 'incorrect' && 'bg-red-100/50')}>
-                                                                                    <TableCell>{detail.question}</TableCell>
-                                                                                    <TableCell>{detail.userAnswer}</TableCell>
+                                                                                    <TableCell className="text-xs sm:text-sm">{detail.question}</TableCell>
+                                                                                    <TableCell className={cn("font-medium", detail.status === 'incorrect' && 'text-destructive')}>{detail.userAnswer}</TableCell>
+                                                                                    <TableCell className="font-medium text-green-700">{detail.correctAnswer}</TableCell>
                                                                                     <TableCell>
                                                                                         {detail.status === 'correct' ?
                                                                                             <CheckCircle className="h-5 w-5 text-green-600" /> :

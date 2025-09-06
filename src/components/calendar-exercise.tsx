@@ -12,7 +12,7 @@ import { Check, RefreshCw, X, Loader2, Star, Calendar } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
-import { addScore } from '@/services/scores';
+import { addScore, ScoreDetail } from '@/services/scores';
 import { ScoreTube } from './score-tube';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
@@ -43,6 +43,7 @@ export function CalendarExercise() {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
   // User input states
   const [selectedDay, setSelectedDay] = useState<Date | undefined>();
@@ -67,6 +68,7 @@ export function CalendarExercise() {
     setFeedback(null);
     setIsFinished(false);
     setHasBeenSaved(false);
+    setSessionDetails([]);
     setSelectedDay(undefined);
     setSelectedOption(undefined);
     setInputValue('');
@@ -98,6 +100,35 @@ export function CalendarExercise() {
       setIsFinished(true);
     }
   };
+  
+  const getCorrectAnswerText = () => {
+    if (!currentQuestion) return '';
+    switch (currentQuestion.type) {
+      case 'qcm':
+        return currentQuestion.answer;
+      case 'click-date':
+        return currentQuestion.answerDate ? new Date(currentQuestion.answerDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+      case 'count-days':
+        return String(currentQuestion.answerNumber);
+      default:
+        return '';
+    }
+  };
+  
+  const getUserAnswerText = () => {
+      if (!currentQuestion) return '';
+      switch (currentQuestion.type) {
+        case 'qcm':
+            return selectedOption || "N/A";
+        case 'click-date':
+            return selectedDay ? selectedDay.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : "N/A";
+        case 'count-days':
+            return inputValue || "N/A";
+        default:
+            return "N/A";
+      }
+  }
+
 
   const checkAnswer = () => {
     if (!currentQuestion || feedback) return;
@@ -118,6 +149,14 @@ export function CalendarExercise() {
              isCorrect = parseInt(inputValue, 10) === currentQuestion.answerNumber;
              break;
     }
+    
+    const detail: ScoreDetail = {
+        question: currentQuestion.question,
+        userAnswer: getUserAnswerText(),
+        correctAnswer: getCorrectAnswerText() || '',
+        status: isCorrect ? 'correct' : 'incorrect',
+    };
+    setSessionDetails(prev => [...prev, detail]);
 
     if (isCorrect) {
       setFeedback('correct');
@@ -139,11 +178,12 @@ export function CalendarExercise() {
                   skill: 'calendar',
                   score: score,
                   calendarSettings: { level: level },
+                  details: sessionDetails,
               });
           }
       }
       saveFinalScore();
-  }, [isFinished, student, correctAnswers, hasBeenSaved, level]);
+  }, [isFinished, student, correctAnswers, hasBeenSaved, level, sessionDetails]);
 
   const restartExercise = () => {
     if(level) {
@@ -268,19 +308,6 @@ export function CalendarExercise() {
                 )
       }
   }
-  
-  const getCorrectAnswerText = () => {
-    switch (currentQuestion.type) {
-      case 'qcm':
-        return currentQuestion.answer;
-      case 'click-date':
-        return currentQuestion.answerDate ? new Date(currentQuestion.answerDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }) : '';
-      case 'count-days':
-        return currentQuestion.answerNumber;
-      default:
-        return '';
-    }
-  };
 
   return (
     <div className="w-full max-w-2xl mx-auto">
