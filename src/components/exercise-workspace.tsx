@@ -87,13 +87,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     };
     startTimeExercise(settings);
   };
-
-  const startCountExerciseWithLevel = (level: string) => {
-    const levelMap: { [key: string]: number } = { 'A': 10, 'B': 15, 'C': 20, 'D': 20 };
-    const maxNumber = levelMap[level] || 10;
-    const settings = { maxNumber };
-    startCountExercise(settings);
-  };
   
   useEffect(() => {
     async function loadQuestions() {
@@ -104,10 +97,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                 startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
             }
         } else if (skill.slug === 'denombrement') {
-             const studentLevel = student?.levels?.[skill.slug];
-             if (studentLevel) {
-                startCountExerciseWithLevel(studentLevel);
-             }
+             // For counting, we always start with settings unless a student level implies auto-start
+            const studentLevel = student?.levels?.[skill.slug];
+            if (studentLevel) {
+                // If a level is set, we can directly start the exercise
+                const maxNumberMap: Record<SkillLevel, number> = { 'A': 10, 'B': 15, 'C': 20, 'D': 20 };
+                startCountExercise({ maxNumber: maxNumberMap[studentLevel] || 10 });
+            }
         } else if (!['lire-les-nombres'].includes(skill.slug)) {
             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
             setQuestions(generatedQuestions);
@@ -313,11 +309,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                         const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
                         startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
                     } else {
-                        startCountExerciseWithLevel(studentLevel);
+                        const maxNumberMap: Record<SkillLevel, number> = { 'A': 10, 'B': 15, 'C': 20, 'D': 20 };
+                        startCountExercise({ maxNumber: maxNumberMap[studentLevel] || 10 });
                     }
                 } else {
                     setIsReadyToStart(false); // Go back to settings screen
                 }
+            } else {
+                setIsReadyToStart(false);
             }
        }
     }

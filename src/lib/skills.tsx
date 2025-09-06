@@ -98,7 +98,6 @@ export const skills: Skill[] = [
     description: "Dénombrer une quantité inférieure à 20.",
     icon: <ListOrdered />,
     category: 'Nombres et calcul',
-    isFixedLevel: 'A',
   },
   {
     name: "J'écoute entre 70 et 99",
@@ -177,11 +176,11 @@ export function difficultyLevelToString(
         const levels = ['A', 'B', 'C', 'D'];
         return `Niveau ${levels[numberLevelSettings.difficulty] || 'A'}`;
     }
-    if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation') {
+    if (skillSlug === 'mental-calculation' || skillSlug === 'long-calculation' || skillSlug === 'denombrement') {
         // These exercises are controlled by a SkillLevel A-D set on the student
         // This should be retrieved from student data, not settings object.
         // For now, let's assume a default if no other info.
-        return "Niveau B";
+        return "Niveau A"; // Defaulting to A, can be improved with student context
     }
      if (skillSlug === 'reading-race') {
         if (scoreValue >= 130) return 'Niveau D';
