@@ -19,7 +19,7 @@ import { CountSettings } from './count-settings';
 import { NumberLevelSettings } from './number-level-settings';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
-import { addScore, getScoresForUser, Score, HomeworkSession } from '@/services/scores';
+import { addScore, getScoresForUser, Score, HomeworkSession, ScoreDetail } from '@/services/scores';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
@@ -65,6 +65,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const [selectedAudioOption, setSelectedAudioOption] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
+  const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
 
   const playAudio = (text: string) => {
@@ -140,17 +141,29 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     }
   };
   
-  const processCorrectAnswer = () => {
+    const addDetail = (question: string, userAnswer: string, correctAnswer: string, isCorrect: boolean) => {
+        const detail: ScoreDetail = {
+            question,
+            userAnswer,
+            correctAnswer,
+            status: isCorrect ? 'correct' : 'incorrect',
+        };
+        setSessionDetails(prev => [...prev, detail]);
+    };
+
+  const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
+      if (skill.slug === 'time') addDetail(questionText, userAnswer, correctAnswer, true);
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
       setMotivationalMessage(randomMessage);
       setShowConfetti(true);
       setTimeout(handleNextQuestion, 2500);
   }
   
-  const processIncorrectAnswer = () => {
+  const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setFeedback('incorrect');
+      if (skill.slug === 'time') addDetail(questionText, userAnswer, correctAnswer, false);
       setTimeout(handleNextQuestion, 1500);
   }
   
@@ -158,9 +171,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     if (!exerciseData || feedback || !exerciseData.answer) return;
 
     if (option === exerciseData.answer) {
-      processCorrectAnswer();
+      processCorrectAnswer(exerciseData.question, option, exerciseData.answer);
     } else {
-      processIncorrectAnswer();
+      processIncorrectAnswer(exerciseData.question, option, exerciseData.answer);
     }
   };
   
@@ -168,10 +181,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     if (!exerciseData || feedback) return;
     const { hour, minute } = exerciseData;
 
+    const userAnswer = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+    const correctAnswer = `${hour!.toString().padStart(2, '0')}:${minute!.toString().padStart(2, '0')}`;
+
     if (h === hour && m === minute) {
-      processCorrectAnswer();
+      processCorrectAnswer(exerciseData.question, userAnswer, correctAnswer);
     } else {
-      processIncorrectAnswer();
+      processIncorrectAnswer(exerciseData.question, userAnswer, correctAnswer);
     }
   }
 
@@ -184,9 +200,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     const correctAnswerWords = exerciseData.answerInWords?.trim().toLowerCase(); // e.g. "cent cinq"
     
     if (userAnswer === correctAnswerNum || userAnswer === correctAnswerWords) {
-        processCorrectAnswer();
+        processCorrectAnswer(exerciseData.question, userAnswer, correctAnswerNum!);
     } else {
-        processIncorrectAnswer();
+        processIncorrectAnswer(exerciseData.question, userAnswer, correctAnswerNum!);
     }
   }
   
@@ -202,12 +218,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
             userId: student.id,
             skill: skill.slug,
             score: newScoreValue,
+            details: [],
         };
 
         if (timeSettings) scoreData.timeSettings = timeSettings;
         if (countSettings) scoreData.countSettings = countSettings;
         if (numberLevelSettings) scoreData.numberLevelSettings = numberLevelSettings;
         if (homeworkSession) scoreData.homeworkSession = homeworkSession;
+        if (sessionDetails.length > 0) scoreData.details = sessionDetails;
 
         await addScore(scoreData);
         
@@ -223,7 +241,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, countSettings, numberLevelSettings, isTableauMode, hasBeenSaved, homeworkSession]);
+  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, countSettings, numberLevelSettings, isTableauMode, hasBeenSaved, homeworkSession, sessionDetails]);
   
   const restartExercise = () => {
     setQuestions([]);
@@ -239,6 +257,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     setTimeSettings(null);
     setCountSettings(null);
     setNumberLevelSettings(null);
+    setSessionDetails([]);
     resetInteractiveStates();
     if (!['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
        generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
@@ -575,3 +594,4 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     </div>
   );
 }
+
