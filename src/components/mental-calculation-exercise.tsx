@@ -110,7 +110,7 @@ export function MentalCalculationExercise() {
                   skill: 'mental-calculation',
                   score: score,
                   details: sessionDetails,
-                  numberLevelSettings: { level: level } // <-- This was missing
+                  numberLevelSettings: { level: level }
               });
           }
       }
@@ -213,7 +213,7 @@ export function MentalCalculationExercise() {
                 )}
             </CardFooter>
         </Card>
-        <style jsx>{\`
+        <style jsx>{`
           @keyframes shake {
             0%, 100% { transform: translateX(0); }
             10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -222,7 +222,7 @@ export function MentalCalculationExercise() {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        \`}</style>
+        `}</style>
     </div>
   );
 }
