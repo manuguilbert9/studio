@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -95,12 +94,12 @@ export function ResultsManager({ students, allScores, onDataRefresh }: ResultsMa
                                                         <AlertDialogHeader>
                                                         <AlertDialogTitle>Supprimer ce résultat ?</AlertDialogTitle>
                                                         <AlertDialogDescription>
-                                                            Cette action est irréversible. Le score de {Math.round(score.score)}% pour l'exercice "{getSkillBySlug(score.skill)?.name}" sera définitivement supprimé.
+                                                            Cette action est irréversible. Le score pour l'exercice "{getSkillBySlug(score.skill)?.name}" sera définitivement supprimé.
                                                         </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
                                                         <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteScore(score.id)}>
+                                                        <AlertDialogAction onClick={() => handleDeleteScore(score.id)} className="bg-destructive hover:bg-destructive/90">
                                                             Supprimer
                                                         </AlertDialogAction>
                                                         </AlertDialogFooter>

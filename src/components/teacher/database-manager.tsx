@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { exportAllData, importAllData } from '@/services/database';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { getGloballyEnabledSkills, setGloballyEnabledSkills, getCurrentSchoolYear, setCurrentSchoolYear } from '@/services/teacher';
-import { skills as availableSkills, allSkillCategories } from '@/lib/skills';
+import { skills, allSkillCategories } from '@/lib/skills';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -115,7 +115,7 @@ function ExercisesManager() {
 
     const toggleAll = (enable: boolean) => {
         const newEnabledSkills: Record<string, boolean> = {};
-        availableSkills.forEach(skill => {
+        skills.forEach(skill => {
             newEnabledSkills[skill.slug] = enable;
         });
         setEnabledSkills(newEnabledSkills);
@@ -123,9 +123,9 @@ function ExercisesManager() {
     };
 
     const skillsByCategory = useMemo(() => {
-        const grouped: Record<string, typeof availableSkills> = {};
+        const grouped: Record<string, typeof skills> = {};
         allSkillCategories.forEach(cat => grouped[cat] = []);
-        availableSkills.forEach(skill => {
+        skills.forEach(skill => {
             if (grouped[skill.category]) {
                 grouped[skill.category].push(skill);
             }
