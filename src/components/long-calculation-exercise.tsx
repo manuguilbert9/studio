@@ -376,9 +376,7 @@ export function LongCalculationExercise() {
                         <div className="flex justify-center items-center scale-90 sm:scale-100 transform">
                             {operation === 'addition' ? (
                                 <AdditionWidget
-                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands)).length }}
-                                    isExerciseMode={true}
-                                    operands={currentProblem.operands}
+                                    initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numOperands: operands.length, numCols: String(Math.max(...operands, currentProblem.answer)).length }}
                                     exerciseInputs={userInputs}
                                     onInputChange={handleInputChange}
                                     feedback={feedback}
@@ -386,8 +384,6 @@ export function LongCalculationExercise() {
                             ) : (
                                 <SoustractionWidget
                                     initialState={{ id: 1, pos: {x:0, y:0}, size: {width: 450, height: 300}, numCols: String(operands[0]).length }}
-                                    isExerciseMode={true}
-                                    operands={currentProblem.operands}
                                     exerciseInputs={userInputs}
                                     onInputChange={handleInputChange}
                                     feedback={feedback}

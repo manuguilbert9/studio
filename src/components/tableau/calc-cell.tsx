@@ -68,7 +68,7 @@ export function CalcCell({
         inputMode="numeric"
         pattern="[0-9]*"
         maxLength={isMinuend ? 2 : 1}
-        value={isReadOnly ? '' : value} // Show nothing if readonly, text is shown via span
+        value={value}
         onChange={handleChange}
         tabIndex={tabIndex}
         readOnly={isReadOnly}
@@ -83,7 +83,7 @@ export function CalcCell({
         }}
       />
       
-      {hasBorrowedOne && !isReadOnly ? (
+      {hasBorrowedOne && !isReadOnly && (
          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
             <span 
               className="absolute font-bold font-mono"
@@ -102,14 +102,7 @@ export function CalcCell({
               {value.substring(1)}
             </span>
         </div>
-      ) : isReadOnly ? (
-         <span 
-            className="absolute font-bold font-mono pointer-events-none"
-            style={{ fontSize: `${fontSize}px` }}
-        >
-            {value}
-        </span>
-      ) : null}
+      )}
 
 
       {isCrossed && (

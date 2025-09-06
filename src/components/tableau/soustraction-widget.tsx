@@ -6,13 +6,9 @@ import { Card } from '@/components/ui/card';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
 import type { SoustractionWidgetState } from '@/services/tableau.types';
-import { cn } from '@/lib/utils';
-
 
 interface SoustractionWidgetProps {
   initialState: SoustractionWidgetState;
-  isExerciseMode: boolean;
-  operands: number[];
   exerciseInputs: Record<string, string>;
   onInputChange: (id: string, value: string) => void;
   feedback: 'correct' | 'incorrect' | null;
@@ -30,8 +26,6 @@ const getBorderColor = (colIndexFromRight: number) =>
 
 export function SoustractionWidget({ 
     initialState, 
-    isExerciseMode,
-    operands,
     exerciseInputs,
     onInputChange,
     feedback
@@ -100,9 +94,9 @@ export function SoustractionWidget({
                         allowCrossing={true} 
                         isMinuend={true} 
                         tabIndex={getTabIndex(0, col)} 
-                        value={String(operands[0] || '').padStart(numCols, '0')[col]}
+                        value={exerciseInputs?.[`op-0-${colFromRight}`]}
                         onValueChange={onInputChange}
-                        isReadOnly={true}
+                        isReadOnly={!!feedback}
                     />
                 </div>
                 <div className="flex items-center" style={{height: cellSize}}>
@@ -112,9 +106,9 @@ export function SoustractionWidget({
                         size={cellSize} 
                         fontSize={fontSize} 
                         tabIndex={getTabIndex(1, col)}
-                        value={String(operands[1] || '').padStart(numCols, '0')[col]}
+                        value={exerciseInputs?.[`op-1-${colFromRight}`]}
                         onValueChange={onInputChange}
-                        isReadOnly={true}
+                        isReadOnly={!!feedback}
                     />
                 </div>
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />

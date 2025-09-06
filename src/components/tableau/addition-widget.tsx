@@ -6,13 +6,9 @@ import { Card } from '@/components/ui/card';
 import { CalcCell } from './calc-cell';
 import { CarryCell } from './carry-cell';
 import type { AdditionWidgetState } from '@/services/tableau.types';
-import { cn } from '@/lib/utils';
-
 
 interface AdditionWidgetProps {
   initialState: AdditionWidgetState;
-  isExerciseMode: boolean;
-  operands: number[];
   exerciseInputs: Record<string, string>;
   onInputChange: (id: string, value: string) => void;
   feedback: 'correct' | 'incorrect' | null;
@@ -31,8 +27,6 @@ const getBorderColor = (colIndexFromRight: number) =>
 
 export function AdditionWidget({ 
     initialState, 
-    isExerciseMode,
-    operands,
     exerciseInputs,
     onInputChange,
     feedback
@@ -118,9 +112,9 @@ export function AdditionWidget({
                             size={cellSize} 
                             fontSize={fontSize} 
                             tabIndex={getTabIndex(rowIndex, col + 1)}
-                            value={String(operands[rowIndex] || '').padStart(numCols, '0')[col]}
+                            value={exerciseInputs?.[`op-${rowIndex}-${colFromRight}`]}
                             onValueChange={onInputChange}
-                            isReadOnly={true}
+                            isReadOnly={!!feedback}
                         />
                     </div>
                 ))}
