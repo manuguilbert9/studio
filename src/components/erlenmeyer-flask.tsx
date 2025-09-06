@@ -59,7 +59,7 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
   const liquidHeight = (viewBoxHeight * fillHeight) / 100;
 
   const textColor = fillHeight < 40 ? 'hsl(var(--foreground))' : 'hsl(var(--accent-foreground))';
-  const textY = fillHeight < 20 ? liquidY - 10 : liquidY + liquidHeight / 2 + 10;
+  const textY = liquidY + liquidHeight / 2 + 5;
 
   return (
     <div className="relative flex flex-col items-center justify-center mb-6">

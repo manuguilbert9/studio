@@ -9,18 +9,28 @@ import { getSkillBySlug, difficultyLevelToString, SkillCategory, allSkillCategor
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2, Rocket } from 'lucide-react';
-import { ErlenmeyerFlask } from '@/components/erlenmeyer-flask';
 import { Logo } from '@/components/logo';
 
 interface SkillResult {
     slug: string;
     name: string;
-    level: string;
+    icon: React.ReactElement;
+    category: SkillCategory;
     average: number;
     count: number;
-    category: SkillCategory;
-    lastScore?: number; // To store the last MCLM score
+    lastScore?: number;
+    level: string;
 }
+
+// Function to get color based on score
+const getScoreColor = (score: number) => {
+  if (score >= 90) return 'text-green-600';
+  if (score >= 70) return 'text-emerald-600';
+  if (score >= 50) return 'text-yellow-600';
+  if (score >= 30) return 'text-orange-600';
+  return 'text-red-600';
+};
+
 
 export default function ResultsPage() {
     const { student, isLoading: isUserLoading } = useContext(UserContext);
@@ -74,6 +84,7 @@ export default function ResultsPage() {
                         const result: SkillResult = {
                             slug: skillSlug,
                             name: skillInfo.name,
+                            icon: skillInfo.icon,
                             level: level,
                             average: Math.round(average),
                             count: lastScores.length,
@@ -177,20 +188,26 @@ export default function ResultsPage() {
                         <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                             {categoryResults.map(result => (
-                            <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                                {result.slug === 'reading-race' ? (
-                                    <div className="relative flex flex-col items-center justify-center mb-6 h-[150px] w-[120px]">
-                                         <Rocket className="h-16 w-16 text-primary" />
-                                         <p className="text-4xl font-bold font-headline mt-4">{result.lastScore}</p>
-                                         <p className="text-sm text-muted-foreground">MCLM</p>
+                                <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                                    <div className="text-primary [&>svg]:h-16 [&>svg]:w-16 mb-4">
+                                        {result.icon}
                                     </div>
-                                ) : (
-                                    <ErlenmeyerFlask score={result.average} />
-                                )}
-                                <h3 className="font-headline text-2xl mt-[-1rem]">{result.name}</h3>
-                                <p className="font-semibold text-sm text-primary">{result.level}</p>
-                                <p className="text-xs text-muted-foreground">({result.count} exercices)</p>
-                            </Card>
+                                    <h3 className="font-headline text-2xl">{result.name}</h3>
+                                    <p className="font-semibold text-sm text-primary mb-2">{result.level}</p>
+
+                                    {result.slug === 'reading-race' ? (
+                                        <div className="flex items-baseline gap-1">
+                                            <p className="text-4xl font-bold font-headline mt-2">{result.lastScore}</p>
+                                            <p className="text-sm text-muted-foreground">MCLM</p>
+                                        </div>
+                                    ) : (
+                                        <p className={`text-4xl font-bold font-headline mt-2 ${getScoreColor(result.average)}`}>
+                                            {result.average}<span className="text-2xl text-muted-foreground">%</span>
+                                        </p>
+                                    )}
+
+                                    <p className="text-xs text-muted-foreground mt-2">({result.count} exercices)</p>
+                                </Card>
                             ))}
                         </div>
                         </div>
@@ -200,4 +217,3 @@ export default function ResultsPage() {
         </main>
     );
 }
-
