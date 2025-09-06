@@ -78,17 +78,35 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     }
   }
 
+  const startExerciseWithLevel = (level: number) => {
+    const settings = {
+        difficulty: level,
+        showMinuteCircle: level < 3,
+        matchColors: level === 0,
+        coloredHands: level < 2,
+    };
+    startTimeExercise(settings);
+  };
+  
   useEffect(() => {
     async function loadQuestions() {
-      // For skills that don't need settings, generate questions immediately
-      if (!['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
-        const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
-        setQuestions(generatedQuestions);
-        setIsReadyToStart(true);
-      }
+        if (skill.slug === 'time') {
+            const studentLevel = student?.levels?.[skill.slug];
+            if (studentLevel) {
+                const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
+            }
+        } else if (!['denombrement', 'lire-les-nombres'].includes(skill.slug)) {
+            const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
+            setQuestions(generatedQuestions);
+            setIsReadyToStart(true);
+        }
     }
-    loadQuestions();
-  }, [skill.slug]);
+    if (!isUserLoading) {
+        loadQuestions();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skill.slug, student, isUserLoading]);
   
   // This effect handles auto-playing audio for audio questions
   useEffect(() => {
@@ -154,7 +172,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (skill.slug === 'time') addDetail(questionText, userAnswer, correctAnswer, true);
+      if (['time', 'mental-calculation'].includes(skill.slug)) {
+          addDetail(questionText, userAnswer, correctAnswer, true);
+      }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
       setMotivationalMessage(randomMessage);
       setShowConfetti(true);
@@ -163,17 +183,24 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
       setFeedback('incorrect');
-      if (skill.slug === 'time') addDetail(questionText, userAnswer, correctAnswer, false);
-      setTimeout(handleNextQuestion, 1500);
+      if (['time', 'mental-calculation'].includes(skill.slug)) {
+          addDetail(questionText, userAnswer, correctAnswer, false);
+      }
+      setTimeout(handleNextQuestion, 2000);
   }
   
   const handleQcmAnswer = (option: string) => {
     if (!exerciseData || feedback || !exerciseData.answer) return;
+    
+    let questionText = exerciseData.question;
+    if (skill.slug === 'time' && exerciseData.hour !== undefined && exerciseData.minute !== undefined) {
+        questionText = `Quelle heure est-il ? (Aiguilles sur ${exerciseData.hour}:${exerciseData.minute})`
+    }
 
     if (option === exerciseData.answer) {
-      processCorrectAnswer(exerciseData.question, option, exerciseData.answer);
+      processCorrectAnswer(questionText, option, exerciseData.answer);
     } else {
-      processIncorrectAnswer(exerciseData.question, option, exerciseData.answer);
+      processIncorrectAnswer(questionText, option, exerciseData.answer);
     }
   };
   
@@ -259,9 +286,22 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     setNumberLevelSettings(null);
     setSessionDetails([]);
     resetInteractiveStates();
-    if (!['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
+     if (!['time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
        generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
        setIsReadyToStart(true);
+    } else {
+       // Re-trigger the useEffect to load questions based on student level
+       if (!isUserLoading) {
+            if (skill.slug === 'time') {
+                const studentLevel = student?.levels?.[skill.slug];
+                 if (studentLevel) {
+                    const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                    startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
+                } else {
+                    setIsReadyToStart(false); // Go back to settings screen
+                }
+            }
+       }
     }
   };
 
@@ -594,4 +634,3 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     </div>
   );
 }
-
