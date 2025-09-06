@@ -257,7 +257,7 @@ export function CalendarExercise() {
                                 highlighted: currentQuestion.highlightedDays?.map(d => new Date(d)) || [],
                             }}
                             modifiersClassNames={{
-                                highlighted: "bg-accent/20 rounded-full font-bold",
+                                highlighted: "bg-primary/20 ring-2 ring-primary rounded-full",
                             }}
                         />
                     )}
@@ -378,3 +378,4 @@ export function CalendarExercise() {
     </div>
   );
 }
+
