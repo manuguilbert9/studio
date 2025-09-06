@@ -337,13 +337,17 @@ export function LongCalculationExercise() {
                 </CardHeader>
                  <CardContent className="flex flex-col items-center gap-6">
                     <div className="flex items-center justify-center gap-4 sm:gap-8">
-                        <div className="flex flex-col items-center">
-                            <Image src="/cubes.png" alt="cubes" width={100} height={100} className="object-contain" />
+                        <div className="flex flex-col items-center gap-2">
+                            <div className="text-3xl flex flex-wrap gap-1 justify-center max-w-[100px]">
+                                {Array.from({ length: operands[0] }).map((_, i) => <span key={i}>🧱</span>)}
+                            </div>
                             <p className="text-2xl font-bold">{operands[0]}</p>
                         </div>
                         <span className="text-4xl font-bold text-primary">+</span>
-                         <div className="flex flex-col items-center">
-                            <Image src="/cubes.png" alt="cubes" width={100} height={100} className="object-contain" />
+                         <div className="flex flex-col items-center gap-2">
+                           <div className="text-3xl flex flex-wrap gap-1 justify-center max-w-[100px]">
+                                {Array.from({ length: operands[1] }).map((_, i) => <span key={i}>🧱</span>)}
+                            </div>
                             <p className="text-2xl font-bold">{operands[1]}</p>
                         </div>
                     </div>
