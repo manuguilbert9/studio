@@ -182,7 +182,10 @@ export function difficultyLevelToString(
     }
 
     if (skill?.allowedLevels) {
-        return null;
+        // For skills with selectable levels but no specific settings object for the result (e.g. mental-calculation)
+        if (scoreValue < 50) return "Niveau A";
+        if (scoreValue < 80) return "Niveau B";
+        return "Niveau C";
     }
 
     if (skillSlug === 'time' && timeSettings) {
