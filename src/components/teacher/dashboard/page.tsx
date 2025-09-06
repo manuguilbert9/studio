@@ -14,7 +14,6 @@ import { StudentManager } from '@/components/teacher/student-manager';
 import { HomeworkTracker } from '@/components/teacher/homework-tracker';
 import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
-import { ReportGenerator } from '@/components/teacher/report-generator';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
 import { getAllScores, Score } from '@/services/scores';
@@ -94,11 +93,10 @@ export default function TeacherDashboardPage() {
             </div>
           ) : (
             <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
-                    <TabsTrigger value="reports">Bilans</TabsTrigger>
                     <TabsTrigger value="database">Réglages</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
@@ -113,10 +111,7 @@ export default function TeacherDashboardPage() {
                     />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
-                    <ResultsManager students={students} allScores={allScores} onDataRefresh={loadData} />
-                </TabsContent>
-                 <TabsContent value="reports" className="mt-6">
-                    <ReportGenerator students={students} allScores={allScores} allSpellingProgress={allSpellingProgress} />
+                    <ResultsManager students={students} allScores={allScores} allSpellingProgress={allProgress} onDataRefresh={loadData} />
                 </TabsContent>
                  <TabsContent value="database" className="mt-6">
                     <DatabaseManager />

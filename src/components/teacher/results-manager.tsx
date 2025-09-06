@@ -14,14 +14,17 @@ import { type Score, deleteScore } from '@/services/scores';
 import { getSkillBySlug, difficultyLevelToString } from '@/lib/skills';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ReportGenerator } from './report-generator';
+import type { SpellingProgress } from '@/services/spelling';
 
 interface ResultsManagerProps {
     students: Student[];
     allScores: Score[];
+    allSpellingProgress: SpellingProgress[];
     onDataRefresh: () => void;
 }
 
-export function ResultsManager({ students, allScores, onDataRefresh }: ResultsManagerProps) {
+export function ResultsManager({ students, allScores, allSpellingProgress, onDataRefresh }: ResultsManagerProps) {
     const { toast } = useToast();
 
     const scoresByStudent = useMemo(() => {
@@ -52,72 +55,75 @@ export function ResultsManager({ students, allScores, onDataRefresh }: ResultsMa
     const studentsWithScores = students.filter(student => (scoresByStudent.get(student.id) || []).length > 0);
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Résultats des élèves</CardTitle>
-                <CardDescription>Consultez et gérez tous les scores enregistrés pour chaque élève.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                {studentsWithScores.length > 0 ? (
-                <Accordion type="multiple" className="w-full">
-                    {studentsWithScores.map(student => {
-                        const studentScores = scoresByStudent.get(student.id) || [];
-                        return (
-                        <AccordionItem value={student.id} key={student.id}>
-                            <AccordionTrigger className="text-lg font-medium">{student.name} ({studentScores.length} résultat(s))</AccordionTrigger>
-                            <AccordionContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Exercice</TableHead>
-                                            <TableHead>Score</TableHead>
-                                            <TableHead>Niveau</TableHead>
-                                            <TableHead>Date</TableHead>
-                                            <TableHead className="text-right">Action</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                    {studentScores.map(score => (
-                                        <TableRow key={score.id}>
-                                            <TableCell className="font-medium">{getSkillBySlug(score.skill)?.name || score.skill}</TableCell>
-                                            <TableCell>{score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`}</TableCell>
-                                            <TableCell>{difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings)}</TableCell>
-                                            <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
-                                            <TableCell className="text-right">
-                                                 <AlertDialog>
-                                                    <AlertDialogTrigger asChild>
-                                                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
-                                                            <Trash2 />
-                                                        </Button>
-                                                    </AlertDialogTrigger>
-                                                    <AlertDialogContent>
-                                                        <AlertDialogHeader>
-                                                        <AlertDialogTitle>Supprimer ce résultat ?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Cette action est irréversible. Le score pour l'exercice "{getSkillBySlug(score.skill)?.name}" sera définitivement supprimé.
-                                                        </AlertDialogDescription>
-                                                        </AlertDialogHeader>
-                                                        <AlertDialogFooter>
-                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteScore(score.id)} className="bg-destructive hover:bg-destructive/90">
-                                                            Supprimer
-                                                        </AlertDialogAction>
-                                                        </AlertDialogFooter>
-                                                    </AlertDialogContent>
-                                                </AlertDialog>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                    </TableBody>
-                                </Table>
-                            </AccordionContent>
-                        </AccordionItem>
-                    )})}
-                </Accordion>
-                ) : (
-                     <p className="text-center text-muted-foreground py-8">Aucun résultat d'exercice n'a encore été enregistré.</p>
-                )}
-            </CardContent>
-        </Card>
+        <div className="space-y-8">
+            <ReportGenerator students={students} allScores={allScores} allSpellingProgress={allSpellingProgress} />
+            <Card>
+                <CardHeader>
+                    <CardTitle>Résultats Détaillés par Élève</CardTitle>
+                    <CardDescription>Consultez et gérez tous les scores enregistrés pour chaque élève.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {studentsWithScores.length > 0 ? (
+                    <Accordion type="multiple" className="w-full">
+                        {studentsWithScores.map(student => {
+                            const studentScores = scoresByStudent.get(student.id) || [];
+                            return (
+                            <AccordionItem value={student.id} key={student.id}>
+                                <AccordionTrigger className="text-lg font-medium">{student.name} ({studentScores.length} résultat(s))</AccordionTrigger>
+                                <AccordionContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Exercice</TableHead>
+                                                <TableHead>Score</TableHead>
+                                                <TableHead>Niveau</TableHead>
+                                                <TableHead>Date</TableHead>
+                                                <TableHead className="text-right">Action</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                        {studentScores.map(score => (
+                                            <TableRow key={score.id}>
+                                                <TableCell className="font-medium">{getSkillBySlug(score.skill)?.name || score.skill}</TableCell>
+                                                <TableCell>{score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`}</TableCell>
+                                                <TableCell>{difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings)}</TableCell>
+                                                <TableCell>{format(new Date(score.createdAt), 'd MMM yyyy, HH:mm', { locale: fr })}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive">
+                                                                <Trash2 />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                            <AlertDialogTitle>Supprimer ce résultat ?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Cette action est irréversible. Le score pour l'exercice "{getSkillBySlug(score.skill)?.name}" sera définitivement supprimé.
+                                                            </AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                            <AlertDialogAction onClick={() => handleDeleteScore(score.id)} className="bg-destructive hover:bg-destructive/90">
+                                                                Supprimer
+                                                            </AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        )})}
+                    </Accordion>
+                    ) : (
+                        <p className="text-center text-muted-foreground py-8">Aucun résultat d'exercice n'a encore été enregistré.</p>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
     );
 }
