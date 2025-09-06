@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { Skill } from '@/lib/skills.tsx';
+import type { Skill, SkillLevel } from '@/lib/skills.tsx';
 import { useState, useMemo, useEffect, useContext } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
@@ -96,15 +96,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                 const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
                 startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
             }
-        } else if (skill.slug === 'denombrement') {
-             // For counting, we always start with settings unless a student level implies auto-start
-            const studentLevel = student?.levels?.[skill.slug];
-            if (studentLevel) {
-                // If a level is set, we can directly start the exercise
-                const maxNumberMap: Record<SkillLevel, number> = { 'A': 10, 'B': 15, 'C': 20, 'D': 20 };
-                startCountExercise({ maxNumber: maxNumberMap[studentLevel] || 10 });
-            }
-        } else if (!['lire-les-nombres'].includes(skill.slug)) {
+        } else if (!['denombrement', 'lire-les-nombres'].includes(skill.slug)) {
             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
             setQuestions(generatedQuestions);
             setIsReadyToStart(true);
@@ -302,16 +294,11 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     } else {
        // Re-trigger the useEffect to load questions based on student level
        if (!isUserLoading) {
-            if (skill.slug === 'time' || skill.slug === 'denombrement') {
+            if (skill.slug === 'time') {
                 const studentLevel = student?.levels?.[skill.slug];
                  if (studentLevel) {
-                    if (skill.slug === 'time') {
-                        const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-                        startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
-                    } else {
-                        const maxNumberMap: Record<SkillLevel, number> = { 'A': 10, 'B': 15, 'C': 20, 'D': 20 };
-                        startCountExercise({ maxNumber: maxNumberMap[studentLevel] || 10 });
-                    }
+                    const difficultyMap = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                    startExerciseWithLevel(difficultyMap[studentLevel] ?? 0);
                 } else {
                     setIsReadyToStart(false); // Go back to settings screen
                 }
@@ -651,3 +638,5 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     </div>
   );
 }
+
+    
