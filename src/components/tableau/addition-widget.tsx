@@ -123,9 +123,7 @@ export function AdditionWidget({
   }
 
   const getTabIndex = (row: number, col: number) => {
-    if (isExerciseMode) return -1;
-    const totalCols = numCols + 1; // +1 for the highest-order result column
-    // re-map col from left-to-right to right-to-left for tabbing
+    const totalCols = numCols + 1;
     const tabCol = (totalCols - 1) - col;
     return row * totalCols + tabCol + 1;
   };
@@ -160,7 +158,6 @@ export function AdditionWidget({
 
       <div className="flex flex-col items-center flex-grow h-full justify-center">
         <div className="flex items-start">
-          {/* Left-most column with symbols */}
           <div className="flex flex-col items-center m-1">
             <div style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}} />
             {[...Array(numOperands)].map((_, rowIndex) => (
@@ -174,7 +171,6 @@ export function AdditionWidget({
             <div style={{height: cellSize}} />
           </div>
 
-          {/* Special column for highest-order result (e.g., thousands) */}
           <div className="flex flex-col items-center m-1">
              <div style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}} />
             {[...Array(numOperands)].map((_, i) => (
@@ -189,13 +185,12 @@ export function AdditionWidget({
                 fontSize={fontSize}
                 tabIndex={getTabIndex(numOperands, 0)}
                 value={isExerciseMode ? exerciseInputs?.[`result-${numCols}`] : undefined}
-                onValueChange={isExerciseMode ? onInputChange : undefined}
-                isReadOnly={!!feedback}
+                onValueChange={onInputChange}
+                isReadOnly={isExerciseMode || !!feedback}
               />
             </div>
           </div>
 
-          {/* Main digit columns */}
           {colsToRender.map((col) => {
             const colFromRight = numCols - 1 - col;
             const borderColor = getBorderColor(colFromRight);
@@ -208,8 +203,8 @@ export function AdditionWidget({
                     size={carrySize} 
                     fontSize={carryFontSize} 
                     value={isExerciseMode ? exerciseInputs?.[`carry-${colFromRight}`] : undefined}
-                    onValueChange={isExerciseMode ? onInputChange : undefined}
-                    isReadOnly={!!feedback}
+                    onValueChange={onInputChange}
+                    isReadOnly={isExerciseMode || !!feedback}
                   />}
                 </div>
 
@@ -222,7 +217,7 @@ export function AdditionWidget({
                             fontSize={fontSize} 
                             tabIndex={getTabIndex(rowIndex, col + 1)}
                             value={isExerciseMode ? String(operands?.[rowIndex] || '').padStart(numCols, '0')[col] : undefined}
-                            onValueChange={isExerciseMode ? onInputChange : undefined}
+                            onValueChange={onInputChange}
                             isReadOnly={isExerciseMode}
                         />
                     </div>
@@ -238,8 +233,8 @@ export function AdditionWidget({
                     fontSize={fontSize}
                     tabIndex={getTabIndex(numOperands, col + 1)}
                     value={isExerciseMode ? exerciseInputs?.[`result-${colFromRight}`] : undefined}
-                    onValueChange={isExerciseMode ? onInputChange : undefined}
-                    isReadOnly={!!feedback}
+                    onValueChange={onInputChange}
+                    isReadOnly={isExerciseMode || !!feedback}
                   />
                 </div>
               </div>

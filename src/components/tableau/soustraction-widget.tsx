@@ -26,7 +26,6 @@ interface SoustractionWidgetProps {
   feedback?: 'correct' | 'incorrect' | null;
 }
 
-// Units: Blue, Tens: Red, Hundreds: Green
 const colors = [
   'border-blue-500',
   'border-red-500',
@@ -66,7 +65,7 @@ export function SoustractionWidget({
             size,
             numCols
         });
-    }, 500); // Debounce updates
+    }, 500);
   }, [pos, size, numCols, onUpdate, initialState.id, isExerciseMode]);
 
   useEffect(() => {
@@ -91,7 +90,7 @@ export function SoustractionWidget({
       if (!isDragging.current) return;
       isDragging.current = false;
       document.documentElement.style.cursor = 'default';
-      triggerUpdate(); // Final update on drag end
+      triggerUpdate();
     };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
@@ -119,18 +118,12 @@ export function SoustractionWidget({
     triggerUpdate();
   }
   
-  const getTabIndex = (row: number, col: number): number | undefined => {
-    if (isExerciseMode) return undefined;
-    // Correct tabbing order: left-to-right on minuend, then left-to-right on subtrahend, etc.
+  const getTabIndex = (row: number, col: number): number => {
     const totalCols = numCols;
-    const base = row * totalCols;
-    
-    // special for carry cells
     if (row === -1) { 
-        return col === 0 ? numCols * 3 + 1 : numCols * 3 + 2; // after result cells
+        return (2 * totalCols) + (col - 1) + 1; // Carry cells after operand cells
     }
-
-    return base + col + 1;
+    return (row * totalCols) + col + 1;
   };
   
   return (
@@ -179,22 +172,20 @@ export function SoustractionWidget({
             return (
               <div key={col} className="flex flex-col items-center m-1">
                 <div className="flex items-center justify-center" style={{width: cellSize, height: cellSize * 0.8, marginBottom: '0.25rem'}}>
-                  {/* Do not render carry cell above units column (right-most) */}
                   {colFromRight > 0 && (
                     <CarryCell 
                         id={`carry-${colFromRight}`}
-                        borderColor={getBorderColor(colFromRight)} // Match the column color
+                        borderColor={getBorderColor(colFromRight)}
                         size={carrySize} 
                         fontSize={carryFontSize} 
                         borderStyle="dotted"
                         tabIndex={getTabIndex(-1, col)}
                         value={isExerciseMode ? exerciseInputs?.[`carry-${colFromRight}`] : undefined}
-                        onValueChange={isExerciseMode ? onInputChange : undefined}
-                        isReadOnly={!!feedback}
+                        onValueChange={onInputChange}
+                        isReadOnly={isExerciseMode || !!feedback}
                     />
                   )}
                 </div>
-                {/* Minuend */}
                 <div className="flex items-center" style={{height: cellSize}}>
                     <CalcCell 
                         id={`op-0-${colFromRight}`}
@@ -205,11 +196,10 @@ export function SoustractionWidget({
                         isMinuend={true} 
                         tabIndex={getTabIndex(0, col)} 
                         value={isExerciseMode ? String(operands?.[0] || '').padStart(numCols, '0')[col] : undefined}
-                        onValueChange={isExerciseMode ? onInputChange : undefined}
+                        onValueChange={onInputChange}
                         isReadOnly={isExerciseMode}
                     />
                 </div>
-                {/* Subtrahend */}
                 <div className="flex items-center" style={{height: cellSize}}>
                     <CalcCell 
                         id={`op-1-${colFromRight}`}
@@ -218,13 +208,11 @@ export function SoustractionWidget({
                         fontSize={fontSize} 
                         tabIndex={getTabIndex(1, col)}
                         value={isExerciseMode ? String(operands?.[1] || '').padStart(numCols, '0')[col] : undefined}
-                        onValueChange={isExerciseMode ? onInputChange : undefined}
+                        onValueChange={onInputChange}
                         isReadOnly={isExerciseMode}
                     />
                 </div>
-                {/* Equals line */}
                 <div className="bg-slate-800 my-1" style={{height: '2px', width: '100%'}} />
-                {/* Result */}
                 <div style={{height: cellSize}}>
                   <CalcCell 
                     id={`result-${colFromRight}`}
@@ -233,8 +221,8 @@ export function SoustractionWidget({
                     fontSize={fontSize} 
                     tabIndex={getTabIndex(2, col)}
                     value={isExerciseMode ? exerciseInputs?.[`result-${colFromRight}`] : undefined}
-                    onValueChange={isExerciseMode ? onInputChange : undefined}
-                    isReadOnly={!!feedback}
+                    onValueChange={onInputChange}
+                    isReadOnly={isExerciseMode || !!feedback}
                   />
                 </div>
               </div>

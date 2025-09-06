@@ -32,14 +32,14 @@ export function CarryCell({
   const [isCrossed, setIsCrossed] = useState(false);
   
   const value = onValueChange !== undefined ? propValue || '' : internalValue;
-  const setValue = onValueChange || setInternalValue;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
+
+    const setter = onValueChange || setInternalValue;
     const val = e.target.value;
-     // Allow up to two digits, to handle borrowing
     if (/^\d{0,2}$/.test(val)) {
-      setValue(val);
+      setter(id, val);
        if (isCrossed) {
         setIsCrossed(false);
       }
@@ -54,7 +54,6 @@ export function CarryCell({
     }
   };
 
-  // Logic to display number with borrowed '1'
   const hasBorrowedOne = value.length === 2 && value.startsWith('1');
   const displayValue = hasBorrowedOne ? value.substring(1) : value;
 

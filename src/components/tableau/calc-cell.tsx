@@ -35,17 +35,17 @@ export function CalcCell({
   
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // Use propValue if in controlled mode (exercise), otherwise use internal state (tableau)
   const value = onValueChange !== undefined ? propValue || '' : internalValue;
-  const setValue = onValueChange || setInternalValue;
-
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (isReadOnly) return;
+    
+    const setter = onValueChange || setInternalValue;
     const rawInput = e.target.value;
-    // Allow up to two digits for minuend (for borrowing), one for others.
     const maxLength = isMinuend ? 2 : 1;
+    
     if (/^\d*$/.test(rawInput) && rawInput.length <= maxLength) {
-      setValue(rawInput);
+      setter(id, rawInput);
       if (isCrossed) {
         setIsCrossed(false);
       }
@@ -58,7 +58,6 @@ export function CalcCell({
     setIsCrossed(prev => !prev);
   };
   
-  // Logic to display number with borrowed '1'
   const hasBorrowedOne = isMinuend && value.length === 2 && value.startsWith('1');
   
   return (
@@ -80,7 +79,6 @@ export function CalcCell({
         className={cn(
           'border-2 text-center font-bold font-mono bg-transparent rounded-md focus:outline-none focus:bg-slate-100 w-full h-full p-0',
           borderColor,
-          // Hide the raw text input if we are using the special borrowed one display
           hasBorrowedOne && 'text-transparent caret-transparent',
           isReadOnly && "cursor-default ring-0 focus-visible:ring-0 focus:ring-0 focus:ring-offset-0 border-gray-300 bg-slate-50/50"
         )}
@@ -89,7 +87,6 @@ export function CalcCell({
         }}
       />
       
-      {/* Special display for borrowed '1' */}
       {hasBorrowedOne ? (
          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ color: 'hsl(var(--foreground))' }}>
             <span 
@@ -110,7 +107,6 @@ export function CalcCell({
             </span>
         </div>
       ) : isReadOnly ? (
-        // For exercise mode, just display the prop value directly
          <span 
             className="absolute font-bold font-mono pointer-events-none"
             style={{ fontSize: `${fontSize}px` }}
@@ -120,7 +116,6 @@ export function CalcCell({
       ) : null}
 
 
-      {/* Crossed value display */}
       {isCrossed && (
          <>
             <span 
