@@ -34,7 +34,7 @@ export function CountSettings({ onStart }: CountSettingsProps) {
           <Slider
             id="max-number-slider"
             min={5}
-            max={20}
+            max={30}
             step={1}
             value={[maxNumber]}
             onValueChange={(value) => setMaxNumber(value[0])}
