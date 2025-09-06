@@ -31,12 +31,19 @@ export function ReadingRaceExercise() {
     return selectedText.level === 'Niveau A' ? selectedText.text.toUpperCase() : selectedText.text;
   }, [selectedText]);
 
-  const textWords = useMemo(() => {
-    // Comparison is always done in lowercase to avoid issues.
+  // Words with punctuation for display
+  const wordsWithPunctuation = useMemo(() => {
+    if (!selectedText) return [];
+    return textToDisplay.split(/\s+/);
+  }, [textToDisplay, selectedText]);
+  
+  // Words without punctuation for comparison
+  const textWordsForComparison = useMemo(() => {
     return selectedText?.text.toLowerCase().replace(/[.,]/g, '').split(/\s+/) || [];
   }, [selectedText]);
   
-  const wordsRead = useMemo(() => {
+  // Spoken words without punctuation for comparison
+  const spokenWordsForComparison = useMemo(() => {
     return transcript.toLowerCase().replace(/[.,]/g, '').split(/\s+/).filter(Boolean);
   }, [transcript]);
 
@@ -65,11 +72,11 @@ export function ReadingRaceExercise() {
   
   const stopRace = useCallback(() => {
     stopListening();
-    const correctWordsCount = wordsRead.filter((word, index) => textWords[index] && word.toLowerCase() === textWords[index].toLowerCase()).length;
+    const correctWordsCount = spokenWordsForComparison.filter((word, index) => textWordsForComparison[index] && word === textWordsForComparison[index]).length;
     const wpm = timeElapsed > 0 ? Math.round((correctWordsCount / timeElapsed) * 60) : 0;
     setFinalWPM(wpm);
     setExerciseState('finished');
-  }, [stopListening, timeElapsed, wordsRead, textWords]);
+  }, [stopListening, timeElapsed, spokenWordsForComparison, textWordsForComparison]);
 
    useEffect(() => {
       const saveResult = async () => {
@@ -88,16 +95,13 @@ export function ReadingRaceExercise() {
   useEffect(() => {
       if (!selectedText || exerciseState !== 'racing') return;
       
-      const originalWords = selectedText.text.toLowerCase().replace(/[.,]/g, '').split(/\s+/);
-      const recognizedWords = transcript.toLowerCase().replace(/[.,]/g, '').split(/\s+/).filter(Boolean);
-
-      if (recognizedWords.length >= originalWords.length) {
-          const allCorrect = originalWords.every((word, index) => word === recognizedWords[index]);
+      if (spokenWordsForComparison.length >= textWordsForComparison.length) {
+          const allCorrect = textWordsForComparison.every((word, index) => word === spokenWordsForComparison[index]);
           if(allCorrect) {
             stopRace();
           }
       }
-  }, [transcript, selectedText, stopRace, exerciseState]);
+  }, [transcript, selectedText, stopRace, exerciseState, spokenWordsForComparison, textWordsForComparison]);
 
   
   const handleSelectText = (text: ReadingText) => {
@@ -204,8 +208,8 @@ export function ReadingRaceExercise() {
   }
   
   if (exerciseState === 'racing') {
-      const correctWordsCount = wordsRead.filter((word, index) => textWords[index] && word === textWords[index]).length;
-      const progress = textWords.length > 0 ? (correctWordsCount / textWords.length) * 100 : 0;
+      const correctWordsCount = spokenWordsForComparison.filter((word, index) => textWordsForComparison[index] && word === textWordsForComparison[index]).length;
+      const progress = textWordsForComparison.length > 0 ? (correctWordsCount / textWordsForComparison.length) * 100 : 0;
       
       return (
          <Card className="w-full max-w-2xl mx-auto shadow-2xl">
@@ -214,15 +218,15 @@ export function ReadingRaceExercise() {
             </CardHeader>
             <CardContent className="space-y-6">
                 <p className="text-2xl p-4 bg-muted/50 rounded-lg leading-relaxed">
-                    {textWords.map((word, index) => {
-                        const spokenWord = wordsRead[index];
+                    {wordsWithPunctuation.map((displayWord, index) => {
+                        const comparisonWord = textWordsForComparison[index];
+                        const spokenWord = spokenWordsForComparison[index];
+                        
                         let status: 'correct' | 'incorrect' | 'pending' = 'pending';
                         if (spokenWord) {
-                            status = spokenWord === word ? 'correct' : 'incorrect';
+                            status = spokenWord === comparisonWord ? 'correct' : 'incorrect';
                         }
                         
-                        const displayWord = selectedText.level === 'Niveau A' ? word.toUpperCase() : word;
-
                         return (
                             <span key={index} className={cn(
                                 status === 'correct' && "text-green-600 font-bold",
@@ -251,9 +255,9 @@ export function ReadingRaceExercise() {
   }
 
   if (exerciseState === 'finished') {
-      const mistakes = wordsRead.reduce((acc: string[], word, index) => {
-        if (textWords[index] && word !== textWords[index]) {
-            acc.push(textWords[index]);
+      const mistakes = spokenWordsForComparison.reduce((acc: string[], word, index) => {
+        if (textWordsForComparison[index] && word !== textWordsForComparison[index]) {
+            acc.push(textWordsForComparison[index]);
         }
         return acc;
       }, []);
