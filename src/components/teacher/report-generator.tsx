@@ -17,7 +17,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Student } from '@/services/students';
 import { type Score } from '@/services/scores';
-import { type SpellingProgress } from '@/services/spelling';
+import { type SpellingProgress, type SpellingResult } from '@/services/spelling';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 
 interface ReportGeneratorProps {
@@ -25,6 +25,10 @@ interface ReportGeneratorProps {
     allScores: Score[];
     allSpellingProgress: SpellingProgress[];
 }
+
+// Simple SVG logo as a base64 data URI
+const logoSvgDataUri = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJsdWNpZGUgbHVjaWRlLXNwYXJrbGVzIj48cGF0aCBkPSJtMTIgMyA0IDEuMDM1VjggbC00IDEuMDM1VjN6TTUgMTQgNCAxNXY0LjAzNUw1IDE4di00ek0xOSAxNCAyMCAxNXY0LjAzNUwxOSAxOHYtNHpNNCA5IDUgN2gyTTIgMTJsMy0xdi0yTTIwIDdsMiAyLTItM3YtMk0xMiA5djNNNiAxNWwyLTJNNTIgNWwtMS0xTTggM2wtMS0xIi8+PHBhdGggZD0iTTcgOGgxbDIgNWgxTDEyIDEzbC0yLTUiLz48L3N2Zz4=";
+
 
 export function ReportGenerator({ students, allScores, allSpellingProgress }: ReportGeneratorProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -41,32 +45,34 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         const student = students.find(s => s.id === selectedStudentId);
         if (!student) return;
 
-        const scores = allScores.filter(s => 
+        const studentScores = allScores.filter(s => 
             s.userId === selectedStudentId &&
             new Date(s.createdAt) >= dateRange.from! &&
             new Date(s.createdAt) <= dateRange.to!
         ).sort((a,b) => a.skill.localeCompare(b.skill));
         
-        const spellingProgress = allSpellingProgress.find(p => p.userId === selectedStudentId)?.progress || {};
+        const studentSpellingProgress = allSpellingProgress.find(p => p.userId === selectedStudentId)?.progress || {};
 
         const doc = new jsPDF();
+        const primaryColor = '#ea588b'; // Extracted from CSS var --primary hsl(340, 85%, 65%)
 
         // --- HEADER ---
+        doc.addImage(logoSvgDataUri, 'SVG', 15, 15, 10, 10);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(22);
-        doc.text(student.name, 105, 20, { align: 'center' });
+        doc.text(student.name, 105, 25, { align: 'center' });
         
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
         const dateString = `Bilan du ${format(dateRange.from, 'd MMMM yyyy', { locale: fr })} au ${format(dateRange.to, 'd MMMM yyyy', { locale: fr })}`;
-        doc.text(dateString, 105, 30, { align: 'center' });
+        doc.text(dateString, 105, 35, { align: 'center' });
 
-        let yPos = 45;
+        let yPos = 50;
 
         // --- Group scores by category ---
         const scoresByCategory: Record<string, Score[]> = {};
         allSkillCategories.forEach(cat => scoresByCategory[cat] = []);
-        scores.forEach(score => {
+        studentScores.forEach(score => {
             const skill = getSkillBySlug(score.skill);
             if (skill && scoresByCategory[skill.category]) {
                 scoresByCategory[skill.category].push(score);
@@ -84,7 +90,7 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
 
             autoTable(doc, {
                 startY: yPos,
-                head: [[{ content: category, styles: { fillColor: [234, 88, 12], fontStyle: 'bold' } }]],
+                head: [[{ content: category, styles: { fillColor: primaryColor, fontStyle: 'bold', textColor: '#ffffff' } }]],
                 theme: 'plain',
             });
             yPos = (doc as any).lastAutoTable.finalY;
@@ -96,10 +102,14 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                 const date = format(new Date(score.createdAt), 'dd/MM/yy');
 
                 let errorsText = '';
-                if(score.homeworkSession && skill?.slug === 'spelling'){
-                    // This logic is incomplete as we don't have spelling list ID in scores
-                    // A proper implementation would require restructuring how spelling results are saved.
-                }
+                // Find spelling errors if applicable
+                const homeworkId = score.homeworkSession ? `liste-${score.homeworkSession}` : ''; // This needs to be improved if lists change
+                 if (score.skill === 'spelling' && homeworkId) {
+                     const spellingResult = Object.entries(studentSpellingProgress).find(([key, _]) => key.includes(homeworkId));
+                     if(spellingResult && spellingResult[1].errors.length > 0) {
+                        errorsText = spellingResult[1].errors.join(', ');
+                     }
+                 }
 
                 return [skill?.name || score.skill, scoreText, level || 'N/A', date, errorsText];
             });
@@ -110,12 +120,24 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                 body: body,
                 theme: 'striped',
                 headStyles: { fillColor: [51, 65, 85] },
+                columnStyles: {
+                    4: { cellWidth: 50 } // Widen errors column
+                },
                 didDrawPage: (data) => {
                     yPos = data.cursor?.y || 20;
                 }
             });
             yPos = (doc as any).lastAutoTable.finalY + 10;
         }
+
+        // --- FOOTER ---
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(10);
+            doc.text("L'enseignant, M. Manu", 15, doc.internal.pageSize.height - 15);
+        }
+
 
         doc.save(`Bilan-${student.name.replace(' ', '_')}-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
     };
@@ -194,4 +216,3 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         </Card>
     );
 }
-
