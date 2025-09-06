@@ -184,7 +184,8 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                         <TableHeader>
                                                                             <TableRow>
                                                                                 <TableHead>Question</TableHead>
-                                                                                <TableHead>Réponse de l'élève</TableHead>
+                                                                                <TableHead>Réponse</TableHead>
+                                                                                {score.details?.[0]?.options && <TableHead>Options proposées</TableHead>}
                                                                                 {shouldShowCorrectAnswer(score.skill) && <TableHead>Bonne réponse</TableHead>}
                                                                                 <TableHead>Statut</TableHead>
                                                                             </TableRow>
@@ -194,6 +195,7 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                                 <TableRow key={index} className={cn(detail.status === 'incorrect' && 'bg-red-100/50')}>
                                                                                     <TableCell className="text-xs sm:text-sm">{detail.question}</TableCell>
                                                                                     <TableCell className={cn("font-medium", detail.status === 'incorrect' && 'text-destructive')}>{detail.userAnswer}</TableCell>
+                                                                                    {detail.options && <TableCell className="text-xs text-muted-foreground">{detail.options.join(', ')}</TableCell>}
                                                                                     {shouldShowCorrectAnswer(score.skill) && <TableCell className="font-medium text-green-700">{detail.correctAnswer}</TableCell>}
                                                                                     <TableCell>
                                                                                         {detail.status === 'correct' ?

@@ -22,6 +22,7 @@ export interface ScoreDetail {
     status: 'correct' | 'incorrect' | 'completed'; // Added 'completed' for non-binary results like reading race
     calculationState?: CalculationState;
     mistakes?: string[]; // For storing reading or spelling mistakes
+    options?: string[]; // For QCM questions, to see what choices were offered
 }
 
 export interface Score {

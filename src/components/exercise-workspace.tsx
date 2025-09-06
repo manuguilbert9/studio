@@ -163,21 +163,22 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     }
   };
   
-    const addDetail = (question: string, userAnswer: string, correctAnswer: string, isCorrect: boolean) => {
+    const addDetail = (question: string, userAnswer: string, correctAnswer: string, isCorrect: boolean, options?: string[]) => {
         const detail: ScoreDetail = {
             question,
             userAnswer,
             correctAnswer,
             status: isCorrect ? 'correct' : 'incorrect',
+            options
         };
         setSessionDetails(prev => [...prev, detail]);
     };
 
-  const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
+  const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string, options?: string[]) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes'].includes(skill.slug)) {
-          addDetail(questionText, userAnswer, correctAnswer, true);
+      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres'].includes(skill.slug)) {
+          addDetail(questionText, userAnswer, correctAnswer, true, options);
       }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
       setMotivationalMessage(randomMessage);
@@ -185,10 +186,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
       setTimeout(handleNextQuestion, 2500);
   }
   
-  const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string) => {
+  const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string, options?: string[]) => {
       setFeedback('incorrect');
-       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes'].includes(skill.slug)) {
-          addDetail(questionText, userAnswer, correctAnswer, false);
+       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres'].includes(skill.slug)) {
+          addDetail(questionText, userAnswer, correctAnswer, false, options);
       }
       setTimeout(handleNextQuestion, 2000);
   }
@@ -209,10 +210,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         questionText = `Lis: "${exerciseData.textToSpeak}"`
     }
 
+    const optionsForDetails = exerciseData.options || exerciseData.optionsWithAudio?.map(o => o.text);
+
     if (option === exerciseData.answer) {
-      processCorrectAnswer(questionText, option, exerciseData.answer);
+      processCorrectAnswer(questionText, option, exerciseData.answer, optionsForDetails);
     } else {
-      processIncorrectAnswer(questionText, option, exerciseData.answer);
+      processIncorrectAnswer(questionText, option, exerciseData.answer, optionsForDetails);
     }
   };
   
