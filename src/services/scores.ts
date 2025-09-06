@@ -36,10 +36,13 @@ export async function addScore(scoreData: Omit<Score, 'id' | 'createdAt'>): Prom
         return { success: false, error: 'User ID is required.' };
     }
     try {
-        await addDoc(collection(db, 'scores'), {
+        const dataToSave = {
             ...scoreData,
+            details: scoreData.details || [], // Ensure details is an array
             createdAt: Timestamp.now()
-        });
+        };
+
+        await addDoc(collection(db, 'scores'), dataToSave);
         return { success: true };
     } catch (error) {
         console.error("Error adding score to Firestore:", error);
