@@ -9,7 +9,7 @@ import { getSkillBySlug } from '@/lib/skills';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Home, Loader2, Rocket } from 'lucide-react';
-import { ErlenmeyerFlask } from '@/components/erlenmeyer-flask';
+import { ScoreTube } from '@/components/score-tube';
 import { Logo } from '@/components/logo';
 
 interface SkillAverage {
@@ -139,17 +139,22 @@ export default function ResultsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
                     {averages.map(skillAverage => (
                         <Card key={skillAverage.slug} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                            <div className="text-primary [&>svg]:h-16 [&>svg]:w-16 mb-4">
+                                {skillAverage.icon}
+                            </div>
+                            
+                            <h3 className="font-headline text-2xl">{skillAverage.name}</h3>
+
                              {skillAverage.slug === 'reading-race' ? (
-                                <div className="relative flex flex-col items-center justify-center mb-6 h-[150px] w-[120px]">
-                                     <Rocket className="h-16 w-16 text-primary" />
-                                     <p className="text-4xl font-bold font-headline mt-4">{skillAverage.lastScore}</p>
+                                <div className="flex flex-col items-center justify-center mt-4">
+                                     <Rocket className="h-12 w-12 text-muted-foreground" />
+                                     <p className="text-3xl font-bold font-headline mt-2">{skillAverage.lastScore}</p>
                                      <p className="text-sm text-muted-foreground">MCLM</p>
                                 </div>
                             ) : (
-                                <ErlenmeyerFlask score={skillAverage.average} />
+                                <ScoreTube score={skillAverage.average} />
                             )}
-                            <h3 className="font-headline text-2xl mt-[-1rem]">{skillAverage.name}</h3>
-                            <p className="text-xs text-muted-foreground">({skillAverage.count} exercices)</p>
+                            <p className="text-xs text-muted-foreground mt-2">({skillAverage.count} exercices)</p>
                         </Card>
                     ))}
                 </div>

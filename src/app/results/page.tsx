@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Home, Loader2, Rocket } from 'lucide-react';
 import { Logo } from '@/components/logo';
+import { ScoreTube } from '@/components/score-tube';
 
 interface SkillResult {
     slug: string;
@@ -21,15 +22,6 @@ interface SkillResult {
     lastScore?: number;
     level: string;
 }
-
-// Function to get color based on score
-const getScoreColor = (score: number) => {
-  if (score >= 90) return 'text-green-600';
-  if (score >= 70) return 'text-emerald-600';
-  if (score >= 50) return 'text-yellow-600';
-  if (score >= 30) return 'text-orange-600';
-  return 'text-red-600';
-};
 
 
 export default function ResultsPage() {
@@ -201,9 +193,7 @@ export default function ResultsPage() {
                                             <p className="text-sm text-muted-foreground">MCLM</p>
                                         </div>
                                     ) : (
-                                        <p className={`text-4xl font-bold font-headline mt-2 ${getScoreColor(result.average)}`}>
-                                            {result.average}<span className="text-2xl text-muted-foreground">%</span>
-                                        </p>
+                                        <ScoreTube score={result.average} />
                                     )}
 
                                     <p className="text-xs text-muted-foreground mt-2">({result.count} exercices)</p>
