@@ -244,7 +244,7 @@ export function CalendarExercise() {
           case 'qcm':
               return (
                   <div className='flex flex-col items-center gap-4'>
-                    {currentQuestion.month && (
+                    {(level === 'B' || level === 'C' || level === 'D') && (
                          <DayPicker
                             mode="single"
                             locale={fr}
@@ -281,7 +281,7 @@ export function CalendarExercise() {
                     selected={selectedDay}
                     onSelect={setSelectedDay}
                     locale={fr}
-                    month={currentQuestion.month ? new Date(currentQuestion.month) : undefined}
+                    month={new Date()}
                     className="p-4 rounded-md border bg-card"
                     classNames={{
                         day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
@@ -292,18 +292,16 @@ export function CalendarExercise() {
           case 'count-days':
                 return (
                      <div className="flex flex-col items-center gap-4">
-                        {currentQuestion.month && (
-                            <DayPicker
-                                mode="single"
-                                locale={fr}
-                                month={new Date(currentQuestion.month)}
-                                className="p-4 rounded-md border bg-card"
-                                classNames={{
-                                    day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
-                                    day_today: "font-bold text-accent",
-                                }}
-                            />
-                        )}
+                        <DayPicker
+                            mode="single"
+                            locale={fr}
+                            month={new Date(currentQuestion.month!)}
+                            className="p-4 rounded-md border bg-card"
+                            classNames={{
+                                day_selected: "bg-primary text-primary-foreground hover:bg-primary/90 focus:bg-primary/90",
+                                day_today: "font-bold text-accent",
+                            }}
+                        />
                         <InputOTP maxLength={2} value={inputValue} onChange={setInputValue}>
                             <InputOTPGroup>
                                 <InputOTPSlot index={0} />

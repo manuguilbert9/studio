@@ -15,8 +15,8 @@ export interface CalendarQuestion {
     // For QCM
     options?: string[];
     answer?: string;
-    // For click-date and some QCMs. Dates are stored as ISO strings for serialization.
-    month?: string; 
+    // For click-date. Dates are stored as ISO strings for serialization.
+    month?: string; // Only for level A and count-days
     answerDate?: string;
     // For count-days
     answerNumber?: number;
@@ -116,7 +116,6 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
             level: 'B',
             type: 'click-date',
             question: `Sur le calendrier, clique sur le ${day} ${monthName}.`,
-            month: startOfMonth(referenceDate).toISOString(),
             answerDate: referenceDate.toISOString(),
         };
     }
@@ -147,7 +146,6 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
             question: `Le ${day1} ${format(date1, 'MMMM', {locale:fr})} tombe un ${dayOfWeek1}. Quel jour sera le ${day2} ?`,
             options: Array.from(options).sort(() => Math.random() - 0.5),
             answer: answer,
-            month: startOfMonth(referenceDate).toISOString(),
         }
     }
 };
@@ -197,7 +195,6 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
             level: 'C',
             type: 'click-date',
             question: `Trouve le ${weekNumberText} ${dayOfWeekName} du mois de ${monthName}.`,
-            month: startOfMonth(referenceDate).toISOString(),
             answerDate: answerDate!.toISOString()
         };
     } 
