@@ -83,6 +83,11 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
     
     const studentsWithScores = students.filter(student => (scoresByStudent.get(student.id) || []).length > 0);
 
+    const shouldShowCorrectAnswer = (skillSlug: string) => {
+        const skillsWithoutCorrectAnswer = ['simple-word-reading', 'ecoute-les-nombres', 'nombres-complexes', 'lire-les-nombres'];
+        return !skillsWithoutCorrectAnswer.includes(skillSlug);
+    }
+
     return (
         <div className="space-y-8">
             <ReportGenerator students={students} allScores={allScores} allSpellingProgress={allSpellingProgress} />
@@ -180,7 +185,7 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                             <TableRow>
                                                                                 <TableHead>Question</TableHead>
                                                                                 <TableHead>Réponse de l'élève</TableHead>
-                                                                                {score.skill !== 'simple-word-reading' && <TableHead>Bonne réponse</TableHead>}
+                                                                                {shouldShowCorrectAnswer(score.skill) && <TableHead>Bonne réponse</TableHead>}
                                                                                 <TableHead>Statut</TableHead>
                                                                             </TableRow>
                                                                         </TableHeader>
@@ -189,7 +194,7 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                                 <TableRow key={index} className={cn(detail.status === 'incorrect' && 'bg-red-100/50')}>
                                                                                     <TableCell className="text-xs sm:text-sm">{detail.question}</TableCell>
                                                                                     <TableCell className={cn("font-medium", detail.status === 'incorrect' && 'text-destructive')}>{detail.userAnswer}</TableCell>
-                                                                                    {score.skill !== 'simple-word-reading' && <TableCell className="font-medium text-green-700">{detail.correctAnswer}</TableCell>}
+                                                                                    {shouldShowCorrectAnswer(score.skill) && <TableCell className="font-medium text-green-700">{detail.correctAnswer}</TableCell>}
                                                                                     <TableCell>
                                                                                         {detail.status === 'correct' ?
                                                                                             <CheckCircle className="h-5 w-5 text-green-600" /> :
@@ -221,4 +226,3 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
         </div>
     );
 }
-
