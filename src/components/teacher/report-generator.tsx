@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Student } from '@/services/students';
-import { type Score } from '@/services/scores';
+import { type Score, CalculationState } from '@/services/scores';
 import { type SpellingProgress } from '@/services/spelling';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 
@@ -26,6 +26,124 @@ interface ReportGeneratorProps {
     allSpellingProgress: SpellingProgress[];
 }
 
+const PRIMARY_COLOR = '#ea588b';
+const HEADING_FONT_SIZE = 14;
+const BASE_FONT_SIZE = 8;
+const SMALL_FONT_SIZE = 7;
+
+// --- PDF Drawing Helpers ---
+
+const drawCalculationWidget = (doc: jsPDF, score: Score, startY: number): number => {
+    if (!score.details || score.details.length === 0 || !score.details[0].calculationState) {
+        return startY;
+    }
+
+    const detail = score.details[0];
+    const state = detail.calculationState!;
+    const isAddition = detail.question.includes('+');
+    const operands = detail.question.split(/[+-]/).map(s => s.trim());
+    const numCols = Math.max(...operands.map(op => op.length));
+
+    const CELL_SIZE = 8;
+    const FONT_SIZE = 6;
+    const CARRY_FONT_SIZE = 5;
+    const X_START = 15;
+    let y = startY + 2;
+
+    doc.setFontSize(SMALL_FONT_SIZE);
+    doc.text(`Calcul posé pour: ${detail.question} = ${detail.correctAnswer} (Réponse élève: ${detail.userAnswer})`, X_START, y);
+    y += 4;
+    
+    doc.setFont('helvetica', 'normal');
+
+    // Draw carry cells (subtraction)
+    if (!isAddition) {
+        let x = X_START + CELL_SIZE * 1.5;
+        for (let i = 0; i < numCols - 1; i++) {
+            const colFromRight = numCols - 1 - i;
+            const id = `carry-${colFromRight}`;
+            const cellState = state[id];
+            doc.setDrawColor(200);
+            doc.rect(x + 1, y, CELL_SIZE-2, CELL_SIZE-2, 'S');
+            if (cellState?.value) {
+                doc.text(cellState.value, x + CELL_SIZE/2, y + CELL_SIZE/2 + 1, { align: 'center' });
+            }
+            x += CELL_SIZE;
+        }
+        y += CELL_SIZE;
+    }
+
+    // Draw operands
+    operands.forEach((operand, opIndex) => {
+        let x = X_START;
+        if (opIndex === operands.length - 1) {
+            doc.text(isAddition ? '+' : '-', x, y + CELL_SIZE/2 + 1);
+        }
+        x += CELL_SIZE / 2;
+
+        for (let i = 0; i < numCols; i++) {
+            const colFromRight = numCols - 1 - i;
+            const digit = operand.padStart(numCols, ' ')[i];
+            const id = `op-${opIndex}-${colFromRight}`;
+            const cellState = state[id];
+
+            doc.setDrawColor(150);
+            doc.rect(x, y, CELL_SIZE, CELL_SIZE, 'S');
+
+            const valueToDraw = isExercise ? cellState?.value || '' : digit;
+
+            if (valueToDraw) {
+                doc.setFontSize(FONT_SIZE);
+                doc.text(valueToDraw, x + CELL_SIZE/2, y + CELL_SIZE/2 + 2, { align: 'center' });
+            }
+            
+            if (cellState?.isCrossed) {
+                doc.line(x, y + CELL_SIZE/2, x + CELL_SIZE, y + CELL_SIZE/2);
+            }
+            x += CELL_SIZE;
+        }
+        y += CELL_SIZE;
+    });
+
+    // Draw separator line
+    doc.setLineWidth(0.5);
+    doc.line(X_START + CELL_SIZE/2, y, X_START + CELL_SIZE/2 + numCols * CELL_SIZE, y);
+    y += 2;
+
+    // Draw result
+    let xResult = X_START + CELL_SIZE / 2;
+    for (let i = 0; i < numCols; i++) {
+        const colFromRight = numCols - 1 - i;
+        const id = `result-${colFromRight}`;
+        const cellState = state[id];
+        doc.setDrawColor(150);
+        doc.rect(xResult, y, CELL_SIZE, CELL_SIZE, 'S');
+        if (cellState?.value) {
+            doc.setFontSize(FONT_SIZE);
+            doc.text(cellState.value, xResult + CELL_SIZE / 2, y + CELL_SIZE / 2 + 2, { align: 'center' });
+        }
+        xResult += CELL_SIZE;
+    }
+    y += CELL_SIZE;
+
+    // Draw carry cells (addition)
+    if (isAddition) {
+        let x = X_START + CELL_SIZE / 2;
+         for (let i = 0; i < numCols; i++) {
+            const colFromRight = numCols - 1 - i;
+            const id = `carry-${colFromRight}`;
+            const cellState = state[id];
+            if(cellState?.value) {
+                doc.setFontSize(CARRY_FONT_SIZE);
+                doc.text(cellState.value, x + CELL_SIZE, startY + (operands.length * CELL_SIZE) - 2, {align: 'center'});
+            }
+            x += CELL_SIZE;
+        }
+    }
+
+
+    return y + 5; // Return new Y position
+};
 
 export function ReportGenerator({ students, allScores, allSpellingProgress }: ReportGeneratorProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -33,6 +151,8 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         from: startOfMonth(new Date()),
         to: new Date(),
     });
+    
+    const isExercise = true; // Helper for drawing logic
 
     const generatePdfForStudent = (doc: jsPDF, student: Student, dateRange: DateRange) => {
         const studentScores = allScores.filter(s =>
@@ -40,8 +160,6 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
             new Date(s.createdAt) >= dateRange.from! &&
             new Date(s.createdAt) <= dateRange.to!
         ).sort((a, b) => a.skill.localeCompare(b.skill));
-
-        const primaryColor = '#ea588b';
 
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
@@ -55,7 +173,6 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
 
         let yPos = 50;
 
-        // --- Group scores by category ---
         const scoresByCategory: Record<string, Score[]> = {};
         allSkillCategories.forEach(cat => scoresByCategory[cat] = []);
         studentScores.forEach(score => {
@@ -67,7 +184,7 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
 
         let hasContent = false;
         for (const category of allSkillCategories) {
-            const categoryScores = scoresByCategory[category];
+            const categoryScores = scoresByCategory[category] || [];
             if (categoryScores.length === 0) continue;
             hasContent = true;
 
@@ -78,43 +195,67 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
 
             autoTable(doc, {
                 startY: yPos,
-                head: [[{ content: category, styles: { fillColor: primaryColor, fontStyle: 'bold', textColor: '#ffffff' } }]],
+                head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
                 theme: 'plain',
             });
-            yPos = (doc as any).lastAutoTable.finalY;
-
-            const body = categoryScores.map(score => {
+            yPos = (doc as any).lastAutoTable.finalY + 2;
+            
+            for (const score of categoryScores) {
+                 if (yPos > 260) {
+                    doc.addPage();
+                    yPos = 20;
+                }
                 const skill = getSkillBySlug(score.skill);
                 const scoreText = score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings);
-                const date = format(new Date(score.createdAt), 'dd/MM/yy');
+                const date = format(new Date(score.createdAt), 'dd/MM/yy HH:mm');
+                
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text(`${skill?.name || score.skill}`, 14, yPos);
+                
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(BASE_FONT_SIZE);
+                doc.text(`Score: ${scoreText}`, 100, yPos, {align: 'left'});
+                doc.text(`Niveau: ${level || 'N/A'}`, 140, yPos, {align: 'left'});
+                doc.text(date, 200, yPos, {align: 'right'});
+                yPos += 5;
 
-                let errorsText = '';
-                const spellingProgressForStudent = allSpellingProgress.find(p => p.userId === student.id);
-                if (score.skill === 'spelling' && spellingProgressForStudent) {
-                    const relevantResult = Object.values(spellingProgressForStudent.progress).find(result => {
-                         const resultDate = new Date(result.completedAt).setMilliseconds(0);
-                         const scoreDate = new Date(score.createdAt).setMilliseconds(0);
-                         return resultDate === scoreDate;
+
+                if (score.skill === 'long-calculation' && score.details && score.details.length > 0) {
+                    yPos = drawCalculationWidget(doc, score, yPos);
+                } else if (score.details && score.details.length > 0) {
+                    const head = [['Question', 'Réponse de l\'élève', 'Bonne réponse', 'Options proposées', 'Erreurs']];
+                    const body = score.details.map(d => [
+                        d.question,
+                        d.userAnswer,
+                        d.correctAnswer,
+                        d.options?.join(', ') || '-',
+                        d.mistakes?.join(', ') || ''
+                    ]);
+
+                     autoTable(doc, {
+                        startY: yPos,
+                        head: head,
+                        body: body,
+                        theme: 'grid',
+                        styles: { fontSize: SMALL_FONT_SIZE, cellPadding: 1 },
+                        headStyles: { fillColor: [200, 200, 200], textColor: 0 },
+                        columnStyles: {
+                            0: { cellWidth: 45 },
+                            1: { cellWidth: 25 },
+                            2: { cellWidth: 25 },
+                            3: { cellWidth: 45 },
+                            4: { cellWidth: 45 },
+                        },
+                        didDrawPage: (data) => { yPos = data.cursor?.y || 20; }
                     });
-                     if (relevantResult && relevantResult.errors.length > 0) {
-                        errorsText = relevantResult.errors.join(', ');
-                     }
+                    yPos = (doc as any).lastAutoTable.finalY + 5;
+                } else {
+                     yPos += 2; // Add a small gap
                 }
-
-                return [skill?.name || score.skill, scoreText, level || 'N/A', date, errorsText];
-            });
-
-            autoTable(doc, {
-                startY: yPos,
-                head: [['Exercice', 'Score', 'Niveau', 'Date', 'Erreurs']],
-                body: body,
-                theme: 'striped',
-                headStyles: { fillColor: [51, 65, 85] },
-                columnStyles: { 4: { cellWidth: 50 } },
-                didDrawPage: (data) => { yPos = data.cursor?.y || 20; }
-            });
-            yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+             yPos += 5;
         }
 
         if (!hasContent) {
