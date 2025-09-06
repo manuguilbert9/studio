@@ -67,16 +67,23 @@ export function ReadingRaceExercise() {
     return () => clearInterval(timer);
   }, [exerciseState, isListening]);
   
+  const stopRace = useCallback(() => {
+    stopListening();
+    setExerciseState('finished');
+  }, [stopListening]);
+  
   useEffect(() => {
-      // Check if all words are read correctly
-      if (textWords.length > 0 && wordsRead.length >= textWords.length) {
-          const allCorrect = textWords.every((word, index) => word === wordsRead[index]);
-          if (allCorrect) {
-              stopListening();
-              setExerciseState('finished');
+      if (!selectedText) return;
+      const originalWords = selectedText.text.toLowerCase().replace(/[.,]/g, '').split(/\s+/);
+      const recognizedWords = transcript.toLowerCase().replace(/[.,]/g, '').split(/\s+/).filter(Boolean);
+
+      if (recognizedWords.length >= originalWords.length) {
+          const allCorrect = originalWords.every((word, index) => word === recognizedWords[index]);
+          if(allCorrect) {
+            stopRace();
           }
       }
-  }, [wordsRead, textWords, stopListening]);
+  }, [transcript, selectedText, stopRace]);
 
   
   const handleSelectText = (text: (typeof readingTexts)[0]) => {
@@ -161,7 +168,9 @@ export function ReadingRaceExercise() {
   }
   
   if (exerciseState === 'racing') {
-      const progress = textWords.length > 0 ? (wordsRead.length / textWords.length) * 100 : 0;
+      const correctWordsCount = wordsRead.filter((word, index) => textWords[index] && word === textWords[index]).length;
+      const progress = textWords.length > 0 ? (correctWordsCount / textWords.length) * 100 : 0;
+      
       return (
          <Card className="w-full max-w-2xl mx-auto shadow-2xl">
             <CardHeader>
@@ -186,9 +195,9 @@ export function ReadingRaceExercise() {
                     })}
                 </p>
                 <div className="flex items-center justify-center gap-4">
-                    <Button onClick={isListening ? stopListening : startListening} size="lg" variant={isListening ? 'destructive' : 'default'}>
-                        {isListening ? <MicOff className="mr-2" /> : <Mic className="mr-2" />}
-                        {isListening ? 'Arrêter' : 'Reprendre'}
+                     <Button onClick={stopRace} size="lg" variant="destructive">
+                        <Flag className="mr-2" />
+                        J'ai terminé !
                     </Button>
                 </div>
                  {error && <p className="text-center text-destructive font-semibold">{error}</p>}
@@ -203,8 +212,13 @@ export function ReadingRaceExercise() {
   }
 
   if (exerciseState === 'finished') {
-      const wordsPerMinute = timeElapsed > 0 ? Math.round((textWords.length / timeElapsed) * 60) : 0;
-      const mistakes = wordsRead.filter((word, index) => textWords[index] && word !== textWords[index]);
+      const wordsPerMinute = timeElapsed > 0 ? Math.round((wordsRead.length / timeElapsed) * 60) : 0;
+      const mistakes = wordsRead.reduce((acc: string[], word, index) => {
+        if (textWords[index] && word !== textWords[index]) {
+            acc.push(textWords[index]);
+        }
+        return acc;
+      }, []);
 
       return (
         <Card className="w-full max-w-2xl mx-auto shadow-2xl text-center">
@@ -230,7 +244,7 @@ export function ReadingRaceExercise() {
                     </Card>
                 )}
             </CardContent>
-            <CardFooter className="flex-col gap-4">
+            <CardFooter className="flex-col gap-4 pt-6">
                  <Button onClick={tryAgain} size="lg">
                     <Repeat className="mr-2" />
                     Recommencer la même course
