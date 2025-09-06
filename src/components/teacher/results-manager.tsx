@@ -138,7 +138,6 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                         <TableRow>
                                                                             <TableHead>Question</TableHead>
                                                                             <TableHead>Réponse de l'élève</TableHead>
-                                                                            <TableHead>Bonne réponse</TableHead>
                                                                             <TableHead>Statut</TableHead>
                                                                         </TableRow>
                                                                     </TableHeader>
@@ -147,7 +146,6 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                             <TableRow key={index} className={cn(detail.status === 'incorrect' && 'bg-red-100/50')}>
                                                                                 <TableCell>{detail.question}</TableCell>
                                                                                 <TableCell>{detail.userAnswer}</TableCell>
-                                                                                <TableCell>{detail.correctAnswer}</TableCell>
                                                                                 <TableCell>
                                                                                     {detail.status === 'correct' ?
                                                                                         <CheckCircle className="h-5 w-5 text-green-600" /> :
