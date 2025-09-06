@@ -16,9 +16,9 @@ export interface CalendarQuestion {
     options?: string[];
     answer?: string;
     // For click-date. Dates are stored as ISO strings for serialization.
-    month?: string; // Only for level A and count-days
     answerDate?: string;
     // For count-days
+    month?: string;
     answerNumber?: number;
 }
 
@@ -85,6 +85,7 @@ const generateLevelA = async (): Promise<CalendarQuestion> => {
         const day = referenceDate.getDate();
         const answer = daysOfWeek[getDay(referenceDate)];
         const monthName = format(referenceDate, 'MMMM', { locale: fr });
+        const year = format(referenceDate, 'yyyy');
 
         const options = new Set([answer]);
         while(options.size < 4) {
@@ -95,7 +96,7 @@ const generateLevelA = async (): Promise<CalendarQuestion> => {
             id: Date.now() + Math.random(),
             level: 'A',
             type: 'qcm',
-            question: `Le ${day} ${monthName}, c'est quel jour de la semaine ?`,
+            question: `Le ${day} ${monthName} ${year}, c'est quel jour de la semaine ?`,
             options: Array.from(options).sort(() => Math.random() - 0.5),
             answer: answer
         }
@@ -110,12 +111,13 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
     if (questionType < 0.5) {
         const day = referenceDate.getDate();
         const monthName = format(referenceDate, 'MMMM', { locale: fr });
+        const year = format(referenceDate, 'yyyy');
         
         return {
             id: Date.now() + Math.random(),
             level: 'B',
             type: 'click-date',
-            question: `Sur le calendrier, clique sur le ${day} ${monthName}.`,
+            question: `Sur le calendrier, clique sur le ${day} ${monthName} ${year}.`,
             answerDate: referenceDate.toISOString(),
         };
     }
@@ -128,6 +130,7 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
         }
         const day1 = date1.getDate();
         const dayOfWeek1 = daysOfWeek[getDay(date1)];
+        const year1 = format(date1, 'yyyy');
         
         const dayOffset = Math.floor(Math.random() * 4) + 2; // 2-5 days later
         const date2 = addDays(date1, dayOffset);
@@ -143,7 +146,7 @@ const generateLevelB = async (): Promise<CalendarQuestion> => {
             id: Date.now() + Math.random(),
             level: 'B',
             type: 'qcm',
-            question: `Le ${day1} ${format(date1, 'MMMM', {locale:fr})} tombe un ${dayOfWeek1}. Quel jour sera le ${day2} ?`,
+            question: `Le ${day1} ${format(date1, 'MMMM', {locale:fr})} ${year1} tombe un ${dayOfWeek1}. Quel jour sera le ${day2} ?`,
             options: Array.from(options).sort(() => Math.random() - 0.5),
             answer: answer,
         }
@@ -157,6 +160,7 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
     // Type 1: Find date by clues
     if (questionType < 0.5) {
         const monthName = format(referenceDate, 'MMMM', { locale: fr });
+        const year = format(referenceDate, 'yyyy');
         const dayOfWeekIndex = Math.floor(Math.random() * 5) + 1; // Monday to Friday
         const dayOfWeekName = daysOfWeek[dayOfWeekIndex];
         const weekNumber = Math.floor(Math.random() * 3) + 1; // 1st, 2nd or 3rd
@@ -194,20 +198,21 @@ const generateLevelC = async (): Promise<CalendarQuestion> => {
             id: Date.now() + Math.random(),
             level: 'C',
             type: 'click-date',
-            question: `Trouve le ${weekNumberText} ${dayOfWeekName} du mois de ${monthName}.`,
+            question: `Trouve le ${weekNumberText} ${dayOfWeekName} du mois de ${monthName} ${year}.`,
             answerDate: answerDate!.toISOString()
         };
     } 
     // Type 2: How many days in the month?
     else {
         const monthName = format(referenceDate, 'MMMM', { locale: fr });
+        const year = format(referenceDate, 'yyyy');
         const answer = differenceInDays(lastDayOfMonth(referenceDate), startOfMonth(referenceDate)) + 1;
 
         return {
             id: Date.now() + Math.random(),
             level: 'C',
             type: 'count-days',
-            question: `Combien de jours y a-t-il dans le mois de ${monthName} ?`,
+            question: `Combien de jours y a-t-il dans le mois de ${monthName} ${year} ?`,
             description: `Aide-toi du calendrier pour compter.`,
             month: startOfMonth(referenceDate).toISOString(),
             answerNumber: answer
