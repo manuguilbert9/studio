@@ -97,16 +97,21 @@ export default function TeacherDashboardPage() {
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
-                    <TabsTrigger value="database">Base de données</TabsTrigger>
+                    <TabsTrigger value="database">Réglages</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
                     <StudentManager students={students} onStudentsChange={loadData} />
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
-                    <HomeworkTracker students={students} spellingLists={spellingLists} allProgress={allProgress}/>
+                    <HomeworkTracker 
+                        students={students} 
+                        spellingLists={spellingLists} 
+                        allProgress={allProgress}
+                        allScores={allScores}
+                    />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
-                    <ResultsManager students={students} allScores={allScores} onDataRefresh={loadData} />
+                    <ResultsManager students={students} allScores={allScores} allSpellingProgress={allProgress} onDataRefresh={loadData} />
                 </TabsContent>
                  <TabsContent value="database" className="mt-6">
                     <DatabaseManager />
