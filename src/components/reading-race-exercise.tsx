@@ -1,13 +1,15 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useContext } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Loader2, Mic, MicOff, Flag, Repeat, ArrowLeft } from 'lucide-react';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
+import { UserContext } from '@/context/user-context';
+import { addScore } from '@/services/scores';
 
 // Sample texts for the exercise
 const readingTexts = [
@@ -31,12 +33,15 @@ const readingTexts = [
 type ExerciseState = 'selecting' | 'ready' | 'racing' | 'finished';
 
 export function ReadingRaceExercise() {
+  const { student } = useContext(UserContext);
   const [selectedText, setSelectedText] = useState<(typeof readingTexts)[0] | null>(null);
   const [exerciseState, setExerciseState] = useState<ExerciseState>('selecting');
   
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [finalWPM, setFinalWPM] = useState(0);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   const textWords = useMemo(() => selectedText?.text.toLowerCase().replace(/[.,]/g, '').split(/\s+/) || [], [selectedText]);
   
@@ -69,11 +74,28 @@ export function ReadingRaceExercise() {
   
   const stopRace = useCallback(() => {
     stopListening();
+    const wpm = timeElapsed > 0 ? Math.round((wordsRead.length / timeElapsed) * 60) : 0;
+    setFinalWPM(wpm);
     setExerciseState('finished');
-  }, [stopListening]);
+  }, [stopListening, timeElapsed, wordsRead.length]);
+
+   useEffect(() => {
+      const saveResult = async () => {
+          if (exerciseState === 'finished' && student && !hasBeenSaved) {
+              setHasBeenSaved(true);
+              await addScore({
+                  userId: student.id,
+                  skill: 'reading-race',
+                  score: finalWPM,
+              });
+          }
+      };
+      saveResult();
+   }, [exerciseState, student, finalWPM, hasBeenSaved]);
   
   useEffect(() => {
-      if (!selectedText) return;
+      if (!selectedText || exerciseState !== 'racing') return;
+      
       const originalWords = selectedText.text.toLowerCase().replace(/[.,]/g, '').split(/\s+/);
       const recognizedWords = transcript.toLowerCase().replace(/[.,]/g, '').split(/\s+/).filter(Boolean);
 
@@ -83,7 +105,7 @@ export function ReadingRaceExercise() {
             stopRace();
           }
       }
-  }, [transcript, selectedText, stopRace]);
+  }, [transcript, selectedText, stopRace, exerciseState]);
 
   
   const handleSelectText = (text: (typeof readingTexts)[0]) => {
@@ -95,6 +117,8 @@ export function ReadingRaceExercise() {
     setTranscript('');
     setTimeElapsed(0);
     setError(null);
+    setFinalWPM(0);
+    setHasBeenSaved(false);
     setExerciseState('racing');
     startListening();
   };
@@ -105,12 +129,15 @@ export function ReadingRaceExercise() {
     setExerciseState('selecting');
     setTranscript('');
     setTimeElapsed(0);
+    setHasBeenSaved(false);
   };
 
   const tryAgain = () => {
     stopListening();
     setTranscript('');
     setTimeElapsed(0);
+    setFinalWPM(0);
+    setHasBeenSaved(false);
     setExerciseState('ready');
   }
 
@@ -212,7 +239,6 @@ export function ReadingRaceExercise() {
   }
 
   if (exerciseState === 'finished') {
-      const wordsPerMinute = timeElapsed > 0 ? Math.round((wordsRead.length / timeElapsed) * 60) : 0;
       const mistakes = wordsRead.reduce((acc: string[], word, index) => {
         if (textWords[index] && word !== textWords[index]) {
             acc.push(textWords[index]);
@@ -234,7 +260,7 @@ export function ReadingRaceExercise() {
                     </Card>
                      <Card className="p-4">
                         <CardDescription>Mots par minute</CardDescription>
-                        <p className="text-3xl font-bold">{wordsPerMinute}</p>
+                        <p className="text-3xl font-bold">{finalWPM}</p>
                     </Card>
                 </div>
                 {mistakes.length > 0 && (
