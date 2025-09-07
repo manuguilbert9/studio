@@ -49,12 +49,15 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
     const CARRY_FONT_SIZE = 5;
     let y = startY + 2;
 
-    doc.setFontSize(SMALL_FONT_SIZE);
-    const resultStatus = detail.status === 'correct' ? 'Correct' : 'Incorrect';
-    doc.text(`Calcul: ${detail.question} = ${detail.correctAnswer} (Réponse: ${detail.userAnswer || 'N/A'} - ${resultStatus})`, startX, y);
+    doc.setFontSize(SMALL_FONT_SIZE - 1);
+    doc.setTextColor(100);
+    const resultStatus = detail.status === 'correct' ? 'Correct' : `Incorrect (Attendu: ${detail.correctAnswer})`;
+    doc.text(`${detail.question} = ${detail.userAnswer || 'N/A'}`, startX, y, { align: 'left' });
+    doc.text(resultStatus, startX + (numCols + 1) * CELL_SIZE, y, { align: 'right' });
     y += 4;
     
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0);
 
     const widgetStartX = startX;
 
@@ -94,7 +97,7 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
             doc.setDrawColor(150);
             doc.rect(x, y, CELL_SIZE, CELL_SIZE, 'S');
 
-            const valueToDraw = cellState?.value || (digit === ' ' ? '' : digit);
+            const valueToDraw = cellState?.value || '';
             
             if (valueToDraw) {
                 doc.setFontSize(FONT_SIZE);
@@ -228,11 +231,12 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
 
 
                 if (score.skill === 'long-calculation' && score.details && score.details.length > 0) {
+                    yPos += 2;
                     let currentX = 14;
                     let maxWidgetY = yPos;
-                    score.details.forEach((detail, index) => {
+                    score.details.forEach((detail) => {
                         const widgetWidth = (String(detail.correctAnswer).length + 1.5) * 8; // Estimate widget width
-                        if (currentX + widgetWidth > 200) { // Check if it fits on the line
+                        if (currentX + widgetWidth > 195) { // Check if it fits on the line
                             currentX = 14;
                             yPos = maxWidgetY + 4;
                             maxWidgetY = yPos;
@@ -244,7 +248,7 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                             currentX = 14;
                         }
                         const { endX, endY } = drawCalculationWidget(doc, detail, currentX, yPos);
-                        currentX = endX + 5; // Update X for next widget
+                        currentX = endX + 10; // Update X for next widget
                         maxWidgetY = Math.max(maxWidgetY, endY);
                     });
                     yPos = maxWidgetY;
@@ -400,5 +404,3 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         </Card>
     );
 }
-
-    
