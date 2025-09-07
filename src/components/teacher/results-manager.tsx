@@ -86,7 +86,10 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
     const shouldShowCorrectAnswer = (skillSlug: string) => {
         const skillsWithoutCorrectAnswer = ['simple-word-reading', 'ecoute-les-nombres', 'nombres-complexes', 'lire-les-nombres'];
         return !skillsWithoutCorrectAnswer.includes(skillSlug);
-    }
+    };
+
+    const hasOptionsColumn = (score: Score) => score.details?.some(d => d.options && d.options.length > 0);
+    const hasMistakesColumn = (score: Score) => score.details?.some(d => d.mistakes && d.mistakes.length > 0);
 
     return (
         <div className="space-y-8">
@@ -185,8 +188,9 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                             <TableRow>
                                                                                 <TableHead>Question</TableHead>
                                                                                 <TableHead>Réponse</TableHead>
-                                                                                {score.details?.[0]?.options && <TableHead>Options proposées</TableHead>}
+                                                                                {hasOptionsColumn(score) && <TableHead>Options proposées</TableHead>}
                                                                                 {shouldShowCorrectAnswer(score.skill) && <TableHead>Bonne réponse</TableHead>}
+                                                                                {hasMistakesColumn(score) && <TableHead>Erreurs</TableHead>}
                                                                                 <TableHead>Statut</TableHead>
                                                                             </TableRow>
                                                                         </TableHeader>
@@ -195,8 +199,9 @@ export function ResultsManager({ students, allScores, allSpellingProgress, onDat
                                                                                 <TableRow key={index} className={cn(detail.status === 'incorrect' && 'bg-red-100/50')}>
                                                                                     <TableCell className="text-xs sm:text-sm">{detail.question}</TableCell>
                                                                                     <TableCell className={cn("font-medium", detail.status === 'incorrect' && 'text-destructive')}>{detail.userAnswer}</TableCell>
-                                                                                    {detail.options && <TableCell className="text-xs text-muted-foreground">{detail.options.join(', ')}</TableCell>}
+                                                                                    {hasOptionsColumn(score) && <TableCell className="text-xs text-muted-foreground">{detail.options?.join(', ') || '-'}</TableCell>}
                                                                                     {shouldShowCorrectAnswer(score.skill) && <TableCell className="font-medium text-green-700">{detail.correctAnswer}</TableCell>}
+                                                                                    {hasMistakesColumn(score) && <TableCell className="text-xs text-muted-foreground">{detail.mistakes?.join(', ') || '-'}</TableCell>}
                                                                                     <TableCell>
                                                                                         {detail.status === 'correct' ?
                                                                                             <CheckCircle className="h-5 w-5 text-green-600" /> :
