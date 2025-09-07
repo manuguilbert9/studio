@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -16,7 +17,7 @@ import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Student } from '@/services/students';
-import { type Score, CalculationState } from '@/services/scores';
+import { type Score, CalculationState, ScoreDetail } from '@/services/scores';
 import { type SpellingProgress } from '@/services/spelling';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 
@@ -33,16 +34,15 @@ const SMALL_FONT_SIZE = 7;
 
 // --- PDF Drawing Helpers ---
 
-const drawCalculationWidget = (doc: jsPDF, score: Score, startY: number): number => {
-    if (!score.details || score.details.length === 0 || !score.details[0].calculationState) {
+const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startY: number): number => {
+    if (!detail.calculationState) {
         return startY;
     }
 
-    const detail = score.details[0];
-    const state = detail.calculationState!;
+    const state = detail.calculationState;
     const isAddition = detail.question.includes('+');
     const operands = detail.question.split(/[+-]/).map(s => s.trim());
-    const numCols = Math.max(...operands.map(op => op.length));
+    const numCols = Math.max(...operands.map(op => op.length), detail.correctAnswer.length);
 
     const CELL_SIZE = 8;
     const FONT_SIZE = 6;
@@ -51,14 +51,15 @@ const drawCalculationWidget = (doc: jsPDF, score: Score, startY: number): number
     let y = startY + 2;
 
     doc.setFontSize(SMALL_FONT_SIZE);
-    doc.text(`Calcul posé pour: ${detail.question} = ${detail.correctAnswer} (Réponse élève: ${detail.userAnswer})`, X_START, y);
+    const resultStatus = detail.status === 'correct' ? 'Correct' : 'Incorrect';
+    doc.text(`Calcul: ${detail.question} = ${detail.correctAnswer} (Réponse: ${detail.userAnswer} - ${resultStatus})`, X_START, y);
     y += 4;
     
     doc.setFont('helvetica', 'normal');
 
     // Draw carry cells (subtraction)
     if (!isAddition) {
-        let x = X_START + CELL_SIZE * 1.5;
+        let x = X_START + CELL_SIZE * (numCols > operands[0].length ? 1.5 : 0.5);
         for (let i = 0; i < numCols - 1; i++) {
             const colFromRight = numCols - 1 - i;
             const id = `carry-${colFromRight}`;
@@ -80,8 +81,12 @@ const drawCalculationWidget = (doc: jsPDF, score: Score, startY: number): number
             doc.text(isAddition ? '+' : '-', x, y + CELL_SIZE/2 + 1);
         }
         x += CELL_SIZE / 2;
+        
+        // Pad operand with leading spaces if necessary
+        const paddedOperand = operand.padStart(numCols, ' ');
 
         for (let i = 0; i < numCols; i++) {
+            const digit = paddedOperand[i];
             const colFromRight = numCols - 1 - i;
             const id = `op-${opIndex}-${colFromRight}`;
             const cellState = state[id];
@@ -89,9 +94,9 @@ const drawCalculationWidget = (doc: jsPDF, score: Score, startY: number): number
             doc.setDrawColor(150);
             doc.rect(x, y, CELL_SIZE, CELL_SIZE, 'S');
 
-            const valueToDraw = cellState?.value || '';
-
-            if (valueToDraw) {
+            const valueToDraw = cellState?.value || digit;
+            
+            if (valueToDraw && valueToDraw !== ' ') {
                 doc.setFontSize(FONT_SIZE);
                 doc.text(valueToDraw, x + CELL_SIZE/2, y + CELL_SIZE/2 + 2, { align: 'center' });
             }
@@ -111,15 +116,18 @@ const drawCalculationWidget = (doc: jsPDF, score: Score, startY: number): number
 
     // Draw result
     let xResult = X_START + CELL_SIZE / 2;
+    const paddedResult = detail.userAnswer.padStart(numCols, ' ');
     for (let i = 0; i < numCols; i++) {
+        const digit = paddedResult[i];
         const colFromRight = numCols - 1 - i;
         const id = `result-${colFromRight}`;
         const cellState = state[id];
         doc.setDrawColor(150);
         doc.rect(xResult, y, CELL_SIZE, CELL_SIZE, 'S');
-        if (cellState?.value) {
+        const valueToDraw = cellState?.value || (digit !== ' ' ? digit : '');
+        if (valueToDraw) {
             doc.setFontSize(FONT_SIZE);
-            doc.text(cellState.value, xResult + CELL_SIZE / 2, y + CELL_SIZE / 2 + 2, { align: 'center' });
+            doc.text(valueToDraw, xResult + CELL_SIZE / 2, y + CELL_SIZE / 2 + 2, { align: 'center' });
         }
         xResult += CELL_SIZE;
     }
@@ -220,7 +228,13 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
 
 
                 if (score.skill === 'long-calculation' && score.details && score.details.length > 0) {
-                    yPos = drawCalculationWidget(doc, score, yPos);
+                    score.details.forEach(detail => {
+                        if (yPos > 220) { // Check space before drawing widget
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        yPos = drawCalculationWidget(doc, detail, yPos);
+                    });
                 } else if (score.details && score.details.length > 0) {
                     const head = [['Question', 'Réponse de l\'élève', 'Bonne réponse', 'Options proposées', 'Erreurs']];
                     const body = score.details.map(d => [
