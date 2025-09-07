@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
@@ -90,7 +91,9 @@ function HomeworkList() {
   const currentList = spellingLists.find(list => list.id === currentListId);
   const mathSkillLundi = getSkillBySlug(currentMathSkillSlugLundi || '');
   const mathSkillJeudi = getSkillBySlug(currentMathSkillSlugJeudi || '');
-
+  
+  const hasHomeworkForLundi = currentList || mathSkillLundi;
+  const hasHomeworkForJeudi = currentList || mathSkillJeudi;
 
   return (
     <div className="space-y-8">
@@ -99,61 +102,53 @@ function HomeworkList() {
                 <CardTitle className="font-headline text-3xl sm:text-4xl text-center">Devoirs de la semaine</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {/* Spelling Card */}
-                 {currentList ? (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-3 font-headline text-2xl">
-                                <BookOpen className="text-primary" />
-                                <span>Orthographe</span>
-                            </CardTitle>
-                            <CardDescription>{currentList.id} – {currentList.title}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            {[
-                            { session: 'Lundi', exerciseId: `${currentList.id}-lundi` },
-                            { session: 'Jeudi', exerciseId: `${currentList.id}-jeudi` }
-                            ].map(({ session, exerciseId }) => {
-                            const isCompleted = spellingProgress[exerciseId.toLowerCase()] || false;
-                            return (
-                                <Button 
-                                    key={exerciseId} 
-                                    variant={isCompleted ? "secondary" : "default"} 
-                                    className="w-full h-14 text-base justify-between"
-                                    onClick={() => router.push(`/devoirs/${exerciseId}`)}
-                                >
-                                    <span>{currentList.id} : {session}</span>
-                                    {isCompleted && <CheckCircle className="text-green-500"/>}
-                                </Button>
-                            )
-                            })}
-                        </CardContent>
-                    </Card>
-                 ) : (
-                     <Card className="flex items-center justify-center p-8"><p className="text-muted-foreground">Aucun devoir d'orthographe assigné.</p></Card>
-                 )}
-
-                 {/* Math Card */}
+                {/* Lundi Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-3 font-headline text-2xl">
-                            <Calculator className="text-primary" />
-                            <span>Mathématiques</span>
-                        </CardTitle>
-                        <CardDescription>Exercices de la semaine</CardDescription>
+                        <CardTitle className="font-headline text-2xl">Pour Lundi</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        {mathSkillLundi ? (
+                        {currentList && (
+                            <Button 
+                                variant={spellingProgress[`${currentList.id}-lundi`] ? "secondary" : "default"} 
+                                className="w-full h-14 text-base justify-between"
+                                onClick={() => router.push(`/devoirs/${currentList.id}-lundi`)}
+                            >
+                                <span className="flex items-center gap-2"><BookOpen className="h-5 w-5"/>Orthographe: {currentList.id}</span>
+                                {spellingProgress[`${currentList.id}-lundi`] && <CheckCircle className="text-green-500"/>}
+                            </Button>
+                        )}
+                         {mathSkillLundi ? (
                             <Button 
                                 variant={isMathLundiDone ? "secondary" : "default"} 
                                 className="w-full h-14 text-base justify-between"
                                 onClick={() => router.push(`/exercise/${mathSkillLundi.slug}?homework=lundi`)}
                             >
-                                <span>Lundi : {mathSkillLundi.name}</span>
+                                <span className="flex items-center gap-2"><Calculator className="h-5 w-5"/>Maths: {mathSkillLundi.name}</span>
                                 {isMathLundiDone && <CheckCircle className="text-green-500"/>}
                             </Button>
                         ) : (
-                            <div className="text-center text-sm text-muted-foreground p-4">Aucun exercice pour lundi.</div>
+                           !currentList && <div className="text-center text-sm text-muted-foreground p-4">Aucun devoir pour lundi.</div>
+                        )}
+                         {!hasHomeworkForLundi && <div className="text-center text-sm text-muted-foreground p-4">Aucun devoir pour lundi.</div>}
+                    </CardContent>
+                </Card>
+
+                 {/* Jeudi Card */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline text-2xl">Pour Jeudi</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {currentList && (
+                           <Button 
+                                variant={spellingProgress[`${currentList.id}-jeudi`] ? "secondary" : "default"} 
+                                className="w-full h-14 text-base justify-between"
+                                onClick={() => router.push(`/devoirs/${currentList.id}-jeudi`)}
+                            >
+                                <span className="flex items-center gap-2"><BookOpen className="h-5 w-5"/>Orthographe: {currentList.id}</span>
+                                {spellingProgress[`${currentList.id}-jeudi`] && <CheckCircle className="text-green-500"/>}
+                            </Button>
                         )}
                         {mathSkillJeudi ? (
                              <Button 
@@ -161,12 +156,13 @@ function HomeworkList() {
                                 className="w-full h-14 text-base justify-between"
                                 onClick={() => router.push(`/exercise/${mathSkillJeudi.slug}?homework=jeudi`)}
                             >
-                                <span>Jeudi : {mathSkillJeudi.name}</span>
+                                <span className="flex items-center gap-2"><Calculator className="h-5 w-5"/>Maths: {mathSkillJeudi.name}</span>
                                 {isMathJeudiDone && <CheckCircle className="text-green-500"/>}
                             </Button>
                         ) : (
-                             <div className="text-center text-sm text-muted-foreground p-4">Aucun exercice pour jeudi.</div>
+                             !currentList && <div className="text-center text-sm text-muted-foreground p-4">Aucun devoir pour jeudi.</div>
                         )}
+                         {!hasHomeworkForJeudi && <div className="text-center text-sm text-muted-foreground p-4">Aucun devoir pour jeudi.</div>}
                     </CardContent>
                 </Card>
             </CardContent>
