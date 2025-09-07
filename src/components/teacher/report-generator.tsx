@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, FileDown } from 'lucide-react';
+import { Calendar as CalendarIcon, FileDown, CheckCircle, XCircle } from 'lucide-react';
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
@@ -21,16 +21,14 @@ import { type Score, CalculationState, ScoreDetail } from '@/services/scores';
 import { type SpellingProgress } from '@/services/spelling';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 
-interface ReportGeneratorProps {
-    students: Student[];
-    allScores: Score[];
-    allSpellingProgress: SpellingProgress[];
-}
-
 const PRIMARY_COLOR = '#ea588b';
+const GREEN_COLOR = '#16a34a';
+const RED_COLOR = '#dc2626';
 const HEADING_FONT_SIZE = 14;
-const BASE_FONT_SIZE = 8;
-const SMALL_FONT_SIZE = 7;
+const BASE_FONT_SIZE = 9;
+const SMALL_FONT_SIZE = 8;
+const WIDGET_FONT_SIZE = 6;
+
 
 // --- PDF Drawing Helpers ---
 
@@ -45,12 +43,12 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
     const numCols = Math.max(...operands.map(op => op.length), detail.correctAnswer.length);
 
     const CELL_SIZE = 8;
-    const FONT_SIZE = 6;
-    const CARRY_FONT_SIZE = 5;
+    const FONT_SIZE = WIDGET_FONT_SIZE;
+    const CARRY_FONT_SIZE = WIDGET_FONT_SIZE - 1;
     let y = startY + 2;
 
-    doc.setFontSize(SMALL_FONT_SIZE - 1);
-    doc.setTextColor(100);
+    doc.setFontSize(SMALL_FONT_SIZE);
+    doc.setTextColor(0);
     const resultStatus = detail.status === 'correct' ? 'Correct' : `Incorrect (Attendu: ${detail.correctAnswer})`;
     doc.text(`${detail.question} = ${detail.userAnswer || 'N/A'}`, startX, y, { align: 'left' });
     doc.text(resultStatus, startX + (numCols + 1) * CELL_SIZE, y, { align: 'right' });
@@ -155,6 +153,26 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
     return { endX: startX + widgetWidth, endY: y };
 };
 
+const drawAnalogClock = (doc: jsPDF, centerX: number, centerY: number, radius: number, hour: number, minute: number) => {
+    doc.setDrawColor(100);
+    doc.circle(centerX, centerY, radius, 'S');
+
+    const hourAngle = (hour % 12 + minute / 60) * 30;
+    const minuteAngle = minute * 6;
+    
+    // Hour hand
+    const hourHandLength = radius * 0.5;
+    const hourHandX = centerX + hourHandLength * Math.sin(hourAngle * Math.PI / 180);
+    const hourHandY = centerY - hourHandLength * Math.cos(hourAngle * Math.PI / 180);
+    doc.setLineWidth(1).line(centerX, centerY, hourHandX, hourHandY);
+
+    // Minute hand
+    const minuteHandLength = radius * 0.8;
+    const minuteHandX = centerX + minuteHandLength * Math.sin(minuteAngle * Math.PI / 180);
+    const minuteHandY = centerY - minuteHandLength * Math.cos(minuteAngle * Math.PI / 180);
+    doc.setLineWidth(0.5).line(centerX, centerY, minuteHandX, minuteHandY);
+};
+
 export function ReportGenerator({ students, allScores, allSpellingProgress }: ReportGeneratorProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -234,7 +252,7 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                     yPos += 2;
                     let currentX = 14;
                     let maxWidgetY = yPos;
-                    score.details.forEach((detail) => {
+                    score.details.forEach((detail, index) => {
                         const widgetWidth = (String(detail.correctAnswer).length + 1.5) * 8; // Estimate widget width
                         if (currentX + widgetWidth > 195) { // Check if it fits on the line
                             currentX = 14;
@@ -253,32 +271,83 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                     });
                     yPos = maxWidgetY;
                 } else if (score.details && score.details.length > 0) {
-                    const head = [['Question', 'Réponse de l\'élève', 'Bonne réponse', 'Options proposées', 'Erreurs']];
-                    const body = score.details.map(d => [
-                        d.question,
-                        d.userAnswer,
-                        d.correctAnswer,
-                        d.options?.join(', ') || '-',
-                        d.mistakes?.join(', ') || ''
-                    ]);
+                    // Start of new detailed rendering logic
+                    doc.setDrawColor(220); // Light gray for borders
+                    doc.setLineWidth(0.2);
 
-                     autoTable(doc, {
-                        startY: yPos,
-                        head: head,
-                        body: body,
-                        theme: 'grid',
-                        styles: { fontSize: SMALL_FONT_SIZE, cellPadding: 1 },
-                        headStyles: { fillColor: [200, 200, 200], textColor: 0 },
-                        columnStyles: {
-                            0: { cellWidth: 45 },
-                            1: { cellWidth: 25 },
-                            2: { cellWidth: 25 },
-                            3: { cellWidth: 45 },
-                            4: { cellWidth: 45 },
-                        },
-                        didDrawPage: (data) => { yPos = data.cursor?.y || 20; }
+                    score.details.forEach(detail => {
+                        if (yPos > 250) {
+                            doc.addPage();
+                            yPos = 20;
+                        }
+                        yPos += 4;
+                        const startDetailY = yPos;
+                        doc.setFontSize(SMALL_FONT_SIZE);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(detail.question, 14, yPos);
+                        yPos += 5;
+                        
+                        doc.setFont('helvetica', 'normal');
+                        
+                        // Handle different question types visually
+                        const isTimeQCM = score.skill === 'time' && detail.question.startsWith("Quelle heure");
+                        
+                        if (isTimeQCM && detail.question.includes('sur')) {
+                             const timeMatch = detail.question.match(/(\d+):(\d+)/);
+                             if (timeMatch) {
+                                 const h = parseInt(timeMatch[1], 10);
+                                 const m = parseInt(timeMatch[2], 10);
+                                 drawAnalogClock(doc, 30, yPos + 10, 15, h, m);
+                             }
+                        }
+
+                        let textX = isTimeQCM ? 60 : 14;
+                        const iconX = textX - 4;
+
+                        if (detail.options && detail.options.length > 0) { // QCM type
+                             detail.options.forEach(opt => {
+                                const isUserAnswer = opt === detail.userAnswer;
+                                const isCorrectAnswer = opt === detail.correctAnswer;
+                                
+                                doc.setFontSize(SMALL_FONT_SIZE);
+                                doc.setTextColor(0);
+                                doc.text(opt, textX, yPos);
+
+                                if(isUserAnswer && !isCorrectAnswer) doc.setTextColor(RED_COLOR);
+                                if(isCorrectAnswer) doc.setTextColor(GREEN_COLOR);
+
+                                if(isUserAnswer || isCorrectAnswer) {
+                                    doc.setFont('helvetica', 'bold');
+                                    doc.text(opt, textX, yPos);
+                                    doc.setFont('helvetica', 'normal');
+                                    doc.setTextColor(0);
+                                }
+                                yPos += 5;
+                            });
+                        } else { // Input type
+                             doc.text(`Réponse de l'élève:`, textX, yPos);
+                             doc.setFont('helvetica', 'bold');
+                             if(detail.status === 'incorrect') doc.setTextColor(RED_COLOR);
+                             doc.text(detail.userAnswer || "N/A", textX + 35, yPos);
+                             doc.setFont('helvetica', 'normal');
+                             doc.setTextColor(0);
+                             yPos += 5;
+
+                             if(detail.status === 'incorrect') {
+                                 doc.text(`Bonne réponse:`, textX, yPos);
+                                 doc.setFont('helvetica', 'bold');
+                                 doc.setTextColor(GREEN_COLOR);
+                                 doc.text(detail.correctAnswer, textX + 35, yPos);
+                                 doc.setFont('helvetica', 'normal');
+                                 doc.setTextColor(0);
+                                 yPos += 5;
+                             }
+                        }
+                        
+                         doc.line(14, startDetailY - 2, 200, startDetailY - 2); // Top border
+                         yPos = Math.max(yPos, startDetailY + 20); // ensure minimum height
                     });
-                    yPos = (doc as any).lastAutoTable.finalY + 5;
+                     doc.line(14, yPos - 2, 200, yPos - 2); // Final bottom border
                 } else {
                      yPos += 2; // Add a small gap
                 }
