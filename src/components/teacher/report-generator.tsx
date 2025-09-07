@@ -34,9 +34,9 @@ const SMALL_FONT_SIZE = 7;
 
 // --- PDF Drawing Helpers ---
 
-const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startY: number): number => {
+const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, startY: number): { endX: number, endY: number } => {
     if (!detail.calculationState) {
-        return startY;
+        return { endX: startX, endY: startY };
     }
 
     const state = detail.calculationState;
@@ -47,19 +47,20 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startY: number):
     const CELL_SIZE = 8;
     const FONT_SIZE = 6;
     const CARRY_FONT_SIZE = 5;
-    const X_START = 15;
     let y = startY + 2;
 
     doc.setFontSize(SMALL_FONT_SIZE);
     const resultStatus = detail.status === 'correct' ? 'Correct' : 'Incorrect';
-    doc.text(`Calcul: ${detail.question} = ${detail.correctAnswer} (Réponse: ${detail.userAnswer} - ${resultStatus})`, X_START, y);
+    doc.text(`Calcul: ${detail.question} = ${detail.correctAnswer} (Réponse: ${detail.userAnswer || 'N/A'} - ${resultStatus})`, startX, y);
     y += 4;
     
     doc.setFont('helvetica', 'normal');
 
+    const widgetStartX = startX;
+
     // Draw carry cells (subtraction)
     if (!isAddition) {
-        let x = X_START + CELL_SIZE * (numCols > operands[0].length ? 1.5 : 0.5);
+        let x = widgetStartX + CELL_SIZE * (numCols > operands[0].length ? 1.5 : 0.5);
         for (let i = 0; i < numCols - 1; i++) {
             const colFromRight = numCols - 1 - i;
             const id = `carry-${colFromRight}`;
@@ -76,13 +77,12 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startY: number):
 
     // Draw operands
     operands.forEach((operand, opIndex) => {
-        let x = X_START;
+        let x = widgetStartX;
         if (opIndex === operands.length - 1) {
             doc.text(isAddition ? '+' : '-', x, y + CELL_SIZE/2 + 1);
         }
         x += CELL_SIZE / 2;
         
-        // Pad operand with leading spaces if necessary
         const paddedOperand = operand.padStart(numCols, ' ');
 
         for (let i = 0; i < numCols; i++) {
@@ -94,9 +94,9 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startY: number):
             doc.setDrawColor(150);
             doc.rect(x, y, CELL_SIZE, CELL_SIZE, 'S');
 
-            const valueToDraw = cellState?.value || digit;
+            const valueToDraw = cellState?.value || (digit === ' ' ? '' : digit);
             
-            if (valueToDraw && valueToDraw !== ' ') {
+            if (valueToDraw) {
                 doc.setFontSize(FONT_SIZE);
                 doc.text(valueToDraw, x + CELL_SIZE/2, y + CELL_SIZE/2 + 2, { align: 'center' });
             }
@@ -111,12 +111,12 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startY: number):
 
     // Draw separator line
     doc.setLineWidth(0.5);
-    doc.line(X_START + CELL_SIZE/2, y, X_START + CELL_SIZE/2 + numCols * CELL_SIZE, y);
+    doc.line(widgetStartX + CELL_SIZE/2, y, widgetStartX + CELL_SIZE/2 + numCols * CELL_SIZE, y);
     y += 2;
 
     // Draw result
-    let xResult = X_START + CELL_SIZE / 2;
-    const paddedResult = detail.userAnswer.padStart(numCols, ' ');
+    let xResult = widgetStartX + CELL_SIZE / 2;
+    const paddedResult = (detail.userAnswer || '').padStart(numCols, ' ');
     for (let i = 0; i < numCols; i++) {
         const digit = paddedResult[i];
         const colFromRight = numCols - 1 - i;
@@ -135,21 +135,21 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startY: number):
 
     // Draw carry cells (addition)
     if (isAddition) {
-        let x = X_START + CELL_SIZE / 2;
+        let x = widgetStartX + CELL_SIZE / 2;
          for (let i = 0; i < numCols; i++) {
             const colFromRight = numCols - 1 - i;
             const id = `carry-${colFromRight}`;
             const cellState = state[id];
             if(cellState?.value) {
                 doc.setFontSize(CARRY_FONT_SIZE);
-                doc.text(cellState.value, x + CELL_SIZE, startY + (operands.length * CELL_SIZE) - 2, {align: 'center'});
+                doc.text(cellState.value, x + CELL_SIZE, startY + 4 + (operands.length * CELL_SIZE) - 2, {align: 'center'});
             }
             x += CELL_SIZE;
         }
     }
 
-
-    return y + 5; // Return new Y position
+    const widgetWidth = (numCols + 1.5) * CELL_SIZE;
+    return { endX: startX + widgetWidth, endY: y };
 };
 
 export function ReportGenerator({ students, allScores, allSpellingProgress }: ReportGeneratorProps) {
@@ -228,13 +228,26 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
 
 
                 if (score.skill === 'long-calculation' && score.details && score.details.length > 0) {
-                    score.details.forEach(detail => {
-                        if (yPos > 220) { // Check space before drawing widget
+                    let currentX = 14;
+                    let maxWidgetY = yPos;
+                    score.details.forEach((detail, index) => {
+                        const widgetWidth = (String(detail.correctAnswer).length + 1.5) * 8; // Estimate widget width
+                        if (currentX + widgetWidth > 200) { // Check if it fits on the line
+                            currentX = 14;
+                            yPos = maxWidgetY + 4;
+                            maxWidgetY = yPos;
+                        }
+                         if (yPos > 220) { // Check space before drawing widget
                             doc.addPage();
                             yPos = 20;
+                            maxWidgetY = yPos;
+                            currentX = 14;
                         }
-                        yPos = drawCalculationWidget(doc, detail, yPos);
+                        const { endX, endY } = drawCalculationWidget(doc, detail, currentX, yPos);
+                        currentX = endX + 5; // Update X for next widget
+                        maxWidgetY = Math.max(maxWidgetY, endY);
                     });
+                    yPos = maxWidgetY;
                 } else if (score.details && score.details.length > 0) {
                     const head = [['Question', 'Réponse de l\'élève', 'Bonne réponse', 'Options proposées', 'Erreurs']];
                     const body = score.details.map(d => [
