@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
-import { Calendar as CalendarIcon, FileDown, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, FileDown } from 'lucide-react';
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
@@ -19,6 +20,9 @@ import { type Student } from '@/services/students';
 import { type Score, CalculationState, ScoreDetail } from '@/services/scores';
 import { type SpellingProgress } from '@/services/spelling';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
+import { AdditionWidget } from '../tableau/addition-widget';
+import { SoustractionWidget } from '../tableau/soustraction-widget';
+
 
 const PRIMARY_COLOR = '#ea588b';
 const GREEN_COLOR = '#16a34a';
@@ -34,8 +38,6 @@ interface ReportGeneratorProps {
     allScores: Score[];
     allSpellingProgress: SpellingProgress[];
 }
-
-// --- PDF Drawing Helpers ---
 
 const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, startY: number): { endX: number, endY: number } => {
     if (!detail.calculationState) {
@@ -75,19 +77,24 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
     }
 
     // Draw operands
-    operands.forEach((operand) => {
+    operands.forEach((operand, opIndex) => {
         let x = widgetStartX;
-        doc.text(isAddition ? '+' : '-', x, y + CELL_SIZE/2 + 1);
+         if (opIndex === operands.length -1) {
+            doc.text(isAddition ? '+' : '-', x, y + CELL_SIZE/2 + 1);
+         }
         x += CELL_SIZE / 2;
         
         const paddedOperand = operand.padStart(numCols, ' ');
 
         for (let i = 0; i < numCols; i++) {
             const digit = paddedOperand[i];
+            const cellId = `op-${opIndex}-${numCols - 1 - i}`;
+            const valueToDraw = state[cellId]?.value || digit;
+            
             doc.setDrawColor(150);
             doc.rect(x, y, CELL_SIZE, CELL_SIZE, 'S');
             doc.setFontSize(FONT_SIZE);
-            doc.text(digit, x + CELL_SIZE/2, y + CELL_SIZE/2 + 2, { align: 'center' });
+            doc.text(valueToDraw, x + CELL_SIZE/2, y + CELL_SIZE/2 + 2, { align: 'center' });
             x += CELL_SIZE;
         }
         y += CELL_SIZE;
@@ -206,29 +213,42 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                 doc.text(`Niveau: ${level || 'N/A'}`, 140, yPos, {align: 'left'});
                 doc.text(date, 200, yPos, {align: 'right'});
                 yPos += 5;
+                
+                if (skill?.description) {
+                    doc.setFontSize(SMALL_FONT_SIZE);
+                    doc.setFont('helvetica', 'italic');
+                    doc.setTextColor(100); // Gray color
+                    doc.text(skill.description, 14, yPos);
+                    doc.setTextColor(0);
+                    yPos += 5;
+                }
 
 
                 if (score.skill === 'long-calculation' && score.details && score.details.length > 0) {
                     yPos += 4;
                     let currentX = 14;
                     let maxWidgetY = yPos;
-                    score.details.forEach((detail, index) => {
+                    
+                    score.details.forEach((detail) => {
                         const widgetWidth = (String(detail.correctAnswer).length + 2) * 8;
-                        if (currentX + widgetWidth > 200) { // Check if it fits on the line
+                        if (currentX + widgetWidth > 200) { 
                             currentX = 14;
                             yPos = maxWidgetY + 4;
                         }
-                        if (yPos > 220) { // Check space before drawing widget
+                        if (yPos > 220) {
                             doc.addPage();
                             yPos = 20;
                             currentX = 14;
                         }
                         
                         doc.setFontSize(SMALL_FONT_SIZE);
-                        doc.text(detail.status === 'correct' ? 'Correct' : 'Incorrect', currentX, yPos - 2);
+                        const statusText = detail.status === 'correct' ? 'Correct' : 'Incorrect';
+                        doc.setTextColor(detail.status === 'correct' ? GREEN_COLOR : RED_COLOR);
+                        doc.text(statusText, currentX, yPos - 2);
+                        doc.setTextColor(0);
 
                         const { endX, endY } = drawCalculationWidget(doc, detail, currentX, yPos);
-                        currentX = endX + 8; // Update X for next widget
+                        currentX = endX + 8;
                         maxWidgetY = Math.max(maxWidgetY, endY);
                     });
                     yPos = maxWidgetY + 5;
@@ -244,7 +264,7 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                     headers.push('Statut');
 
                     const body = score.details.map(detail => {
-                        const row = [detail.question, detail.userAnswer];
+                        const row: (string|undefined)[] = [detail.question, detail.userAnswer];
                         if (hasOptionsColumn) row.push(detail.options?.join(', ') || '-');
                         if (shouldShowCorrectAnswer) row.push(detail.correctAnswer);
                         if (hasMistakesColumn) row.push(detail.mistakes?.join(', ') || '-');
@@ -267,10 +287,11 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
                             cellPadding: 1.5,
                         },
                         didParseCell: (data) => {
-                            if (data.column.dataKey === headers.length - 1) { // Status column
-                                if (data.cell.raw === 'Correct') {
+                             if (data.column.dataKey === headers.length - 1) { // Status column
+                                const cellText = data.cell.raw as string;
+                                if (cellText.startsWith('Correct')) {
                                     data.cell.styles.textColor = GREEN_COLOR;
-                                } else {
+                                } else if (cellText.startsWith('Incorrect')) {
                                     data.cell.styles.textColor = RED_COLOR;
                                 }
                             }
@@ -402,5 +423,3 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         </Card>
     );
 }
-
-    
