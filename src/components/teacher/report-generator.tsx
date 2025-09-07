@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -30,6 +29,12 @@ const SMALL_FONT_SIZE = 8;
 const WIDGET_FONT_SIZE = 6;
 
 
+interface ReportGeneratorProps {
+    students: Student[];
+    allScores: Score[];
+    allSpellingProgress: SpellingProgress[];
+}
+
 // --- PDF Drawing Helpers ---
 
 const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, startY: number): { endX: number, endY: number } => {
@@ -45,15 +50,8 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
     const CELL_SIZE = 8;
     const FONT_SIZE = WIDGET_FONT_SIZE;
     const CARRY_FONT_SIZE = WIDGET_FONT_SIZE - 1;
-    let y = startY + 2;
+    let y = startY;
 
-    doc.setFontSize(SMALL_FONT_SIZE);
-    doc.setTextColor(0);
-    const resultStatus = detail.status === 'correct' ? 'Correct' : `Incorrect (Attendu: ${detail.correctAnswer})`;
-    doc.text(`${detail.question} = ${detail.userAnswer || 'N/A'}`, startX, y, { align: 'left' });
-    doc.text(resultStatus, startX + (numCols + 1) * CELL_SIZE, y, { align: 'right' });
-    y += 4;
-    
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0);
 
@@ -77,34 +75,19 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
     }
 
     // Draw operands
-    operands.forEach((operand, opIndex) => {
+    operands.forEach((operand) => {
         let x = widgetStartX;
-        if (opIndex === operands.length - 1) {
-            doc.text(isAddition ? '+' : '-', x, y + CELL_SIZE/2 + 1);
-        }
+        doc.text(isAddition ? '+' : '-', x, y + CELL_SIZE/2 + 1);
         x += CELL_SIZE / 2;
         
         const paddedOperand = operand.padStart(numCols, ' ');
 
         for (let i = 0; i < numCols; i++) {
             const digit = paddedOperand[i];
-            const colFromRight = numCols - 1 - i;
-            const id = `op-${opIndex}-${colFromRight}`;
-            const cellState = state[id];
-
             doc.setDrawColor(150);
             doc.rect(x, y, CELL_SIZE, CELL_SIZE, 'S');
-
-            const valueToDraw = cellState?.value || '';
-            
-            if (valueToDraw) {
-                doc.setFontSize(FONT_SIZE);
-                doc.text(valueToDraw, x + CELL_SIZE/2, y + CELL_SIZE/2 + 2, { align: 'center' });
-            }
-            
-            if (cellState?.isCrossed) {
-                doc.line(x, y + CELL_SIZE/2, x + CELL_SIZE, y + CELL_SIZE/2);
-            }
+            doc.setFontSize(FONT_SIZE);
+            doc.text(digit, x + CELL_SIZE/2, y + CELL_SIZE/2 + 2, { align: 'center' });
             x += CELL_SIZE;
         }
         y += CELL_SIZE;
@@ -120,15 +103,11 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
     const paddedResult = (detail.userAnswer || '').padStart(numCols, ' ');
     for (let i = 0; i < numCols; i++) {
         const digit = paddedResult[i];
-        const colFromRight = numCols - 1 - i;
-        const id = `result-${colFromRight}`;
-        const cellState = state[id];
         doc.setDrawColor(150);
         doc.rect(xResult, y, CELL_SIZE, CELL_SIZE, 'S');
-        const valueToDraw = cellState?.value || (digit !== ' ' ? digit : '');
-        if (valueToDraw) {
+        if (digit !== ' ') {
             doc.setFontSize(FONT_SIZE);
-            doc.text(valueToDraw, xResult + CELL_SIZE / 2, y + CELL_SIZE / 2 + 2, { align: 'center' });
+            doc.text(digit, xResult + CELL_SIZE / 2, y + CELL_SIZE / 2 + 2, { align: 'center' });
         }
         xResult += CELL_SIZE;
     }
@@ -136,7 +115,7 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
 
     // Draw carry cells (addition)
     if (isAddition) {
-        let x = widgetStartX + CELL_SIZE / 2;
+         let x = widgetStartX + CELL_SIZE / 2;
          for (let i = 0; i < numCols; i++) {
             const colFromRight = numCols - 1 - i;
             const id = `carry-${colFromRight}`;
@@ -153,25 +132,6 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
     return { endX: startX + widgetWidth, endY: y };
 };
 
-const drawAnalogClock = (doc: jsPDF, centerX: number, centerY: number, radius: number, hour: number, minute: number) => {
-    doc.setDrawColor(100);
-    doc.circle(centerX, centerY, radius, 'S');
-
-    const hourAngle = (hour % 12 + minute / 60) * 30;
-    const minuteAngle = minute * 6;
-    
-    // Hour hand
-    const hourHandLength = radius * 0.5;
-    const hourHandX = centerX + hourHandLength * Math.sin(hourAngle * Math.PI / 180);
-    const hourHandY = centerY - hourHandLength * Math.cos(hourAngle * Math.PI / 180);
-    doc.setLineWidth(1).line(centerX, centerY, hourHandX, hourHandY);
-
-    // Minute hand
-    const minuteHandLength = radius * 0.8;
-    const minuteHandX = centerX + minuteHandLength * Math.sin(minuteAngle * Math.PI / 180);
-    const minuteHandY = centerY - minuteHandLength * Math.cos(minuteAngle * Math.PI / 180);
-    doc.setLineWidth(0.5).line(centerX, centerY, minuteHandX, minuteHandY);
-};
 
 export function ReportGenerator({ students, allScores, allSpellingProgress }: ReportGeneratorProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -249,105 +209,74 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
 
 
                 if (score.skill === 'long-calculation' && score.details && score.details.length > 0) {
-                    yPos += 2;
+                    yPos += 4;
                     let currentX = 14;
                     let maxWidgetY = yPos;
                     score.details.forEach((detail, index) => {
-                        const widgetWidth = (String(detail.correctAnswer).length + 1.5) * 8; // Estimate widget width
-                        if (currentX + widgetWidth > 195) { // Check if it fits on the line
+                        const widgetWidth = (String(detail.correctAnswer).length + 2) * 8;
+                        if (currentX + widgetWidth > 200) { // Check if it fits on the line
                             currentX = 14;
                             yPos = maxWidgetY + 4;
-                            maxWidgetY = yPos;
                         }
-                         if (yPos > 220) { // Check space before drawing widget
+                        if (yPos > 220) { // Check space before drawing widget
                             doc.addPage();
                             yPos = 20;
-                            maxWidgetY = yPos;
                             currentX = 14;
                         }
+                        
+                        doc.setFontSize(SMALL_FONT_SIZE);
+                        doc.text(detail.status === 'correct' ? 'Correct' : 'Incorrect', currentX, yPos - 2);
+
                         const { endX, endY } = drawCalculationWidget(doc, detail, currentX, yPos);
-                        currentX = endX + 10; // Update X for next widget
+                        currentX = endX + 8; // Update X for next widget
                         maxWidgetY = Math.max(maxWidgetY, endY);
                     });
-                    yPos = maxWidgetY;
+                    yPos = maxWidgetY + 5;
                 } else if (score.details && score.details.length > 0) {
-                    // Start of new detailed rendering logic
-                    doc.setDrawColor(220); // Light gray for borders
-                    doc.setLineWidth(0.2);
+                    const hasOptionsColumn = score.details.some(d => d.options && d.options.length > 0);
+                    const hasMistakesColumn = score.details.some(d => d.mistakes && d.mistakes.length > 0);
+                    const shouldShowCorrectAnswer = score.skill !== 'simple-word-reading' && score.skill !== 'ecoute-les-nombres' && score.skill !== 'nombres-complexes' && score.skill !== 'lire-les-nombres';
 
-                    score.details.forEach(detail => {
-                        if (yPos > 250) {
-                            doc.addPage();
-                            yPos = 20;
-                        }
-                        yPos += 4;
-                        const startDetailY = yPos;
-                        doc.setFontSize(SMALL_FONT_SIZE);
-                        doc.setFont('helvetica', 'bold');
-                        doc.text(detail.question, 14, yPos);
-                        yPos += 5;
-                        
-                        doc.setFont('helvetica', 'normal');
-                        
-                        // Handle different question types visually
-                        const isTimeQCM = score.skill === 'time' && detail.question.startsWith("Quelle heure");
-                        
-                        if (isTimeQCM && detail.question.includes('sur')) {
-                             const timeMatch = detail.question.match(/(\d+):(\d+)/);
-                             if (timeMatch) {
-                                 const h = parseInt(timeMatch[1], 10);
-                                 const m = parseInt(timeMatch[2], 10);
-                                 drawAnalogClock(doc, 30, yPos + 10, 15, h, m);
-                             }
-                        }
+                    const headers: string[] = ['Question', 'Réponse'];
+                    if (hasOptionsColumn) headers.push('Options proposées');
+                    if (shouldShowCorrectAnswer) headers.push('Bonne réponse');
+                    if (hasMistakesColumn) headers.push('Erreurs');
+                    headers.push('Statut');
 
-                        let textX = isTimeQCM ? 60 : 14;
-                        const iconX = textX - 4;
-
-                        if (detail.options && detail.options.length > 0) { // QCM type
-                             detail.options.forEach(opt => {
-                                const isUserAnswer = opt === detail.userAnswer;
-                                const isCorrectAnswer = opt === detail.correctAnswer;
-                                
-                                doc.setFontSize(SMALL_FONT_SIZE);
-                                doc.setTextColor(0);
-                                doc.text(opt, textX, yPos);
-
-                                if(isUserAnswer && !isCorrectAnswer) doc.setTextColor(RED_COLOR);
-                                if(isCorrectAnswer) doc.setTextColor(GREEN_COLOR);
-
-                                if(isUserAnswer || isCorrectAnswer) {
-                                    doc.setFont('helvetica', 'bold');
-                                    doc.text(opt, textX, yPos);
-                                    doc.setFont('helvetica', 'normal');
-                                    doc.setTextColor(0);
-                                }
-                                yPos += 5;
-                            });
-                        } else { // Input type
-                             doc.text(`Réponse de l'élève:`, textX, yPos);
-                             doc.setFont('helvetica', 'bold');
-                             if(detail.status === 'incorrect') doc.setTextColor(RED_COLOR);
-                             doc.text(detail.userAnswer || "N/A", textX + 35, yPos);
-                             doc.setFont('helvetica', 'normal');
-                             doc.setTextColor(0);
-                             yPos += 5;
-
-                             if(detail.status === 'incorrect') {
-                                 doc.text(`Bonne réponse:`, textX, yPos);
-                                 doc.setFont('helvetica', 'bold');
-                                 doc.setTextColor(GREEN_COLOR);
-                                 doc.text(detail.correctAnswer, textX + 35, yPos);
-                                 doc.setFont('helvetica', 'normal');
-                                 doc.setTextColor(0);
-                                 yPos += 5;
-                             }
-                        }
-                        
-                         doc.line(14, startDetailY - 2, 200, startDetailY - 2); // Top border
-                         yPos = Math.max(yPos, startDetailY + 20); // ensure minimum height
+                    const body = score.details.map(detail => {
+                        const row = [detail.question, detail.userAnswer];
+                        if (hasOptionsColumn) row.push(detail.options?.join(', ') || '-');
+                        if (shouldShowCorrectAnswer) row.push(detail.correctAnswer);
+                        if (hasMistakesColumn) row.push(detail.mistakes?.join(', ') || '-');
+                        row.push(detail.status === 'correct' ? 'Correct' : 'Incorrect');
+                        return row;
                     });
-                     doc.line(14, yPos - 2, 200, yPos - 2); // Final bottom border
+
+                    autoTable(doc, {
+                        startY: yPos,
+                        head: [headers],
+                        body: body,
+                        theme: 'grid',
+                        headStyles: {
+                            fillColor: [230, 230, 230],
+                            textColor: 20,
+                            fontSize: SMALL_FONT_SIZE - 1,
+                        },
+                        styles: {
+                            fontSize: SMALL_FONT_SIZE - 1,
+                            cellPadding: 1.5,
+                        },
+                        didParseCell: (data) => {
+                            if (data.column.dataKey === headers.length - 1) { // Status column
+                                if (data.cell.raw === 'Correct') {
+                                    data.cell.styles.textColor = GREEN_COLOR;
+                                } else {
+                                    data.cell.styles.textColor = RED_COLOR;
+                                }
+                            }
+                        }
+                    });
+                     yPos = (doc as any).lastAutoTable.finalY + 5;
                 } else {
                      yPos += 2; // Add a small gap
                 }
@@ -473,3 +402,5 @@ export function ReportGenerator({ students, allScores, allSpellingProgress }: Re
         </Card>
     );
 }
+
+    
