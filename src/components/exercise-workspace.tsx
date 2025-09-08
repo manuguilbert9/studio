@@ -592,14 +592,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
           </span>
         ))}
       </div>
-      <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl">
+      <div className="flex flex-wrap items-center justify-center gap-4 max-w-3xl">
         {Array.from({ length: (countSettings?.maxNumber ?? 20) + 1 }, (_, i) => i).map((num) => (
           <Button
             key={num}
             variant="outline"
             onClick={() => handleQcmAnswer(String(num))}
             className={cn(
-              'text-xl h-12 w-12 font-numbers transition-all duration-300 transform active:scale-95',
+              'text-4xl h-24 w-24 font-numbers transition-all duration-300 transform active:scale-95',
               feedback === 'correct' && String(num) === exerciseData.answer && 'bg-green-500/80 text-white border-green-600',
               feedback === 'incorrect' && String(num) !== exerciseData.answer && 'opacity-50',
               feedback && String(num) === exerciseData.answer && 'opacity-100'
