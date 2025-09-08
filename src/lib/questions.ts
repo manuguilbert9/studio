@@ -452,59 +452,58 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     }
 }
 
-const letterSoundData: { [letter: string]: { word: string, image: string, hint: string }[] } = {
-  'a': [{ word: 'arbre', image: '/phonologie/arbre.png', hint: 'tree' }],
-  'b': [{ word: 'banane', image: '/phonologie/banane.png', hint: 'banana' }],
-  'c': [{ word: 'cochon', image: '/phonologie/cochon.png', hint: 'pig' }], // [k] sound
-  'd': [{ word: 'dé', image: '/phonologie/de.png', hint: 'dice' }],
-  'e': [{ word: 'escargot', image: '/phonologie/escargot.png', hint: 'snail' }],
-  'f': [{ word: 'fusée', image: '/phonologie/fusee.png', hint: 'rocket' }],
-  'g': [{ word: 'gâteau', image: '/phonologie/gateau.png', hint: 'cake' }], // [g] sound
-  'i': [{ word: 'igloo', image: '/phonologie/igloo.png', hint: 'igloo' }],
-  'j': [{ word: 'jupe', image: '/phonologie/jupe.png', hint: 'skirt' }],
-  'l': [{ word: 'lune', image: '/phonologie/lune.png', hint: 'moon' }],
-  'm': [{ word: 'maison', image: '/phonologie/maison.png', hint: 'house' }],
-  'n': [{ word: 'nid', image: '/phonologie/nid.png', hint: 'nest' }],
-  'o': [{ word: 'orange', image: '/phonologie/orange.png', hint: 'orange fruit' }],
-  'p': [{ word: 'pomme', image: '/phonologie/pomme.png', hint: 'apple' }],
-  'r': [{ word: 'robot', image: '/phonologie/robot.png', hint: 'robot' }],
-  's': [{ word: 'serpent', image: '/phonologie/serpent.png', hint: 'snake' }], // [s] sound
-  't': [{ word: 'tasse', image: '/phonologie/tasse.png', hint: 'cup' }],
-  'u': [{ word: 'uniforme', image: '/phonologie/uniforme.png', hint: 'uniform' }],
-  'v': [{ word: 'vélo', image: '/phonologie/velo.png', hint: 'bicycle' }],
-  'z': [{ word: 'zèbre', image: '/phonologie/zebre.png', hint: 'zebra' }],
+const letterSoundData: { [letter: string]: string[] } = {
+  'a': ['arbre', 'avion', 'ananas'],
+  'b': ['banane', 'bateau', 'ballon'],
+  'c': ['cochon', 'canard', 'camion'], // [k] sound
+  'd': ['dé', 'domino', 'dinosaure'],
+  'e': ['escargot', 'éléphant', 'échelle'],
+  'f': ['fusée', 'fourmi', 'fraise'],
+  'g': ['gâteau', 'gomme', 'girafe'], // [g] sound
+  'i': ['igloo', 'île', 'image'],
+  'j': ['jupe', 'jardin', 'jouet'],
+  'l': ['lune', 'lit', 'lion'],
+  'm': ['maison', 'moto', 'montagne'],
+  'n': ['nid', 'nuage', 'nez'],
+  'o': ['orange', 'olive', 'ordinateur'],
+  'p': ['pomme', 'poisson', 'papillon'],
+  'r': ['robot', 'rat', 'robe'],
+  's': ['serpent', 'soleil', 'sac'], // [s] sound
+  't': ['tasse', 'table', 'téléphone'],
+  'u': ['uniforme', 'usine'],
+  'v': ['vélo', 'voiture', 'vache'],
+  'z': ['zèbre', 'zéro', 'zoo'],
 };
 
 
 function generateLettresEtSonsQuestion(): Question {
     const letters = Object.keys(letterSoundData);
-    
-    // Select a random letter for the question
     const correctLetter = letters[Math.floor(Math.random() * letters.length)];
-    const correctAnswerData = letterSoundData[correctLetter][0];
+    const correctWords = letterSoundData[correctLetter];
+    const correctWord = correctWords[Math.floor(Math.random() * correctWords.length)];
 
-    const options = new Set<typeof correctAnswerData>([correctAnswerData]);
+    const distractorLetters = letters.filter(l => l !== correctLetter);
+    
+    const options = new Set<string>([correctWord]);
 
-    // Select 3 other random words as distractors
     while (options.size < 4) {
-        const randomLetter = letters[Math.floor(Math.random() * letters.length)];
-        const distractor = letterSoundData[randomLetter][0];
-        options.add(distractor);
+        const randomLetter = distractorLetters[Math.floor(Math.random() * distractorLetters.length)];
+        const randomWords = letterSoundData[randomLetter];
+        const randomWord = randomWords[Math.floor(Math.random() * randomWords.length)];
+        options.add(randomWord);
     }
     
     const shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
 
     return {
-        type: 'letter-sound-qcm',
-        question: `Touche l'image qui commence par le son :`,
-        letter: correctLetter,
-        textToSpeak: correctLetter, // Will pronounce the letter name
-        images: shuffledOptions.map(opt => ({
-            src: opt.image,
-            alt: opt.word,
-            hint: opt.hint
+        type: 'written-to-audio-qcm',
+        question: "Dans quel mot entends-tu le son de la lettre ?",
+        answer: correctWord,
+        textToSpeak: correctLetter, // Will show the letter
+        optionsWithAudio: shuffledOptions.map(word => ({
+            text: word, // The text for the radio button will be the word itself, but we won't show it.
+            audio: word // The audio to play will be the word.
         })),
-        answer: correctAnswerData.word, // The word is the unique identifier for the correct choice
     };
 }
 

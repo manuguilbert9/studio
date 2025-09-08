@@ -193,7 +193,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string, options?: string[]) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count'].includes(skill.slug)) {
+      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count', 'lettres-et-sons'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, true, options);
       }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -204,7 +204,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string, options?: string[]) => {
       setFeedback('incorrect');
-       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count'].includes(skill.slug)) {
+       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count', 'lettres-et-sons'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, false, options);
       }
       setTimeout(handleNextQuestion, 2000);
@@ -224,6 +224,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         questionText = `Écoute: "${exerciseData.textToSpeak}"`
     } else if (exerciseData.textToSpeak && exerciseData.type === 'written-to-audio-qcm') {
         questionText = `Lis: "${exerciseData.textToSpeak}"`
+    } else if (exerciseData.type === 'letter-sound-qcm') {
+      questionText = `Dans quel mot entends-tu le son de la lettre ${exerciseData.letter} ?`
     }
 
     const optionsForDetails = exerciseData.options || exerciseData.optionsWithAudio?.map(o => o.text);
@@ -346,7 +348,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     return () => {
         document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [exerciseData, feedback, processCorrectAnswer, processIncorrectAnswer]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exerciseData, feedback]);
 
 
   const restartExercise = async () => {
@@ -527,7 +530,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const renderWrittenToAudioQCM = () => {
     return (
         <div className="flex flex-col items-center justify-center w-full space-y-8">
-            <div className="font-numbers text-8xl font-bold text-primary">
+            <div className="font-numbers text-8xl font-bold text-primary uppercase">
                 {exerciseData.textToSpeak}
             </div>
              <RadioGroup
