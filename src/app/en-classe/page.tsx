@@ -32,11 +32,12 @@ export default function EnClassePage() {
         setIsLoading(true);
         const globalSkills = await getGloballyEnabledSkills();
         const studentSkills = student.enabledSkills;
-        const studentEnabled = studentSkills ? studentSkills : globalSkills;
 
-        const filteredSkills = allSkills.filter(skill => 
-            (globalSkills[skill.slug] ?? true) && (studentEnabled[skill.slug] ?? true)
-        );
+        const filteredSkills = allSkills.filter(skill => {
+            const isGlobalEnabled = globalSkills[skill.slug] ?? true;
+            const isStudentEnabled = studentSkills?.[skill.slug] ?? true;
+            return isGlobalEnabled || isStudentEnabled;
+        });
         
         setEnabledSkillsList(filteredSkills);
         setIsLoading(false);
