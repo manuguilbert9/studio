@@ -461,7 +461,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                         "text-5xl font-numbers h-24 p-4 justify-center transition-all duration-300 transform active:scale-95",
                         feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
                         feedback === 'incorrect' && option !== exerciseData.answer && 'bg-red-500/80 text-white border-red-600 animate-shake',
-                        feedback && !isCorrect && !isSelectedIncorrect && 'opacity-50'
+                        feedback && option !== exerciseData.answer && 'opacity-50'
                         )}
                         disabled={!!feedback}
                     >
