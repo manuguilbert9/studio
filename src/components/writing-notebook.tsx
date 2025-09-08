@@ -93,6 +93,10 @@ export function WritingNotebook() {
 
     return (
         <div className="w-full max-w-3xl mx-auto space-y-6">
+            <pre className="p-4 bg-muted text-xs rounded-lg overflow-auto">
+                <code>{JSON.stringify(entries, null, 2)}</code>
+            </pre>
+
             <Card>
                 <CardHeader>
                     <CardTitle className="text-3xl font-headline">Ton texte du jour</CardTitle>
