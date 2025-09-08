@@ -17,6 +17,7 @@ import {
   Rocket,
   Mic,
   Smile,
+  BookCopy,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -77,6 +78,13 @@ export const skills: Skill[] = [
     description: "Lis un texte à voix haute et fais avancer ton personnage jusqu'à la ligne d'arrivée.",
     icon: <Rocket />,
     category: 'Lecture / compréhension',
+  },
+  {
+    name: 'Cahier d\'écriture',
+    slug: 'writing-notebook',
+    description: 'Écris librement chaque jour pour t\'entraîner et garder une trace de tes textes.',
+    icon: <BookCopy />,
+    category: 'Ecriture',
   },
   {
     name: 'Lire les nombres',

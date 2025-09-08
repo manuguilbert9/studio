@@ -16,6 +16,7 @@ import { HomeworkSession } from '@/services/scores';
 import { CalendarExercise } from '@/components/calendar-exercise';
 import { ReadingRaceExercise } from '@/components/reading-race-exercise';
 import { SimpleWordReadingExercise } from '@/components/simple-word-reading-exercise';
+import { WritingNotebook } from '@/components/writing-notebook';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -43,6 +44,8 @@ export default function ExercisePage() {
         return <ReadingRaceExercise />;
       case 'simple-word-reading':
         return <SimpleWordReadingExercise />;
+      case 'writing-notebook':
+        return <WritingNotebook />;
       default:
         return <ExerciseWorkspace skill={skill} homeworkSession={homeworkSession}/>;
     }
