@@ -465,12 +465,12 @@ const letterSoundData: { [letter: string]: string[] } = {
   'l': ['lune', 'lit', 'lion'],
   'm': ['maison', 'moto', 'montagne'],
   'n': ['nid', 'nuage', 'nez'],
-  'o': ['orange', 'olive', 'ordinateur'],
+  'o': ['orange', 'olive', 'oreille'],
   'p': ['pomme', 'poisson', 'papillon'],
   'r': ['robot', 'rat', 'robe'],
   's': ['serpent', 'soleil', 'sac'], // [s] sound
   't': ['tasse', 'table', 'téléphone'],
-  'u': ['uniforme', 'usine'],
+  'u': ['usine'],
   'v': ['vélo', 'voiture', 'vache'],
   'z': ['zèbre', 'zéro', 'zoo'],
 };
