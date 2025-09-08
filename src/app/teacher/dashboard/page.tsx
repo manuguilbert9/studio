@@ -34,21 +34,24 @@ export default function TeacherDashboardPage() {
   const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
+  const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, listsData, progressData, scoresData, writingData] = await Promise.all([
+    const [studentData, listsData, progressData, scoresData, writingData, spellingProgressData] = await Promise.all([
       getStudents(),
       getSpellingLists(),
       getAllSpellingProgress(),
       getAllScores(),
       getAllWritingEntries(),
+      getAllSpellingProgress(),
     ]);
     setStudents(studentData);
     setSpellingLists(listsData);
     setAllProgress(progressData);
     setAllScores(scoresData);
     setAllWritingEntries(writingData);
+    setAllSpellingProgress(spellingProgressData);
     setIsLoading(false);
   }, []);
 
