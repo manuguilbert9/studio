@@ -502,7 +502,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                         className={cn(
                         "text-5xl font-numbers h-24 p-4 justify-center transition-all duration-300 transform active:scale-95",
                         feedback === 'correct' && option === exerciseData.answer && 'bg-green-500/80 text-white border-green-600 scale-105',
-                        feedback === 'incorrect' && option !== exerciseData.answer && 'bg-red-500/80 text-white border-red-600 animate-shake',
                         feedback && option !== exerciseData.answer && 'opacity-50'
                         )}
                         disabled={!!feedback}
@@ -528,8 +527,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                 disabled={!!feedback}
             >
                  {exerciseData.optionsWithAudio?.map((option, index) => {
-                    const isCorrect = feedback === 'correct' && option.text === exerciseData.answer;
-                    const isSelectedIncorrect = feedback === 'incorrect' && option.text === selectedAudioOption;
+                    const isCorrectOption = feedback === 'correct' && option.text === exerciseData.answer;
+                    const isSelectedAndIncorrect = feedback === 'incorrect' && option.text === selectedAudioOption;
                     
                     return (
                         <div key={option.text} className="flex flex-col items-center gap-2">
@@ -538,9 +537,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                                 onClick={() => playAudio(option.audio)}
                                 className={cn(
                                 "h-24 w-full justify-center transition-all duration-300 transform active:scale-95",
-                                 isCorrect && 'bg-green-500/80 text-white border-green-600 scale-105',
-                                 isSelectedIncorrect && 'bg-red-500/80 text-white border-red-600 animate-shake',
-                                 feedback && option.text !== exerciseData.answer && 'opacity-50'
+                                 isCorrectOption && 'bg-green-500/80 text-white border-green-600 scale-105',
+                                 isSelectedAndIncorrect && 'bg-red-500/80 text-white border-red-600 animate-shake',
+                                 feedback && !isCorrectOption && 'opacity-50'
                                 )}
                                 disabled={!!feedback}
                             >
@@ -598,7 +597,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
 
   const renderCount = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-6">
-      <div className="grid grid-cols-5 gap-2 text-6xl">
+      <div className="grid grid-cols-10 gap-2 text-6xl">
         {Array.from({ length: exerciseData.countNumber ?? 0 }).map((_, i) => (
           <span 
             key={i} 
