@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
@@ -80,6 +81,35 @@ export async function getWritingEntriesForUser(userId: string): Promise<WritingE
         return entries;
     } catch (error) {
         console.error("Error loading writing entries from Firestore:", error);
+        return [];
+    }
+}
+
+/**
+ * Retrieves all writing entries for all users.
+ * @returns An array of WritingEntry objects.
+ */
+export async function getAllWritingEntries(): Promise<WritingEntry[]> {
+    try {
+        const q = query(
+            collection(db, "writingEntries"),
+            orderBy("createdAt", "desc")
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const entries: WritingEntry[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            entries.push({
+                id: doc.id,
+                ...data,
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+            } as WritingEntry);
+        });
+        
+        return entries;
+    } catch (error) {
+        console.error("Error loading all writing entries from Firestore:", error);
         return [];
     }
 }

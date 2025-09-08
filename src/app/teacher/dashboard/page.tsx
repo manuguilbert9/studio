@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -19,6 +20,7 @@ import { getStudents, Student } from '@/services/students';
 import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { BuildInfo } from '@/components/teacher/build-info';
+import { getAllWritingEntries, WritingEntry } from '@/services/writing';
 
 
 export default function TeacherDashboardPage() {
@@ -31,19 +33,22 @@ export default function TeacherDashboardPage() {
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
+  const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, listsData, progressData, scoresData] = await Promise.all([
+    const [studentData, listsData, progressData, scoresData, writingData] = await Promise.all([
       getStudents(),
       getSpellingLists(),
       getAllSpellingProgress(),
-      getAllScores()
+      getAllScores(),
+      getAllWritingEntries(),
     ]);
     setStudents(studentData);
     setSpellingLists(listsData);
     setAllProgress(progressData);
     setAllScores(scoresData);
+    setAllWritingEntries(writingData);
     setIsLoading(false);
   }, []);
 
@@ -111,7 +116,13 @@ export default function TeacherDashboardPage() {
                     />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
-                    <ResultsManager students={students} allScores={allScores} allSpellingProgress={allProgress} onDataRefresh={loadData} />
+                    <ResultsManager 
+                        students={students} 
+                        allScores={allScores} 
+                        allSpellingProgress={allSpellingProgress} 
+                        allWritingEntries={allWritingEntries}
+                        onDataRefresh={loadData} 
+                    />
                 </TabsContent>
                  <TabsContent value="database" className="mt-6">
                     <DatabaseManager />
