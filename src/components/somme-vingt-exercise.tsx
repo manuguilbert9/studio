@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RefreshCw, Loader2, Check, X, Keyboard } from 'lucide-react';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
-import { Progress } from '@/components/ui/progress';
+import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
@@ -18,15 +18,18 @@ type Problem = {
     id: number;
     operands: number[];
     answer: number;
+    emoji: string;
 };
 type Feedback = 'correct' | 'incorrect' | null;
 
 const NUM_PROBLEMS = 5;
+const emojiPool = ['🧱', '🍎', '🚗', '⭐', '🧸', '⚽', '🍓', '🍌', '🔵', '🟢'];
 
 const generateProblem = (): Problem => {
     const op1 = Math.floor(Math.random() * 8) + 1; // 1-8
     const op2 = Math.floor(Math.random() * (15 - op1 - 1)) + 1; // ensure total < 15
-    return { id: Date.now() + Math.random(), operands: [op1, op2], answer: op1 + op2 };
+    const emoji = emojiPool[Math.floor(Math.random() * emojiPool.length)];
+    return { id: Date.now() + Math.random(), operands: [op1, op2], answer: op1 + op2, emoji };
 }
 
 export function SommeVingtExercise() {
@@ -38,7 +41,7 @@ export function SommeVingtExercise() {
     const [feedback, setFeedback] = useState<Feedback>(null);
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
-    const [hasBeenSaved, setHasBeenSaved] = useState(false);
+    const [hasBeenSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
@@ -198,21 +201,21 @@ export function SommeVingtExercise() {
             <Card className="w-full">
                 <CardHeader>
                      <CardTitle className="text-center font-body text-2xl sm:text-3xl">
-                        Combien y a-t-il de cubes en tout ?
+                        Combien y a-t-il d'objets en tout ?
                     </CardTitle>
                 </CardHeader>
                  <CardContent className="flex flex-col items-center gap-6">
                     <div className="flex items-center justify-center gap-4 sm:gap-8">
                         <div className="flex flex-col items-center gap-2">
                             <div className="text-4xl flex flex-wrap gap-1 justify-center max-w-[150px]">
-                                {Array.from({ length: currentProblem.operands[0] }).map((_, i) => <span key={i}>🧱</span>)}
+                                {Array.from({ length: currentProblem.operands[0] }).map((_, i) => <span key={i}>{currentProblem.emoji}</span>)}
                             </div>
                             <p className="text-3xl font-bold">{currentProblem.operands[0]}</p>
                         </div>
                         <span className="text-5xl font-bold text-primary">+</span>
                          <div className="flex flex-col items-center gap-2">
                            <div className="text-4xl flex flex-wrap gap-1 justify-center max-w-[150px]">
-                                {Array.from({ length: currentProblem.operands[1] }).map((_, i) => <span key={i}>🧱</span>)}
+                                {Array.from({ length: currentProblem.operands[1] }).map((_, i) => <span key={i}>{currentProblem.emoji}</span>)}
                             </div>
                             <p className="text-3xl font-bold">{currentProblem.operands[1]}</p>
                         </div>
