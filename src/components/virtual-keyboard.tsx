@@ -8,6 +8,7 @@ import { Delete } from 'lucide-react';
 
 interface VirtualKeyboardProps {
   onKeyPress: (key: string) => void;
+  numericOnly?: boolean;
 }
 
 const keyboardLayout = [
@@ -16,11 +17,19 @@ const keyboardLayout = [
   ['W', 'X', 'C', 'V', 'B', 'N', '⌫'],
 ];
 
-export function VirtualKeyboard({ onKeyPress }: VirtualKeyboardProps) {
+const numericLayout = [
+    ['7', '8', '9'],
+    ['4', '5', '6'],
+    ['1', '2', '3'],
+    ['0', '⌫']
+]
+
+export function VirtualKeyboard({ onKeyPress, numericOnly = false }: VirtualKeyboardProps) {
+    const layout = numericOnly ? numericLayout : keyboardLayout;
   return (
     <div className="w-full bg-muted p-4 rounded-lg shadow-inner">
       <div className="flex flex-col items-center justify-center gap-2">
-        {keyboardLayout.map((row, rowIndex) => (
+        {layout.map((row, rowIndex) => (
           <div key={`row-${rowIndex}`} className="flex gap-2">
             {row.map((key) => (
               <Button

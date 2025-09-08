@@ -19,6 +19,7 @@ import {
   Smile,
   BookCopy,
   Keyboard,
+  Plus,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -136,6 +137,14 @@ export const skills: Skill[] = [
     isFixedLevel: 'A',
   },
   {
+    name: 'Somme < 20',
+    slug: 'somme-vingt',
+    description: "Calcule des additions simples dont le résultat est inférieur à 20.",
+    icon: <Plus />,
+    category: 'Nombres et calcul',
+    isFixedLevel: 'A',
+  },
+  {
     name: "J'écoute entre 60 et 99",
     slug: 'nombres-complexes',
     description: 'Reconnaître les nombres complexes (60-99) à l\'oral et à l\'écrit.',
@@ -164,6 +173,7 @@ export const skills: Skill[] = [
     description: "Additionner/soustraire en colonnes avec ou sans retenue.",
     icon: <SquarePen />,
     category: 'Nombres et calcul',
+    allowedLevels: ['B', 'C', 'D'],
   },
   {
     name: 'Calcul mental',

@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect, useContext, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, Loader2, Check, X } from 'lucide-react';
+import { RefreshCw, Loader2, Check, X, Keyboard } from 'lucide-react';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
 import { UserContext } from '@/context/user-context';
@@ -15,9 +15,10 @@ import { cn } from '@/lib/utils';
 import type { SkillLevel } from '@/lib/skills';
 import { Input } from './ui/input';
 import { type CalculationState } from '@/services/scores';
+import { VirtualKeyboard } from './virtual-keyboard';
 
 
-type OperationType = 'addition' | 'subtraction' | 'count';
+type OperationType = 'addition' | 'subtraction';
 type Problem = {
     id: number;
     operands: number[];
@@ -149,19 +150,11 @@ export function LongCalculationExercise() {
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    const [userCount, setUserCount] = useState('');
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
     const generateProblemsForLevel = (lvl: SkillLevel) => {
         let newProblems: Problem[] = [];
         switch (lvl) {
-            case 'A': // Counting cubes
-                for (let i = 0; i < NUM_PROBLEMS; i++) {
-                    const op1 = Math.floor(Math.random() * 8) + 1; // 1-8
-                    const op2 = Math.floor(Math.random() * (15 - op1 - 1)) + 1; // ensure total < 15
-                    newProblems.push({ id: i, operands: [op1, op2], operation: 'count', answer: op1 + op2 });
-                }
-                break;
             case 'B':
                 newProblems = [
                     generateAddition(2, 2, false),
@@ -229,31 +222,26 @@ export function LongCalculationExercise() {
     const handleValidate = () => {
         if (!currentProblem) return;
 
-        let isCorrect = false;
         let userAnswerStr = '';
 
-        if (currentProblem.operation === 'count') {
-            isCorrect = parseInt(userCount, 10) === currentProblem.answer;
-            userAnswerStr = userCount;
-        } else {
-            // Reconstruct user's answer from input cells
-            const numCols = String(Math.max(...currentProblem.operands, currentProblem.answer)).length;
-            for (let i = numCols; i >= 0; i--) { // Start from potential highest-order column
-                 const cellValue = calculationState[`result-${i}`]?.value || '';
-                 // Handle borrowed '1' (e.g. "13" -> "3")
-                 const cleanValue = cellValue.length === 2 && cellValue.startsWith('1') ? cellValue.substring(1) : cellValue;
-                 userAnswerStr += cleanValue;
-            }
-            const userAnswerNum = parseInt(userAnswerStr, 10) || 0;
-            isCorrect = userAnswerNum === currentProblem.answer;
+        // Reconstruct user's answer from input cells
+        const numCols = String(Math.max(...currentProblem.operands, currentProblem.answer)).length;
+        for (let i = numCols; i >= 0; i--) { // Start from potential highest-order column
+             const cellValue = calculationState[`result-${i}`]?.value || '';
+             // Handle borrowed '1' (e.g. "13" -> "3")
+             const cleanValue = cellValue.length === 2 && cellValue.startsWith('1') ? cellValue.substring(1) : cellValue;
+             userAnswerStr += cleanValue;
         }
+        const userAnswerNum = parseInt(userAnswerStr, 10) || 0;
+        const isCorrect = userAnswerNum === currentProblem.answer;
+        
 
          const detail: ScoreDetail = {
             question: currentProblem.operands.join(` ${currentProblem.operation === 'addition' ? '+' : '-'} `),
             userAnswer: userAnswerStr,
             correctAnswer: String(currentProblem.answer),
             status: isCorrect ? 'correct' : 'incorrect',
-            calculationState: currentProblem.operation !== 'count' ? calculationState : undefined
+            calculationState: calculationState
         };
         setSessionDetails(prev => [...prev, detail]);
 
@@ -268,7 +256,6 @@ export function LongCalculationExercise() {
             if (currentProblemIndex < NUM_PROBLEMS - 1) {
                 setCurrentProblemIndex(prev => prev + 1);
                 setCalculationState({});
-                setUserCount('');
                 setFeedback(null);
             } else {
                 setIsFinished(true);
@@ -300,7 +287,6 @@ export function LongCalculationExercise() {
         }
         setCurrentProblemIndex(0);
         setCalculationState({});
-        setUserCount('');
         setFeedback(null);
         setIsFinished(false);
         setCorrectAnswers(0);
@@ -343,81 +329,42 @@ export function LongCalculationExercise() {
     }
     
     const { operands, operation } = currentProblem;
-    const symbol = operation === 'addition' ? '+' : (operation === 'subtraction' ? '-' : '+');
+    const symbol = operation === 'addition' ? '+' : '-';
     const statement = operands.join(` ${symbol} `);
 
-    const renderLevelA = () => {
-        return (
-            <Card className="w-full">
-                <CardHeader>
-                     <CardTitle className="text-center font-body text-2xl sm:text-3xl">
-                        Combien y a-t-il de cubes en tout ?
-                    </CardTitle>
-                </CardHeader>
-                 <CardContent className="flex flex-col items-center gap-6">
-                    <div className="flex items-center justify-center gap-4 sm:gap-8">
-                        <div className="flex flex-col items-center gap-2">
-                            <div className="text-3xl flex flex-wrap gap-1 justify-center max-w-[100px]">
-                                {Array.from({ length: operands[0] }).map((_, i) => <span key={i}>🧱</span>)}
-                            </div>
-                            <p className="text-2xl font-bold">{operands[0]}</p>
-                        </div>
-                        <span className="text-4xl font-bold text-primary">+</span>
-                         <div className="flex flex-col items-center gap-2">
-                           <div className="text-3xl flex flex-wrap gap-1 justify-center max-w-[100px]">
-                                {Array.from({ length: operands[1] }).map((_, i) => <span key={i}>🧱</span>)}
-                            </div>
-                            <p className="text-2xl font-bold">{operands[1]}</p>
-                        </div>
-                    </div>
-                     <Input 
-                        type="number" 
-                        value={userCount} 
-                        onChange={(e) => setUserCount(e.target.value)}
-                        className="h-16 w-48 text-center text-3xl font-bold"
-                        placeholder="?"
-                        disabled={!!feedback}
-                    />
-                </CardContent>
-            </Card>
-        )
-    }
-    
     return (
         <div className="w-full max-w-lg mx-auto flex flex-col items-center gap-6">
             <Progress value={((currentProblemIndex + 1) / NUM_PROBLEMS) * 100} className="w-full" />
-             {operation === 'count' ? renderLevelA() : (
-                <Card className="w-full">
-                    <CardHeader>
-                        <CardTitle className="text-center font-body text-2xl sm:text-3xl">
-                            Pose et calcule : <span className="font-numbers font-bold text-primary">{statement}</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-2 sm:pt-6">
-                        <div className="flex justify-center items-center scale-90 sm:scale-100 transform">
-                            {operation === 'addition' ? (
-                                <AdditionWidget
-                                    isExercise={true}
-                                    operands={operands}
-                                    calculationState={calculationState}
-                                    onInputChange={handleInputChange}
-                                    onToggleCrossed={handleToggleCrossed}
-                                    feedback={feedback}
-                                />
-                            ) : (
-                                <SoustractionWidget
-                                    isExercise={true}
-                                    operands={operands}
-                                    calculationState={calculationState}
-                                    onInputChange={handleInputChange}
-                                    onToggleCrossed={handleToggleCrossed}
-                                    feedback={feedback}
-                                />
-                            )}
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
+             <Card className="w-full">
+                <CardHeader>
+                    <CardTitle className="text-center font-body text-2xl sm:text-3xl">
+                        Pose et calcule : <span className="font-numbers font-bold text-primary">{statement}</span>
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="pt-2 sm:pt-6">
+                    <div className="flex justify-center items-center scale-90 sm:scale-100 transform">
+                        {operation === 'addition' ? (
+                            <AdditionWidget
+                                isExercise={true}
+                                operands={operands}
+                                calculationState={calculationState}
+                                onInputChange={handleInputChange}
+                                onToggleCrossed={handleToggleCrossed}
+                                feedback={feedback}
+                            />
+                        ) : (
+                            <SoustractionWidget
+                                isExercise={true}
+                                operands={operands}
+                                calculationState={calculationState}
+                                onInputChange={handleInputChange}
+                                onToggleCrossed={handleToggleCrossed}
+                                feedback={feedback}
+                            />
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
             
             <div className="w-full">
                 <Button onClick={handleValidate} size="lg" className={cn("w-full text-lg",
