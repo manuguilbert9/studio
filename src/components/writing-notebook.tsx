@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
@@ -21,17 +22,19 @@ export function WritingNotebook() {
     const [isSaving, setIsSaving] = useState(false);
     const [entries, setEntries] = useState<WritingEntry[]>([]);
     const [currentText, setCurrentText] = useState('');
-
-    const todayEntry = entries.find(entry => isToday(new Date(entry.createdAt)));
+    
+    // Find the latest entry made today
+    const todaysLatestEntry = entries.find(entry => isToday(new Date(entry.createdAt)));
 
     useEffect(() => {
         if (student) {
             getWritingEntriesForUser(student.id).then(userEntries => {
                 setEntries(userEntries);
-                // Initialize textarea with today's text if it exists
-                const todaysEntry = userEntries.find(entry => isToday(new Date(entry.createdAt)));
-                if (todaysEntry) {
-                    setCurrentText(todaysEntry.text);
+                const latestEntry = userEntries[0]; // Entries are sorted by date descending
+                if (latestEntry && isToday(new Date(latestEntry.createdAt))) {
+                    setCurrentText(latestEntry.text);
+                } else {
+                    setCurrentText(''); // Start fresh if no entry today
                 }
                 setIsLoading(false);
             });
@@ -94,7 +97,7 @@ export function WritingNotebook() {
                 <CardHeader>
                     <CardTitle className="text-3xl font-headline">Ton texte du jour</CardTitle>
                     <CardDescription>
-                        {todayEntry ? "Continue d'écrire ou modifie ton texte." : "Écris ce que tu veux : une histoire, ce que tu as fait, une poésie..."}
+                        {todaysLatestEntry ? "Continue d'écrire ou modifie ton texte." : "Écris ce que tu veux : une histoire, ce que tu as fait, une poésie..."}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -123,15 +126,15 @@ export function WritingNotebook() {
                         <Accordion type="single" collapsible className="w-full">
                             {entries.map(entry => (
                                 <AccordionItem value={entry.id} key={entry.id}>
-                                    <AccordionTrigger className="text-lg">
+                                    <AccordionTrigger className="text-lg hover:no-underline">
                                         <div className="flex items-center gap-4">
-                                            <span>
+                                            <span className="font-semibold">
                                                 {format(new Date(entry.createdAt), "EEEE d MMMM yyyy", { locale: fr })}
                                             </span>
                                             {isToday(new Date(entry.createdAt)) && (
                                                 <span className="flex items-center gap-1 text-xs text-green-600 font-semibold">
                                                     <CheckCircle className="h-4 w-4" />
-                                                    Enregistré
+                                                    Enregistré aujourd'hui
                                                 </span>
                                             )}
                                         </div>

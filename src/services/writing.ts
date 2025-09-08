@@ -13,33 +13,25 @@ export interface WritingEntry {
 }
 
 /**
- * Saves a new or updates an existing writing entry for a user for a specific day.
- * If an entry for the current day already exists, it will be overwritten.
+ * Saves a new writing entry for a user.
  * @param userId The ID of the student.
  * @param text The text content of the entry.
  * @returns An object indicating success or failure.
  */
-export async function saveWritingEntry(userId: string, text: string): Promise<{ success: boolean; error?: string }> {
+export async function saveWritingEntry(userId: string, text: string): Promise<{ success: boolean; error?: string, entryId?: string }> {
     if (!userId) {
         return { success: false, error: "User ID is required." };
     }
     try {
-        // We'll use the date as the document ID to ensure one entry per day per user
-        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-        const entryId = `${userId}_${today}`;
-
-        const entryRef = doc(db, 'writingEntries', entryId);
-
         const dataToSave = {
             userId: userId,
             text: text,
             createdAt: Timestamp.now()
         };
 
-        // Use setDoc with merge to create or update the document.
-        await setDoc(entryRef, dataToSave, { merge: true });
+        const docRef = await addDoc(collection(db, 'writingEntries'), dataToSave);
 
-        return { success: true };
+        return { success: true, entryId: docRef.id };
 
     } catch (error) {
         console.error("Error saving writing entry to Firestore:", error);
