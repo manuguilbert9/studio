@@ -6,13 +6,15 @@ import { useState, useEffect, useContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Loader2, Save, CheckCircle } from 'lucide-react';
+import { Loader2, Save, CheckCircle, Trash2 } from 'lucide-react';
 import { UserContext } from '@/context/user-context';
-import { getWritingEntriesForUser, saveWritingEntry, type WritingEntry } from '@/services/writing';
+import { getWritingEntriesForUser, saveWritingEntry, deleteWritingEntry, type WritingEntry } from '@/services/writing';
 import { format, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
 
 export function WritingNotebook() {
     const { student } = useContext(UserContext);
@@ -42,6 +44,13 @@ export function WritingNotebook() {
              setIsLoading(false);
         }
     }, [student]);
+    
+    const refreshEntries = async () => {
+        if (student) {
+            const userEntries = await getWritingEntriesForUser(student.id);
+            setEntries(userEntries);
+        }
+    };
 
     const handleSave = async () => {
         if (!student || !currentText.trim()) return;
@@ -56,14 +65,29 @@ export function WritingNotebook() {
                 description: "Ton cahier d'écriture est à jour.",
                 className: "bg-green-100 border-green-500 text-green-800",
             });
-            // Refresh entries to show the new/updated one
-            const userEntries = await getWritingEntriesForUser(student.id);
-            setEntries(userEntries);
+            refreshEntries();
         } else {
              toast({
                 variant: 'destructive',
                 title: 'Erreur',
                 description: "Ton texte n'a pas pu être sauvegardé. Réessaye plus tard.",
+            });
+        }
+    };
+    
+     const handleDelete = async (entryId: string) => {
+        const result = await deleteWritingEntry(entryId);
+        if (result.success) {
+            toast({
+                title: "Entrée supprimée",
+                description: "Ton texte a bien été supprimé.",
+            });
+            refreshEntries();
+        } else {
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: "Impossible de supprimer ce texte.",
             });
         }
     };
@@ -107,6 +131,7 @@ export function WritingNotebook() {
                         placeholder="Commence à écrire ici..."
                         rows={12}
                         className="text-lg leading-relaxed"
+                        style={{ fontSize: '16pt' }}
                     />
                 </CardContent>
                 <CardFooter className="flex justify-end">
@@ -127,7 +152,7 @@ export function WritingNotebook() {
                             {entries.map(entry => (
                                 <AccordionItem value={entry.id} key={entry.id}>
                                     <AccordionTrigger className="text-lg hover:no-underline">
-                                        <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-4 flex-grow">
                                             <span className="font-semibold">
                                                 {format(new Date(entry.createdAt), "EEEE d MMMM yyyy", { locale: fr })}
                                             </span>
@@ -139,8 +164,33 @@ export function WritingNotebook() {
                                             )}
                                         </div>
                                     </AccordionTrigger>
-                                    <AccordionContent className="p-4 bg-muted/50 rounded-md whitespace-pre-wrap font-body text-lg">
-                                        {entry.text}
+                                    <AccordionContent>
+                                        <div className="p-4 bg-muted/50 rounded-md whitespace-pre-wrap font-body" style={{ fontSize: '16pt' }}>
+                                            {entry.text}
+                                        </div>
+                                         <div className="text-right mt-2">
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="destructive" size="sm">
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Es-tu sûr de vouloir supprimer ce texte ?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Cette action est définitive et ne pourra pas être annulée.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDelete(entry.id)}>
+                                                            Confirmer la suppression
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
                                     </AccordionContent>
                                 </AccordionItem>
                             ))}

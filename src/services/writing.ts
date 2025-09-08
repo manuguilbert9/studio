@@ -3,7 +3,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { collection, addDoc, query, where, getDocs, orderBy, Timestamp, doc, updateDoc, setDoc } from "firebase/firestore";
+import { collection, addDoc, query, where, getDocs, orderBy, Timestamp, doc, deleteDoc } from "firebase/firestore";
 
 export interface WritingEntry {
     id: string;
@@ -29,6 +29,7 @@ export async function saveWritingEntry(userId: string, text: string): Promise<{ 
             createdAt: Timestamp.now()
         };
 
+        // Firestore will generate a unique ID for each entry.
         const docRef = await addDoc(collection(db, 'writingEntries'), dataToSave);
 
         return { success: true, entryId: docRef.id };
@@ -53,8 +54,6 @@ export async function getWritingEntriesForUser(userId: string): Promise<WritingE
         return [];
     }
     try {
-        // Firestore requires an index for compound queries with orderBy. 
-        // To avoid this complexity for the user, we will sort the data client-side.
         const q = query(
             collection(db, "writingEntries"), 
             where("userId", "==", userId)
@@ -106,5 +105,28 @@ export async function getAllWritingEntries(): Promise<WritingEntry[]> {
     } catch (error) {
         console.error("Error loading all writing entries from Firestore:", error);
         return [];
+    }
+}
+
+
+/**
+ * Deletes a specific writing entry.
+ * @param entryId The ID of the writing entry to delete.
+ * @returns An object indicating success or failure.
+ */
+export async function deleteWritingEntry(entryId: string): Promise<{ success: boolean, error?: string }> {
+    if (!entryId) {
+        return { success: false, error: "Entry ID is required." };
+    }
+    try {
+        const entryRef = doc(db, 'writingEntries', entryId);
+        await deleteDoc(entryRef);
+        return { success: true };
+    } catch (error) {
+        console.error("Error deleting writing entry from Firestore:", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: 'An unknown error occurred while deleting the entry.' };
     }
 }
