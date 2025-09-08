@@ -5,7 +5,7 @@ import type { SkillLevel } from './skills';
 
 
 export interface Question {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'letter-sound-qcm';
   question: string;
   // For QCM
   options?: string[];
@@ -26,6 +26,8 @@ export interface Question {
   optionsWithAudio?: { text: string; audio: string }[];
   // For audio-to-text-input questions
   answerInWords?: string;
+  // For letter-sound questions
+  letter?: string;
 }
 
 export interface CalculationSettings {
@@ -450,6 +452,62 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     }
 }
 
+const letterSoundData: { [letter: string]: { word: string, image: string, hint: string }[] } = {
+  'a': [{ word: 'arbre', image: '/phonologie/arbre.png', hint: 'tree' }],
+  'b': [{ word: 'banane', image: '/phonologie/banane.png', hint: 'banana' }],
+  'c': [{ word: 'cochon', image: '/phonologie/cochon.png', hint: 'pig' }], // [k] sound
+  'd': [{ word: 'dé', image: '/phonologie/de.png', hint: 'dice' }],
+  'e': [{ word: 'escargot', image: '/phonologie/escargot.png', hint: 'snail' }],
+  'f': [{ word: 'fusée', image: '/phonologie/fusee.png', hint: 'rocket' }],
+  'g': [{ word: 'gâteau', image: '/phonologie/gateau.png', hint: 'cake' }], // [g] sound
+  'i': [{ word: 'igloo', image: '/phonologie/igloo.png', hint: 'igloo' }],
+  'j': [{ word: 'jupe', image: '/phonologie/jupe.png', hint: 'skirt' }],
+  'l': [{ word: 'lune', image: '/phonologie/lune.png', hint: 'moon' }],
+  'm': [{ word: 'maison', image: '/phonologie/maison.png', hint: 'house' }],
+  'n': [{ word: 'nid', image: '/phonologie/nid.png', hint: 'nest' }],
+  'o': [{ word: 'orange', image: '/phonologie/orange.png', hint: 'orange fruit' }],
+  'p': [{ word: 'pomme', image: '/phonologie/pomme.png', hint: 'apple' }],
+  'r': [{ word: 'robot', image: '/phonologie/robot.png', hint: 'robot' }],
+  's': [{ word: 'serpent', image: '/phonologie/serpent.png', hint: 'snake' }], // [s] sound
+  't': [{ word: 'tasse', image: '/phonologie/tasse.png', hint: 'cup' }],
+  'u': [{ word: 'uniforme', image: '/phonologie/uniforme.png', hint: 'uniform' }],
+  'v': [{ word: 'vélo', image: '/phonologie/velo.png', hint: 'bicycle' }],
+  'z': [{ word: 'zèbre', image: '/phonologie/zebre.png', hint: 'zebra' }],
+};
+
+
+function generateLettresEtSonsQuestion(): Question {
+    const letters = Object.keys(letterSoundData);
+    
+    // Select a random letter for the question
+    const correctLetter = letters[Math.floor(Math.random() * letters.length)];
+    const correctAnswerData = letterSoundData[correctLetter][0];
+
+    const options = new Set<typeof correctAnswerData>([correctAnswerData]);
+
+    // Select 3 other random words as distractors
+    while (options.size < 4) {
+        const randomLetter = letters[Math.floor(Math.random() * letters.length)];
+        const distractor = letterSoundData[randomLetter][0];
+        options.add(distractor);
+    }
+    
+    const shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
+
+    return {
+        type: 'letter-sound-qcm',
+        question: `Touche l'image qui commence par le son :`,
+        letter: correctLetter,
+        textToSpeak: correctLetter, // Will pronounce the letter name
+        images: shuffledOptions.map(opt => ({
+            src: opt.image,
+            alt: opt.word,
+            hint: opt.hint
+        })),
+        answer: correctAnswerData.word, // The word is the unique identifier for the correct choice
+    };
+}
+
 
 export async function generateQuestions(
   skill: string,
@@ -480,6 +538,10 @@ export async function generateQuestions(
   
   if (skill === 'lire-les-nombres' && settings?.numberLevel) {
       return Array.from({ length: count }, () => generateLireLesNombresQuestion(settings.numberLevel!));
+  }
+  
+  if (skill === 'lettres-et-sons') {
+    return Array.from({ length: count }, () => generateLettresEtSonsQuestion());
   }
 
   // Fallback

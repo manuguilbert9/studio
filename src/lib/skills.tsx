@@ -66,6 +66,14 @@ export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
   {
+    name: 'Lettres et Sons',
+    slug: 'lettres-et-sons',
+    description: "Associe une lettre au son qu'elle produit en choisissant la bonne image.",
+    icon: <Ear />,
+    category: 'Phonologie',
+    isFixedLevel: 'A',
+  },
+  {
     name: 'Premiers mots',
     slug: 'simple-word-reading',
     description: 'Lire des mots simples à voix haute pour s\'entraîner.',

@@ -114,7 +114,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         } else if (skill.slug === 'denombrement' && !isTableauMode) {
              // Let it fall through to settings screen
              setIsReadyToStart(false);
-        } else if (skill.slug === 'keyboard-count') {
+        } else if (skill.slug === 'keyboard-count' || skill.slug === 'lettres-et-sons') {
              const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
              setQuestions(generatedQuestions);
              setIsReadyToStart(true);
@@ -133,7 +133,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   // This effect handles auto-playing audio for audio questions
   useEffect(() => {
     const question = questions[currentQuestionIndex];
-    if ((question?.type === 'audio-qcm' || question?.type === 'audio-to-text-input') && question.textToSpeak) {
+    if ((question?.type === 'audio-qcm' || question?.type === 'audio-to-text-input' || question?.type === 'letter-sound-qcm') && question.textToSpeak) {
         playAudio(question.textToSpeak);
     }
   }, [currentQuestionIndex, questions]);
@@ -265,6 +265,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         processIncorrectAnswer(questionText, userAnswer, correctAnswerNum!);
     }
   }
+  
+  const handleImageClickAnswer = (imageAlt: string) => {
+      if (!exerciseData || feedback || !exerciseData.answer) return;
+      if (imageAlt === exerciseData.answer) {
+          processCorrectAnswer(exerciseData.question, imageAlt, exerciseData.answer);
+      } else {
+          processIncorrectAnswer(exerciseData.question, imageAlt, exerciseData.answer);
+      }
+  };
+
 
   const handleToggleObjectSelection = (index: number) => {
     if (feedback) return;
@@ -336,7 +346,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     return () => {
         document.removeEventListener('keydown', handleKeyDown);
     };
-}, [exerciseData, feedback, processCorrectAnswer, processIncorrectAnswer]);
+  }, [exerciseData, feedback, processCorrectAnswer, processIncorrectAnswer]);
 
 
   const restartExercise = async () => {
@@ -649,6 +659,42 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     );
 };
 
+const renderLetterSoundQCM = () => {
+    return (
+      <div className="flex flex-col items-center justify-center w-full space-y-8">
+        <div className="font-bold text-9xl font-body tracking-wider uppercase text-primary">
+          {exerciseData.letter}
+        </div>
+        <div className="grid grid-cols-2 gap-4 w-full max-w-xl">
+          {exerciseData.images?.map((image, index) => (
+            <button
+              key={`${image.alt}-${index}`}
+              onClick={() => handleImageClickAnswer(image.alt)}
+              className={cn(
+                "p-4 rounded-lg border-4 transition-all duration-300 transform active:scale-95 focus:outline-none focus:ring-4 focus:ring-ring focus:ring-offset-2",
+                feedback === null && "border-transparent hover:border-primary hover:bg-primary/10",
+                feedback === 'correct' && image.alt === exerciseData.answer && 'border-green-500 bg-green-100 scale-105',
+                feedback === 'incorrect' && image.alt !== exerciseData.answer && 'opacity-40 grayscale',
+                feedback && image.alt === exerciseData.answer && 'border-green-500' // Keep border for correct one on incorrect try
+              )}
+              disabled={!!feedback}
+            >
+              <Image
+                src={image.src}
+                alt={image.alt}
+                width={150}
+                height={150}
+                className="rounded-lg object-contain"
+                data-ai-hint={image.hint}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+};
+
+
   const renderSetTime = () => (
     <InteractiveClock
       hour={exerciseData.hour!}
@@ -695,6 +741,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
           {exerciseData.type === 'set-time' && renderSetTime()}
           {exerciseData.type === 'count' && renderCount()}
           {exerciseData.type === 'keyboard-count' && renderKeyboardCount()}
+          {exerciseData.type === 'letter-sound-qcm' && renderLetterSoundQCM()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (
