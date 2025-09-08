@@ -5,7 +5,7 @@ import type { SkillLevel } from './skills';
 
 
 export interface Question {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count';
   question: string;
   // For QCM
   options?: string[];
@@ -205,6 +205,29 @@ function generateDénombrementQuestion(settings: CountSettings): Question {
     answer: String(count),
     // Pass settings for result analysis
     countSettings: settings,
+  };
+}
+
+function generateKeyboardCountQuestion(): Question {
+  const items = [
+    { emoji: '🍎', name: 'pommes' },
+    { emoji: '🍌', name: 'bananes' },
+    { emoji: '🚗', name: 'voitures' },
+    { emoji: '🚜', name: 'tracteurs' },
+    { emoji: '🍓', name: 'fraises' },
+    { emoji: '🍊', name: 'oranges' },
+    { emoji: '🚓', name: 'voitures de police' },
+    { emoji: '🚑', name: 'ambulances' }
+  ];
+  const selectedItem = items[Math.floor(Math.random() * items.length)];
+  const count = Math.floor(Math.random() * 9) + 1; // 1-9 for single digit keyboard press
+
+  return {
+    type: 'keyboard-count',
+    question: `Combien y a-t-il de ${selectedItem.name} ?`,
+    countEmoji: selectedItem.emoji,
+    countNumber: count,
+    answer: String(count),
   };
 }
 
@@ -441,6 +464,10 @@ export async function generateQuestions(
   
   if (skill === 'denombrement' && settings?.count) {
       return Array.from({ length: count }, () => generateDénombrementQuestion(settings.count!));
+  }
+
+  if (skill === 'keyboard-count') {
+      return Array.from({ length: count }, () => generateKeyboardCountQuestion());
   }
 
   if (skill === 'ecoute-les-nombres') {

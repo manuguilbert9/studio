@@ -18,6 +18,7 @@ import {
   Mic,
   Smile,
   BookCopy,
+  Keyboard,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -107,6 +108,14 @@ export const skills: Skill[] = [
     slug: 'denombrement',
     description: "Dénombrer une quantité inférieure à 20.",
     icon: <ListOrdered />,
+    category: 'Nombres et calcul',
+    isFixedLevel: 'A',
+  },
+  {
+    name: 'Comptage au clavier',
+    slug: 'keyboard-count',
+    description: "Compter les objets et taper la réponse directement sur le clavier.",
+    icon: <Keyboard />,
     category: 'Nombres et calcul',
     isFixedLevel: 'A',
   },

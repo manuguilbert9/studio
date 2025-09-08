@@ -187,7 +187,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string, options?: string[]) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres'].includes(skill.slug)) {
+      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, true, options);
       }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -198,7 +198,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string, options?: string[]) => {
       setFeedback('incorrect');
-       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres'].includes(skill.slug)) {
+       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, false, options);
       }
       setTimeout(handleNextQuestion, 2000);
@@ -498,7 +498,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
                                 "h-24 w-full justify-center transition-all duration-300 transform active:scale-95",
                                  isCorrect && 'bg-green-500/80 text-white border-green-600 scale-105',
                                  isSelectedIncorrect && 'bg-red-500/80 text-white border-red-600 animate-shake',
-                                 feedback && !isCorrect && !isSelectedIncorrect && 'opacity-50',
+                                 feedback && option.text !== exerciseData.answer && 'opacity-50'
                                 )}
                                 disabled={!!feedback}
                             >
@@ -584,6 +584,42 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     </div>
   );
 
+  const renderKeyboardCount = () => {
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (feedback !== null) return;
+            if (event.key >= '0' && event.key <= '9') {
+                const answer = event.key;
+                 const questionText = `Combien de ${exerciseData.countEmoji} ?`
+                if (answer === exerciseData.answer) {
+                    processCorrectAnswer(questionText, answer, exerciseData.answer!);
+                } else {
+                    processIncorrectAnswer(questionText, answer, exerciseData.answer!);
+                }
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.removeEventListener('keydown', handleKeyDown);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [feedback, exerciseData]);
+
+    return (
+        <div className="flex flex-col items-center justify-center w-full space-y-6">
+            <div className="grid grid-cols-5 gap-2 text-4xl sm:text-5xl" style={{ gridTemplateRows: 'repeat(2, 1fr)' }}>
+                {Array.from({ length: exerciseData.countNumber ?? 0 }).map((_, i) => (
+                    <span key={i} role="img" aria-label={exerciseData.question}>
+                        {exerciseData.countEmoji}
+                    </span>
+                ))}
+            </div>
+            <p className="text-lg text-muted-foreground">Appuie sur la bonne touche du clavier.</p>
+        </div>
+    );
+};
+
   const renderSetTime = () => (
     <InteractiveClock
       hour={exerciseData.hour!}
@@ -629,6 +665,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
           {exerciseData.type === 'audio-to-text-input' && renderAudioToTextInput()}
           {exerciseData.type === 'set-time' && renderSetTime()}
           {exerciseData.type === 'count' && renderCount()}
+          {exerciseData.type === 'keyboard-count' && renderKeyboardCount()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (
