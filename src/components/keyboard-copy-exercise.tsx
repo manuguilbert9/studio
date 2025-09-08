@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo, useContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Keyboard } from 'lucide-react';
 import { getSimpleWords } from '@/lib/word-list';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
@@ -12,6 +12,7 @@ import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { VirtualKeyboard } from './virtual-keyboard';
 
 const WORDS_PER_EXERCISE = 10;
 
@@ -25,16 +26,50 @@ export function KeyboardCopyExercise() {
     const [correctAnswers, setCorrectAnswers] = useState(0);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
+    const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
+
 
     useEffect(() => {
         setWords(getSimpleWords(WORDS_PER_EXERCISE));
     }, []);
 
     const currentWord = useMemo(() => words[currentWordIndex] || '', [words, currentWordIndex]);
+    
+    const processInput = (input: string) => {
+        const targetPart = currentWord.substring(0, input.length);
+        if (input.toLowerCase() === targetPart.toLowerCase()) {
+            setTypedWord(input);
+        }
+    }
+
+    const handlePhysicalKeystroke = (e: KeyboardEvent) => {
+        if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+             processInput(typedWord + e.key);
+        } else if (e.key === 'Backspace') {
+            processInput(typedWord.slice(0, -1));
+        }
+    }
+
+     const handleVirtualKeystroke = (key: string) => {
+        if (key === '⌫') { // Backspace
+            processInput(typedWord.slice(0, -1));
+        } else {
+            processInput(typedWord + key);
+        }
+    };
+
+
+    useEffect(() => {
+        document.addEventListener('keydown', handlePhysicalKeystroke);
+        return () => {
+            document.removeEventListener('keydown', handlePhysicalKeystroke);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [typedWord, currentWord]);
+
 
     useEffect(() => {
         if (typedWord.toLowerCase() === currentWord.toLowerCase() && currentWord !== '') {
-            // Correct word typed
             setCorrectAnswers(prev => prev + 1);
             setShowConfetti(true);
             const detail: ScoreDetail = {
@@ -75,13 +110,7 @@ export function KeyboardCopyExercise() {
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const input = e.target.value;
-        const targetPart = currentWord.substring(0, input.length);
-
-        // Only allow typing if it matches the target word, case-insensitive
-        if (input.toLowerCase() === targetPart.toLowerCase()) {
-            setTypedWord(input);
-        }
+        processInput(e.target.value);
     };
 
     const restartExercise = () => {
@@ -148,12 +177,20 @@ export function KeyboardCopyExercise() {
                         type="text"
                         value={typedWord}
                         onChange={handleInputChange}
-                        className="absolute -top-full" // Hide the actual input, we only use it for capturing keyboard events
+                        className="absolute -top-full"
                         autoFocus
-                        onBlur={(e) => e.target.focus()} // Keep focus on the input
+                        onBlur={(e) => e.target.focus()}
                     />
                 </CardContent>
+                <CardFooter>
+                    <Button variant="outline" onClick={() => setShowVirtualKeyboard(p => !p)}>
+                        <Keyboard className="mr-2" />
+                        {showVirtualKeyboard ? 'Cacher' : 'Afficher'} le clavier
+                    </Button>
+                </CardFooter>
             </Card>
+
+            {showVirtualKeyboard && <VirtualKeyboard onKeyPress={handleVirtualKeystroke} />}
         </div>
     )
 }
