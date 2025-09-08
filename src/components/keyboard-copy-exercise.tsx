@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useContext } from 'react';
+import { useState, useEffect, useMemo, useContext, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { RefreshCw, Keyboard } from 'lucide-react';
-import { getSimpleWords } from '@/lib/word-list';
+import { RefreshCw, Keyboard, Volume2 } from 'lucide-react';
+import { getSimpleWords, WordWithEmoji } from '@/lib/word-list';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
 import { Progress } from './ui/progress';
@@ -18,7 +18,7 @@ const WORDS_PER_EXERCISE = 10;
 
 export function KeyboardCopyExercise() {
     const { student } = useContext(UserContext);
-    const [words, setWords] = useState<string[]>([]);
+    const [words, setWords] = useState<WordWithEmoji[]>([]);
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [typedWord, setTypedWord] = useState('');
     const [showConfetti, setShowConfetti] = useState(false);
@@ -33,8 +33,23 @@ export function KeyboardCopyExercise() {
         setWords(getSimpleWords(WORDS_PER_EXERCISE));
     }, []);
 
-    const currentWord = useMemo(() => words[currentWordIndex] || '', [words, currentWordIndex]);
+    const currentWordObject = useMemo(() => words[currentWordIndex] || null, [words, currentWordIndex]);
+    const currentWord = useMemo(() => currentWordObject?.word || '', [currentWordObject]);
     
+    const handleSpeak = useCallback((word: string) => {
+        if (!word || !('speechSynthesis' in window)) return;
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'fr-FR';
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    }, []);
+
+    useEffect(() => {
+        if (currentWord) {
+            handleSpeak(currentWord);
+        }
+    }, [currentWord, handleSpeak]);
+
     const processInput = (input: string) => {
         const targetPart = currentWord.substring(0, input.length);
         if (input.toLowerCase() === targetPart.toLowerCase()) {
@@ -155,9 +170,16 @@ export function KeyboardCopyExercise() {
                     <CardTitle className="font-headline text-3xl">Recopie le mot suivant</CardTitle>
                 </CardHeader>
                 <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
-                    <div className="font-mono text-7xl sm:text-8xl font-bold tracking-widest uppercase p-4 bg-muted rounded-lg">
-                        {currentWord}
+                    <div className="flex items-center gap-6">
+                         <span className="text-7xl">{currentWordObject?.emoji}</span>
+                         <div className="font-mono text-7xl sm:text-8xl font-bold tracking-widest uppercase p-4 bg-muted rounded-lg">
+                            {currentWord}
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleSpeak(currentWord)} className="h-16 w-16">
+                            <Volume2 className="h-10 w-10 text-muted-foreground" />
+                        </Button>
                     </div>
+
                     <div className="relative font-mono text-5xl sm:text-6xl font-bold tracking-wider uppercase">
                         {currentWord.split('').map((char, index) => (
                             <span key={index} className="relative inline-block mx-1">
