@@ -1,5 +1,4 @@
 
-
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -137,9 +136,9 @@ export const skills: Skill[] = [
     isFixedLevel: 'A',
   },
   {
-    name: 'Somme < 20',
-    slug: 'somme-vingt',
-    description: "Calcule des additions simples dont le résultat est inférieur à 20.",
+    name: 'Somme < 10',
+    slug: 'somme-dix',
+    description: "Calcule des additions simples dont le résultat est inférieur à 10.",
     icon: <Plus />,
     category: 'Nombres et calcul',
     isFixedLevel: 'A',

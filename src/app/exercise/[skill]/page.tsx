@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -18,7 +17,7 @@ import { ReadingRaceExercise } from '@/components/reading-race-exercise';
 import { SimpleWordReadingExercise } from '@/components/simple-word-reading-exercise';
 import { WritingNotebook } from '@/components/writing-notebook';
 import { KeyboardCopyExercise } from '@/components/keyboard-copy-exercise';
-import { SommeVingtExercise } from '@/components/somme-vingt-exercise';
+import { SommeDixExercise } from '@/components/somme-dix-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -34,8 +33,8 @@ export default function ExercisePage() {
 
   const renderExercise = () => {
     switch (skill.slug) {
-      case 'somme-vingt':
-        return <SommeVingtExercise />;
+      case 'somme-dix':
+        return <SommeDixExercise />;
       case 'long-calculation':
         return <LongCalculationExercise />;
       case 'word-families':

@@ -27,12 +27,12 @@ const emojiPool = ['🧱', '🍎', '🚗', '⭐', '🧸', '⚽', '🍓', '🍌',
 
 const generateProblem = (): Problem => {
     const op1 = Math.floor(Math.random() * 8) + 1; // 1-8
-    const op2 = Math.floor(Math.random() * (15 - op1 - 1)) + 1; // ensure total < 15
+    const op2 = Math.floor(Math.random() * (9 - op1)) + 1; // ensure total is < 10
     const emoji = emojiPool[Math.floor(Math.random() * emojiPool.length)];
     return { id: Date.now() + Math.random(), operands: [op1, op2], answer: op1 + op2, emoji };
 }
 
-export function SommeVingtExercise() {
+export function SommeDixExercise() {
     const { student } = useContext(UserContext);
     
     const [problems, setProblems] = useState<Problem[]>([]);
@@ -41,7 +41,7 @@ export function SommeVingtExercise() {
     const [feedback, setFeedback] = useState<Feedback>(null);
     const [isFinished, setIsFinished] = useState(false);
     const [correctAnswers, setCorrectAnswers] = useState(0);
-    const [hasBeenSaved] = useState(false);
+    const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
@@ -141,7 +141,7 @@ export function SommeVingtExercise() {
                 const score = (correctAnswers / NUM_PROBLEMS) * 100;
                 await addScore({
                     userId: student.id,
-                    skill: 'somme-vingt',
+                    skill: 'somme-dix',
                     score: score,
                     numberLevelSettings: { level: 'A' },
                     details: sessionDetails,
