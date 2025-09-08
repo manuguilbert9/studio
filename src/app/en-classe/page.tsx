@@ -11,7 +11,6 @@ import { Home, BarChart3 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
-import { getGloballyEnabledSkills } from '@/services/teacher';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
@@ -19,7 +18,7 @@ export default function EnClassePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-      async function determineEnabledSkills() {
+      function determineEnabledSkills() {
         if (!student) {
             if (!isUserLoading) {
                 // For non-logged in state, we might show a default set or nothing
@@ -30,13 +29,16 @@ export default function EnClassePage() {
         }
 
         setIsLoading(true);
-        const globalSkills = await getGloballyEnabledSkills();
         const studentSkills = student.enabledSkills;
 
+        // Default to all skills enabled if the student record doesn't have the property
+        const defaultAllEnabled: Record<string, boolean> = {};
+        allSkills.forEach(skill => defaultAllEnabled[skill.slug] = true);
+        
+        const effectiveEnabledSkills = studentSkills ?? defaultAllEnabled;
+
         const filteredSkills = allSkills.filter(skill => {
-            const isGlobalEnabled = globalSkills[skill.slug] ?? true;
-            const isStudentEnabled = studentSkills?.[skill.slug] ?? true;
-            return isGlobalEnabled || isStudentEnabled;
+           return effectiveEnabledSkills[skill.slug] ?? false; // Default to false if a new skill is added and not in the student's map
         });
         
         setEnabledSkillsList(filteredSkills);
