@@ -136,7 +136,7 @@ export function WritingNotebook() {
                                             )}
                                         </div>
                                     </AccordionTrigger>
-                                    <AccordionContent className="p-4 bg-muted/50 rounded-md whitespace-pre-wrap font-body text-base">
+                                    <AccordionContent className="p-4 bg-muted/50 rounded-md whitespace-pre-wrap font-body text-lg">
                                         {entry.text}
                                     </AccordionContent>
                                 </AccordionItem>
