@@ -113,6 +113,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         } else if (skill.slug === 'denombrement' && !isTableauMode) {
              // Let it fall through to settings screen
              setIsReadyToStart(false);
+        } else if (skill.slug === 'keyboard-count') {
+             const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
+             setQuestions(generatedQuestions);
+             setIsReadyToStart(true);
         } else {
              const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
              setQuestions(generatedQuestions);
@@ -297,6 +301,31 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     saveScoreAndFetchHistory();
   }, [isFinished, student, skill.slug, correctAnswers, timeSettings, countSettings, numberLevelSettings, isTableauMode, hasBeenSaved, homeworkSession, sessionDetails]);
   
+  // This effect handles the keyboard count exercise logic.
+  useEffect(() => {
+    if (exerciseData?.type !== 'keyboard-count') return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+        if (feedback !== null) return;
+        if (event.key >= '0' && event.key <= '9') {
+            const answer = event.key;
+            if (!exerciseData.countEmoji || !exerciseData.answer) return;
+            const questionText = `Combien de ${exerciseData.countEmoji} ?`
+            if (answer === exerciseData.answer) {
+                processCorrectAnswer(questionText, answer, exerciseData.answer);
+            } else {
+                processIncorrectAnswer(questionText, answer, exerciseData.answer);
+            }
+        }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+        document.removeEventListener('keydown', handleKeyDown);
+    };
+}, [exerciseData, feedback, processCorrectAnswer, processIncorrectAnswer]);
+
+
   const restartExercise = async () => {
     setQuestions([]);
     setCurrentQuestionIndex(0);
@@ -585,27 +614,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   );
 
   const renderKeyboardCount = () => {
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (feedback !== null) return;
-            if (event.key >= '0' && event.key <= '9') {
-                const answer = event.key;
-                 const questionText = `Combien de ${exerciseData.countEmoji} ?`
-                if (answer === exerciseData.answer) {
-                    processCorrectAnswer(questionText, answer, exerciseData.answer!);
-                } else {
-                    processIncorrectAnswer(questionText, answer, exerciseData.answer!);
-                }
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        return () => {
-            document.removeEventListener('keydown', handleKeyDown);
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [feedback, exerciseData]);
-
     return (
         <div className="flex flex-col items-center justify-center w-full space-y-6">
             <div className="grid grid-cols-5 gap-2 text-4xl sm:text-5xl" style={{ gridTemplateRows: 'repeat(2, 1fr)' }}>
