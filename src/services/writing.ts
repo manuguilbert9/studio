@@ -53,10 +53,11 @@ export async function getWritingEntriesForUser(userId: string): Promise<WritingE
         return [];
     }
     try {
+        // Firestore requires an index for compound queries with orderBy. 
+        // To avoid this complexity for the user, we will sort the data client-side.
         const q = query(
             collection(db, "writingEntries"), 
-            where("userId", "==", userId), 
-            orderBy("createdAt", "desc")
+            where("userId", "==", userId)
         );
         
         const querySnapshot = await getDocs(q);
@@ -70,7 +71,9 @@ export async function getWritingEntriesForUser(userId: string): Promise<WritingE
             } as WritingEntry);
         });
         
-        return entries;
+        // Sort entries by date descending after fetching
+        return entries.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
     } catch (error) {
         console.error("Error loading writing entries from Firestore:", error);
         return [];
