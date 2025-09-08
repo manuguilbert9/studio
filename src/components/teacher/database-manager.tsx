@@ -13,6 +13,7 @@ import { skills, allSkillCategories } from '@/lib/skills';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { getStudents, updateStudent } from '@/services/students';
 
 function GeneralSettingsManager() {
     const [schoolYear, setSchoolYear] = useState<string>('');
@@ -102,24 +103,47 @@ function ExercisesManager() {
         const newEnabledSkills = { ...enabledSkills, [skillSlug]: isEnabled };
         setEnabledSkills(newEnabledSkills);
         const result = await setGloballyEnabledSkills(newEnabledSkills);
-        if (!result.success) {
+        
+        if (result.success) {
+            // Propagate change to all students
+            const students = await getStudents();
+            for (const student of students) {
+                const studentEnabledSkills = student.enabledSkills || {};
+                await updateStudent(student.id, { enabledSkills: { ...studentEnabledSkills, [skillSlug]: isEnabled } });
+            }
+             toast({
+                title: 'Réglage sauvegardé',
+                description: `L'exercice a été ${isEnabled ? 'activé' : 'désactivé'} pour tous les élèves.`,
+            });
+        } else {
             toast({
                 variant: 'destructive',
                 title: 'Erreur',
-                description: 'Impossible de sauvegarder le réglage.'
+                description: 'Impossible de sauvegarder le réglage global.'
             });
             // Revert UI on failure
             setEnabledSkills(prev => ({...prev, [skillSlug]: !isEnabled}));
         }
     }, [enabledSkills, toast]);
 
-    const toggleAll = (enable: boolean) => {
+    const toggleAll = async (enable: boolean) => {
         const newEnabledSkills: Record<string, boolean> = {};
         skills.forEach(skill => {
             newEnabledSkills[skill.slug] = enable;
         });
+        
         setEnabledSkills(newEnabledSkills);
-        setGloballyEnabledSkills(newEnabledSkills);
+        await setGloballyEnabledSkills(newEnabledSkills);
+
+        const students = await getStudents();
+        for (const student of students) {
+            await updateStudent(student.id, { enabledSkills: newEnabledSkills });
+        }
+        
+         toast({
+            title: 'Réglages sauvegardés',
+            description: `Tous les exercices ont été ${enable ? 'activés' : 'désactivés'} pour tous les élèves.`,
+        });
     };
 
     const skillsByCategory = useMemo(() => {
@@ -151,7 +175,7 @@ function ExercisesManager() {
         <Card>
             <CardHeader>
                 <CardTitle>Gestion des Exercices (Global)</CardTitle>
-                <CardDescription>Activez ou désactivez des exercices pour <span className="font-bold">tous les élèves</span>. Les réglages individuels priment si un exercice est désactivé pour un élève spécifique.</CardDescription>
+                <CardDescription>Activez ou désactivez des exercices pour <span className="font-bold">tous les élèves</span>. Cette action mettra à jour le profil de chaque élève pour refléter ce choix.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="flex items-center gap-4 mb-4">
