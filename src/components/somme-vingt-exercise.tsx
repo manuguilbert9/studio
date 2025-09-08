@@ -236,7 +236,7 @@ export function SommeVingtExercise() {
             </Card>
             {showVirtualKeyboard && (
                 <div className="w-full max-w-xs">
-                    <VirtualKeyboard onKeyPress={handleKeystroke} />
+                    <VirtualKeyboard onKeyPress={handleKeystroke} numericOnly={true} />
                 </div>
             )}
             <style jsx>{`
