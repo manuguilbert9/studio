@@ -65,6 +65,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const [selectedAudioOption, setSelectedAudioOption] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
+  const [selectedObjectIndices, setSelectedObjectIndices] = useState<number[]>([]);
 
 
   const playAudio = (text: string) => {
@@ -161,6 +162,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     setFeedback(null);
     setSelectedAudioOption(null);
     setTextInput('');
+    setSelectedObjectIndices([]);
   }
 
   const handleNextQuestion = () => {
@@ -263,6 +265,17 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         processIncorrectAnswer(questionText, userAnswer, correctAnswerNum!);
     }
   }
+
+  const handleToggleObjectSelection = (index: number) => {
+    if (feedback) return;
+    setSelectedObjectIndices(prev => {
+        if (prev.includes(index)) {
+            return prev.filter(i => i !== index);
+        } else {
+            return [...prev, index];
+        }
+    });
+  };
   
   useEffect(() => {
     const saveScoreAndFetchHistory = async () => {
@@ -585,9 +598,18 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
 
   const renderCount = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-6">
-      <div className="grid grid-cols-5 gap-2 text-4xl" style={{ gridTemplateRows: 'repeat(4, 1fr)' }}>
+      <div className="grid grid-cols-5 gap-2 text-6xl">
         {Array.from({ length: exerciseData.countNumber ?? 0 }).map((_, i) => (
-          <span key={i} role="img" aria-label={exerciseData.question}>
+          <span 
+            key={i} 
+            role="img" 
+            aria-label={exerciseData.question}
+            onClick={() => handleToggleObjectSelection(i)}
+            className={cn(
+                "cursor-pointer transition-all duration-200",
+                selectedObjectIndices.includes(i) ? "opacity-30 scale-90" : "opacity-100"
+            )}
+          >
             {exerciseData.countEmoji}
           </span>
         ))}
@@ -599,7 +621,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
             variant="outline"
             onClick={() => handleQcmAnswer(String(num))}
             className={cn(
-              'text-4xl h-24 w-24 font-numbers transition-all duration-300 transform active:scale-95',
+              'text-5xl h-28 w-28 font-sans transition-all duration-300 transform active:scale-95',
               feedback === 'correct' && String(num) === exerciseData.answer && 'bg-green-500/80 text-white border-green-600',
               feedback === 'incorrect' && String(num) !== exerciseData.answer && 'opacity-50',
               feedback && String(num) === exerciseData.answer && 'opacity-100'
