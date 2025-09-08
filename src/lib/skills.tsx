@@ -95,6 +95,14 @@ export const skills: Skill[] = [
     icon: <BookCopy />,
     category: 'Ecriture',
   },
+    {
+    name: 'Copie au clavier',
+    slug: 'keyboard-copy',
+    description: "Recopie des mots simples lettre par lettre en suivant un modèle.",
+    icon: <Keyboard />,
+    category: 'Ecriture',
+    isFixedLevel: 'A',
+  },
   {
     name: 'Lire les nombres',
     slug: 'lire-les-nombres',
