@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useContext } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { RefreshCw, Keyboard, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
