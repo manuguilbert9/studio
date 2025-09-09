@@ -7,18 +7,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { skills as allSkills, type Skill, allSkillCategories, SkillCategory } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { Home, BarChart3 } from 'lucide-react';
+import { Home, BarChart3, CheckCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
+import { getScoresForUser } from '@/services/scores';
+import { isToday } from 'date-fns';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [enabledSkillsList, setEnabledSkillsList] = useState<Skill[] | null>(null);
+  const [skillsCompletedToday, setSkillsCompletedToday] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-      function determineEnabledSkills() {
+      async function determineEnabledSkills() {
         if (!student) {
             if (!isUserLoading) {
                 // For non-logged in state, we might show a default set or nothing
@@ -29,6 +32,17 @@ export default function EnClassePage() {
         }
 
         setIsLoading(true);
+
+        // Fetch scores to determine which exercises were completed today
+        const scores = await getScoresForUser(student.id);
+        const completedToday = new Set<string>();
+        scores.forEach(score => {
+            if (isToday(new Date(score.createdAt))) {
+                completedToday.add(score.skill);
+            }
+        });
+        setSkillsCompletedToday(completedToday);
+
         const studentSkills = student.enabledSkills;
 
         // Default to all skills enabled if the student record doesn't have the property
@@ -134,7 +148,10 @@ export default function EnClassePage() {
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 md:gap-8">
                   {categorySkills.map((skill) => (
                     <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
-                      <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
+                      <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10 relative">
+                        {skillsCompletedToday.has(skill.slug) && (
+                            <CheckCircle className="absolute top-3 right-3 h-6 w-6 text-green-500 bg-white rounded-full" />
+                        )}
                         <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
                           {skill.icon}
                         </div>
