@@ -19,6 +19,7 @@ import {
   BookCopy,
   Keyboard,
   Plus,
+  Type,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -65,6 +66,14 @@ export interface Skill {
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
+  {
+    name: 'Reconnaissance des lettres',
+    slug: 'letter-recognition',
+    description: "Appuie sur la bonne touche du clavier correspondant à la lettre affichée.",
+    icon: <Type />,
+    category: 'Phonologie',
+    isFixedLevel: 'A',
+  },
   {
     name: 'Lettres et Sons',
     slug: 'lettres-et-sons',
