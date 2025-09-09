@@ -185,10 +185,7 @@ export function KeyboardCopyExercise() {
                             <span key={index} className="relative inline-block mx-1">
                                 <span className="opacity-20">{char}</span>
                                 {index < typedWord.length && (
-                                    <span className={cn(
-                                        "absolute left-0",
-                                        typedWord[index].toLowerCase() === char.toLowerCase() ? 'text-green-500' : 'text-red-500'
-                                    )}>
+                                    <span className="absolute left-0 text-green-500">
                                         {typedWord[index].toUpperCase()}
                                     </span>
                                 )}
