@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
-import { getSimpleWords } from '@/lib/word-list';
+import { getSimpleWords, WordWithEmoji } from '@/lib/word-list';
 import Confetti from 'react-dom-confetti';
 import { ScoreTube } from './score-tube';
 
@@ -20,7 +20,7 @@ type ExerciseState = 'ready' | 'listening' | 'checking' | 'finished';
 
 export function SimpleWordReadingExercise() {
   const { student } = useContext(UserContext);
-  const [words, setWords] = useState<string[]>([]);
+  const [words, setWords] = useState<WordWithEmoji[]>([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [exerciseState, setExerciseState] = useState<ExerciseState>('ready');
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
@@ -55,7 +55,9 @@ export function SimpleWordReadingExercise() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exerciseState, currentWordIndex]);
 
-  const currentWord = useMemo(() => words[currentWordIndex], [words, currentWordIndex]);
+  const currentWordObject = useMemo(() => words[currentWordIndex], [words, currentWordIndex]);
+  const currentWord = useMemo(() => currentWordObject?.word || '', [currentWordObject]);
+
 
   const handleNextWord = useCallback(() => {
     setShowConfetti(false);
