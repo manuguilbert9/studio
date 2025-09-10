@@ -11,6 +11,7 @@ import { generateSyllabeAttaqueQuestion } from "./syllabe-questions";
 import { generateDénombrementQuestion } from "./count-questions";
 import { generateKeyboardCountQuestion } from "./keyboard-count-questions";
 import { generateLettresEtSonsQuestion } from "./letter-sound-questions";
+import { generateEcouteLesNombresQuestion } from './number-listening-questions';
 
 
 export interface Question extends CalendarQuestion, MentalMathQuestion {
@@ -87,30 +88,6 @@ export interface AllSettings {
   numberLevel?: NumberLevelSettings;
   calendar?: CalendarSettings;
   readingRace?: ReadingRaceSettings;
-}
-
-
-function generateEcouteLesNombresQuestion(): Question {
-  const answerNumber = Math.floor(Math.random() * 20) + 1; // 1 to 20
-  const answerText = String(answerNumber);
-  
-  const options = new Set<string>([answerText]);
-  while (options.size < 4) {
-    const wrongNumber = Math.floor(Math.random() * 20) + 1;
-    options.add(String(wrongNumber));
-  }
-  
-  const numberInFrench = numberToFrench[answerNumber] || answerText;
-
-  return {
-    id: Date.now(),
-    level: 'A',
-    type: 'audio-qcm',
-    question: "Clique sur le nombre que tu entends.",
-    options: Array.from(options).sort(() => Math.random() - 0.5),
-    answer: answerText,
-    textToSpeak: numberInFrench,
-  };
 }
 
 // Generates questions for the "nombres-complexes" skill (60-99)
@@ -355,7 +332,11 @@ export async function generateQuestions(
   }
 
   if (skill === 'ecoute-les-nombres') {
-      return Array.from({ length: count }, () => generateEcouteLesNombresQuestion());
+      const questions: Question[] = [];
+      for (let i = 0; i < count; i++) {
+        questions.push(await generateEcouteLesNombresQuestion());
+      }
+      return questions;
   }
 
   if (skill === 'nombres-complexes') {
