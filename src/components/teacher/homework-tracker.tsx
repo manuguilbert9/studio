@@ -4,17 +4,20 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, CheckCircle, BookOpen, Calculator } from 'lucide-react';
+import { Loader2, CheckCircle, Trash2 } from 'lucide-react';
 import { type Student } from '@/services/students';
 import { SpellingProgress, SpellingList, SpellingResult } from '@/services/spelling';
-import { getCurrentHomeworkConfig, setCurrentHomeworkConfig } from '@/services/teacher';
+import { getHomeworkAssignments, deleteHomeworkAssignment, type HomeworkAssignment } from '@/services/teacher';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '../ui/label';
-import { skills as allSkills, getSkillBySlug } from '@/lib/skills';
+import { getSkillBySlug } from '@/lib/skills';
 import { Score, hasDoneMathHomework } from '@/services/scores';
+import { HomeworkCreator } from './homework-creator';
+import { Button } from '../ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface HomeworkTrackerProps {
     students: Student[];
@@ -24,78 +27,65 @@ interface HomeworkTrackerProps {
 }
 
 export function HomeworkTracker({ students, spellingLists, allProgress, allScores }: HomeworkTrackerProps) {
-    const [currentListId, setCurrentListId] = useState<string | null>(null);
-    const [currentSkillSlugLundi, setCurrentSkillSlugLundi] = useState<string | null>(null);
-    const [currentSkillSlugJeudi, setCurrentSkillSlugJeudi] = useState<string | null>(null);
+    const { toast } = useToast();
+    const [assignments, setAssignments] = useState<HomeworkAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const [mathLundiDone, setMathLundiDone] = useState<Record<string, boolean>>({});
-    const [mathJeudiDone, setMathJeudiDone] = useState<Record<string, boolean>>({});
+    const [completionStatus, setCompletionStatus] = useState<Record<string, { spellingLundi: boolean, spellingJeudi: boolean, mathLundi: boolean, mathJeudi: boolean }>>({});
 
-    const mathSkills = allSkills.filter(s => 
-        s.slug !== 'long-calculation' && 
-        s.slug !== 'word-families' &&
-        s.slug !== 'mental-calculation' && 
-        s.slug !== 'spelling' 
-    );
+
+    const loadAssignments = async () => {
+        setIsLoading(true);
+        const fetchedAssignments = await getHomeworkAssignments();
+        setAssignments(fetchedAssignments);
+
+        // For each assignment and each student, check completion status
+        const newCompletionStatus: Record<string, { spellingLundi: boolean, spellingJeudi: boolean, mathLundi: boolean, mathJeudi: boolean }> = {};
+        for (const assignment of fetchedAssignments) {
+            for (const student of students) {
+                 const spellingProgress = allProgress.find(p => p.userId === student.id)?.progress || {};
+                 const isSpellingLundiDone = !!(assignment.spellingListId && spellingProgress[`${assignment.spellingListId.toLowerCase()}-lundi`]);
+                 const isSpellingJeudiDone = !!(assignment.spellingListId && spellingProgress[`${assignment.spellingListId.toLowerCase()}-jeudi`]);
+
+                 const isMathLundiDone = assignment.mathSkillSlugLundi ? await hasDoneMathHomework(student.id, assignment.mathSkillSlugLundi, 'lundi') : false;
+                 const isMathJeudiDone = assignment.mathSkillSlugJeudi ? await hasDoneMathHomework(student.id, assignment.mathSkillSlugJeudi, 'jeudi') : false;
+                
+                 newCompletionStatus[`${assignment.id}-${student.id}`] = {
+                    spellingLundi: isSpellingLundiDone,
+                    spellingJeudi: isSpellingJeudiDone,
+                    mathLundi: isMathLundiDone,
+                    mathJeudi: isMathJeudiDone,
+                 };
+            }
+        }
+        setCompletionStatus(newCompletionStatus);
+        setIsLoading(false);
+    };
 
     useEffect(() => {
-        setIsLoading(true);
-        getCurrentHomeworkConfig().then(async ({ listId, skillSlugLundi, skillSlugJeudi }) => {
-            setCurrentListId(listId);
-            setCurrentSkillSlugLundi(skillSlugLundi);
-            setCurrentSkillSlugJeudi(skillSlugJeudi);
-
-            const lundiPromises = students.map(s => 
-                skillSlugLundi ? hasDoneMathHomework(s.id, skillSlugLundi, 'lundi') : Promise.resolve(false)
-            );
-            const jeudiPromises = students.map(s => 
-                skillSlugJeudi ? hasDoneMathHomework(s.id, skillSlugJeudi, 'jeudi') : Promise.resolve(false)
-            );
-
-            const lundiResults = await Promise.all(lundiPromises);
-            const jeudiResults = await Promise.all(jeudiPromises);
-
-            const lundiMap: Record<string, boolean> = {};
-            const jeudiMap: Record<string, boolean> = {};
-
-            students.forEach((s, i) => {
-                lundiMap[s.id] = lundiResults[i];
-                jeudiMap[s.id] = jeudiResults[i];
-            });
-
-            setMathLundiDone(lundiMap);
-            setMathJeudiDone(jeudiMap);
-            setIsLoading(false);
-        });
-    }, [students]);
-
-    const handleConfigChange = async (type: 'list' | 'skillLundi' | 'skillJeudi', value: string) => {
-        const newListId = type === 'list' ? value : currentListId;
-        const newSkillSlugLundi = type === 'skillLundi' ? value : currentSkillSlugLundi;
-        const newSkillSlugJeudi = type === 'skillJeudi' ? value : currentSkillSlugJeudi;
-        
-        if (type === 'list') setCurrentListId(value);
-        if (type === 'skillLundi') setCurrentSkillSlugLundi(value);
-        if (type === 'skillJeudi') setCurrentSkillSlugJeudi(value);
-        
-        await setCurrentHomeworkConfig(newListId, newSkillSlugLundi, newSkillSlugJeudi);
-    };
+        loadAssignments();
+    }, [students, allProgress, allScores]);
     
-    const progressByStudent = useMemo(() => {
-        const map = new Map<string, SpellingProgress>();
-        allProgress.forEach(p => map.set(p.userId, p));
-        return map;
-    }, [allProgress]);
-
-    const getSpellingProgressForSession = (studentId: string, session: 'lundi' | 'jeudi'): SpellingResult | null => {
-        if (!currentListId) return null;
-        const studentProgress = progressByStudent.get(studentId);
-        if (!studentProgress) return null;
-
-        const exerciseId = `${currentListId.toLowerCase()}-${session}`;
-        return studentProgress.progress[exerciseId] || null;
+    const handleDeleteAssignment = async (id: string) => {
+        const result = await deleteHomeworkAssignment(id);
+        if (result.success) {
+            toast({ title: "Devoirs supprimés", description: "La semaine de devoirs a été retirée."});
+            loadAssignments(); // Refresh the list
+        } else {
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de supprimer les devoirs."});
+        }
     };
+
+
+    const getStudentCompletionForAssignment = (studentId: string, assignment: HomeworkAssignment): { lundiDone: boolean, jeudiDone: boolean } => {
+        const status = completionStatus[`${assignment.id}-${studentId}`];
+        if (!status) return { lundiDone: false, jeudiDone: false };
+        
+        const lundiDone = (!assignment.spellingListId || status.spellingLundi) && (!assignment.mathSkillSlugLundi || status.mathLundi);
+        const jeudiDone = (!assignment.spellingListId || status.spellingJeudi) && (!assignment.mathSkillSlugJeudi || status.mathJeudi);
+        
+        return { lundiDone, jeudiDone };
+    }
 
     if (isLoading) {
         return (
@@ -113,142 +103,77 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Suivi des devoirs</CardTitle>
-                <CardDescription>Configurez et suivez la progression des élèves pour les devoirs de la semaine.</CardDescription>
+                <CardTitle>Suivi des devoirs par semaine</CardTitle>
+                <CardDescription>Programmez les devoirs à l'avance et suivez la progression des élèves pour chaque semaine.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-4 rounded-lg bg-secondary/50">
-                    <div>
-                        <Label htmlFor="spelling-list-select" className="text-sm font-medium text-muted-foreground">
-                            Orthographe
-                        </Label>
-                        <Select onValueChange={(val) => handleConfigChange('list', val)} value={currentListId || ''}>
-                            <SelectTrigger id="spelling-list-select" className="mt-1">
-                                <SelectValue placeholder="Choisir une liste..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {spellingLists.map(list => (
-                                    <SelectItem key={list.id} value={list.id}>{list.id} – {list.title}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div>
-                        <Label htmlFor="math-skill-lundi-select" className="text-sm font-medium text-muted-foreground">
-                            Maths (Lundi)
-                        </Label>
-                        <Select onValueChange={(val) => handleConfigChange('skillLundi', val)} value={currentSkillSlugLundi || ''}>
-                            <SelectTrigger id="math-skill-lundi-select" className="mt-1">
-                                <SelectValue placeholder="Choisir un exercice..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {mathSkills.map(skill => (
-                                    <SelectItem key={skill.slug} value={skill.slug}>{skill.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div>
-                        <Label htmlFor="math-skill-jeudi-select" className="text-sm font-medium text-muted-foreground">
-                            Maths (Jeudi)
-                        </Label>
-                        <Select onValueChange={(val) => handleConfigChange('skillJeudi', val)} value={currentSkillSlugJeudi || ''}>
-                            <SelectTrigger id="math-skill-jeudi-select" className="mt-1">
-                                <SelectValue placeholder="Choisir un exercice..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {mathSkills.map(skill => (
-                                    <SelectItem key={skill.slug} value={skill.slug}>{skill.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <HomeworkCreator spellingLists={spellingLists} onHomeworkAdded={loadAssignments} />
+                 
+                 <div className="space-y-4">
+                    {assignments.map(assignment => {
+                        const spellingList = spellingLists.find(l => l.id === assignment.spellingListId);
+                        const mathSkillLundi = getSkillBySlug(assignment.mathSkillSlugLundi || '');
+                        const mathSkillJeudi = getSkillBySlug(assignment.mathSkillSlugJeudi || '');
+                        
+                        return (
+                            <Card key={assignment.id} className="bg-secondary/30">
+                                <CardHeader className="flex flex-row items-center justify-between">
+                                    <div>
+                                        <CardTitle>
+                                            Semaine du {format(parseISO(assignment.weekOf), "d MMMM yyyy", { locale: fr })}
+                                        </CardTitle>
+                                        <CardDescription className="text-xs">
+                                            Orthographe: {spellingList ? `${spellingList.id} - ${spellingList.title}` : 'Aucun'} | 
+                                            Maths Lundi: {mathSkillLundi?.name || 'Aucun'} | 
+                                            Maths Jeudi: {mathSkillJeudi?.name || 'Aucun'}
+                                        </CardDescription>
+                                    </div>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                             <Button variant="ghost" size="icon" className="text-destructive h-8 w-8">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader><AlertDialogTitle>Supprimer cette semaine de devoirs ?</AlertDialogTitle></AlertDialogHeader>
+                                            <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteAssignment(assignment.id)}>Supprimer</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardHeader>
+                                <CardContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>Élève</TableHead>
+                                                <TableHead>Devoirs pour Lundi</TableHead>
+                                                <TableHead>Devoirs pour Jeudi</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {students.map(student => {
+                                                const { lundiDone, jeudiDone } = getStudentCompletionForAssignment(student.id, assignment);
+                                                return (
+                                                <TableRow key={student.id}>
+                                                    <TableCell className="font-medium">{student.name}</TableCell>
+                                                    <TableCell>
+                                                        {lundiDone ? <CheckCircle className="h-5 w-5 text-green-500" /> : <span className="text-xs text-muted-foreground">Non fait</span>}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {jeudiDone ? <CheckCircle className="h-5 w-5 text-green-500" /> : <span className="text-xs text-muted-foreground">Non fait</span>}
+                                                    </TableCell>
+                                                </TableRow>
+                                            )})}
+                                        </TableBody>
+                                    </Table>
+                                </CardContent>
+                            </Card>
+                        )
+                    })}
                 </div>
-                
-                 <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Élève</TableHead>
-                            <TableHead>Orthographe</TableHead>
-                            <TableHead>Mathématiques</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {students.map(student => {
-                            const lundiResult = getSpellingProgressForSession(student.id, 'lundi');
-                            const jeudiResult = getSpellingProgressForSession(student.id, 'jeudi');
-
-                            return (
-                            <TableRow key={student.id}>
-                                <TableCell className="font-medium">{student.name}</TableCell>
-                                <TableCell>
-                                    <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
-                                             <span className="font-semibold text-sm w-12">Lundi:</span>
-                                             {lundiResult ? (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <div><CheckCircle className="h-5 w-5 text-green-500 cursor-pointer" /></div>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Terminé le {format(new Date(lundiResult.completedAt), 'd MMM yyyy', { locale: fr })}</p>
-                                                        {lundiResult.errors.length > 0 && <p>Erreurs: {lundiResult.errors.join(', ')}</p>}
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">Non fait</span>
-                                            )}
-                                        </div>
-                                         <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-sm w-12">Jeudi:</span>
-                                             {jeudiResult ? (
-                                                 <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                         <div><CheckCircle className="h-5 w-5 text-green-500 cursor-pointer" /></div>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>
-                                                        <p>Terminé le {format(new Date(jeudiResult.completedAt), 'd MMM yyyy', { locale: fr })}</p>
-                                                        {jeudiResult.errors.length > 0 && <p>Erreurs: {jeudiResult.errors.join(', ')}</p>}
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">Non fait</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </TableCell>
-                                <TableCell>
-                                     <div className="flex flex-col gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-sm w-12">Lundi:</span>
-                                            {currentSkillSlugLundi ? (
-                                                mathLundiDone[student.id] ? (
-                                                    <CheckCircle className="h-5 w-5 text-green-500" />
-                                                ) : (
-                                                    <span className="text-xs text-muted-foreground">Non fait</span>
-                                                )
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">-</span>
-                                            )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-sm w-12">Jeudi:</span>
-                                             {currentSkillSlugJeudi ? (
-                                                mathJeudiDone[student.id] ? (
-                                                    <CheckCircle className="h-5 w-5 text-green-500" />
-                                                ) : (
-                                                    <span className="text-xs text-muted-foreground">Non fait</span>
-                                                )
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">-</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )})}
-                    </TableBody>
-                </Table>
             </CardContent>
         </Card>
     );
