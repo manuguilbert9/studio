@@ -24,14 +24,6 @@ export interface Student {
  */
 export async function createStudent(name: string, code: string): Promise<Student> {
     
-    // Check if a student with this code already exists
-    const q = query(collection(db, "students"), where("code", "==", code));
-    const querySnapshot = await getDocs(q);
-    if (!querySnapshot.empty) {
-        // A student with this code already exists, we should throw an error.
-        throw new Error(`A student with code ${code} already exists.`);
-    }
-    
     // Set default levels for all available skills to 'B'
     const defaultLevels: Record<string, SkillLevel> = {};
     skills.forEach(skill => {
