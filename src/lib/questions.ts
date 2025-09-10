@@ -1,11 +1,14 @@
 
 
+'use server';
+
 import { numberToFrench, numberToWords } from "./utils";
 import type { SkillLevel } from './skills';
 import { generateCalendarQuestions, type CalendarQuestion } from './calendar-questions';
 import { generateMentalMathQuestions, type MentalMathQuestion } from './mental-math';
 import { generateTimeQuestion } from "./time-questions";
 import { generateSyllabeAttaqueQuestion } from "./syllabe-questions";
+import { generateDénombrementQuestion } from "./count-questions";
 
 
 export interface Question extends CalendarQuestion, MentalMathQuestion {
@@ -26,7 +29,6 @@ export interface Question extends CalendarQuestion, MentalMathQuestion {
   countNumber?: number;
   // For audio questions
   textToSpeak?: string;
-  audioDataUri?: string;
   // For written-to-audio questions
   optionsWithAudio?: { text: string; audio: string }[];
   // For audio-to-text-input questions
@@ -85,33 +87,6 @@ export interface AllSettings {
   readingRace?: ReadingRaceSettings;
 }
 
-function generateDénombrementQuestion(settings: CountSettings): Question {
-  const items = [
-    { emoji: '🍎', name: 'pommes' },
-    { emoji: '🍌', name: 'bananes' },
-    { emoji: '🚗', name: 'voitures' },
-    { emoji: '🚜', name: 'tracteurs' },
-    { emoji: '🍓', name: 'fraises' },
-    { emoji: '🍊', name: 'oranges' },
-    { emoji: '🚓', name: 'voitures de police' },
-    { emoji: '🚑', name: 'ambulances' }
-  ];
-  const selectedItem = items[Math.floor(Math.random() * items.length)];
-  const max = settings.maxNumber || 19;
-  const count = Math.floor(Math.random() * (max - 3 + 1)) + 3; 
-
-  return {
-    id: Date.now(),
-    level: 'A',
-    type: 'count',
-    question: `Combien y a-t-il de ${selectedItem.name} ?`,
-    countEmoji: selectedItem.emoji,
-    countNumber: count,
-    answer: String(count),
-    // Pass settings for result analysis
-    countSettings: settings,
-  };
-}
 
 function generateKeyboardCountQuestion(): Question {
   const items = [
@@ -444,7 +419,11 @@ export async function generateQuestions(
   }
   
   if (skill === 'denombrement' && settings?.count) {
-      return Array.from({ length: count }, () => generateDénombrementQuestion(settings.count!));
+      const questions: Question[] = [];
+      for (let i = 0; i < count; i++) {
+          questions.push(await generateDénombrementQuestion(settings.count!));
+      }
+      return questions;
   }
 
   if (skill === 'keyboard-count') {
