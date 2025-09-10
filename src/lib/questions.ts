@@ -3,10 +3,12 @@
 import { numberToFrench, numberToWords } from "./utils";
 import type { SkillLevel } from './skills';
 import { syllableAttackData } from './syllable-data';
+import { generateCalendarQuestions, type CalendarQuestion } from './calendar-questions';
+import { generateMentalMathQuestions, type MentalMathQuestion } from './mental-math';
 
 
-export interface Question {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'letter-sound-qcm' | 'image-qcm';
+export interface Question extends CalendarQuestion, MentalMathQuestion {
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'letter-sound-qcm' | 'image-qcm' | 'click-date' | 'count-days';
   question: string;
   // For QCM
   options?: string[];
@@ -23,6 +25,7 @@ export interface Question {
   countNumber?: number;
   // For audio questions
   textToSpeak?: string;
+  audioDataUri?: string;
   // For written-to-audio questions
   optionsWithAudio?: { text: string; audio: string }[];
   // For audio-to-text-input questions
@@ -31,6 +34,13 @@ export interface Question {
   letter?: string;
   // For syllable-attack questions
   syllable?: string;
+  // For calendar
+  description?: string;
+  answerDate?: string;
+  month?: string;
+  answerNumber?: number;
+  // For mental math
+  visuals?: { emoji: string; count: number }[];
 }
 
 export interface CalculationSettings {
@@ -94,6 +104,8 @@ function generateSyllabeAttaqueQuestion(): Question {
     ].sort(() => Math.random() - 0.5);
 
     return {
+        id: Date.now(),
+        level: 'A',
         type: 'image-qcm',
         question: 'Clique sur l\'image qui commence par la syllabe :',
         syllable: correctItem.syllable,
@@ -194,6 +206,8 @@ function generateTimeQuestion(settings: TimeSettings): Question {
     }
 
     return {
+      id: Date.now(),
+      level: 'A',
       type: 'qcm',
       question: "Quelle heure est-il sur l'horloge ?",
       hour: displayHour,
@@ -205,6 +219,8 @@ function generateTimeQuestion(settings: TimeSettings): Question {
   } else {
     // Set-Time Question
     return {
+      id: Date.now(),
+      level: 'A',
       type: 'set-time',
       question: `Réglez l'horloge sur ${hour
         .toString()
@@ -232,6 +248,8 @@ function generateDénombrementQuestion(settings: CountSettings): Question {
   const count = Math.floor(Math.random() * (max - 3 + 1)) + 3; 
 
   return {
+    id: Date.now(),
+    level: 'A',
     type: 'count',
     question: `Combien y a-t-il de ${selectedItem.name} ?`,
     countEmoji: selectedItem.emoji,
@@ -257,6 +275,8 @@ function generateKeyboardCountQuestion(): Question {
   const count = Math.floor(Math.random() * 9) + 1; // 1-9 for single digit keyboard press
 
   return {
+    id: Date.now(),
+    level: 'A',
     type: 'keyboard-count',
     question: `Combien y a-t-il de ${selectedItem.name} ?`,
     countEmoji: selectedItem.emoji,
@@ -278,6 +298,8 @@ function generateEcouteLesNombresQuestion(): Question {
   const numberInFrench = numberToFrench[answerNumber] || answerText;
 
   return {
+    id: Date.now(),
+    level: 'A',
     type: 'audio-qcm',
     question: "Clique sur le nombre que tu entends.",
     options: Array.from(options).sort(() => Math.random() - 0.5),
@@ -296,6 +318,8 @@ function generateNombresComplexesQuestion(): Question {
     // 1. Dictée de nombres
     if (questionType < 0.25) {
         return {
+            id: Date.now(),
+            level: 'B',
             type: 'audio-to-text-input',
             question: "Écris en chiffres le nombre que tu entends.",
             textToSpeak: answerAudio,
@@ -329,6 +353,8 @@ function generateNombresComplexesQuestion(): Question {
         }
 
         return {
+            id: Date.now(),
+            level: 'B',
             type: 'written-to-audio-qcm',
             question: "Comment se prononce ce nombre ?",
             answer: answerText,
@@ -373,6 +399,8 @@ function generateNombresComplexesQuestion(): Question {
         }
 
         return {
+            id: Date.now(),
+            level: 'B',
             type: 'audio-qcm',
             question: "Clique sur le nombre que tu entends.",
             options: Array.from(options).map(String).sort(() => Math.random() - 0.5),
@@ -429,6 +457,8 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     
     if ((settings.level === 'C' || settings.level === 'D') && Math.random() > 0.5) {
         return {
+            id: Date.now(),
+            level: settings.level,
             type: 'audio-to-text-input',
             question: "Écris en chiffres le nombre que tu entends.",
             textToSpeak: answerAudio,
@@ -462,6 +492,8 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
 
     if (isReverse) {
          return {
+            id: Date.now(),
+            level: settings.level,
             type: 'written-to-audio-qcm',
             question: "Comment se prononce ce nombre ?",
             answer: answerText,
@@ -474,6 +506,8 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
         };
     } else {
         return {
+            id: Date.now(),
+            level: settings.level,
             type: 'audio-qcm',
             question: "Clique sur le nombre que tu entends.",
             options: allOptions.map(String).sort(() => Math.random() - 0.5),
@@ -528,6 +562,8 @@ function generateLettresEtSonsQuestion(): Question {
     const shuffledOptions = Array.from(options).sort(() => Math.random() - 0.5);
 
     return {
+        id: Date.now(),
+        level: 'A',
         type: 'written-to-audio-qcm',
         question: "Dans quel mot entends-tu le son de la lettre ?",
         answer: correctWord,
@@ -579,8 +615,19 @@ export async function generateQuestions(
       return Array.from({ length: count }, () => generateSyllabeAttaqueQuestion());
   }
 
+  if (skill === 'calendar' && settings?.calendar) {
+      return await generateCalendarQuestions(settings.calendar.level, count);
+  }
+  
+  if (skill === 'mental-calculation' && settings?.numberLevel) {
+      return generateMentalMathQuestions(settings.numberLevel.level, count);
+  }
+
+
   // Fallback
   return Array.from({ length: count }, () => ({
+    id: Date.now(),
+    level: 'A',
     type: 'qcm',
     question:
       'Ceci est un exemple de question. Choisissez la bonne réponse.',

@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
 import type { SkillLevel } from '@/lib/skills';
-import { generateMentalMathQuestions, type MentalMathQuestion } from '@/lib/mental-math';
+import { generateMentalMathQuestions } from '@/lib/mental-math';
+import type { MentalMathQuestion } from '@/lib/mental-math';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';

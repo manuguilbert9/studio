@@ -1,12 +1,12 @@
 
 import type { SkillLevel } from "./skills";
+import type { Question } from "./questions";
 
-export interface MentalMathQuestion {
+export interface MentalMathQuestion extends Omit<Question, 'id'|'question'|'level'> {
     id: number;
     question: string;
     answer: number;
     level: SkillLevel;
-    visuals?: { emoji: string; count: number }[];
 }
 
 // --- Helper Functions ---

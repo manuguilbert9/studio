@@ -61,7 +61,7 @@ export function CalendarExercise() {
   const startExercise = async (lvl: SkillLevel) => {
     setIsLoading(true);
     const generatedQuestions = await generateCalendarQuestions(lvl, NUM_QUESTIONS);
-    setQuestions(generatedQuestions);
+    setQuestions(generatedQuestions as CalendarQuestion[]);
     setCurrentQuestionIndex(0);
     setCorrectAnswers(0);
     setFeedback(null);

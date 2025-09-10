@@ -5,21 +5,13 @@ import type { SkillLevel } from "./skills";
 import { addDays, getDay, format, startOfMonth, lastDayOfMonth, differenceInDays } from "date-fns";
 import { fr } from 'date-fns/locale';
 import { getCurrentSchoolYear } from "@/services/teacher";
+import type { Question } from "./questions";
 
-export interface CalendarQuestion {
+export interface CalendarQuestion extends Omit<Question, 'id'|'level'|'type'|'question'> {
     id: number;
     level: SkillLevel;
     type: 'qcm' | 'click-date' | 'count-days';
     question: string;
-    description?: string;
-    // For QCM
-    options?: string[];
-    answer?: string;
-    // For click-date. Dates are stored as ISO strings for serialization.
-    answerDate?: string;
-    // For count-days
-    month?: string;
-    answerNumber?: number;
 }
 
 const daysOfWeek = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
@@ -225,7 +217,7 @@ const generateLevelD = async (): Promise<CalendarQuestion> => {
 };
 
 
-export async function generateCalendarQuestions(level: SkillLevel, count: number): Promise<CalendarQuestion[]> {
+export async function generateCalendarQuestions(level: SkillLevel, count: number): Promise<Question[]> {
     const generators = {
         'A': generateLevelA,
         'B': generateLevelB,
@@ -234,7 +226,7 @@ export async function generateCalendarQuestions(level: SkillLevel, count: number
     };
 
     const generator = generators[level] || generateLevelA;
-    const questions: CalendarQuestion[] = [];
+    const questions: Question[] = [];
     const questionSet = new Set<string>();
 
     while (questions.length < count) {
