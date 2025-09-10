@@ -2,10 +2,11 @@
 
 import { numberToFrench, numberToWords } from "./utils";
 import type { SkillLevel } from './skills';
+import { syllableAttackData } from './syllable-data';
 
 
 export interface Question {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'letter-sound-qcm';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'letter-sound-qcm' | 'image-qcm';
   question: string;
   // For QCM
   options?: string[];
@@ -28,6 +29,8 @@ export interface Question {
   answerInWords?: string;
   // For letter-sound questions
   letter?: string;
+  // For syllable-attack questions
+  syllable?: string;
 }
 
 export interface CalculationSettings {
@@ -70,6 +73,35 @@ export interface AllSettings {
   calendar?: CalendarSettings;
   readingRace?: ReadingRaceSettings;
 }
+
+function generateSyllabeAttaqueQuestion(): Question {
+    const dataCopy = [...syllableAttackData];
+    const randomIndex = Math.floor(Math.random() * dataCopy.length);
+    const correctItem = dataCopy.splice(randomIndex, 1)[0];
+
+    const distractors = new Set<{ src: string, alt: string, hint?: string }>();
+    while (distractors.size < 2) {
+        const randomDistractor = dataCopy[Math.floor(Math.random() * dataCopy.length)];
+        // Ensure distractor doesn't start with the same syllable and isn't the same word
+        if (!randomDistractor.word.startsWith(correctItem.syllable) && randomDistractor.word !== correctItem.word) {
+            distractors.add({ src: randomDistractor.image, alt: randomDistractor.word, hint: randomDistractor.word });
+        }
+    }
+    
+    const imageOptions = [
+        { src: correctItem.image, alt: correctItem.word, hint: correctItem.word },
+        ...Array.from(distractors)
+    ].sort(() => Math.random() - 0.5);
+
+    return {
+        type: 'image-qcm',
+        question: 'Clique sur l\'image qui commence par la syllabe :',
+        syllable: correctItem.syllable,
+        answer: correctItem.word,
+        images: imageOptions,
+    };
+}
+
 
 function generateTimeQuestion(settings: TimeSettings): Question {
   const { difficulty } = settings;
@@ -541,6 +573,10 @@ export async function generateQuestions(
   
   if (skill === 'lettres-et-sons') {
     return Array.from({ length: count }, () => generateLettresEtSonsQuestion());
+  }
+  
+  if (skill === 'syllabe-attaque') {
+      return Array.from({ length: count }, () => generateSyllabeAttaqueQuestion());
   }
 
   // Fallback

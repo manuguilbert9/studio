@@ -114,7 +114,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         } else if (skill.slug === 'denombrement' && !isTableauMode) {
              // Let it fall through to settings screen
              setIsReadyToStart(false);
-        } else if (skill.slug === 'keyboard-count' || skill.slug === 'lettres-et-sons') {
+        } else if (skill.slug === 'keyboard-count' || skill.slug === 'lettres-et-sons' || skill.slug === 'syllabe-attaque') {
              const generatedQuestions = await generateQuestions(skill.slug, NUM_QUESTIONS);
              setQuestions(generatedQuestions);
              setIsReadyToStart(true);
@@ -193,7 +193,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   const processCorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string, options?: string[]) => {
       setCorrectAnswers(prev => prev + 1);
       setFeedback('correct');
-      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count', 'lettres-et-sons'].includes(skill.slug)) {
+      if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count', 'lettres-et-sons', 'syllabe-attaque'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, true, options);
       }
       const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
@@ -204,7 +204,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const processIncorrectAnswer = (questionText: string, userAnswer: string, correctAnswer: string, options?: string[]) => {
       setFeedback('incorrect');
-       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count', 'lettres-et-sons'].includes(skill.slug)) {
+       if (['time', 'denombrement', 'lire-les-nombres', 'mental-calculation', 'nombres-complexes', 'ecoute-les-nombres', 'keyboard-count', 'lettres-et-sons', 'syllabe-attaque'].includes(skill.slug)) {
           addDetail(questionText, userAnswer, correctAnswer, false, options);
       }
       setTimeout(handleNextQuestion, 2000);
@@ -270,10 +270,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
   
   const handleImageClickAnswer = (imageAlt: string) => {
       if (!exerciseData || feedback || !exerciseData.answer) return;
+
+      const questionText = exerciseData.syllable 
+        ? `Syllabe "${exerciseData.syllable}"` 
+        : exerciseData.question;
+      const optionsForDetails = exerciseData.images?.map(i => i.alt);
+
       if (imageAlt === exerciseData.answer) {
-          processCorrectAnswer(exerciseData.question, imageAlt, exerciseData.answer);
+          processCorrectAnswer(questionText, imageAlt, exerciseData.answer, optionsForDetails);
       } else {
-          processIncorrectAnswer(exerciseData.question, imageAlt, exerciseData.answer);
+          processIncorrectAnswer(questionText, imageAlt, exerciseData.answer, optionsForDetails);
       }
   };
 
@@ -697,6 +703,41 @@ const renderLetterSoundQCM = () => {
     );
 };
 
+const renderImageQCM = () => {
+    return (
+      <div className="flex flex-col items-center justify-center w-full space-y-8">
+        <div className="font-bold text-9xl font-body tracking-wider uppercase text-primary">
+          {exerciseData.syllable}
+        </div>
+        <div className="grid grid-cols-3 gap-4 w-full max-w-xl">
+          {exerciseData.images?.map((image, index) => (
+            <button
+              key={`${image.alt}-${index}`}
+              onClick={() => handleImageClickAnswer(image.alt)}
+              className={cn(
+                "p-4 rounded-lg border-4 transition-all duration-300 transform active:scale-95 focus:outline-none focus:ring-4 focus:ring-ring focus:ring-offset-2",
+                feedback === null && "border-transparent hover:border-primary hover:bg-primary/10",
+                feedback === 'correct' && image.alt === exerciseData.answer && 'border-green-500 bg-green-100 scale-105',
+                feedback === 'incorrect' && image.alt !== exerciseData.answer && 'opacity-40 grayscale',
+                feedback && image.alt === exerciseData.answer && 'border-green-500' // Keep border for correct one on incorrect try
+              )}
+              disabled={!!feedback}
+            >
+              <Image
+                src={image.src}
+                alt={image.alt}
+                width={150}
+                height={150}
+                className="rounded-lg object-contain"
+                data-ai-hint={image.hint}
+              />
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+};
+
 
   const renderSetTime = () => (
     <InteractiveClock
@@ -738,6 +779,7 @@ const renderLetterSoundQCM = () => {
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
+          {exerciseData.type === 'image-qcm' && renderImageQCM()}
           {exerciseData.type === 'audio-qcm' && renderAudioQCM()}
           {exerciseData.type === 'written-to-audio-qcm' && renderWrittenToAudioQCM()}
           {exerciseData.type === 'audio-to-text-input' && renderAudioToTextInput()}

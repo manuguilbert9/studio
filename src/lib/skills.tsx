@@ -67,6 +67,14 @@ export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
 export const skills: Skill[] = [
   {
+    name: 'Syllabe d\'attaque',
+    slug: 'syllabe-attaque',
+    description: "Clique sur l'image dont le nom commence par la syllabe affichée.",
+    icon: <Waves />,
+    category: 'Phonologie',
+    isFixedLevel: 'A',
+  },
+  {
     name: 'Reconnaissance des lettres',
     slug: 'letter-recognition',
     description: "Appuie sur la bonne touche du clavier correspondant à la lettre affichée.",

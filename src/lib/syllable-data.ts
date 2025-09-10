@@ -1,0 +1,51 @@
+
+export interface SyllableData {
+    syllable: string;
+    word: string;
+    image: string; // Path to the image
+}
+
+export const syllableAttackData: SyllableData[] = [
+  { syllable: 'ba', word: 'ballon', image: '/images/syllables/ballon.png' },
+  { syllable: 'ba', word: 'bateau', image: '/images/syllables/bateau.png' },
+  { syllable: 'ba', word: 'banane', image: '/images/syllables/banane.png' },
+  { syllable: 'bo', word: 'bonbon', image: '/images/syllables/bonbon.png' },
+  { syllable: 'ca', word: 'canard', image: '/images/syllables/canard.png' },
+  { syllable: 'ca', word: 'camion', image: '/images/syllables/camion.png' },
+  { syllable: 'ca', word: 'cadeau', image: '/images/syllables/cadeau.png' },
+  { syllable: 'che', word: 'cheval', image: '/images/syllables/cheval.png' },
+  { syllable: 'chou', word: 'chouchou', image: '/images/syllables/chouchou.png' },
+  { syllable: 'ci', word: 'citron', image: '/images/syllables/citron.png' },
+  { syllable: 'co', word: 'cochon', image: '/images/syllables/cochon.png' },
+  { syllable: 'da', word: 'dame', image: '/images/syllables/dame.png' },
+  { syllable: 'de', word: 'dé', image: '/images/syllables/de.png' },
+  { syllable: 'do', word: 'domino', image: '/images/syllables/domino.png' },
+  { syllable: 'four', word: 'fourmi', image: '/images/syllables/fourmi.png' },
+  { syllable: 'fu', word: 'fusée', image: '/images/syllables/fusee.png' },
+  { syllable: 'ga', word: 'gâteau', image: '/images/syllables/gateau.png' },
+  { syllable: 'gi', word: 'girafe', image: '/images/syllables/girafe.png' },
+  { syllable: 'la', word: 'lapin', image: '/images/syllables/lapin.png' },
+  { syllable: 'li', word: 'lit', image: '/images/syllables/lit.png' },
+  { syllable: 'lu', word: 'lune', image: '/images/syllables/lune.png' },
+  { syllable: 'ma', word: 'maison', image: '/images/syllables/maison.png' },
+  { syllable: 'mo', word: 'moto', image: '/images/syllables/moto.png' },
+  { syllable: 'mou', word: 'mouton', image: '/images/syllables/mouton.png' },
+  { syllable: 'mu', word: 'mur', image: '/images/syllables/mur.png' },
+  { syllable: 'pa', word: 'papa', image: '/images/syllables/papa.png' },
+  { syllable: 'pa', word: 'papillon', image: '/images/syllables/papillon.png' },
+  { syllable: 'pi', word: 'pizza', image: '/images/syllables/pizza.png' },
+  { syllable: 'po', word: 'pomme', image: '/images/syllables/pomme.png' },
+  { syllable: 'pou', word: 'poule', image: '/images/syllables/poule.png' },
+  { syllable: 'ra', word: 'rat', image: '/images/syllables/rat.png' },
+  { syllable: 'ro', word: 'robot', image: '/images/syllables/robot.png' },
+  { syllable: 'sa', word: 'sapin', image: '/images/syllables/sapin.png' },
+  { syllable: 'sa', word: 'sac', image: '/images/syllables/sac.png' },
+  { syllable: 'si', word: 'sirène', image: '/images/syllables/sirene.png' },
+  { syllable: 'su', word: 'sucre', image: '/images/syllables/sucre.png' },
+  { syllable: 'ta', word: 'tapis', image: '/images/syllables/tapis.png' },
+  { syllable: 'ta', word: 'tasse', image: '/images/syllables/tasse.png' },
+  { syllable: 'to', word: 'tomate', image: '/images/syllables/tomate.png' },
+  { syllable: 'va', word: 'vache', image: '/images/syllables/vache.png' },
+  { syllable: 'vé', word: 'vélo', image: '/images/syllables/velo.png' },
+  { syllable: 'vo', word: 'voiture', image: '/images/syllables/voiture.png' },
+];
