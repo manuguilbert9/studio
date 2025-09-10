@@ -1,5 +1,6 @@
 
 
+
 import { numberToFrench, numberToWords } from "./utils";
 import type { SkillLevel } from './skills';
 import { syllableAttackData } from './syllable-data';
@@ -319,7 +320,7 @@ function generateLireLesNombresQuestion(settings: NumberLevelSettings): Question
     } else if (settings.level === 'D' && Math.random() > 0.2) { // 80% chance
         let s = String(answerNumber);
         const len = s.length;
-        if (len > 3) {
+        if (len > 4) {
             // Replace one or two non-zero, non-leading digits with '0'
             const zeroPos = Math.floor(Math.random() * (len - 2)) + 1;
             s = s.substring(0, zeroPos) + '0' + s.substring(zeroPos + 1);
@@ -464,10 +465,13 @@ export async function generateQuestions(
   count: number,
   settings?: AllSettings
 ): Promise<Question[]> {
+  const promises: Promise<Question>[] = [];
+  
   if (skill === 'time' && settings?.time) {
-    return Array.from({ length: count }, () =>
-      generateTimeQuestion(settings.time!)
-    );
+    for (let i = 0; i < count; i++) {
+        promises.push(generateTimeQuestion(settings.time!));
+    }
+    return Promise.all(promises);
   }
   
   if (skill === 'denombrement' && settings?.count) {

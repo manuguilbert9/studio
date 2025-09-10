@@ -4,7 +4,7 @@
 import { addDays, getDay, format } from "date-fns";
 import type { Question, TimeSettings } from './questions';
 
-export function generateTimeQuestion(settings: TimeSettings): Question {
+export async function generateTimeQuestion(settings: TimeSettings): Promise<Question> {
   const { difficulty } = settings;
   let hour: number;
   let minute: number;
