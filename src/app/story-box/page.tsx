@@ -1,17 +1,18 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, Wand2, BookOpen, FileText, File, FilePlus, Drama, Ghost, Swords, Mic, MicOff, MessageSquareText, Smile, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateStory, type StoryInput, type StoryOutput } from '@/ai/flows/story-flow';
 import Link from 'next/link';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { Textarea } from '@/components/ui/textarea';
+import { generateSpeech } from '@/ai/flows/tts-flow';
 
 // Base emojis, always present
 const baseEmojis = [
@@ -55,6 +56,12 @@ export default function StoryBoxPage() {
   const [story, setStory] = useState<StoryOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // TTS State
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+
   // Emoji list state
   const [availableEmojis, setAvailableEmojis] = useState<string[]>([]);
 
@@ -97,6 +104,7 @@ export default function StoryBoxPage() {
     setError(null);
     setIsLoading(true);
     setStory(null);
+    setAudioDataUri(null);
 
     const input: StoryInput = {
       emojis: creationMode === 'emoji' ? selectedEmojis : undefined,
@@ -116,6 +124,27 @@ export default function StoryBoxPage() {
     }
   };
   
+  const handleGenerateAudio = async () => {
+      if (!story || isGeneratingAudio) return;
+      setIsGeneratingAudio(true);
+      setAudioDataUri(null);
+      try {
+          const result = await generateSpeech(`${story.title}. ${story.story}. ${story.moral}`);
+          setAudioDataUri(result.audioDataUri);
+      } catch (e) {
+          console.error("Audio generation failed:", e);
+          setError("Impossible de générer l'audio pour cette histoire.");
+      } finally {
+          setIsGeneratingAudio(false);
+      }
+  };
+
+  useEffect(() => {
+    if (audioDataUri && audioRef.current) {
+      audioRef.current.play();
+    }
+  }, [audioDataUri]);
+
   const getFontSize = () => {
     switch (length) {
       case 'courte': return 'text-xl leading-relaxed';
@@ -153,6 +182,7 @@ export default function StoryBoxPage() {
       setVocalDescription('');
       setStory(null);
       setError(null);
+      setAudioDataUri(null);
   }
 
   if (story) {
@@ -164,7 +194,7 @@ export default function StoryBoxPage() {
                <ArrowLeft className="mr-2 h-4 w-4" /> Retourner
              </Button>
              <Button onClick={openImmersiveReader} variant="secondary">
-                <BookOpen className="mr-2 h-4 w-4" /> Lire avec le lecteur immersif
+                <BookOpen className="mr-2 h-4 w-4" /> Lecteur immersif
              </Button>
            </div>
            <Card className="mt-8 shadow-xl">
@@ -178,6 +208,17 @@ export default function StoryBoxPage() {
                     )}
                   </div>
                 <CardTitle className="font-headline text-4xl">{story.title}</CardTitle>
+                <div className="flex justify-center mt-4">
+                  <Button onClick={handleGenerateAudio} disabled={isGeneratingAudio}>
+                      {isGeneratingAudio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                      {isGeneratingAudio ? 'Génération en cours...' : 'Écouter l\'histoire'}
+                  </Button>
+                </div>
+                 {audioDataUri && (
+                    <div className="flex justify-center pt-4">
+                        <audio ref={audioRef} src={audioDataUri} controls />
+                    </div>
+                )}
              </CardHeader>
              <CardContent className="space-y-6">
                 <p className={cn("whitespace-pre-wrap font-body", getFontSize())}>
