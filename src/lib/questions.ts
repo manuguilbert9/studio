@@ -9,6 +9,7 @@ import { generateMentalMathQuestions, type MentalMathQuestion } from './mental-m
 import { generateTimeQuestion } from "./time-questions";
 import { generateSyllabeAttaqueQuestion } from "./syllabe-questions";
 import { generateDénombrementQuestion } from "./count-questions";
+import { generateKeyboardCountQuestion } from "./keyboard-count-questions";
 
 
 export interface Question extends CalendarQuestion, MentalMathQuestion {
@@ -87,31 +88,6 @@ export interface AllSettings {
   readingRace?: ReadingRaceSettings;
 }
 
-
-function generateKeyboardCountQuestion(): Question {
-  const items = [
-    { emoji: '🍎', name: 'pommes' },
-    { emoji: '🍌', name: 'bananes' },
-    { emoji: '🚗', name: 'voitures' },
-    { emoji: '🚜', name: 'tracteurs' },
-    { emoji: '🍓', name: 'fraises' },
-    { emoji: '🍊', name: 'oranges' },
-    { emoji: '🚓', name: 'voitures de police' },
-    { emoji: '🚑', name: 'ambulances' }
-  ];
-  const selectedItem = items[Math.floor(Math.random() * items.length)];
-  const count = Math.floor(Math.random() * 9) + 1; // 1-9 for single digit keyboard press
-
-  return {
-    id: Date.now(),
-    level: 'A',
-    type: 'keyboard-count',
-    question: `Combien y a-t-il de ${selectedItem.name} ?`,
-    countEmoji: selectedItem.emoji,
-    countNumber: count,
-    answer: String(count),
-  };
-}
 
 function generateEcouteLesNombresQuestion(): Question {
   const answerNumber = Math.floor(Math.random() * 20) + 1; // 1 to 20
@@ -427,7 +403,11 @@ export async function generateQuestions(
   }
 
   if (skill === 'keyboard-count') {
-      return Array.from({ length: count }, () => generateKeyboardCountQuestion());
+      const questions: Question[] = [];
+      for (let i = 0; i < count; i++) {
+          questions.push(await generateKeyboardCountQuestion());
+      }
+      return questions;
   }
 
   if (skill === 'ecoute-les-nombres') {
