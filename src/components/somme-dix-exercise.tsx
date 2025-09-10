@@ -11,7 +11,6 @@ import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
 import { Input } from './ui/input';
-import { VirtualKeyboard } from './virtual-keyboard';
 
 
 type Problem = {
@@ -44,7 +43,6 @@ export function SommeDixExercise() {
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
-    const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
 
     
     useEffect(() => {
@@ -105,7 +103,7 @@ export function SommeDixExercise() {
         if(feedback) return;
 
         let newAnswer = userAnswer;
-        if (key === '⌫') { // Backspace
+        if (key === 'Backspace' || key === '⌫') { // Backspace
             newAnswer = newAnswer.slice(0, -1);
         } else if (/^\d$/.test(key) && newAnswer.length < 2) {
             newAnswer += key;
@@ -231,17 +229,9 @@ export function SommeDixExercise() {
                          {feedback === 'incorrect' && <span className="absolute bottom-2 text-red-500 text-xs font-bold">Réponse: {currentProblem.answer}</span>}
 
                      </div>
-                     <Button variant="outline" onClick={() => setShowVirtualKeyboard(p => !p)}>
-                        <Keyboard className="mr-2" />
-                        {showVirtualKeyboard ? 'Cacher' : 'Afficher'} le pavé numérique
-                    </Button>
                 </CardContent>
             </Card>
-            {showVirtualKeyboard && (
-                <div className="w-full max-w-xs">
-                    <VirtualKeyboard onKeyPress={handleKeystroke} numericOnly={true} />
-                </div>
-            )}
+            
             <style jsx>{`
                 @keyframes shake {
                     0%, 100% { transform: translateX(0); }
