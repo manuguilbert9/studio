@@ -4,7 +4,7 @@
 import type { Question } from './questions';
 import { syllableAttackData } from './syllable-data';
 
-export function generateSyllabeAttaqueQuestion(): Question {
+export async function generateSyllabeAttaqueQuestion(): Promise<Question> {
     const dataCopy = [...syllableAttackData];
     const randomIndex = Math.floor(Math.random() * dataCopy.length);
     const correctItem = dataCopy.splice(randomIndex, 1)[0];

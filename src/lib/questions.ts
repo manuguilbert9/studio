@@ -1,10 +1,7 @@
 
 
-
-
 import { numberToFrench, numberToWords } from "./utils";
 import type { SkillLevel } from './skills';
-import { syllableAttackData } from './syllable-data';
 import { generateCalendarQuestions, type CalendarQuestion } from './calendar-questions';
 import { generateMentalMathQuestions, type MentalMathQuestion } from './mental-math';
 import { generateTimeQuestion } from "./time-questions";
@@ -471,7 +468,11 @@ export async function generateQuestions(
   }
   
   if (skill === 'syllabe-attaque') {
-      return Array.from({ length: count }, () => generateSyllabeAttaqueQuestion());
+      const questions: Question[] = [];
+      for (let i = 0; i < count; i++) {
+          questions.push(await generateSyllabeAttaqueQuestion());
+      }
+      return questions;
   }
 
   if (skill === 'calendar' && settings?.calendar) {
