@@ -17,8 +17,6 @@ export const syllableAttackData: SyllableData[] = [
   { syllable: 'chou', word: 'chouchou', image: '/images/syllables/chouchou.png' },
   { syllable: 'ci', word: 'citron', image: '/images/syllables/citron.png' },
   { syllable: 'co', word: 'cochon', image: '/images/syllables/cochon.png' },
-  { syllable: 'da', word: 'dame', image: '/images/syllables/dame.png' },
-  { syllable: 'de', word: 'dé', image: '/images/syllables/de.png' },
   { syllable: 'do', word: 'domino', image: '/images/syllables/domino.png' },
   { syllable: 'four', word: 'fourmi', image: '/images/syllables/fourmi.png' },
   { syllable: 'fu', word: 'fusée', image: '/images/syllables/fusee.png' },
