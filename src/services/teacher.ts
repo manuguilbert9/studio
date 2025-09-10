@@ -2,16 +2,127 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, orderBy, query, where, Timestamp } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
+import { startOfWeek, endOfWeek } from 'date-fns';
 
 const SETTINGS_COLLECTION = 'teacher';
+const HOMEWORK_COLLECTION = 'homework';
 const SETTINGS_DOC_ID = 'settings';
 
+
+// --- New Date-Based Homework System ---
+
+export interface HomeworkAssignment {
+    id: string;
+    weekOf: string; // ISO string for the Monday of that week
+    spellingListId: string | null;
+    mathSkillSlugLundi: string | null;
+    mathSkillSlugJeudi: string | null;
+}
+
+/**
+ * Adds a new dated homework assignment.
+ */
+export async function addHomeworkAssignment(assignment: Omit<HomeworkAssignment, 'id'>): Promise<{ success: boolean; error?: string }> {
+    try {
+        await addDoc(collection(db, HOMEWORK_COLLECTION), assignment);
+        return { success: true };
+    } catch (e) {
+        console.error("Error adding homework assignment:", e);
+        if (e instanceof Error) return { success: false, error: e.message };
+        return { success: false, error: "An unknown error occurred." };
+    }
+}
+
+/**
+ * Retrieves all homework assignments, sorted by date descending.
+ */
+export async function getHomeworkAssignments(): Promise<HomeworkAssignment[]> {
+    try {
+        const q = query(collection(db, HOMEWORK_COLLECTION), orderBy("weekOf", "desc"));
+        const querySnapshot = await getDocs(q);
+        return querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as HomeworkAssignment));
+    } catch (error) {
+        console.error("Error fetching homework assignments:", error);
+        return [];
+    }
+}
+
+/**
+ * Deletes a homework assignment.
+ * @param id The ID of the homework assignment to delete.
+ */
+export async function deleteHomeworkAssignment(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+        await deleteDoc(doc(db, HOMEWORK_COLLECTION, id));
+        return { success: true };
+    } catch (e) {
+        console.error("Error deleting homework assignment:", e);
+        if (e instanceof Error) return { success: false, error: e.message };
+        return { success: false, error: "An unknown error occurred." };
+    }
+}
+
+
+// This function now finds the homework for the current week.
+export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null }> {
+    try {
+        const today = new Date();
+        const monday = startOfWeek(today, { weekStartsOn: 1 });
+        
+        // Firestore queries on timestamps are precise. We query for the specific Monday.
+        const mondayTimestamp = Timestamp.fromDate(monday);
+
+        const q = query(
+            collection(db, HOMEWORK_COLLECTION),
+            where("weekOf", "==", monday.toISOString().split('T')[0] + 'T00:00:00.000Z'), // Match the exact ISO string for the week's Monday
+            limit(1)
+        );
+        
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            const assignment = querySnapshot.docs[0].data();
+            return {
+                listId: assignment.spellingListId || null,
+                skillSlugLundi: assignment.mathSkillSlugLundi || null,
+                skillSlugJeudi: assignment.mathSkillSlugJeudi || null,
+            };
+        }
+
+        // Fallback: If no assignment for this specific week, find the most recent one in the past
+        const fallbackQuery = query(
+            collection(db, HOMEWORK_COLLECTION),
+            where("weekOf", "<=", today.toISOString()),
+            orderBy("weekOf", "desc"),
+            limit(1)
+        );
+        const fallbackSnapshot = await getDocs(fallbackQuery);
+        if(!fallbackSnapshot.empty) {
+            const assignment = fallbackSnapshot.docs[0].data();
+            return {
+                listId: assignment.spellingListId || null,
+                skillSlugLundi: assignment.mathSkillSlugLundi || null,
+                skillSlugJeudi: assignment.mathSkillSlugJeudi || null,
+            };
+        }
+
+        return { listId: null, skillSlugLundi: null, skillSlugJeudi: null };
+
+    } catch(e) {
+         console.error("Error fetching current homework config:", e);
+         return { listId: null, skillSlugLundi: null, skillSlugJeudi: null };
+    }
+}
+
+
+// --- General Teacher Settings (Legacy and Other) ---
+
 interface TeacherSettings {
-    currentSpellingListId?: string;
-    currentMathSkillSlugLundi?: string;
-    currentMathSkillSlugJeudi?: string;
     enabledSkills?: Record<string, boolean>;
     currentSchoolYear?: string; // e.g., "2024"
 }
@@ -28,33 +139,6 @@ async function getSettingsDoc(): Promise<TeacherSettings | null> {
     } catch (error) {
         console.error("Error fetching teacher settings:", error);
         return null;
-    }
-}
-
-
-export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null }> {
-    const settings = await getSettingsDoc();
-    return {
-        listId: settings?.currentSpellingListId || null,
-        skillSlugLundi: settings?.currentMathSkillSlugLundi || null,
-        skillSlugJeudi: settings?.currentMathSkillSlugJeudi || null,
-    };
-}
-
-
-export async function setCurrentHomeworkConfig(listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null): Promise<{ success: boolean; error?: string }> {
-     try {
-        const settingsRef = doc(db, SETTINGS_COLLECTION, SETTINGS_DOC_ID);
-        await setDoc(settingsRef, { 
-            currentSpellingListId: listId,
-            currentMathSkillSlugLundi: skillSlugLundi,
-            currentMathSkillSlugJeudi: skillSlugJeudi,
-        }, { merge: true });
-        return { success: true };
-    } catch (e) {
-        console.error("Error setting current homework config:", e);
-        if (e instanceof Error) return { success: false, error: e.message };
-        return { success: false, error: "An unknown error occurred." };
     }
 }
 
