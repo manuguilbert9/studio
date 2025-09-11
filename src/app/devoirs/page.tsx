@@ -107,8 +107,8 @@ function HomeworkList() {
   const getWeekDayDate = (day: 'lundi' | 'jeudi'): string => {
     if (!currentHomework?.weekOf) return '';
     try {
-        const mondayUTC = parseISO(currentHomework.weekOf);
-        const targetDay = addDays(mondayUTC, day === 'lundi' ? 0 : 3);
+        const monday = parseISO(currentHomework.weekOf);
+        const targetDay = addDays(monday, day === 'lundi' ? 0 : 3);
         return format(targetDay, 'd/MM');
     } catch (e) {
         console.error("Date formatting error:", e);

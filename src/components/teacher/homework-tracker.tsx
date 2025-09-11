@@ -118,12 +118,7 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                             const mathSkillLundi = getSkillBySlug(assignment.mathSkillSlugLundi || '');
                             const mathSkillJeudi = getSkillBySlug(assignment.mathSkillSlugJeudi || '');
                             
-                            // Correctly parse UTC string into a Date object, ignoring timezone
-                            const isoDate = assignment.weekOf; // e.g. "2024-09-08T12:00:00.000Z"
-                            const year = parseInt(isoDate.substring(0, 4), 10);
-                            const month = parseInt(isoDate.substring(5, 7), 10) - 1; // Month is 0-indexed
-                            const day = parseInt(isoDate.substring(8, 10), 10);
-                            const weekDate = new Date(year, month, day);
+                            const weekDate = parseISO(assignment.weekOf);
 
                             return (
                                 <AccordionItem value={assignment.id} key={assignment.id} className="border bg-secondary/30 rounded-lg px-4">

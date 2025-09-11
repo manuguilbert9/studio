@@ -45,10 +45,9 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
         }
 
         setIsSaving(true);
+        // This calculates the Monday of the selected week, respecting the locale.
         const monday = startOfWeek(week, { weekStartsOn: 1 });
-        // Set time to noon UTC to avoid timezone issues
-        monday.setUTCHours(12, 0, 0, 0);
-
+        
         const result = await addHomeworkAssignment({
             weekOf: monday.toISOString(), // Store as UTC ISO string
             spellingListId,
