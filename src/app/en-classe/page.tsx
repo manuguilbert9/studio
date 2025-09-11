@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { skills as allSkills, type Skill, allSkillCategories, SkillCategory } from '@/lib/skills';
 import { Logo } from '@/components/logo';
-import { Home, BarChart3, CheckCircle } from 'lucide-react';
+import { Home, BarChart3, CheckCircle, ListChecks } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
@@ -133,6 +133,14 @@ export default function EnClassePage() {
                     Mes Résultats
                 </Link>
             </Button>
+             {student.hasCustomSchedule && (
+                <Button asChild variant="outline" size="sm">
+                    <Link href="/planning">
+                        <ListChecks className="mr-2" />
+                        Mon Planning
+                    </Link>
+                </Button>
+            )}
         </div>
       </header>
       
