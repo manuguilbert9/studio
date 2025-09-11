@@ -2,17 +2,51 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, orderBy, query, addDoc, Timestamp } from 'firebase/firestore';
 
 export interface Assignment {
   francais: string | null;
   maths: string | null;
+  orthographe?: string | null;
 }
 
 export interface Homework {
   id: string; // The ID will be the ISO date of the assignment, e.g., "2024-09-16"
   assignments: Record<string, Assignment>; // Key is groupId
 }
+
+export interface HomeworkResult {
+    id?: string;
+    userId: string;
+    date: string;
+    skillSlug: string;
+    score: number;
+    createdAt: string | Timestamp;
+}
+
+
+/**
+ * Saves a completed homework exercise result.
+ */
+export async function saveHomeworkResult(resultData: Omit<HomeworkResult, 'id' | 'createdAt'>): Promise<{ success: boolean; error?: string }> {
+   if (!resultData.userId) {
+        return { success: false, error: 'User ID is required.' };
+    }
+    try {
+        await addDoc(collection(db, 'homeworkResults'), {
+            ...resultData,
+            createdAt: Timestamp.now()
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Error saving homework result to Firestore:", error);
+        if (error instanceof Error) {
+            return { success: false, error: error.message };
+        }
+        return { success: false, error: 'An unknown error occurred.' };
+    }
+}
+
 
 /**
  * Saves or updates homework for a specific date.
@@ -52,7 +86,6 @@ export async function getAllHomework(): Promise<Homework[]> {
             assignments: doc.data().assignments || {},
         });
     });
-    // Sort by date descending
     return homeworks.sort((a, b) => b.id.localeCompare(a.id));
   } catch (error) {
     console.error("Error loading homework from Firestore:", error);

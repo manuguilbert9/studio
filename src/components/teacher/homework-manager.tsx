@@ -12,6 +12,7 @@ import { fr } from 'date-fns/locale';
 import { type Group } from '@/services/groups';
 import { skills, type Skill } from '@/lib/skills';
 import { saveHomework, type Homework, type Assignment } from '@/services/homework';
+import { getSpellingLists, SpellingList } from '@/services/spelling';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save } from 'lucide-react';
 
@@ -21,7 +22,7 @@ interface HomeworkManagerProps {
   onHomeworkChange: () => void;
 }
 
-const frenchSkills = skills.filter(s => ['Phonologie', 'Lecture / compréhension', 'Ecriture', 'Orthographe', 'Grammaire', 'Conjugaison', 'Vocabulaire'].includes(s.category));
+const frenchSkills = skills.filter(s => ['Phonologie', 'Lecture / compréhension', 'Ecriture', 'Grammaire', 'Conjugaison', 'Vocabulaire'].includes(s.category));
 const mathSkills = skills.filter(s => ['Nombres et calcul', 'Grandeurs et mesures', 'Espace et géométrie'].includes(s.category));
 
 
@@ -30,21 +31,29 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
+  const [isLoadingLists, setIsLoadingLists] = useState(true);
+
+  useEffect(() => {
+    getSpellingLists().then(lists => {
+      setSpellingLists(lists);
+      setIsLoadingLists(false);
+    });
+  }, []);
 
   useEffect(() => {
     if (selectedDate) {
-      // Format the date to YYYY-MM-DD, ignoring timezone.
       const dateId = format(selectedDate, 'yyyy-MM-dd');
       const existingHomework = allHomework.find(h => h.id === dateId);
       setAssignments(existingHomework?.assignments || {});
     }
   }, [selectedDate, allHomework]);
 
-  const handleAssignmentChange = (groupId: string, type: 'francais' | 'maths', skillSlug: string) => {
+  const handleAssignmentChange = (groupId: string, type: 'francais' | 'maths' | 'orthographe', skillSlug: string) => {
     setAssignments(prev => ({
       ...prev,
       [groupId]: {
-        ...(prev[groupId] || { francais: null, maths: null }),
+        ...(prev[groupId] || { francais: null, maths: null, orthographe: null }),
         [type]: skillSlug === 'none' ? null : skillSlug,
       },
     }));
@@ -54,7 +63,6 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
     if (!selectedDate) return;
     setIsSaving(true);
     
-    // Format the date to YYYY-MM-DD, ignoring timezone.
     const dateId = format(selectedDate, 'yyyy-MM-dd');
     const result = await saveHomework(dateId, assignments);
 
@@ -129,6 +137,26 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
                                         <SelectItem value="none">Aucun</SelectItem>
                                         {mathSkills.map(skill => (
                                             <SelectItem key={skill.slug} value={skill.slug}>{skill.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                             <div className="space-y-2 sm:col-span-2">
+                                <Label>Dictée d'Orthographe</Label>
+                                <Select
+                                    value={assignments[group.id]?.orthographe || 'none'}
+                                    onValueChange={(value) => handleAssignmentChange(group.id, 'orthographe', value)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Choisir une liste et une session..."/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">Aucune</SelectItem>
+                                        {spellingLists.map(list => (
+                                          <Fragment key={list.id}>
+                                            <SelectItem value={`${list.id}-lundi`}>{list.id} (Lundi) - {list.title}</SelectItem>
+                                            <SelectItem value={`${list.id}-jeudi`}>{list.id} (Jeudi) - {list.title}</SelectItem>
+                                          </Fragment>
                                         ))}
                                     </SelectContent>
                                 </Select>

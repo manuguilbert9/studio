@@ -22,6 +22,7 @@ interface DatedAssignment {
 function HomeworkCard({ date, assignment }: { date: string, assignment: Assignment }) {
   const frenchSkill = assignment.francais ? getSkillBySlug(assignment.francais) : null;
   const mathSkill = assignment.maths ? getSkillBySlug(assignment.maths) : null;
+  const spellingId = assignment.orthographe || null;
 
   return (
     <Card>
@@ -31,8 +32,21 @@ function HomeworkCard({ date, assignment }: { date: string, assignment: Assignme
         </CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {frenchSkill ? (
-          <Link href={`/exercise/${frenchSkill.slug}`} className="group">
+        {spellingId ? (
+           <Link href={`/spelling/${spellingId}?from=devoirs`} className="group">
+             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4">
+                <div className="bg-yellow-100 p-3 rounded-full text-yellow-600 group-hover:scale-110 transition-transform">
+                    <BrainCircuit />
+                </div>
+                <div>
+                  <p className="font-semibold text-lg">Dictée de mots</p>
+                  <p className="text-sm text-muted-foreground">Orthographe</p>
+                </div>
+                <ArrowRight className="ml-auto h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+            </Card>
+          </Link>
+        ) : frenchSkill ? (
+          <Link href={`/exercise/${frenchSkill.slug}?from=devoirs`} className="group">
             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4">
               <div className="bg-blue-100 p-3 rounded-full text-blue-600 group-hover:scale-110 transition-transform">
                 {frenchSkill.icon}
@@ -48,7 +62,7 @@ function HomeworkCard({ date, assignment }: { date: string, assignment: Assignme
           <Card className="p-4 flex items-center justify-center text-muted-foreground text-sm">Pas d'exercice de français.</Card>
         )}
         {mathSkill ? (
-          <Link href={`/exercise/${mathSkill.slug}`} className="group">
+          <Link href={`/exercise/${mathSkill.slug}?from=devoirs`} className="group">
             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4">
               <div className="bg-red-100 p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform">
                 {mathSkill.icon}
@@ -85,8 +99,6 @@ export default function DevoirsPage() {
         const past: DatedAssignment[] = [];
 
         allAssignments.forEach(item => {
-          // item.date is a "YYYY-MM-DD" string. parseISO treats it as local time.
-          // This avoids timezone conversion issues.
           const itemDate = parseISO(item.date);
 
           if (isBefore(itemDate, today)) {
@@ -96,7 +108,6 @@ export default function DevoirsPage() {
           }
         });
         
-        // Sort future homework ascending, past homework descending
         future.sort((a,b) => a.date.localeCompare(b.date));
         past.sort((a,b) => b.date.localeCompare(a.date));
 
