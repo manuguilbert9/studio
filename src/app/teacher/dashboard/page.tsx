@@ -12,11 +12,12 @@ import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StudentManager } from '@/components/teacher/student-manager';
-import { HomeworkTracker } from '@/components/teacher/homework-tracker';
 import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
+import { GroupManager } from '@/components/teacher/group-manager';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
+import { getGroups, type Group } from '@/services/groups';
 import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { BuildInfo } from '@/components/teacher/build-info';
@@ -30,25 +31,25 @@ export default function TeacherDashboardPage() {
 
    // Data states
   const [students, setStudents] = useState<Student[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
-  const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
   const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, listsData, progressData, scoresData, writingData, spellingProgressData] = await Promise.all([
+    const [studentData, groupData, listsData, scoresData, writingData, spellingProgressData] = await Promise.all([
       getStudents(),
+      getGroups(),
       getSpellingLists(),
-      getAllSpellingProgress(),
       getAllScores(),
       getAllWritingEntries(),
       getAllSpellingProgress(),
     ]);
     setStudents(studentData);
+    setGroups(groupData);
     setSpellingLists(listsData);
-    setAllProgress(progressData);
     setAllScores(scoresData);
     setAllWritingEntries(writingData);
     setAllSpellingProgress(spellingProgressData);
@@ -103,20 +104,15 @@ export default function TeacherDashboardPage() {
             <Tabs defaultValue="students" className="w-full">
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
-                    <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
+                    <TabsTrigger value="groups">Gestion des groupes</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
                     <TabsTrigger value="database">Réglages</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
                     <StudentManager students={students} onStudentsChange={loadData} />
                 </TabsContent>
-                <TabsContent value="homework" className="mt-6">
-                    <HomeworkTracker 
-                        students={students} 
-                        spellingLists={spellingLists} 
-                        allProgress={allProgress}
-                        allScores={allScores}
-                    />
+                <TabsContent value="groups" className="mt-6">
+                    <GroupManager students={students} groups={groups} onDataChange={loadData} />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
                     <ResultsManager 
@@ -140,3 +136,4 @@ export default function TeacherDashboardPage() {
     </TooltipProvider>
   );
 }
+
