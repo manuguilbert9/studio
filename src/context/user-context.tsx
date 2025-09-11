@@ -50,12 +50,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (studentData) {
         sessionStorage.setItem('classemagique_student_id', studentData.id);
-        // Also set a cookie for Server Components to access
-        document.cookie = `classemagique_student_id=${studentData.id}; path=/; max-age=86400; SameSite=Lax`;
+        // Also set a cookie for Server Components to access. 
+        // Using `Strict` to ensure it's sent on navigation.
+        document.cookie = `classemagique_student_id=${studentData.id}; path=/; max-age=86400; SameSite=Strict`;
       } else {
         sessionStorage.removeItem('classemagique_student_id');
         // Expire the cookie
-        document.cookie = 'classemagique_student_id=; path=/; max-age=-1; SameSite=Lax';
+        document.cookie = 'classemagique_student_id=; path=/; max-age=-1; SameSite=Strict';
       }
     } catch (error) {
         console.error("Could not access sessionStorage", error);
