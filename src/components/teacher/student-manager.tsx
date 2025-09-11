@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, UserPlus, Pencil, Trash2 } from 'lucide-react';
-import { createStudent, getStudents, type Student, updateStudent, deleteStudent } from '@/services/students';
+import { createStudent, getStudents, type Student, updateStudent, deleteStudent, HomeworkOverride } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,17 @@ import { Switch } from '@/components/ui/switch';
 import { skills as availableSkills, type SkillLevel, allSkillCategories } from '@/lib/skills';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getHomeworkAssignments, HomeworkAssignment } from '@/services/teacher';
+import { SpellingList, getSpellingLists } from '@/services/spelling';
+import { format, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
+const mathSkills = availableSkills.filter(s => 
+    s.category === 'Nombres et calcul' || 
+    s.category === 'Grandeurs et mesures' ||
+    s.category === 'Problèmes'
+);
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'A', label: 'A - Maternelle' },
@@ -45,7 +55,12 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
     const [editedCode, setEditedCode] = useState('');
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
     const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
+    const [editedHomeworkOverrides, setEditedHomeworkOverrides] = useState<Record<string, HomeworkOverride>>({});
     const [isUpdating, setIsUpdating] = useState(false);
+
+    // Data for homework overrides
+    const [homeworkAssignments, setHomeworkAssignments] = useState<HomeworkAssignment[]>([]);
+    const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
 
 
      const handleCreateStudent = async (e: FormEvent) => {
@@ -81,11 +96,13 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         }
     }
     
-    const openEditModal = (student: Student) => {
+    const openEditModal = async (student: Student) => {
         setEditingStudent(student);
         setEditedName(student.name);
         setEditedCode(student.code);
         setEditedLevels(student.levels || {});
+        setEditedHomeworkOverrides(student.homeworkOverrides || {});
+
         // If enabledSkills is not set, default all to true
         if (student.enabledSkills) {
              setEditedEnabledSkills(student.enabledSkills);
@@ -94,6 +111,14 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
             availableSkills.forEach(skill => allEnabled[skill.slug] = true);
             setEditedEnabledSkills(allEnabled);
         }
+
+        // Fetch necessary data for homework tab
+        const [assignments, sLists] = await Promise.all([
+            getHomeworkAssignments(),
+            getSpellingLists()
+        ]);
+        setHomeworkAssignments(assignments);
+        setSpellingLists(sLists);
     };
 
     const closeEditModal = () => {
@@ -114,6 +139,7 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
             code: editedCode,
             levels: editedLevels,
             enabledSkills: editedEnabledSkills,
+            homeworkOverrides: editedHomeworkOverrides,
         });
         
         if (result.success) {
@@ -142,6 +168,16 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
 
     const handleEnabledSkillChange = (skillSlug: string, isEnabled: boolean) => {
         setEditedEnabledSkills(prev => ({...prev, [skillSlug]: isEnabled}));
+    };
+    
+    const handleHomeworkOverrideChange = (weekOf: string, field: keyof HomeworkOverride, value: string | null) => {
+        setEditedHomeworkOverrides(prev => ({
+            ...prev,
+            [weekOf]: {
+                ...(prev[weekOf] || { spellingListId: null, mathSkillSlugLundi: null, mathSkillSlugJeudi: null }),
+                [field]: value,
+            }
+        }));
     };
     
     const skillsByCategory = useMemo(() => {
@@ -273,93 +309,158 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                     <DialogHeader>
                         <DialogTitle>Modifier les informations de {editingStudent?.name}</DialogTitle>
                     </DialogHeader>
-                    <ScrollArea className="h-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 py-4 pr-6">
-                        <div className='space-y-4 md:col-span-2 grid grid-cols-2 gap-4'>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-name">Prénom</Label>
-                                <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-code">Code Secret</Label>
-                                <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
-                            </div>
-                        </div>
+                     <Tabs defaultValue="levels" className="pt-4">
+                        <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="general">Général</TabsTrigger>
+                            <TabsTrigger value="levels">Niveaux</TabsTrigger>
+                            <TabsTrigger value="homework">Devoirs</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="general" className="h-full">
+                           <ScrollArea className="h-[calc(80vh-150px)]">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 py-4 pr-6">
+                                     <div className='space-y-4 md:col-span-2 grid grid-cols-2 gap-4'>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-name">Prénom</Label>
+                                            <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="edit-code">Code Secret</Label>
+                                            <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 md:col-span-2">
+                                        <h3 className="font-semibold border-b pb-2">Exercices activés</h3>
+                                        <div className="space-y-4">
+                                            {allSkillCategories.map(category => {
+                                                const skillsInCategory = skillsByCategory[category];
+                                                if (!skillsInCategory || skillsInCategory.length === 0) return null;
+                                                return (
+                                                    <div key={category}>
+                                                        <h4 className="font-medium text-sm text-muted-foreground mb-2">{category}</h4>
+                                                        <div className="space-y-2 p-3 rounded-lg bg-secondary/30">
+                                                            {skillsInCategory.map(skill => (
+                                                                <div key={skill.slug} className="flex items-center justify-between p-2 bg-card rounded-lg shadow-sm">
+                                                                    <Label htmlFor={`skill-switch-${skill.slug}`} className="text-sm font-medium">
+                                                                        {skill.name}
+                                                                    </Label>
+                                                                    <Switch
+                                                                        id={`skill-switch-${skill.slug}`}
+                                                                        checked={editedEnabledSkills[skill.slug] ?? false}
+                                                                        onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
+                                                                    />
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                </div>
+                            </ScrollArea>
+                        </TabsContent>
+                        
+                        <TabsContent value="levels" className="h-full">
+                             <ScrollArea className="h-[calc(80vh-150px)]">
+                                <div className="space-y-4 py-4 pr-6">
+                                    <h3 className="font-semibold border-b pb-2">Niveaux de compétence</h3>
+                                    {allSkillCategories.map(category => {
+                                        const skillsInCategory = skillsByCategory[category];
+                                        if (!skillsInCategory || skillsInCategory.length === 0) return null;
+                                        return (
+                                            <div key={category}>
+                                                <h4 className="font-medium text-sm text-muted-foreground mb-2">{category}</h4>
+                                                <div className="space-y-2">
+                                                    {skillsInCategory.map(skill => (
+                                                        <div key={skill.slug} className="grid grid-cols-3 items-center gap-2">
+                                                            <Label htmlFor={`level-${skill.slug}`} className="text-right text-xs sm:text-sm">
+                                                                {skill.name}
+                                                            </Label>
+                                                            {skill.isFixedLevel ? (
+                                                                <div className="col-span-2">
+                                                                    <Badge variant="secondary">Niveau {skill.isFixedLevel}</Badge>
+                                                                </div>
+                                                            ) : (
+                                                                <Select 
+                                                                    value={editedLevels[skill.slug]} 
+                                                                    onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
+                                                                >
+                                                                    <SelectTrigger className="col-span-2 h-9">
+                                                                        <SelectValue placeholder="Choisir..." />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {skillLevels.map(level => (
+                                                                            <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </ScrollArea>
+                        </TabsContent>
 
-                        <div className="space-y-4">
-                            <h3 className="font-semibold border-b pb-2">Niveaux de compétence</h3>
-                            <div className="space-y-4">
-                                {allSkillCategories.map(category => {
-                                    const skillsInCategory = skillsByCategory[category];
-                                    if (!skillsInCategory || skillsInCategory.length === 0) return null;
-                                    return (
-                                        <div key={category}>
-                                            <h4 className="font-medium text-sm text-muted-foreground mb-2">{category}</h4>
-                                            <div className="space-y-2">
-                                                {skillsInCategory.map(skill => (
-                                                    <div key={skill.slug} className="grid grid-cols-3 items-center gap-2">
-                                                        <Label htmlFor={`level-${skill.slug}`} className="text-right text-xs sm:text-sm">
-                                                            {skill.name}
-                                                        </Label>
-                                                        {skill.isFixedLevel ? (
-                                                            <div className="col-span-2">
-                                                                <Badge variant="secondary">Niveau {skill.isFixedLevel}</Badge>
-                                                            </div>
-                                                        ) : (
-                                                            <Select 
-                                                                value={editedLevels[skill.slug]} 
-                                                                onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
-                                                            >
-                                                                <SelectTrigger className="col-span-2 h-9">
-                                                                    <SelectValue placeholder="Choisir..." />
-                                                                </SelectTrigger>
+                        <TabsContent value="homework" className="h-full">
+                             <ScrollArea className="h-[calc(80vh-150px)]">
+                                 <div className="space-y-4 py-4 pr-6">
+                                     <h3 className="font-semibold border-b pb-2">Devoirs personnalisés</h3>
+                                     <p className="text-sm text-muted-foreground">Définissez ici des devoirs spécifiques pour cet élève. Ils remplaceront les devoirs généraux de la classe pour la semaine concernée.</p>
+                                     <div className="space-y-4">
+                                        {homeworkAssignments.map(assignment => {
+                                            const studentOverride = editedHomeworkOverrides[assignment.weekOf];
+                                            const spellingList = studentOverride?.spellingListId !== undefined ? studentOverride.spellingListId : assignment.spellingListId;
+                                            const mathLundi = studentOverride?.mathSkillSlugLundi !== undefined ? studentOverride.mathSkillSlugLundi : assignment.mathSkillSlugLundi;
+                                            const mathJeudi = studentOverride?.mathSkillSlugJeudi !== undefined ? studentOverride.mathSkillSlugJeudi : assignment.mathSkillSlugJeudi;
+
+                                            return (
+                                                <Card key={assignment.id} className="p-4">
+                                                    <p className="font-semibold mb-3">Semaine du {format(parseISO(assignment.weekOf), "d MMMM yyyy", { locale: fr })}</p>
+                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                                                         <div className="grid gap-1.5">
+                                                            <Label>Orthographe</Label>
+                                                            <Select onValueChange={(val) => handleHomeworkOverrideChange(assignment.weekOf, 'spellingListId', val === 'null' ? null : val)} value={spellingList || 'null'}>
+                                                                <SelectTrigger><SelectValue /></SelectTrigger>
                                                                 <SelectContent>
-                                                                    {skillLevels.map(level => (
-                                                                        <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
-                                                                    ))}
+                                                                    <SelectItem value="null">Par défaut</SelectItem>
+                                                                    {spellingLists.map(list => <SelectItem key={list.id} value={list.id}>{list.id}</SelectItem>)}
                                                                 </SelectContent>
                                                             </Select>
-                                                        )}
+                                                        </div>
+                                                        <div className="grid gap-1.5">
+                                                            <Label>Maths Lundi</Label>
+                                                             <Select onValueChange={(val) => handleHomeworkOverrideChange(assignment.weekOf, 'mathSkillSlugLundi', val === 'null' ? null : val)} value={mathLundi || 'null'}>
+                                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="null">Par défaut</SelectItem>
+                                                                    {mathSkills.map(skill => <SelectItem key={skill.slug} value={skill.slug}>{skill.name}</SelectItem>)}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                        <div className="grid gap-1.5">
+                                                            <Label>Maths Jeudi</Label>
+                                                             <Select onValueChange={(val) => handleHomeworkOverrideChange(assignment.weekOf, 'mathSkillSlugJeudi', val === 'null' ? null : val)} value={mathJeudi || 'null'}>
+                                                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="null">Par défaut</SelectItem>
+                                                                    {mathSkills.map(skill => <SelectItem key={skill.slug} value={skill.slug}>{skill.name}</SelectItem>)}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
                                                     </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            <h3 className="font-semibold border-b pb-2">Exercices activés</h3>
-                            <div className="space-y-4">
-                                {allSkillCategories.map(category => {
-                                    const skillsInCategory = skillsByCategory[category];
-                                    if (!skillsInCategory || skillsInCategory.length === 0) return null;
-                                    return (
-                                        <div key={category}>
-                                            <h4 className="font-medium text-sm text-muted-foreground mb-2">{category}</h4>
-                                             <div className="space-y-2 p-3 rounded-lg bg-secondary/30">
-                                                {skillsInCategory.map(skill => (
-                                                    <div key={skill.slug} className="flex items-center justify-between p-2 bg-card rounded-lg shadow-sm">
-                                                        <Label htmlFor={`skill-switch-${skill.slug}`} className="text-sm font-medium">
-                                                            {skill.name}
-                                                        </Label>
-                                                        <Switch
-                                                            id={`skill-switch-${skill.slug}`}
-                                                            checked={editedEnabledSkills[skill.slug] ?? false}
-                                                            onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        </div>
-
-                    </div>
-                    </ScrollArea>
+                                                </Card>
+                                            )
+                                        })}
+                                     </div>
+                                 </div>
+                             </ScrollArea>
+                        </TabsContent>
+                    </Tabs>
                     <DialogFooter>
                         <DialogClose asChild>
                             <Button type="button" variant="secondary">Annuler</Button>

@@ -1,8 +1,9 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, orderBy, query, where, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, orderBy, query, where, Timestamp, limit } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
 import { startOfWeek, endOfWeek } from 'date-fns';
 
@@ -69,17 +70,16 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 
 
 // This function now finds the homework for the current week.
-export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null }> {
+export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
         const today = new Date();
         const monday = startOfWeek(today, { weekStartsOn: 1 });
+        const mondayISO = monday.toISOString().split('T')[0] + 'T00:00:00.000Z';
         
         // Firestore queries on timestamps are precise. We query for the specific Monday.
-        const mondayTimestamp = Timestamp.fromDate(monday);
-
         const q = query(
             collection(db, HOMEWORK_COLLECTION),
-            where("weekOf", "==", monday.toISOString().split('T')[0] + 'T00:00:00.000Z'), // Match the exact ISO string for the week's Monday
+            where("weekOf", "==", mondayISO),
             limit(1)
         );
         
@@ -91,6 +91,7 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
                 listId: assignment.spellingListId || null,
                 skillSlugLundi: assignment.mathSkillSlugLundi || null,
                 skillSlugJeudi: assignment.mathSkillSlugJeudi || null,
+                weekOf: mondayISO,
             };
         }
 
@@ -103,19 +104,21 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
         );
         const fallbackSnapshot = await getDocs(fallbackQuery);
         if(!fallbackSnapshot.empty) {
-            const assignment = fallbackSnapshot.docs[0].data();
+            const assignmentDoc = fallbackSnapshot.docs[0];
+            const assignment = assignmentDoc.data();
             return {
                 listId: assignment.spellingListId || null,
                 skillSlugLundi: assignment.mathSkillSlugLundi || null,
                 skillSlugJeudi: assignment.mathSkillSlugJeudi || null,
+                weekOf: assignment.weekOf,
             };
         }
 
-        return { listId: null, skillSlugLundi: null, skillSlugJeudi: null };
+        return { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: null };
 
     } catch(e) {
          console.error("Error fetching current homework config:", e);
-         return { listId: null, skillSlugLundi: null, skillSlugJeudi: null };
+         return { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: null };
     }
 }
 

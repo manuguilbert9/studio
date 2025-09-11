@@ -11,7 +11,7 @@ import { Loader2, Home, CheckCircle, List, BookOpen, Calculator } from 'lucide-r
 import { Logo } from '@/components/logo';
 import { getSpellingLists, getSpellingProgress, SpellingList } from '@/services/spelling';
 import { UserContext } from '@/context/user-context';
-import { getCurrentHomeworkConfig } from '@/services/teacher';
+import { getCurrentHomeworkConfig, HomeworkAssignment } from '@/services/teacher';
 import { getSkillBySlug } from '@/lib/skills';
 import { getScoresForUser, hasDoneMathHomework } from '@/services/scores';
 
@@ -22,9 +22,8 @@ function HomeworkList() {
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [spellingProgress, setSpellingProgress] = useState<Record<string, boolean>>({});
   
-  const [currentListId, setCurrentListId] = useState<string | null>(null);
-  const [currentMathSkillSlugLundi, setCurrentMathSkillSlugLundi] = useState<string | null>(null);
-  const [currentMathSkillSlugJeudi, setCurrentMathSkillSlugJeudi] = useState<string | null>(null);
+  const [currentHomework, setCurrentHomework] = useState<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null } | null>(null);
+
   const [isMathLundiDone, setIsMathLundiDone] = useState(false);
   const [isMathJeudiDone, setIsMathJeudiDone] = useState(false);
   
@@ -38,23 +37,31 @@ function HomeworkList() {
       };
 
       setIsLoading(true);
-      const [lists, progress, { listId, skillSlugLundi, skillSlugJeudi }] = await Promise.all([
+
+      // 1. Get global homework config
+      const globalHomework = await getCurrentHomeworkConfig();
+      
+      // 2. Check for student-specific overrides for the current week
+      const studentOverrides = student.homeworkOverrides || {};
+      const currentWeekKey = globalHomework.weekOf;
+      const studentHomework = currentWeekKey ? studentOverrides[currentWeekKey] : undefined;
+
+      const finalHomework = studentHomework !== undefined ? studentHomework : globalHomework;
+      setCurrentHomework(finalHomework);
+      
+      const [lists, progress] = await Promise.all([
         getSpellingLists(),
         getSpellingProgress(student.id),
-        getCurrentHomeworkConfig()
       ]);
       
       setSpellingLists(lists);
       setSpellingProgress(progress);
-      setCurrentListId(listId);
-      setCurrentMathSkillSlugLundi(skillSlugLundi);
-      setCurrentMathSkillSlugJeudi(skillSlugJeudi);
-
-      if (skillSlugLundi) {
-        setIsMathLundiDone(await hasDoneMathHomework(student.id, skillSlugLundi, 'lundi'));
+      
+      if (finalHomework.skillSlugLundi) {
+        setIsMathLundiDone(await hasDoneMathHomework(student.id, finalHomework.skillSlugLundi, 'lundi'));
       }
-      if (skillSlugJeudi) {
-        setIsMathJeudiDone(await hasDoneMathHomework(student.id, skillSlugJeudi, 'jeudi'));
+      if (finalHomework.skillSlugJeudi) {
+        setIsMathJeudiDone(await hasDoneMathHomework(student.id, finalHomework.skillSlugJeudi, 'jeudi'));
       }
 
       setIsLoading(false);
@@ -88,9 +95,9 @@ function HomeworkList() {
     );
   }
   
-  const currentList = spellingLists.find(list => list.id === currentListId);
-  const mathSkillLundi = getSkillBySlug(currentMathSkillSlugLundi || '');
-  const mathSkillJeudi = getSkillBySlug(currentMathSkillSlugJeudi || '');
+  const currentList = spellingLists.find(list => list.id === currentHomework?.listId);
+  const mathSkillLundi = getSkillBySlug(currentHomework?.skillSlugLundi || '');
+  const mathSkillJeudi = getSkillBySlug(currentHomework?.skillSlugJeudi || '');
   
   const hasHomeworkForLundi = currentList || mathSkillLundi;
   const hasHomeworkForJeudi = currentList || mathSkillJeudi;

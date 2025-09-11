@@ -1,11 +1,20 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { skills } from '@/lib/skills';
+import type { HomeworkAssignment } from './teacher';
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
+
+// Overrides for a specific week
+export interface HomeworkOverride {
+    spellingListId: string | null;
+    mathSkillSlugLundi: string | null;
+    mathSkillSlugJeudi: string | null;
+}
 
 export interface Student {
     id: string;
@@ -13,6 +22,7 @@ export interface Student {
     code: string;
     levels?: Record<string, SkillLevel>;
     enabledSkills?: Record<string, boolean>;
+    homeworkOverrides?: Record<string, HomeworkOverride>; // Key: weekOf ISO string
 }
 
 
@@ -39,7 +49,8 @@ export async function createStudent(name: string, code: string): Promise<Student
         name: name.trim(),
         code: code,
         levels: defaultLevels,
-        enabledSkills: defaultEnabledSkills
+        enabledSkills: defaultEnabledSkills,
+        homeworkOverrides: {}
     });
 
     return {
@@ -47,7 +58,8 @@ export async function createStudent(name: string, code: string): Promise<Student
         name: name.trim(),
         code: code,
         levels: defaultLevels,
-        enabledSkills: defaultEnabledSkills
+        enabledSkills: defaultEnabledSkills,
+        homeworkOverrides: {}
     };
 }
 
@@ -115,7 +127,8 @@ export async function getStudents(): Promise<Student[]> {
                 name: data.name,
                 code: data.code,
                 levels: data.levels || {},
-                enabledSkills: data.enabledSkills
+                enabledSkills: data.enabledSkills,
+                homeworkOverrides: data.homeworkOverrides || {}
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -136,30 +149,30 @@ export async function getStudents(): Promise<Student[]> {
 export async function loginStudent(name: string, code: string): Promise<Student | null> {
     try {
         const studentsRef = collection(db, 'students');
-        const q = query(studentsRef, where('code', '==', code));
-        const querySnapshot = await getDocs(q);
+        // This query now fetches all students. In a real app, you'd query by code if it's indexed.
+        // For this app's scale, fetching all and filtering is acceptable.
+        const querySnapshot = await getDocs(studentsRef);
 
         if (querySnapshot.empty) {
-            return null; // No student found with this code
+            return null; // No students in the database
         }
 
-        // Since code might not be unique (though unlikely with a class),
-        // we iterate through results to find a case-insensitive name match.
-        // In a real-world scenario, you'd enforce code uniqueness.
         for (const doc of querySnapshot.docs) {
             const studentData = doc.data();
-            if (studentData.name.toLowerCase() === name.trim().toLowerCase()) {
+            // Case-insensitive name check and code check
+            if (studentData.name.toLowerCase() === name.trim().toLowerCase() && studentData.code === code) {
                 return {
                     id: doc.id,
                     name: studentData.name,
                     code: studentData.code,
                     levels: studentData.levels || {},
-                    enabledSkills: studentData.enabledSkills
+                    enabledSkills: studentData.enabledSkills,
+                    homeworkOverrides: studentData.homeworkOverrides || {}
                 };
             }
         }
         
-        return null; // Code was correct, but name did not match
+        return null; // No matching student found
     } catch (error) {
         console.error("Error during student login:", error);
         return null;
@@ -183,7 +196,8 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 name: data.name,
                 code: data.code,
                 levels: data.levels || {},
-                enabledSkills: data.enabledSkills
+                enabledSkills: data.enabledSkills,
+                homeworkOverrides: data.homeworkOverrides || {}
             };
         }
         return null;
