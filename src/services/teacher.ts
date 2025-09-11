@@ -72,17 +72,25 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 // This function now finds the homework for the current week.
 export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
-        const today = new Date();
+        // Get current date in Paris time zone
+        const parisTime = new Date().toLocaleString("en-US", { timeZone: "Europe/Paris" });
+        const today = new Date(parisTime);
+
         const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
+        const hour = today.getHours();
 
         let referenceDate = today;
-        // If it's Thursday, Friday, Saturday, or Sunday, look for next week's homework
-        if (dayOfWeek >= 4 || dayOfWeek === 0) { // 4 is Thursday
-            referenceDate = addDays(today, 4); // Move to sometime next week to get the correct start of week
+        
+        // If it's Thursday after 11am, or Friday, Saturday, Sunday, look for next week's homework
+        const isPastThreshold = (dayOfWeek === 4 && hour >= 11);
+        const isAfterThursday = dayOfWeek > 4 || dayOfWeek === 0;
+
+        if (isPastThreshold || isAfterThursday) {
+            referenceDate = addDays(today, 7); // Move to sometime next week to get the correct start of week
         }
         
         const monday = startOfWeek(referenceDate, { weekStartsOn: 1 });
-        const mondayISO = monday.toISOString().split('T')[0] + 'T00:00:00.000Z';
+        const mondayISO = monday.toISOString();
         
         // Firestore queries on timestamps are precise. We query for the specific Monday.
         const q = query(
