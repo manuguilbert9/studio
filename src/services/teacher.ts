@@ -5,7 +5,7 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, orderBy, query, where, Timestamp, limit } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
-import { startOfWeek, addDays, endOfDay, setUTCHours } from 'date-fns';
+import { startOfWeek, addDays, endOfDay } from 'date-fns';
 
 const SETTINGS_COLLECTION = 'teacher';
 const HOMEWORK_COLLECTION = 'homework';
@@ -78,14 +78,11 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
         }
 
         const now = new Date();
-        const currentUtcDay = now.getUTCDay(); // Sunday = 0, Monday = 1, ..., Thursday = 4
+        const currentUTCDay = now.getUTCDay(); // Sunday = 0, Monday = 1, etc.
+        const isAfterCutoff = currentUTCDay >= 4 || currentUTCDay === 0; // Thursday, Friday, Saturday, Sunday
 
-        // Determine if we should look for next week's homework
-        // Thursday (4), Friday (5), Saturday (6), Sunday (0)
-        const isAfterCutoff = currentUtcDay >= 4 || currentUtcDay === 0;
-
-        const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
-        setUTCHours(currentWeekMonday, 12, 0, 0, 0); // Normalize to noon UTC
+        let currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 }); // Get Monday of the current week (locale-dependent, but server is UTC)
+        currentWeekMonday.setUTCHours(12, 0, 0, 0); // Normalize to noon UTC to avoid timezone issues.
 
         let targetMonday: Date;
         if (isAfterCutoff) {
@@ -93,6 +90,7 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
         } else {
             targetMonday = currentWeekMonday; // This week's Monday
         }
+        
         const targetMondayString = targetMonday.toISOString().split('T')[0];
 
         // Find the assignment that matches the target Monday
