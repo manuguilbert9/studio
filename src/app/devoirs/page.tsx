@@ -1,15 +1,15 @@
 
 'use client';
 
-import { useState, useEffect, useContext } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useEffect, useContext, Fragment } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, ArrowRight, BookOpen, BrainCircuit, Loader2 } from 'lucide-react';
+import { Home, ArrowRight, BookOpen, BrainCircuit, Loader2, CheckCircle } from 'lucide-react';
 import { getSkillBySlug } from '@/lib/skills';
 import { UserContext } from '@/context/user-context';
-import { getHomeworkForGroup, type Assignment } from '@/services/homework';
+import { getHomeworkForGroup, getHomeworkResultsForUser, type Assignment, type HomeworkResult } from '@/services/homework';
 import { format, isBefore, startOfToday, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -19,10 +19,15 @@ interface DatedAssignment {
   assignment: Assignment;
 }
 
-function HomeworkCard({ date, assignment }: { date: string, assignment: Assignment }) {
+function HomeworkCard({ date, assignment, completedHomework }: { date: string, assignment: Assignment, completedHomework: HomeworkResult[] }) {
   const frenchSkill = assignment.francais ? getSkillBySlug(assignment.francais) : null;
   const mathSkill = assignment.maths ? getSkillBySlug(assignment.maths) : null;
   const spellingId = assignment.orthographe || null;
+
+  const isCompleted = (skillSlug: string | null) => {
+    if (!skillSlug) return false;
+    return completedHomework.some(result => result.date === date && (result.skillSlug === skillSlug || result.skillSlug.startsWith(skillSlug)));
+  }
 
   return (
     <Card>
@@ -33,8 +38,9 @@ function HomeworkCard({ date, assignment }: { date: string, assignment: Assignme
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {spellingId ? (
-           <Link href={`/spelling/${spellingId}?from=devoirs`} className="group">
-             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4">
+           <Link href={`/spelling/${spellingId}?from=devoirs&date=${date}`} className="group">
+             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
+                {isCompleted(`orthographe-${spellingId}`) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 bg-white rounded-full" />}
                 <div className="bg-yellow-100 p-3 rounded-full text-yellow-600 group-hover:scale-110 transition-transform">
                     <BrainCircuit />
                 </div>
@@ -46,8 +52,9 @@ function HomeworkCard({ date, assignment }: { date: string, assignment: Assignme
             </Card>
           </Link>
         ) : frenchSkill ? (
-          <Link href={`/exercise/${frenchSkill.slug}?from=devoirs`} className="group">
-            <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4">
+          <Link href={`/exercise/${frenchSkill.slug}?from=devoirs&date=${date}`} className="group">
+            <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
+              {isCompleted(frenchSkill.slug) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 bg-white rounded-full" />}
               <div className="bg-blue-100 p-3 rounded-full text-blue-600 group-hover:scale-110 transition-transform">
                 {frenchSkill.icon}
               </div>
@@ -62,8 +69,9 @@ function HomeworkCard({ date, assignment }: { date: string, assignment: Assignme
           <Card className="p-4 flex items-center justify-center text-muted-foreground text-sm">Pas d'exercice de français.</Card>
         )}
         {mathSkill ? (
-          <Link href={`/exercise/${mathSkill.slug}?from=devoirs`} className="group">
-            <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4">
+          <Link href={`/exercise/${mathSkill.slug}?from=devoirs&date=${date}`} className="group">
+            <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
+               {isCompleted(mathSkill.slug) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 bg-white rounded-full" />}
               <div className="bg-red-100 p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform">
                 {mathSkill.icon}
               </div>
@@ -86,26 +94,36 @@ export default function DevoirsPage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [futureHomework, setFutureHomework] = useState<DatedAssignment[]>([]);
   const [pastHomework, setPastHomework] = useState<DatedAssignment[]>([]);
+  const [completedHomework, setCompletedHomework] = useState<HomeworkResult[]>([]);
   const [isLoadingHomework, setIsLoadingHomework] = useState(true);
 
   useEffect(() => {
     async function fetchHomework() {
       if (student?.groupId) {
         setIsLoadingHomework(true);
-        const allAssignments = await getHomeworkForGroup(student.groupId);
+        const [allAssignments, completedResults] = await Promise.all([
+            getHomeworkForGroup(student.groupId),
+            getHomeworkResultsForUser(student.id),
+        ]);
         
+        setCompletedHomework(completedResults);
+
         const today = startOfToday();
         const future: DatedAssignment[] = [];
         const past: DatedAssignment[] = [];
 
         allAssignments.forEach(item => {
-          const itemDate = parseISO(item.date);
-
-          if (isBefore(itemDate, today)) {
-            past.push(item);
-          } else {
-            future.push(item);
-          }
+            try {
+                // Correctly parse YYYY-MM-DD as a local date by replacing hyphens to avoid timezone issues
+                const itemDate = new Date(item.date.replace(/-/g, '/'));
+                if (isBefore(itemDate, today)) {
+                    past.push(item);
+                } else {
+                    future.push(item);
+                }
+            } catch (e) {
+                console.error("Invalid date format for homework item:", item.date, e);
+            }
         });
         
         future.sort((a,b) => a.date.localeCompare(b.date));
@@ -174,7 +192,7 @@ export default function DevoirsPage() {
 
       <div className="w-full max-w-4xl space-y-8">
         {futureHomework.length > 0 ? (
-          futureHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} />)
+          futureHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework} />)
         ) : (
           <Card className="text-center p-8">
             <CardTitle>Aucun devoir à venir</CardTitle>
@@ -189,7 +207,7 @@ export default function DevoirsPage() {
                 Devoirs passés
               </AccordionTrigger>
               <AccordionContent className="space-y-6 pt-4">
-                {pastHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} />)}
+                {pastHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework}/>)}
               </AccordionContent>
             </AccordionItem>
           </Accordion>

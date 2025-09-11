@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, collection, getDocs, orderBy, query, addDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, orderBy, query, addDoc, Timestamp, where } from 'firebase/firestore';
 
 export interface Assignment {
   francais: string | null;
@@ -44,6 +44,32 @@ export async function saveHomeworkResult(resultData: Omit<HomeworkResult, 'id' |
             return { success: false, error: error.message };
         }
         return { success: false, error: 'An unknown error occurred.' };
+    }
+}
+
+/**
+ * Gets all homework results for a specific user.
+ * @param userId The ID of the student.
+ * @returns A promise that resolves to an array of homework results.
+ */
+export async function getHomeworkResultsForUser(userId: string): Promise<HomeworkResult[]> {
+    if (!userId) return [];
+    try {
+        const q = query(collection(db, "homeworkResults"), where("userId", "==", userId));
+        const querySnapshot = await getDocs(q);
+        const results: HomeworkResult[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            results.push({
+                id: doc.id,
+                ...data,
+                createdAt: (data.createdAt as Timestamp).toDate().toISOString(),
+            } as HomeworkResult);
+        });
+        return results;
+    } catch (error) {
+        console.error("Error loading homework results from Firestore:", error);
+        return [];
     }
 }
 
