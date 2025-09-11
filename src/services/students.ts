@@ -16,6 +16,12 @@ export interface HomeworkOverride {
     mathSkillSlugJeudi: string | null;
 }
 
+export interface ScheduleStep {
+    id: string;
+    text: string;
+    icon: string;
+}
+
 export interface Student {
     id: string;
     name: string;
@@ -23,6 +29,8 @@ export interface Student {
     levels?: Record<string, SkillLevel>;
     enabledSkills?: Record<string, boolean>;
     homeworkOverrides?: Record<string, HomeworkOverride>; // Key: weekOf ISO string
+    hasCustomSchedule?: boolean;
+    schedule?: ScheduleStep[];
 }
 
 
@@ -50,7 +58,9 @@ export async function createStudent(name: string, code: string): Promise<Student
         code: code,
         levels: defaultLevels,
         enabledSkills: defaultEnabledSkills,
-        homeworkOverrides: {}
+        homeworkOverrides: {},
+        hasCustomSchedule: false,
+        schedule: [],
     });
 
     return {
@@ -59,7 +69,9 @@ export async function createStudent(name: string, code: string): Promise<Student
         code: code,
         levels: defaultLevels,
         enabledSkills: defaultEnabledSkills,
-        homeworkOverrides: {}
+        homeworkOverrides: {},
+        hasCustomSchedule: false,
+        schedule: [],
     };
 }
 
@@ -128,7 +140,9 @@ export async function getStudents(): Promise<Student[]> {
                 code: data.code,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
-                homeworkOverrides: data.homeworkOverrides || {}
+                homeworkOverrides: data.homeworkOverrides || {},
+                hasCustomSchedule: data.hasCustomSchedule || false,
+                schedule: data.schedule || [],
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -149,17 +163,14 @@ export async function getStudents(): Promise<Student[]> {
 export async function loginStudent(name: string, code: string): Promise<Student | null> {
     try {
         const studentsRef = collection(db, 'students');
-        // This query now fetches all students. In a real app, you'd query by code if it's indexed.
-        // For this app's scale, fetching all and filtering is acceptable.
         const querySnapshot = await getDocs(studentsRef);
 
         if (querySnapshot.empty) {
-            return null; // No students in the database
+            return null;
         }
 
         for (const doc of querySnapshot.docs) {
             const studentData = doc.data();
-            // Case-insensitive name check and code check
             if (studentData.name.toLowerCase() === name.trim().toLowerCase() && studentData.code === code) {
                 return {
                     id: doc.id,
@@ -167,7 +178,9 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     code: studentData.code,
                     levels: studentData.levels || {},
                     enabledSkills: studentData.enabledSkills,
-                    homeworkOverrides: studentData.homeworkOverrides || {}
+                    homeworkOverrides: studentData.homeworkOverrides || {},
+                    hasCustomSchedule: studentData.hasCustomSchedule || false,
+                    schedule: studentData.schedule || [],
                 };
             }
         }
@@ -197,7 +210,9 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 code: data.code,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
-                homeworkOverrides: data.homeworkOverrides || {}
+                homeworkOverrides: data.homeworkOverrides || {},
+                hasCustomSchedule: data.hasCustomSchedule || false,
+                schedule: data.schedule || [],
             };
         }
         return null;

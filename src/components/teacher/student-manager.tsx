@@ -6,8 +6,8 @@ import { useState, FormEvent, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, UserPlus, Pencil, Trash2 } from 'lucide-react';
-import { createStudent, getStudents, type Student, updateStudent, deleteStudent, HomeworkOverride } from '@/services/students';
+import { Loader2, UserPlus, Pencil, Trash2, CalendarPlus, GripVertical, PlusCircle } from 'lucide-react';
+import { createStudent, getStudents, type Student, updateStudent, deleteStudent, HomeworkOverride, ScheduleStep } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +56,8 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
     const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
     const [editedHomeworkOverrides, setEditedHomeworkOverrides] = useState<Record<string, HomeworkOverride>>({});
+    const [hasCustomSchedule, setHasCustomSchedule] = useState(false);
+    const [editedSchedule, setEditedSchedule] = useState<ScheduleStep[]>([]);
     const [isUpdating, setIsUpdating] = useState(false);
 
     // Data for homework overrides
@@ -89,7 +91,7 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
             toast({
                 variant: 'destructive',
                 title: "Erreur",
-                description: "Impossible de créer l'élève. Ce code est peut-être déjà utilisé.",
+                description: "Impossible de créer l'élève. Ce prénom est peut-être déjà utilisé.",
             });
         } finally {
             setIsCreatingStudent(false);
@@ -102,8 +104,9 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         setEditedCode(student.code);
         setEditedLevels(student.levels || {});
         setEditedHomeworkOverrides(student.homeworkOverrides || {});
+        setHasCustomSchedule(student.hasCustomSchedule || false);
+        setEditedSchedule(student.schedule || []);
 
-        // If enabledSkills is not set, default all to true
         if (student.enabledSkills) {
              setEditedEnabledSkills(student.enabledSkills);
         } else {
@@ -112,7 +115,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
             setEditedEnabledSkills(allEnabled);
         }
 
-        // Fetch necessary data for homework tab
         const [assignments, sLists] = await Promise.all([
             getHomeworkAssignments(),
             getSpellingLists()
@@ -140,10 +142,12 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
             levels: editedLevels,
             enabledSkills: editedEnabledSkills,
             homeworkOverrides: editedHomeworkOverrides,
+            hasCustomSchedule: hasCustomSchedule,
+            schedule: editedSchedule,
         });
         
         if (result.success) {
-            onStudentsChange(); // Refresh list
+            onStudentsChange();
             toast({ title: "Élève mis à jour", description: `Les informations de ${editedName} ont été modifiées.` });
             closeEditModal();
         } else {
@@ -155,7 +159,7 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
     const handleDeleteStudent = async (studentId: string) => {
         const result = await deleteStudent(studentId);
         if (result.success) {
-            onStudentsChange(); // Refresh list
+            onStudentsChange();
             toast({ title: "Élève supprimé", description: "L'élève a bien été supprimé de la liste." });
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de supprimer l'élève." });
@@ -179,6 +183,23 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
             }
         }));
     };
+
+    const handleAddScheduleStep = () => {
+        setEditedSchedule(prev => [...prev, { id: Date.now().toString(), text: '', icon: 'Pen' }]);
+    };
+    
+    const handleScheduleStepChange = (index: number, field: 'text' | 'icon', value: string) => {
+        setEditedSchedule(prev => {
+            const newSchedule = [...prev];
+            newSchedule[index] = { ...newSchedule[index], [field]: value };
+            return newSchedule;
+        });
+    };
+
+    const handleRemoveScheduleStep = (index: number) => {
+        setEditedSchedule(prev => prev.filter((_, i) => i !== index));
+    };
+
     
     const skillsByCategory = useMemo(() => {
         const grouped: Record<string, typeof availableSkills> = {};
@@ -239,6 +260,7 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                             <TableHead>Prénom</TableHead>
                                             <TableHead>Code Secret</TableHead>
                                             <TableHead>Niveaux</TableHead>
+                                            <TableHead>Planning</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -265,6 +287,9 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                                     )}
                                                     </div>
                                                 </TableCell>
+                                                <TableCell>
+                                                    {student.hasCustomSchedule && <Badge>Activé</Badge>}
+                                                </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex gap-1 justify-end">
                                                         <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditModal(student)}>
@@ -284,10 +309,10 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                                                 </AlertDialogDescription>
                                                                 </AlertDialogHeader>
                                                                 <AlertDialogFooter>
-                                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                                <AlertDialogAction onClick={() => handleDeleteStudent(student.id)}>
-                                                                    Supprimer
-                                                                </AlertDialogAction>
+                                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                                    <AlertDialogAction onClick={() => handleDeleteStudent(student.id)}>
+                                                                        Supprimer
+                                                                    </AlertDialogAction>
                                                                 </AlertDialogFooter>
                                                             </AlertDialogContent>
                                                         </AlertDialog>
@@ -303,17 +328,17 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                 </div>
             </div>
 
-            {/* Dialog for editing student */}
             <Dialog open={!!editingStudent} onOpenChange={(isOpen) => !isOpen && closeEditModal()}>
                 <DialogContent className="max-w-4xl h-[90vh]">
                     <DialogHeader>
                         <DialogTitle>Modifier les informations de {editingStudent?.name}</DialogTitle>
                     </DialogHeader>
                      <Tabs defaultValue="levels" className="pt-4">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className="grid w-full grid-cols-4">
                             <TabsTrigger value="general">Général</TabsTrigger>
                             <TabsTrigger value="levels">Niveaux</TabsTrigger>
                             <TabsTrigger value="homework">Devoirs</TabsTrigger>
+                            <TabsTrigger value="schedule">Planning</TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="general" className="h-full">
@@ -459,6 +484,49 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                      </div>
                                  </div>
                              </ScrollArea>
+                        </TabsContent>
+
+                        <TabsContent value="schedule" className="h-full">
+                            <ScrollArea className="h-[calc(80vh-150px)]">
+                                <div className="space-y-4 py-4 pr-6">
+                                    <div className="flex items-center space-x-2">
+                                        <Switch id="custom-schedule-toggle" checked={hasCustomSchedule} onCheckedChange={setHasCustomSchedule} />
+                                        <Label htmlFor="custom-schedule-toggle">Activer le planning personnalisé pour cet élève</Label>
+                                    </div>
+
+                                    {hasCustomSchedule && (
+                                        <div className="space-y-4 pt-4">
+                                             <h3 className="font-semibold">Étapes de la journée</h3>
+                                             <div className='space-y-3'>
+                                                {editedSchedule.map((step, index) => (
+                                                    <div key={step.id} className="flex items-center gap-2 p-2 border rounded-lg">
+                                                        <GripVertical className="cursor-move text-muted-foreground" />
+                                                        <Input 
+                                                            placeholder="Nom de l'étape" 
+                                                            value={step.text} 
+                                                            onChange={(e) => handleScheduleStepChange(index, 'text', e.target.value)} 
+                                                            className="h-9"
+                                                        />
+                                                        <Input 
+                                                            placeholder="Icône (ex: Pen)" 
+                                                            value={step.icon} 
+                                                            onChange={(e) => handleScheduleStepChange(index, 'icon', e.target.value)}
+                                                            className="h-9 w-32"
+                                                        />
+                                                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleRemoveScheduleStep(index)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                             </div>
+                                            <Button variant="outline" size="sm" onClick={handleAddScheduleStep}>
+                                                <PlusCircle className="mr-2 h-4 w-4"/>
+                                                Ajouter une étape
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </ScrollArea>
                         </TabsContent>
                     </Tabs>
                     <DialogFooter>
