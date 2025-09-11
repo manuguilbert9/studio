@@ -73,62 +73,32 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
         const now = new Date();
-
-        const findAssignmentForWeek = async (mondayDate: Date) => {
-            const monday = new Date(Date.UTC(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate(), 12, 0, 0));
-            const mondayISO = monday.toISOString();
-            
-            const q = query(collection(db, HOMEWORK_COLLECTION), where("weekOf", "==", mondayISO), limit(1));
-            const snapshot = await getDocs(q);
-            if (!snapshot.empty) {
-                const data = snapshot.docs[0].data();
-                return {
-                    listId: data.spellingListId || null,
-                    skillSlugLundi: data.mathSkillSlugLundi || null,
-                    skillSlugJeudi: data.mathSkillSlugJeudi || null,
-                    weekOf: data.weekOf,
-                };
-            }
-            return null;
-        };
-        
-        // Sunday=0, Monday=1, ..., Thursday=4, ...
-        const dayOfWeek = now.getDay(); 
+        const dayOfWeek = now.getDay(); // Sunday is 0, Monday is 1, Thursday is 4.
         const isThursdayOrLater = dayOfWeek === 0 || dayOfWeek >= 4;
 
         const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
-        
         const targetMonday = isThursdayOrLater ? addDays(currentWeekMonday, 7) : currentWeekMonday;
 
-        let assignment = await findAssignmentForWeek(targetMonday);
-        
-        // Fallback: If no assignment found for the target week, try the other week.
-        if (!assignment) {
-             const fallbackMonday = isThursdayOrLater ? currentWeekMonday : addDays(currentWeekMonday, 7);
-             assignment = await findAssignmentForWeek(fallbackMonday);
-        }
+        // Set target to noon UTC to avoid timezone issues
+        const targetMondayUTC = new Date(Date.UTC(targetMonday.getFullYear(), targetMonday.getMonth(), targetMonday.getDate(), 12, 0, 0));
+        const targetMondayISO = targetMondayUTC.toISOString();
 
-        // Fallback: If still no assignment, find the most recent one in the past.
-        if (!assignment) {
-            const fallbackQuery = query(
-                collection(db, HOMEWORK_COLLECTION),
-                where("weekOf", "<=", new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0)).toISOString()),
-                orderBy("weekOf", "desc"),
-                limit(1)
-            );
-            const fallbackSnapshot = await getDocs(fallbackQuery);
-            if (!fallbackSnapshot.empty) {
-                 const data = fallbackSnapshot.docs[0].data();
-                 assignment = {
-                    listId: data.spellingListId || null,
-                    skillSlugLundi: data.mathSkillSlugLundi || null,
-                    skillSlugJeudi: data.mathSkillSlugJeudi || null,
-                    weekOf: data.weekOf,
-                };
-            }
+        const q = query(collection(db, HOMEWORK_COLLECTION), where("weekOf", "==", targetMondayISO), limit(1));
+        const snapshot = await getDocs(q);
+
+        if (!snapshot.empty) {
+            const data = snapshot.docs[0].data();
+            return {
+                listId: data.spellingListId || null,
+                skillSlugLundi: data.mathSkillSlugLundi || null,
+                skillSlugJeudi: data.mathSkillSlugJeudi || null,
+                weekOf: data.weekOf,
+            };
+        } else {
+             // If no specific assignment is found for the target week, return nulls.
+             // This prevents falling back to a previous week after the threshold day.
+            return { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: targetMondayISO };
         }
-        
-        return assignment || { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: null };
 
     } catch(e) {
          console.error("Error fetching current homework config:", e);
