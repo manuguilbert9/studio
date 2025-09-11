@@ -118,7 +118,7 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                             const mathSkillJeudi = getSkillBySlug(assignment.mathSkillSlugJeudi || '');
                             
                             // Correctly parse UTC string into a Date object
-                            const weekDate = new Date(assignment.weekOf);
+                            const weekDate = parseISO(assignment.weekOf);
 
                             return (
                                 <AccordionItem value={assignment.id} key={assignment.id} className="border bg-secondary/30 rounded-lg px-4">

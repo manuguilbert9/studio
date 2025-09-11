@@ -46,8 +46,11 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
 
         setIsSaving(true);
         const monday = startOfWeek(week, { weekStartsOn: 1 });
+        // Set time to noon UTC to avoid timezone issues
+        monday.setUTCHours(12, 0, 0, 0);
+
         const result = await addHomeworkAssignment({
-            weekOf: monday.toISOString().split('T')[0] + 'T00:00:00.000Z',
+            weekOf: monday.toISOString(), // Store as UTC ISO string
             spellingListId,
             mathSkillSlugLundi: mathSkillLundi,
             mathSkillSlugJeudi: mathSkillJeudi
@@ -100,8 +103,9 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
                                 initialFocus
                                 locale={fr}
                                 showOutsideDays={false}
-                                modifiers={{ week: modifiers }}
-                                modifiersClassNames={{ week: 'bg-primary/20' }}
+                                weekStartsOn={1}
+                                modifiers={{ selected: modifiers.start && modifiers.end ? date => date >= modifiers.start! && date <= modifiers.end! : () => false }}
+                                modifiersClassNames={{ selected: 'bg-primary/20' }}
                             />
                         </PopoverContent>
                     </Popover>

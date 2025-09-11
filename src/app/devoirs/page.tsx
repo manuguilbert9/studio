@@ -107,7 +107,7 @@ function HomeworkList() {
   const getWeekDayDate = (day: 'lundi' | 'jeudi'): string => {
     if (!currentHomework?.weekOf) return '';
     try {
-        const mondayUTC = new Date(currentHomework.weekOf);
+        const mondayUTC = parseISO(currentHomework.weekOf);
         const targetDay = addDays(mondayUTC, day === 'lundi' ? 0 : 3);
         return format(targetDay, 'd/MM');
     } catch (e) {
@@ -116,7 +116,7 @@ function HomeworkList() {
     }
   }
   
-  const weekOfDate = currentHomework?.weekOf ? new Date(currentHomework.weekOf) : null;
+  const weekOfDate = currentHomework?.weekOf ? parseISO(currentHomework.weekOf) : null;
 
   return (
     <div className="space-y-8">
