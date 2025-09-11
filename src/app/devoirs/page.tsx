@@ -73,12 +73,14 @@ export default function DevoirsPage() {
   const [futureHomework, setFutureHomework] = useState<DatedAssignment[]>([]);
   const [pastHomework, setPastHomework] = useState<DatedAssignment[]>([]);
   const [isLoadingHomework, setIsLoadingHomework] = useState(true);
+  const [debugData, setDebugData] = useState<any>(null); // For debugging
 
   useEffect(() => {
     async function fetchHomework() {
       if (student?.groupId) {
         setIsLoadingHomework(true);
         const allAssignments = await getHomeworkForGroup(student.groupId);
+        setDebugData(allAssignments); // <-- Store raw data for debugging
         
         const today = startOfToday();
         const future: DatedAssignment[] = [];
@@ -163,6 +165,19 @@ export default function DevoirsPage() {
       </div>
 
       <div className="w-full max-w-4xl space-y-8">
+        {/* --- DEBUG BLOCK START --- */}
+        <Card className="bg-destructive/10 border-destructive">
+            <CardHeader>
+                <CardTitle>Données brutes de Firestore (Debug)</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <pre className="text-xs whitespace-pre-wrap">
+                    {JSON.stringify(debugData, null, 2)}
+                </pre>
+            </CardContent>
+        </Card>
+        {/* --- DEBUG BLOCK END --- */}
+
         {futureHomework.length > 0 ? (
           futureHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} />)
         ) : (
