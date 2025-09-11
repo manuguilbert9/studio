@@ -5,7 +5,7 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, orderBy, query, where, Timestamp, limit } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
-import { startOfWeek, addDays } from 'date-fns';
+import { startOfWeek, addDays, endOfDay } from 'date-fns';
 
 const SETTINGS_COLLECTION = 'teacher';
 const HOMEWORK_COLLECTION = 'homework';
@@ -73,17 +73,27 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
         const now = new Date();
-        const dayOfWeek = now.getDay(); // Sunday is 0, Monday is 1, Thursday is 4.
-        const isThursdayOrLater = dayOfWeek === 0 || dayOfWeek >= 4;
+        const dayOfWeek = now.getDay(); // Sunday is 0, Monday is 1, ..., Saturday is 6
+        const isAfterCutoff = dayOfWeek >= 4 || dayOfWeek === 0; // Thursday, Friday, Saturday, Sunday
 
         const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
-        const targetMonday = isThursdayOrLater ? addDays(currentWeekMonday, 7) : currentWeekMonday;
+        
+        let targetMonday: Date;
+        if (isAfterCutoff) {
+            targetMonday = addDays(currentWeekMonday, 7); // Next week's Monday
+        } else {
+            targetMonday = currentWeekMonday; // This week's Monday
+        }
+        
+        const startOfTargetDay = targetMonday;
+        const endOfTargetDay = endOfDay(targetMonday);
 
-        // Set target to noon UTC to avoid timezone issues
-        const targetMondayUTC = new Date(Date.UTC(targetMonday.getFullYear(), targetMonday.getMonth(), targetMonday.getDate(), 12, 0, 0));
-        const targetMondayISO = targetMondayUTC.toISOString();
-
-        const q = query(collection(db, HOMEWORK_COLLECTION), where("weekOf", "==", targetMondayISO), limit(1));
+        const q = query(
+            collection(db, HOMEWORK_COLLECTION), 
+            where("weekOf", ">=", startOfTargetDay.toISOString()), 
+            where("weekOf", "<=", endOfTargetDay.toISOString()), 
+            limit(1)
+        );
         const snapshot = await getDocs(q);
 
         if (!snapshot.empty) {
@@ -95,14 +105,17 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
                 weekOf: data.weekOf,
             };
         } else {
-             // If no specific assignment is found for the target week, return nulls.
-             // This prevents falling back to a previous week after the threshold day.
-            return { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: targetMondayISO };
+            // If no assignment is found for the target week, return nulls for that week.
+            // This prevents falling back to a previous week's assignment.
+            return { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: targetMonday.toISOString() };
         }
 
     } catch(e) {
          console.error("Error fetching current homework config:", e);
-         return { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: null };
+         // In case of error, return a default state for the expected week to avoid confusion.
+         const now = new Date();
+         const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
+         return { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: currentWeekMonday.toISOString() };
     }
 }
 
