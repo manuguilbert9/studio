@@ -91,15 +91,27 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     const isCorrect = inputValue.trim().toLowerCase() === currentWord.toLowerCase();
     
     if (isHomework && homeworkDate) {
-        // For homework, we save each word individually
+        // For homework, we save each word individually and then stop.
         await saveHomeworkResult({
             userId: student.id,
             date: homeworkDate,
             skillSlug: `orthographe-${exerciseId}`,
             score: isCorrect ? 100 : 0, // 100 for correct, 0 for incorrect
         });
-    }
 
+        if (isCorrect) {
+          setFeedback('correct');
+          setTimeout(handleNextWord, 1500);
+        } else {
+          setFeedback('incorrect');
+          if (!errors.includes(currentWord)) {
+              setErrors(prev => [...prev, currentWord]);
+          }
+        }
+        return; // Important: Stop execution here for homework.
+    }
+    
+    // This part is for non-homework exercises only.
     if (isCorrect) {
       setFeedback('correct');
       setTimeout(handleNextWord, 1500);
