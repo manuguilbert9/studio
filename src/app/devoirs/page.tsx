@@ -41,24 +41,28 @@ function HomeworkList() {
       setIsLoading(true);
 
       const globalHomework = await getCurrentHomeworkConfig();
+      console.log('DEBUG: Devoirs généraux reçus:', JSON.stringify(globalHomework, null, 2));
+
       const studentOverrides = student.homeworkOverrides || {};
+      console.log('DEBUG: Devoirs personnalisés pour l\'élève:', JSON.stringify(studentOverrides, null, 2));
+      
       const currentWeekKey = globalHomework.weekOf;
 
       let finalHomework = globalHomework;
       
       if (currentWeekKey && studentOverrides[currentWeekKey]) {
         const studentHomework = studentOverrides[currentWeekKey];
-        // An override is only valid if at least one field is not null. Otherwise, it's an empty shell.
         const isOverrideValid = studentHomework.spellingListId !== null || studentHomework.mathSkillSlugLundi !== null || studentHomework.mathSkillSlugJeudi !== null;
 
         if (isOverrideValid) {
              finalHomework = { 
-                ...globalHomework, // Use global as base
-                ...studentHomework // Override with student specific
+                ...globalHomework,
+                ...studentHomework
              };
         }
       }
-
+      
+      console.log('DEBUG: Devoirs finaux affichés:', JSON.stringify(finalHomework, null, 2));
       setCurrentHomework(finalHomework);
       
       const [lists, progress] = await Promise.all([
