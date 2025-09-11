@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '../ui/label';
 import { Calendar as CalendarIcon, PlusCircle } from 'lucide-react';
-import { format, startOfWeek } from 'date-fns';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { skills as allSkills } from '@/lib/skills';
@@ -66,6 +66,12 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
         }
         setIsSaving(false);
     }
+    
+    const weekStartsOn = 1; // Monday
+    const modifiers = week ? {
+        start: startOfWeek(week, { weekStartsOn }),
+        end: endOfWeek(week, { weekStartsOn })
+    } : {};
 
     return (
         <Card className="bg-muted/50">
@@ -93,13 +99,16 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
                                 onSelect={setWeek}
                                 initialFocus
                                 locale={fr}
+                                showOutsideDays={false}
+                                modifiers={{ week: modifiers }}
+                                modifiersClassNames={{ week: 'bg-primary/20' }}
                             />
                         </PopoverContent>
                     </Popover>
                 </div>
                  <div className="grid gap-1.5">
                     <Label htmlFor="spelling-select">Orthographe</Label>
-                     <Select onValueChange={(val) => setSpellingListId(val === 'null' ? null : val)} value={spellingListId || ''}>
+                     <Select onValueChange={(val) => setSpellingListId(val === 'null' ? null : val)} value={spellingListId || 'null'}>
                         <SelectTrigger id="spelling-select">
                             <SelectValue placeholder="Aucun" />
                         </SelectTrigger>
@@ -113,7 +122,7 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
                 </div>
                  <div className="grid gap-1.5">
                     <Label htmlFor="math-lundi-select">Maths Lundi</Label>
-                     <Select onValueChange={(val) => setMathSkillLundi(val === 'null' ? null : val)} value={mathSkillLundi || ''}>
+                     <Select onValueChange={(val) => setMathSkillLundi(val === 'null' ? null : val)} value={mathSkillLundi || 'null'}>
                         <SelectTrigger id="math-lundi-select">
                             <SelectValue placeholder="Aucun" />
                         </SelectTrigger>
@@ -127,7 +136,7 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
                 </div>
                 <div className="grid gap-1.5">
                     <Label htmlFor="math-jeudi-select">Maths Jeudi</Label>
-                     <Select onValueChange={(val) => setMathSkillJeudi(val === 'null' ? null : val)} value={mathSkillJeudi || ''}>
+                     <Select onValueChange={(val) => setMathSkillJeudi(val === 'null' ? null : val)} value={mathSkillJeudi || 'null'}>
                         <SelectTrigger id="math-jeudi-select">
                             <SelectValue placeholder="Aucun" />
                         </SelectTrigger>

@@ -101,29 +101,35 @@ function HomeworkList() {
   const mathSkillLundi = getSkillBySlug(currentHomework?.skillSlugLundi || '');
   const mathSkillJeudi = getSkillBySlug(currentHomework?.skillSlugJeudi || '');
   
-  const hasHomeworkForLundi = currentList || mathSkillLundi;
-  const hasHomeworkForJeudi = currentList || mathSkillJeudi;
+  const hasHomeworkForLundi = !!(currentList || mathSkillLundi);
+  const hasHomeworkForJeudi = !!(currentList || mathSkillJeudi);
 
   const getWeekDayDate = (day: 'lundi' | 'jeudi'): string => {
     if (!currentHomework?.weekOf) return '';
-    const monday = parseISO(currentHomework.weekOf);
-    const targetDay = addDays(monday, day === 'lundi' ? 0 : 3);
-    return format(targetDay, 'd/MM');
+    try {
+        const monday = parseISO(currentHomework.weekOf);
+        const targetDay = addDays(monday, day === 'lundi' ? 0 : 3);
+        return format(targetDay, 'd/MM');
+    } catch (e) {
+        return '';
+    }
   }
+  
+  const weekOfDate = currentHomework?.weekOf ? parseISO(currentHomework.weekOf) : null;
 
   return (
     <div className="space-y-8">
         <Card className="w-full bg-secondary/50 border-primary/50">
             <CardHeader>
                 <CardTitle className="font-headline text-3xl sm:text-4xl text-center">
-                    Devoirs de la semaine du {currentHomework?.weekOf ? format(parseISO(currentHomework.weekOf), 'd MMMM', {locale: fr}) : ''}
+                    Devoirs de la semaine du {weekOfDate ? format(weekOfDate, 'd MMMM', {locale: fr}) : ''}
                 </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Lundi Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline text-2xl">Pour Lundi <span className="font-sans font-normal text-muted-foreground">{getWeekDayDate('lundi')}</span></CardTitle>
+                        <CardTitle className="font-headline text-2xl">Pour Lundi {weekOfDate && <span className="font-sans font-normal text-muted-foreground">{getWeekDayDate('lundi')}</span>}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {currentList && (
@@ -145,9 +151,7 @@ function HomeworkList() {
                                 <span className="flex items-center gap-2"><Calculator className="h-5 w-5"/>Maths: {mathSkillLundi.name}</span>
                                 {isMathLundiDone && <CheckCircle className="text-green-500"/>}
                             </Button>
-                        ) : (
-                           !currentList && <div className="text-center text-sm text-muted-foreground p-4">Aucun devoir pour lundi.</div>
-                        )}
+                        ) : null}
                          {!hasHomeworkForLundi && <div className="text-center text-sm text-muted-foreground p-4">Aucun devoir pour lundi.</div>}
                     </CardContent>
                 </Card>
@@ -155,7 +159,7 @@ function HomeworkList() {
                  {/* Jeudi Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline text-2xl">Pour Jeudi <span className="font-sans font-normal text-muted-foreground">{getWeekDayDate('jeudi')}</span></CardTitle>
+                        <CardTitle className="font-headline text-2xl">Pour Jeudi {weekOfDate && <span className="font-sans font-normal text-muted-foreground">{getWeekDayDate('jeudi')}</span>}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {currentList && (
@@ -177,9 +181,7 @@ function HomeworkList() {
                                 <span className="flex items-center gap-2"><Calculator className="h-5 w-5"/>Maths: {mathSkillJeudi.name}</span>
                                 {isMathJeudiDone && <CheckCircle className="text-green-500"/>}
                             </Button>
-                        ) : (
-                             !currentList && <div className="text-center text-sm text-muted-foreground p-4">Aucun devoir pour jeudi.</div>
-                        )}
+                        ) : null}
                          {!hasHomeworkForJeudi && <div className="text-center text-sm text-muted-foreground p-4">Aucun devoir pour jeudi.</div>}
                     </CardContent>
                 </Card>
