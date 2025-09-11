@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -55,7 +56,7 @@ export default function ExercisePage() {
       case 'letter-recognition':
         return <LetterRecognitionExercise />;
       default:
-        return <ExerciseWorkspace skill={skill} homeworkSession={homeworkSession}/>;
+        return <ExerciseWorkspace skill={skill} />;
     }
   };
 

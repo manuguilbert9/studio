@@ -1,7 +1,9 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { RefreshCw, Keyboard, Volume2 } from 'lucide-react';
@@ -13,11 +15,21 @@ import { ScoreTube } from './score-tube';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { VirtualKeyboard } from './virtual-keyboard';
+import { getSpellingLists, SpellingList, saveSpellingResult } from '@/services/spelling';
+import { Loader2 } from 'lucide-react';
 
 const WORDS_PER_EXERCISE = 10;
 
-export function KeyboardCopyExercise() {
+interface KeyboardCopyExerciseProps {
+    isHomework?: boolean;
+}
+
+export function KeyboardCopyExercise({ isHomework = false }: KeyboardCopyExerciseProps) {
     const { student } = useContext(UserContext);
+    const router = useRouter();
+    const params = useParams();
+    const { exerciseId } = params as { exerciseId: string };
+
     const [words, setWords] = useState<WordWithEmoji[]>([]);
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [typedWord, setTypedWord] = useState('');
@@ -27,12 +39,32 @@ export function KeyboardCopyExercise() {
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
-
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        setWords(getSimpleWords(WORDS_PER_EXERCISE));
-    }, []);
+        async function loadWords() {
+            setIsLoading(true);
+            if (isHomework && exerciseId) {
+                const allLists = await getSpellingLists();
+                const listId = exerciseId.split('-')[0];
+                const session = exerciseId.split('-')[1];
+                const foundList = allLists.find(l => l.id === listId);
 
+                if (foundList && session) {
+                    const half = Math.ceil(foundList.words.length / 2);
+                    const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
+                    const shuffled = [...sessionWords].sort(() => 0.5 - Math.random());
+                    setWords(shuffled.map(word => ({ word: word, emoji: '📝' }))); // Default emoji
+                }
+            } else {
+                setWords(getSimpleWords(WORDS_PER_EXERCISE));
+            }
+            setIsLoading(false);
+        }
+        loadWords();
+    }, [isHomework, exerciseId]);
+
+    const wordsCount = words.length > 0 ? words.length : WORDS_PER_EXERCISE;
     const currentWordObject = useMemo(() => words[currentWordIndex] || null, [words, currentWordIndex]);
     const currentWord = useMemo(() => currentWordObject?.word || '', [currentWordObject]);
     
@@ -97,7 +129,7 @@ export function KeyboardCopyExercise() {
 
             setTimeout(() => {
                 setShowConfetti(false);
-                if (currentWordIndex < WORDS_PER_EXERCISE - 1) {
+                if (currentWordIndex < wordsCount - 1) {
                     setCurrentWordIndex(prev => prev + 1);
                     setTypedWord('');
                 } else {
@@ -105,23 +137,30 @@ export function KeyboardCopyExercise() {
                 }
             }, 1000);
         }
-    }, [typedWord, currentWord, currentWordIndex]);
+    }, [typedWord, currentWord, currentWordIndex, wordsCount]);
     
       useEffect(() => {
         const saveResult = async () => {
             if (isFinished && student && !hasBeenSaved) {
                 setHasBeenSaved(true);
-                const score = (correctAnswers / WORDS_PER_EXERCISE) * 100;
-                await addScore({
-                    userId: student.id,
-                    skill: 'keyboard-copy',
-                    score: score,
-                    details: sessionDetails,
-                });
+                const score = (correctAnswers / wordsCount) * 100;
+                
+                if (isHomework && exerciseId) {
+                    // For homework, we save it as a spelling result with 0 errors
+                    await saveSpellingResult(student.id, exerciseId, []);
+                } else {
+                    // For regular exercise, we save it as a score
+                    await addScore({
+                        userId: student.id,
+                        skill: 'keyboard-copy',
+                        score: score,
+                        details: sessionDetails,
+                    });
+                }
             }
         };
         saveResult();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, exerciseId, wordsCount]);
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,7 +168,9 @@ export function KeyboardCopyExercise() {
     };
 
     const restartExercise = () => {
-        setWords(getSimpleWords(WORDS_PER_EXERCISE));
+        if (!isHomework) {
+            setWords(getSimpleWords(WORDS_PER_EXERCISE));
+        }
         setCurrentWordIndex(0);
         setTypedWord('');
         setIsFinished(false);
@@ -137,9 +178,13 @@ export function KeyboardCopyExercise() {
         setHasBeenSaved(false);
         setSessionDetails([]);
     };
+    
+    if(isLoading) {
+        return <Loader2 className="h-12 w-12 animate-spin" />
+    }
 
     if (isFinished) {
-        const score = (correctAnswers / WORDS_PER_EXERCISE) * 100;
+        const score = (correctAnswers / wordsCount) * 100;
         return (
             <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
                 <CardHeader>
@@ -147,13 +192,19 @@ export function KeyboardCopyExercise() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <p className="text-2xl">
-                        Bravo ! Tu as recopié <span className="font-bold text-primary">{correctAnswers}</span> mots sur <span className="font-bold">{WORDS_PER_EXERCISE}</span>.
+                        Bravo ! Tu as recopié <span className="font-bold text-primary">{correctAnswers}</span> mots sur <span className="font-bold">{wordsCount}</span>.
                     </p>
                     <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                        <RefreshCw className="mr-2" />
-                        Recommencer
-                    </Button>
+                    {isHomework ? (
+                         <Button onClick={() => router.push('/devoirs')} size="lg" className="mt-8 w-full">
+                            Retourner à la liste des devoirs
+                        </Button>
+                    ) : (
+                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+                            <RefreshCw className="mr-2" />
+                            Recommencer
+                        </Button>
+                    )}
                 </CardContent>
             </Card>
         );
@@ -161,7 +212,7 @@ export function KeyboardCopyExercise() {
     
     return (
         <div className="w-full max-w-3xl mx-auto space-y-6">
-            <Progress value={((currentWordIndex) / WORDS_PER_EXERCISE) * 100} className="w-full h-3" />
+            <Progress value={((currentWordIndex) / wordsCount) * 100} className="w-full h-3" />
             <Card className="shadow-2xl text-center relative overflow-hidden">
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
                     <Confetti active={showConfetti} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 2000, stagger: 3, width: "10px", height: "10px"}} />
@@ -171,7 +222,7 @@ export function KeyboardCopyExercise() {
                 </CardHeader>
                 <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
                     <div className="flex items-center gap-6">
-                         <span className="text-7xl">{currentWordObject?.emoji}</span>
+                         {currentWordObject?.emoji !== '📝' && <span className="text-7xl">{currentWordObject?.emoji}</span>}
                          <div className="font-mono text-7xl sm:text-8xl font-bold tracking-widest uppercase p-4 bg-muted rounded-lg">
                             {currentWord}
                         </div>

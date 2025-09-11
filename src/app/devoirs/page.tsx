@@ -119,7 +119,7 @@ function HomeworkList() {
                             <Button 
                                 variant={spellingProgress[`${currentList.id}-lundi`] ? "secondary" : "default"} 
                                 className="w-full h-14 text-base justify-between"
-                                onClick={() => router.push(`/devoirs/${currentList.id}-lundi`)}
+                                onClick={() => router.push(`/devoirs/${currentList.id}-lundi/select`)}
                             >
                                 <span className="flex items-center gap-2"><BookOpen className="h-5 w-5"/>Orthographe: {currentList.id}</span>
                                 {spellingProgress[`${currentList.id}-lundi`] && <CheckCircle className="text-green-500"/>}
@@ -151,7 +151,7 @@ function HomeworkList() {
                            <Button 
                                 variant={spellingProgress[`${currentList.id}-jeudi`] ? "secondary" : "default"} 
                                 className="w-full h-14 text-base justify-between"
-                                onClick={() => router.push(`/devoirs/${currentList.id}-jeudi`)}
+                                onClick={() => router.push(`/devoirs/${currentList.id}-jeudi/select`)}
                             >
                                 <span className="flex items-center gap-2"><BookOpen className="h-5 w-5"/>Orthographe: {currentList.id}</span>
                                 {spellingProgress[`${currentList.id}-jeudi`] && <CheckCircle className="text-green-500"/>}
@@ -197,7 +197,7 @@ function HomeworkList() {
                             key={exerciseId} 
                             variant={isCompleted ? "secondary" : "default"} 
                             className="h-14 text-base justify-between"
-                            onClick={() => router.push(`/devoirs/${exerciseId}`)}
+                            onClick={() => router.push(`/devoirs/${exerciseId}/select`)}
                         >
                             <span>{list.id} : {session}</span>
                             {isCompleted && <CheckCircle className="text-green-500"/>}

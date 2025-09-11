@@ -1,299 +1,53 @@
 
-
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useContext } from 'react';
-import { useParams, useRouter, notFound } from 'next/navigation';
-import Link from 'next/link';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useParams, useRouter } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
-import { getSpellingLists, saveSpellingResult, type SpellingList } from '@/services/spelling';
-import { cn } from '@/lib/utils';
-import Confetti from 'react-dom-confetti';
-import { UserContext } from '@/context/user-context';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
+import { BookCopy, Edit } from 'lucide-react';
+import Link from 'next/link';
 
-const DEFAULT_WORD_DISPLAY_TIME_MS = 5000;
-
-export default function SpellingExercisePage() {
-  const router = useRouter();
-  const params = useParams();
-  const { exerciseId } = params as { exerciseId: string };
-  const { student, isLoading: isUserLoading } = useContext(UserContext);
-  
-  const [list, setList] = useState<SpellingList | null>(null);
-  const [words, setWords] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [inputValue, setInputValue] = useState('');
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'idle' | 'showing'>('showing');
-  const [isFinished, setIsFinished] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [hasBeenSaved, setHasBeenSaved] = useState(false);
-
-  const [wordDisplayTime, setWordDisplayTime] = useState(DEFAULT_WORD_DISPLAY_TIME_MS);
-
-  const inputRef = useRef<HTMLInputElement>(null);
-  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    async function loadExercise() {
-      if (!exerciseId) return;
-      
-      setIsLoading(true);
-      const allLists = await getSpellingLists();
-      const listId = exerciseId.split('-')[0];
-      const session = exerciseId.split('-')[1]; // 'lundi' or 'jeudi'
-      
-      const foundList = allLists.find(l => l.id === listId);
-      if (!foundList || !session) {
-        setIsLoading(false);
-        return;
-      }
-      
-      setList(foundList);
-      const half = Math.ceil(foundList.words.length / 2);
-      const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
-      
-      const shuffledWords = sessionWords.sort(() => Math.random() - 0.5);
-
-      setWords(shuffledWords);
-      setIsLoading(false);
-    }
-    loadExercise();
-  }, [exerciseId]);
-
-  const handleSpeak = useCallback((word: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(word);
-      utterance.lang = 'fr-FR';
-      window.speechSynthesis.speak(utterance);
-    }
-  }, []);
-
-  const showWord = useCallback(() => {
-    setFeedback('showing');
-    setInputValue('');
-    if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
+export default function SelectRevisionModePage() {
+    const router = useRouter();
+    const params = useParams();
+    const { exerciseId } = params as { exerciseId: string };
     
-    // Speak word when it's shown
-    handleSpeak(words[currentWordIndex]);
+    // The query param will tell us which mode to go to
+    const handleSelectMode = (mode: 'dictation' | 'copy') => {
+        router.push(`/devoirs/${exerciseId}/${mode}`);
+    };
 
-    showTimeoutRef.current = setTimeout(() => {
-      setFeedback('idle');
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }, wordDisplayTime);
-  }, [words, currentWordIndex, wordDisplayTime, handleSpeak]);
-
-  useEffect(() => {
-    if (words.length > 0 && !isFinished) {
-      showWord();
-    }
-    // Cleanup timeout on component unmount
-    return () => {
-      if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
-    }
-  }, [words, currentWordIndex, isFinished, showWord]);
-
-  const handleSubmit = () => {
-    if (feedback !== 'idle') return;
-
-    const currentWord = words[currentWordIndex];
-    if (inputValue.trim().toLowerCase() === currentWord.toLowerCase()) {
-      setFeedback('correct');
-      setTimeout(handleNextWord, 1500);
-    } else {
-      setFeedback('incorrect');
-      if (!errors.includes(currentWord)) {
-          setErrors(prev => [...prev, currentWord]);
-      }
-      // No timeout, user has to click "Try Again"
-    }
-  };
-
-  const handleTryAgain = () => {
-    showWord();
-  };
-
-  const handleNextWord = async () => {
-    if (currentWordIndex < words.length - 1) {
-      setCurrentWordIndex(prev => prev + 1);
-    } else {
-      setIsFinished(true);
-    }
-  };
-  
-  useEffect(() => {
-      const saveResult = async () => {
-          if (isFinished && student && student.id && exerciseId && !hasBeenSaved) {
-              setHasBeenSaved(true);
-              await saveSpellingResult(student.id, exerciseId, errors);
-          }
-      };
-      saveResult();
-  }, [isFinished, student, exerciseId, errors, hasBeenSaved]);
-
-  if (isLoading || isUserLoading) {
-    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-16 w-16 animate-spin" /></div>;
-  }
-  
-  if (!student) {
-     return (
-        <main className="flex min-h-screen w-full flex-col items-center justify-center p-4">
-            <Card className="p-8 text-center">
-                <h2 className="text-xl font-semibold text-destructive">Erreur</h2>
-                <p className="text-muted-foreground mt-2">Vous devez être connecté pour faire un exercice.</p>
-                <Button asChild onClick={() => router.push('/devoirs')} className="mt-4">
-                    <Link href="/devoirs">
-                     <ArrowLeft className="mr-2 h-4 w-4" />
-                     Retour à la liste
-                    </Link>
-                </Button>
-            </Card>
-        </main>
-    )
-  }
-
-  if (!list || words.length === 0) {
-    notFound();
-  }
-  
-  const currentWord = words[currentWordIndex];
-  const progress = ((currentWordIndex + (feedback === 'correct' ? 1 : 0)) / words.length) * 100;
-
-  if (isFinished) {
     return (
         <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background">
-             <Card className="w-full max-w-lg text-center p-6 sm:p-12 shadow-2xl relative">
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <Confetti active={true} config={{angle: 90, spread: 360, startVelocity: 40, elementCount: 100, dragFriction: 0.12, duration: 3000, stagger: 3, width: "10px", height: "10px"}} />
-                </div>
-                <Star className="h-20 w-20 text-yellow-400 mx-auto mb-4" />
-                <h1 className="font-headline text-4xl mb-4">Bravo !</h1>
-                <p className="text-lg text-muted-foreground mb-2">Tu as terminé la liste de devoirs.</p>
-                 {errors.length > 0 ? (
-                    <div className="mt-6 text-left">
-                        <p className="font-semibold text-lg mb-2">Mots à revoir :</p>
-                        <Card className="p-4 bg-muted/50">
-                            <ul className="flex flex-wrap gap-x-4 gap-y-1">
-                                {errors.map(error => <li key={error} className="font-semibold text-destructive">{error}</li>)}
-                            </ul>
-                        </Card>
-                    </div>
-                ) : (
-                    <p className="mt-6 text-green-600 font-semibold text-lg flex items-center justify-center gap-2">
-                        <ThumbsUp />
-                        Aucune erreur, félicitations !
-                    </p>
-                )}
-
-                 <Button onClick={() => router.push('/devoirs')} size="lg" className="mt-8 w-full">
-                    Retourner à la liste
-                </Button>
+            <Card className="w-full max-w-lg text-center p-6 sm:p-10 shadow-2xl">
+                <CardHeader>
+                    <CardTitle className="font-headline text-4xl mb-2">Comment veux-tu réviser ?</CardTitle>
+                    <CardDescription className="text-lg text-muted-foreground">
+                        Choisis ta méthode pour travailler la liste de mots.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6">
+                    <Button
+                        variant="outline"
+                        className="h-36 flex-col gap-3 text-lg"
+                        onClick={() => handleSelectMode('dictation')}
+                    >
+                        <Edit className="h-10 w-10 text-primary" />
+                        Mode Dictée
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="h-36 flex-col gap-3 text-lg"
+                        onClick={() => handleSelectMode('copy')}
+                    >
+                        <BookCopy className="h-10 w-10 text-primary" />
+                        Mode Copie
+                    </Button>
+                </CardContent>
             </Card>
+             <Button asChild variant="link" className="mt-8">
+                <Link href="/devoirs">Retour à la liste des devoirs</Link>
+            </Button>
         </main>
-    )
-  }
-
-  return (
-    <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
-      <div className="w-full max-w-2xl space-y-6">
-        <header className="relative flex items-center justify-center mb-4">
-           <Button asChild variant="ghost" className="absolute left-0">
-            <Link href="/devoirs">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour
-            </Link>
-          </Button>
-          <h1 className="font-headline text-2xl sm:text-3xl text-center">{list.id} - {list.title}</h1>
-        </header>
-
-        <Progress value={progress} className="w-full h-3" />
-
-        <Card className="w-full min-h-[350px] sm:min-h-[400px] p-6 sm:p-8 flex flex-col justify-between items-center shadow-2xl">
-          {feedback === 'showing' ? (
-            <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in">
-              <p className="font-bold text-5xl sm:text-7xl font-body tracking-wider">{currentWord}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center w-full h-full animate-in fade-in">
-              <div className="flex items-center gap-2 w-full max-w-md relative">
-                <Input
-                  ref={inputRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                  placeholder="Écris le mot ici..."
-                  className={cn("h-16 text-2xl text-center flex-grow",
-                    feedback === 'correct' && 'border-green-500 ring-green-500',
-                    feedback === 'incorrect' && 'border-red-500 ring-red-500 animate-shake'
-                  )}
-                  disabled={feedback === 'correct'}
-                />
-                 <Button onClick={() => handleSpeak(currentWord)} size="icon" variant="outline" className="h-16 w-16" disabled={feedback !== 'idle'}>
-                    <Volume2 className="h-6 w-6"/>
-                 </Button>
-                 {feedback === 'correct' && <Check className="absolute right-20 top-1/2 -translate-y-1/2 h-8 w-8 text-green-500"/>}
-                 {feedback === 'incorrect' && <X className="absolute right-20 top-1/2 -translate-y-1/2 h-8 w-8 text-red-500"/>}
-              </div>
-              
-              {feedback === 'idle' && (
-                <Button onClick={handleSubmit} size="lg" className="mt-8 w-full max-w-md text-lg">Valider</Button>
-              )}
-              {feedback === 'incorrect' && (
-                <div className="mt-6 text-center w-full max-w-md">
-                    <p className="text-destructive font-semibold mb-4">Ce n'est pas tout à fait ça. Le mot était :</p>
-                    <p className="font-bold text-4xl text-primary mb-6">{currentWord}</p>
-                    <Button onClick={handleTryAgain} size="lg" variant="outline" className="w-full text-lg">Réessayer</Button>
-                </div>
-              )}
-               {feedback === 'correct' && (
-                <div className="mt-6 text-center text-green-600 font-semibold text-2xl animate-pulse">
-                    Parfait !
-                </div>
-              )}
-            </div>
-          )}
-        </Card>
-        
-        <Card className="bg-muted/50">
-            <CardHeader>
-                <CardTitle className="text-xl">Réglages de l'exercice</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="grid gap-2">
-                    <Label htmlFor="display-time">Temps d'affichage du mot</Label>
-                    <Slider
-                        id="display-time"
-                        min={1000}
-                        max={10000}
-                        step={500}
-                        value={[wordDisplayTime]}
-                        onValueChange={(value) => setWordDisplayTime(value[0])}
-                    />
-                    <div className="text-sm text-muted-foreground text-center">
-                        {wordDisplayTime / 1000} secondes
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-
-         <style jsx>{`
-          @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-            20%, 40%, 60%, 80% { transform: translateX(5px); }
-          }
-          .animate-shake {
-            animation: shake 0.5s ease-in-out;
-          }
-        `}</style>
-      </div>
-    </main>
-  );
+    );
 }
