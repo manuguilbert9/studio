@@ -75,7 +75,9 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
         const now = new Date();
 
         const findAssignmentForWeek = async (mondayDate: Date) => {
-            const mondayISO = mondayDate.toISOString().split('T')[0] + 'T12:00:00.000Z';
+            const monday = new Date(Date.UTC(mondayDate.getFullYear(), mondayDate.getMonth(), mondayDate.getDate(), 12, 0, 0));
+            const mondayISO = monday.toISOString();
+            
             const q = query(collection(db, HOMEWORK_COLLECTION), where("weekOf", "==", mondayISO), limit(1));
             const snapshot = await getDocs(q);
             if (!snapshot.empty) {
@@ -89,32 +91,28 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
             }
             return null;
         };
+        
+        // Sunday=0, Monday=1, ..., Thursday=4, ...
+        const dayOfWeek = now.getDay(); 
+        const isThursdayOrLater = dayOfWeek === 0 || dayOfWeek >= 4;
 
         const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
-        const nextWeekMonday = addDays(currentWeekMonday, 7);
         
-        // Use native getDay() and getHours() which use the server's local time.
-        // Sunday=0, Monday=1, ..., Thursday=4
-        const dayOfWeek = now.getDay(); 
-        const hour = now.getHours();
+        const targetMonday = isThursdayOrLater ? addDays(currentWeekMonday, 7) : currentWeekMonday;
 
-        // The threshold is Thursday 11:00 AM server time.
-        const isAfterThreshold = (dayOfWeek === 4 && hour >= 11) || dayOfWeek > 4 || dayOfWeek === 0;
-
-        let targetMonday = isAfterThreshold ? nextWeekMonday : currentWeekMonday;
         let assignment = await findAssignmentForWeek(targetMonday);
         
-        // If no assignment for the target week, try the other one as fallback.
+        // Fallback: If no assignment found for the target week, try the other week.
         if (!assignment) {
-             const fallbackMonday = isAfterThreshold ? currentWeekMonday : nextWeekMonday;
+             const fallbackMonday = isThursdayOrLater ? currentWeekMonday : addDays(currentWeekMonday, 7);
              assignment = await findAssignmentForWeek(fallbackMonday);
         }
 
-        // If still no assignment, find the most recent one in the past.
+        // Fallback: If still no assignment, find the most recent one in the past.
         if (!assignment) {
             const fallbackQuery = query(
                 collection(db, HOMEWORK_COLLECTION),
-                where("weekOf", "<=", now.toISOString()),
+                where("weekOf", "<=", new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0)).toISOString()),
                 orderBy("weekOf", "desc"),
                 limit(1)
             );
@@ -212,3 +210,6 @@ export async function setCurrentSchoolYear(year: string): Promise<{ success: boo
 }
 
 
+
+
+    
