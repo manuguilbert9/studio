@@ -107,9 +107,8 @@ function HomeworkList() {
   const getWeekDayDate = (day: 'lundi' | 'jeudi'): string => {
     if (!currentHomework?.weekOf) return '';
     try {
-        const mondayUTC = parseISO(currentHomework.weekOf);
-        const mondayLocal = new Date(mondayUTC.valueOf() + mondayUTC.getTimezoneOffset() * 60 * 1000);
-        const targetDay = addDays(mondayLocal, day === 'lundi' ? 0 : 3);
+        const mondayUTC = new Date(currentHomework.weekOf);
+        const targetDay = addDays(mondayUTC, day === 'lundi' ? 0 : 3);
         return format(targetDay, 'd/MM');
     } catch (e) {
         console.error("Date formatting error:", e);
@@ -117,15 +116,14 @@ function HomeworkList() {
     }
   }
   
-  const weekOfDate = currentHomework?.weekOf ? parseISO(currentHomework.weekOf) : null;
-  const localWeekOfDate = weekOfDate ? new Date(weekOfDate.valueOf() + weekOfDate.getTimezoneOffset() * 60 * 1000) : null;
+  const weekOfDate = currentHomework?.weekOf ? new Date(currentHomework.weekOf) : null;
 
   return (
     <div className="space-y-8">
         <Card className="w-full bg-secondary/50 border-primary/50">
             <CardHeader>
                 <CardTitle className="font-headline text-3xl sm:text-4xl text-center">
-                    Devoirs de la semaine du {localWeekOfDate ? format(localWeekOfDate, 'd MMMM', {locale: fr}) : ''}
+                    Devoirs de la semaine du {weekOfDate ? format(weekOfDate, 'd MMMM', {locale: fr}) : ''}
                 </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">

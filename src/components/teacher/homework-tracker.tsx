@@ -117,13 +117,16 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                             const mathSkillLundi = getSkillBySlug(assignment.mathSkillSlugLundi || '');
                             const mathSkillJeudi = getSkillBySlug(assignment.mathSkillSlugJeudi || '');
                             
+                            // Correctly parse UTC string into a Date object
+                            const weekDate = new Date(assignment.weekOf);
+
                             return (
                                 <AccordionItem value={assignment.id} key={assignment.id} className="border bg-secondary/30 rounded-lg px-4">
                                      <div className="flex justify-between items-center w-full">
                                         <AccordionTrigger className="hover:no-underline flex-grow">
                                             <div>
                                                 <h3 className="text-lg font-semibold text-left">
-                                                    Semaine du {format(parseISO(assignment.weekOf), "d MMMM yyyy", { locale: fr })}
+                                                    Semaine du {format(weekDate, "d MMMM yyyy", { locale: fr })}
                                                 </h3>
                                                 <p className="text-xs text-muted-foreground text-left">
                                                     Orthographe: {spellingList ? `${spellingList.id}` : 'Aucun'} | 
