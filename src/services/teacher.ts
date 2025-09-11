@@ -72,21 +72,23 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 // This function now finds the homework for the current week.
 export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
-        // Get current date in Paris time zone
-        const parisTime = new Date().toLocaleString("en-US", { timeZone: "Europe/Paris" });
-        const today = new Date(parisTime);
-
-        const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
-        const hour = today.getHours();
-
-        let referenceDate = today;
+        const now = new Date();
+        const utcDay = now.getUTCDay(); // 0 for Sunday, 1 for Monday... 6 for Saturday
+        const utcHour = now.getUTCHours();
         
-        // If it's Thursday after 11am, or Friday, Saturday, Sunday, look for next week's homework
-        const isPastThreshold = (dayOfWeek === 4 && hour >= 11);
-        const isAfterThursday = dayOfWeek > 4 || dayOfWeek === 0;
+        let referenceDate = now;
 
-        if (isPastThreshold || isAfterThursday) {
-            referenceDate = addDays(today, 7); // Move to sometime next week to get the correct start of week
+        // Determine if we should look for next week's homework.
+        // The threshold is Thursday 11:00 Paris time.
+        // Paris is UTC+2 in summer, UTC+1 in winter. Let's use 09:00 UTC as a stable threshold.
+        // Thursday in getUTCDay() is 4.
+        const isAfterThreshold = 
+            (utcDay === 4 && utcHour >= 9) || // Thursday 09:00 UTC (11:00 Paris summer time) or later
+            (utcDay > 4) || // Friday, Saturday
+            (utcDay === 0); // Sunday
+
+        if (isAfterThreshold) {
+            referenceDate = addDays(now, 7); // Look for next week's assignment
         }
         
         const monday = startOfWeek(referenceDate, { weekStartsOn: 1 });
@@ -114,7 +116,7 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
         // Fallback: If no assignment for this specific week, find the most recent one in the past
         const fallbackQuery = query(
             collection(db, HOMEWORK_COLLECTION),
-            where("weekOf", "<=", today.toISOString()),
+            where("weekOf", "<=", now.toISOString()),
             orderBy("weekOf", "desc"),
             limit(1)
         );
