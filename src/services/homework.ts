@@ -59,3 +59,34 @@ export async function getAllHomework(): Promise<Homework[]> {
     return [];
   }
 }
+
+
+/**
+ * Retrieves all relevant assignments for a specific group.
+ * @param groupId The ID of the student's group.
+ * @returns A promise that resolves to an array of assignments with their dates.
+ */
+export async function getHomeworkForGroup(groupId: string): Promise<{ date: string; assignment: Assignment }[]> {
+    if (!groupId) return [];
+
+    try {
+        const q = query(collection(db, "homework"), orderBy("id", "desc"));
+        const querySnapshot = await getDocs(q);
+        const groupAssignments: { date: string; assignment: Assignment }[] = [];
+
+        querySnapshot.forEach((doc) => {
+            const homework = doc.data() as Omit<Homework, 'id'>;
+            if (homework.assignments && homework.assignments[groupId]) {
+                groupAssignments.push({
+                    date: doc.id,
+                    assignment: homework.assignments[groupId],
+                });
+            }
+        });
+
+        return groupAssignments;
+    } catch (error) {
+        console.error("Error loading homework for group from Firestore:", error);
+        return [];
+    }
+}
