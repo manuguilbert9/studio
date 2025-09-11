@@ -15,6 +15,7 @@ import { StudentManager } from '@/components/teacher/student-manager';
 import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
 import { GroupManager } from '@/components/teacher/group-manager';
+import { HomeworkManager } from '@/components/teacher/homework-manager';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
 import { getGroups, type Group } from '@/services/groups';
@@ -22,6 +23,7 @@ import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { BuildInfo } from '@/components/teacher/build-info';
 import { getAllWritingEntries, WritingEntry } from '@/services/writing';
+import { getAllHomework, type Homework } from '@/services/homework';
 
 
 export default function TeacherDashboardPage() {
@@ -32,27 +34,27 @@ export default function TeacherDashboardPage() {
    // Data states
   const [students, setStudents] = useState<Student[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
   const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
+  const [allHomework, setAllHomework] = useState<Homework[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, groupData, listsData, scoresData, writingData, spellingProgressData] = await Promise.all([
+    const [studentData, groupData, scoresData, writingData, spellingProgressData, homeworkData] = await Promise.all([
       getStudents(),
       getGroups(),
-      getSpellingLists(),
       getAllScores(),
       getAllWritingEntries(),
       getAllSpellingProgress(),
+      getAllHomework(),
     ]);
     setStudents(studentData);
     setGroups(groupData);
-    setSpellingLists(listsData);
     setAllScores(scoresData);
     setAllWritingEntries(writingData);
     setAllSpellingProgress(spellingProgressData);
+    setAllHomework(homeworkData);
     setIsLoading(false);
   }, []);
 
@@ -102,9 +104,10 @@ export default function TeacherDashboardPage() {
             </div>
           ) : (
             <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="groups">Gestion des groupes</TabsTrigger>
+                    <TabsTrigger value="homework">Gestion des devoirs</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
                     <TabsTrigger value="database">Réglages</TabsTrigger>
                 </TabsList>
@@ -113,6 +116,13 @@ export default function TeacherDashboardPage() {
                 </TabsContent>
                 <TabsContent value="groups" className="mt-6">
                     <GroupManager initialStudents={students} initialGroups={groups} onGroupsChange={loadData} />
+                </TabsContent>
+                <TabsContent value="homework" className="mt-6">
+                    <HomeworkManager 
+                        groups={groups}
+                        allHomework={allHomework}
+                        onHomeworkChange={loadData}
+                    />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
                     <ResultsManager 
