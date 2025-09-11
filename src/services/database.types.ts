@@ -4,6 +4,7 @@ import type { SpellingProgress } from "./spelling";
 import type { Score } from "./scores";
 import type { TableauState } from "./tableau.types";
 import type { WritingEntry } from "./writing";
+import type { Homework } from './homework';
 
 // This defines the structure of the data in Firestore collections.
 // It maps collection names to an object of documents, where the key is the document ID.
@@ -15,4 +16,5 @@ export interface DatabaseBackup {
     tableaux: { [id: string]: TableauState };
     writingEntries: { [id: string]: Omit<WritingEntry, 'id'> };
     teacher: { [id: string]: any }; // General purpose for teacher settings
+    homework: { [id: string]: Omit<Homework, 'id'> };
 }

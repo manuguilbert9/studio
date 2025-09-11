@@ -97,7 +97,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
             userId: student.id,
             date: homeworkDate,
             skillSlug: `orthographe-${exerciseId}`,
-            score: isCorrect ? 100 : 0,
+            score: isCorrect ? 100 : 0, // 100 for correct, 0 for incorrect
         });
     }
 
@@ -120,7 +120,8 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     if (currentWordIndex < words.length - 1) {
       setCurrentWordIndex(prev => prev + 1);
     } else {
-      if (!isHomework && student) { // Only save to old system if not homework
+      // The old system is only used if it's not a homework assignment
+      if (!isHomework && student) {
         saveSpellingResult(student.id, exerciseId, errors);
       }
       setIsFinished(true);

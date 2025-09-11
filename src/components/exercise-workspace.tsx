@@ -226,8 +226,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 skillSlug: skill.slug,
                 score: score,
             });
-            // We don't fetch history for homework for now.
-             setIsLoadingHistory(false);
+            setIsLoadingHistory(false); // No history to load for homework
         } else {
              setIsLoadingHistory(true);
             const scoreData: Omit<Score, 'createdAt' | 'id'> = {
