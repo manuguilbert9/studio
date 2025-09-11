@@ -40,15 +40,25 @@ function HomeworkList() {
 
       setIsLoading(true);
 
-      // 1. Get global homework config
       const globalHomework = await getCurrentHomeworkConfig();
-      
-      // 2. Check for student-specific overrides for the current week
       const studentOverrides = student.homeworkOverrides || {};
       const currentWeekKey = globalHomework.weekOf;
-      const studentHomework = currentWeekKey ? studentOverrides[currentWeekKey] : undefined;
 
-      const finalHomework = studentHomework !== undefined ? studentHomework : globalHomework;
+      let finalHomework = globalHomework;
+      
+      if (currentWeekKey && studentOverrides[currentWeekKey]) {
+        const studentHomework = studentOverrides[currentWeekKey];
+        // An override is only valid if at least one field is not null. Otherwise, it's an empty shell.
+        const isOverrideValid = studentHomework.spellingListId !== null || studentHomework.mathSkillSlugLundi !== null || studentHomework.mathSkillSlugJeudi !== null;
+
+        if (isOverrideValid) {
+             finalHomework = { 
+                ...globalHomework, // Use global as base
+                ...studentHomework // Override with student specific
+             };
+        }
+      }
+
       setCurrentHomework(finalHomework);
       
       const [lists, progress] = await Promise.all([

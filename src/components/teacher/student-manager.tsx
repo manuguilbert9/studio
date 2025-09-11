@@ -135,13 +135,22 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         return;
         }
 
+        // Clean up empty homework overrides before saving
+        const cleanedOverrides: Record<string, HomeworkOverride> = {};
+        for (const weekKey in editedHomeworkOverrides) {
+            const override = editedHomeworkOverrides[weekKey];
+            if (override.spellingListId !== null || override.mathSkillSlugLundi !== null || override.mathSkillSlugJeudi !== null) {
+                cleanedOverrides[weekKey] = override;
+            }
+        }
+
         setIsUpdating(true);
         const result = await updateStudent(editingStudent.id, {
             name: editedName,
             code: editedCode,
             levels: editedLevels,
             enabledSkills: editedEnabledSkills,
-            homeworkOverrides: editedHomeworkOverrides,
+            homeworkOverrides: cleanedOverrides,
             hasCustomSchedule: hasCustomSchedule,
             schedule: editedSchedule,
         });
