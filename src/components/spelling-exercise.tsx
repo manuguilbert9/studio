@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
@@ -12,7 +13,7 @@ import { getSpellingLists, saveSpellingResult, type SpellingList } from '@/servi
 import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
-import { saveHomeworkResult as saveGenericHomeworkResult } from '@/services/homework';
+import { saveHomeworkResult } from '@/services/homework';
 
 const WORD_DISPLAY_TIME_MS = 6000;
 
@@ -92,7 +93,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     
     if (isHomework && homeworkDate) {
         // For homework, we save each word individually
-        await saveGenericHomeworkResult({
+        await saveHomeworkResult({
             userId: student.id,
             date: homeworkDate,
             skillSlug: `orthographe-${exerciseId}`,

@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { Skill } from '@/lib/skills.tsx';
+import type { Skill } from '@/lib/skills';
 import { useState, useMemo, useEffect, useContext } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';

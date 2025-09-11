@@ -18,10 +18,10 @@ export interface Homework {
 export interface HomeworkResult {
     id?: string;
     userId: string;
-    date: string;
+    date: string; // Date of the homework assignment (e.g., "2024-09-16")
     skillSlug: string;
     score: number;
-    createdAt: string | Timestamp;
+    createdAt: string | Timestamp; // When the user completed it
 }
 
 
@@ -31,6 +31,9 @@ export interface HomeworkResult {
 export async function saveHomeworkResult(resultData: Omit<HomeworkResult, 'id' | 'createdAt'>): Promise<{ success: boolean; error?: string }> {
    if (!resultData.userId) {
         return { success: false, error: 'User ID is required.' };
+    }
+    if (!resultData.date) {
+        return { success: false, error: 'Homework date is required.' };
     }
     try {
         await addDoc(collection(db, 'homeworkResults'), {
