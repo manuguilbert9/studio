@@ -1,20 +1,49 @@
 
+'use client';
+
+import { useState, useEffect, useContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home, ArrowRight, BookOpen, BrainCircuit } from 'lucide-react';
+import { Home, ArrowRight, BookOpen, BrainCircuit, Loader2 } from 'lucide-react';
 import { getCurrentHomeworkForStudent } from '@/services/teacher';
-import { getStudentById } from '@/services/students';
-import { cookies } from 'next/headers';
-import { getSkillBySlug } from '@/lib/skills';
+import { getSkillBySlug, type Skill } from '@/lib/skills';
+import { UserContext } from '@/context/user-context';
+import type { Assignment } from '@/services/homework';
 
-// This is a React Server Component
-export default async function DevoirsPage() {
-  const cookieStore = cookies();
-  const studentId = cookieStore.get('classemagique_student_id')?.value;
+export default function DevoirsPage() {
+  const { student, isLoading: isUserLoading } = useContext(UserContext);
+  const [homework, setHomework] = useState<Assignment | null>(null);
+  const [isLoadingHomework, setIsLoadingHomework] = useState(true);
 
-  if (!studentId) {
+  useEffect(() => {
+    async function fetchHomework() {
+      if (student) {
+        setIsLoadingHomework(true);
+        const hw = await getCurrentHomeworkForStudent(student);
+        setHomework(hw);
+        setIsLoadingHomework(false);
+      } else if (!isUserLoading) {
+        setIsLoadingHomework(false);
+      }
+    }
+    fetchHomework();
+  }, [student, isUserLoading]);
+
+  const frenchSkill = homework?.francais ? getSkillBySlug(homework.francais) : null;
+  const mathSkill = homework?.maths ? getSkillBySlug(homework.maths) : null;
+
+  if (isUserLoading || isLoadingHomework) {
+    return (
+      <main className="flex min-h-screen w-full flex-col items-center justify-center p-4">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Chargement des devoirs...</p>
+      </main>
+    );
+  }
+
+  if (!student) {
     return (
        <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background">
          <div className="absolute top-8">
@@ -39,16 +68,6 @@ export default async function DevoirsPage() {
       </main>
     )
   }
-
-  const student = await getStudentById(studentId);
-  if (!student) {
-    // This case should be rare if studentId is valid
-    return <p>Erreur: impossible de trouver les informations de l'élève.</p>
-  }
-  
-  const homework = await getCurrentHomeworkForStudent(student);
-  const frenchSkill = homework?.francais ? getSkillBySlug(homework.francais) : null;
-  const mathSkill = homework?.maths ? getSkillBySlug(homework.maths) : null;
 
   return (
     <main className="flex min-h-screen w-full flex-col items-center p-4 sm:p-8 bg-background">
