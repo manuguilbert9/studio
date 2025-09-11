@@ -17,6 +17,7 @@ import { HomeworkCreator } from './homework-creator';
 import { Button } from '../ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 
 interface HomeworkTrackerProps {
@@ -110,69 +111,73 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                 <HomeworkCreator spellingLists={spellingLists} onHomeworkAdded={loadAssignments} />
                  
                  <div className="space-y-4">
-                    {assignments.map(assignment => {
-                        const spellingList = spellingLists.find(l => l.id === assignment.spellingListId);
-                        const mathSkillLundi = getSkillBySlug(assignment.mathSkillSlugLundi || '');
-                        const mathSkillJeudi = getSkillBySlug(assignment.mathSkillSlugJeudi || '');
-                        
-                        return (
-                            <Card key={assignment.id} className="bg-secondary/30">
-                                <CardHeader className="flex flex-row items-center justify-between">
-                                    <div>
-                                        <CardTitle>
-                                            Semaine du {format(parseISO(assignment.weekOf), "d MMMM yyyy", { locale: fr })}
-                                        </CardTitle>
-                                        <CardDescription className="text-xs">
-                                            Orthographe: {spellingList ? `${spellingList.id} - ${spellingList.title}` : 'Aucun'} | 
-                                            Maths Lundi: {mathSkillLundi?.name || 'Aucun'} | 
-                                            Maths Jeudi: {mathSkillJeudi?.name || 'Aucun'}
-                                        </CardDescription>
-                                    </div>
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                             <Button variant="ghost" size="icon" className="text-destructive h-8 w-8">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader><AlertDialogTitle>Supprimer cette semaine de devoirs ?</AlertDialogTitle></AlertDialogHeader>
-                                            <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                <AlertDialogAction onClick={() => handleDeleteAssignment(assignment.id)}>Supprimer</AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Élève</TableHead>
-                                                <TableHead>Devoirs pour Lundi</TableHead>
-                                                <TableHead>Devoirs pour Jeudi</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {students.map(student => {
-                                                const { lundiDone, jeudiDone } = getStudentCompletionForAssignment(student.id, assignment);
-                                                return (
-                                                <TableRow key={student.id}>
-                                                    <TableCell className="font-medium">{student.name}</TableCell>
-                                                    <TableCell>
-                                                        {lundiDone ? <CheckCircle className="h-5 w-5 text-green-500" /> : <span className="text-xs text-muted-foreground">Non fait</span>}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        {jeudiDone ? <CheckCircle className="h-5 w-5 text-green-500" /> : <span className="text-xs text-muted-foreground">Non fait</span>}
-                                                    </TableCell>
+                     <Accordion type="multiple" className="w-full space-y-4">
+                        {assignments.map(assignment => {
+                            const spellingList = spellingLists.find(l => l.id === assignment.spellingListId);
+                            const mathSkillLundi = getSkillBySlug(assignment.mathSkillSlugLundi || '');
+                            const mathSkillJeudi = getSkillBySlug(assignment.mathSkillSlugJeudi || '');
+                            
+                            return (
+                                <AccordionItem value={assignment.id} key={assignment.id} className="border bg-secondary/30 rounded-lg px-4">
+                                     <AccordionTrigger className="hover:no-underline">
+                                        <div className="flex justify-between items-center w-full">
+                                             <div>
+                                                <h3 className="text-lg font-semibold text-left">
+                                                    Semaine du {format(parseISO(assignment.weekOf), "d MMMM yyyy", { locale: fr })}
+                                                </h3>
+                                                <p className="text-xs text-muted-foreground text-left">
+                                                    Orthographe: {spellingList ? `${spellingList.id}` : 'Aucun'} | 
+                                                    Maths Lundi: {mathSkillLundi?.name || 'Aucun'} | 
+                                                    Maths Jeudi: {mathSkillJeudi?.name || 'Aucun'}
+                                                </p>
+                                            </div>
+                                             <AlertDialog onOpenChange={(open) => open && event.stopPropagation()}>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader><AlertDialogTitle>Supprimer cette semaine de devoirs ?</AlertDialogTitle></AlertDialogHeader>
+                                                    <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDeleteAssignment(assignment.id)}>Supprimer</AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Élève</TableHead>
+                                                    <TableHead>Devoirs pour Lundi</TableHead>
+                                                    <TableHead>Devoirs pour Jeudi</TableHead>
                                                 </TableRow>
-                                            )})}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        )
-                    })}
+                                            </TableHeader>
+                                            <TableBody>
+                                                {students.map(student => {
+                                                    const { lundiDone, jeudiDone } = getStudentCompletionForAssignment(student.id, assignment);
+                                                    return (
+                                                    <TableRow key={student.id}>
+                                                        <TableCell className="font-medium">{student.name}</TableCell>
+                                                        <TableCell>
+                                                            {lundiDone ? <CheckCircle className="h-5 w-5 text-green-500" /> : <span className="text-xs text-muted-foreground">Non fait</span>}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {jeudiDone ? <CheckCircle className="h-5 w-5 text-green-500" /> : <span className="text-xs text-muted-foreground">Non fait</span>}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )})}
+                                            </TableBody>
+                                        </Table>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            )
+                        })}
+                    </Accordion>
                 </div>
             </CardContent>
         </Card>

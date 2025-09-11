@@ -23,11 +23,11 @@ interface HomeworkCreatorProps {
     onHomeworkAdded: () => void;
 }
 
+// Filter skills appropriate for homework assignments
 const mathSkills = allSkills.filter(s => 
-    s.slug !== 'long-calculation' && 
-    s.slug !== 'word-families' &&
-    s.slug !== 'mental-calculation' && 
-    s.slug !== 'spelling' 
+    s.category === 'Nombres et calcul' || 
+    s.category === 'Grandeurs et mesures' ||
+    s.category === 'Problèmes'
 );
 
 export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCreatorProps) {
@@ -99,7 +99,7 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
                 </div>
                  <div className="grid gap-1.5">
                     <Label htmlFor="spelling-select">Orthographe</Label>
-                     <Select onValueChange={(val) => setSpellingListId(val)} value={spellingListId || ''}>
+                     <Select onValueChange={(val) => setSpellingListId(val === 'null' ? null : val)} value={spellingListId || ''}>
                         <SelectTrigger id="spelling-select">
                             <SelectValue placeholder="Aucun" />
                         </SelectTrigger>
@@ -113,7 +113,7 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
                 </div>
                  <div className="grid gap-1.5">
                     <Label htmlFor="math-lundi-select">Maths Lundi</Label>
-                     <Select onValueChange={(val) => setMathSkillLundi(val)} value={mathSkillLundi || ''}>
+                     <Select onValueChange={(val) => setMathSkillLundi(val === 'null' ? null : val)} value={mathSkillLundi || ''}>
                         <SelectTrigger id="math-lundi-select">
                             <SelectValue placeholder="Aucun" />
                         </SelectTrigger>
@@ -127,7 +127,7 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
                 </div>
                 <div className="grid gap-1.5">
                     <Label htmlFor="math-jeudi-select">Maths Jeudi</Label>
-                     <Select onValueChange={(val) => setMathSkillJeudi(val)} value={mathSkillJeudi || ''}>
+                     <Select onValueChange={(val) => setMathSkillJeudi(val === 'null' ? null : val)} value={mathSkillJeudi || ''}>
                         <SelectTrigger id="math-jeudi-select">
                             <SelectValue placeholder="Aucun" />
                         </SelectTrigger>
@@ -147,4 +147,3 @@ export function HomeworkCreator({ spellingLists, onHomeworkAdded }: HomeworkCrea
         </Card>
     );
 }
-
