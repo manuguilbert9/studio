@@ -16,7 +16,7 @@ import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
 import { GroupManager } from '@/components/teacher/group-manager';
 import { HomeworkManager } from '@/components/teacher/homework-manager';
-import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
+import { getSpellingLists, SpellingList } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
 import { getGroups, type Group } from '@/services/groups';
 import { getAllScores, Score } from '@/services/scores';
@@ -36,24 +36,21 @@ export default function TeacherDashboardPage() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
-  const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
   const [allHomework, setAllHomework] = useState<Homework[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, groupData, scoresData, writingData, spellingProgressData, homeworkData] = await Promise.all([
+    const [studentData, groupData, scoresData, writingData, homeworkData] = await Promise.all([
       getStudents(),
       getGroups(),
       getAllScores(),
       getAllWritingEntries(),
-      getAllSpellingProgress(),
       getAllHomework(),
     ]);
     setStudents(studentData);
     setGroups(groupData);
     setAllScores(scoresData);
     setAllWritingEntries(writingData);
-    setAllSpellingProgress(spellingProgressData);
     setAllHomework(homeworkData);
     setIsLoading(false);
   }, []);
@@ -128,7 +125,6 @@ export default function TeacherDashboardPage() {
                     <ResultsManager 
                         students={students} 
                         allScores={allScores} 
-                        allSpellingProgress={allSpellingProgress} 
                         allWritingEntries={allWritingEntries}
                         onDataRefresh={loadData} 
                     />
