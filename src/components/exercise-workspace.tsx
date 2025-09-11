@@ -2,17 +2,22 @@
 
 'use client';
 
-import type { Skill } from '@/lib/skills';
+import type { Skill } from '@/lib/skills.tsx';
 import { useState, useMemo, useEffect, useContext } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType } from '@/lib/questions';
+import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, currency as currencyData, formatCurrency } from '@/lib/questions';
 import { Progress } from '@/components/ui/progress';
+import { ScoreHistoryDisplay } from './score-history-display';
 import { Skeleton } from './ui/skeleton';
 import { ScoreTube } from './score-tube';
+import { CalculationSettings } from './calculation-settings';
+import { CurrencySettings } from './currency-settings';
+import { TimeSettings } from './time-settings';
+import { PriceTag } from './price-tag';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score } from '@/services/scores';
@@ -63,13 +68,29 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
 
   useEffect(() => {
-      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, {
-        calculation: calculationSettings || undefined,
-        currency: currencySettings || undefined,
-        time: timeSettings || undefined,
-      }));
+    if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
-  }, [skill.slug, calculationSettings, currencySettings, timeSettings]);
+    }
+  }, [skill.slug]);
+  
+  const startCalculationExercise = (settings: CalcSettings) => {
+    setCalculationSettings(settings);
+    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { calculation: settings }));
+    setIsReadyToStart(true);
+  };
+  
+  const startCurrencyExercise = (settings: CurrSettings) => {
+    setCurrencySettings(settings);
+    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { currency: settings }));
+    setIsReadyToStart(true);
+  };
+
+  const startTimeExercise = (settings: TimeSettingsType) => {
+    setTimeSettings(settings);
+    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }));
+    setIsReadyToStart(true);
+  }
 
   const exerciseData = useMemo(() => {
     if (questions.length === 0) return null;
@@ -234,11 +255,23 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setCurrencySettings(null);
     setTimeSettings(null);
     resetInteractiveStates();
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
-    setIsReadyToStart(true);
+     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+      setIsReadyToStart(true);
+    }
   };
 
   if (!isReadyToStart) {
+      if (skill.slug === 'calculation') {
+        return <CalculationSettings onStart={startCalculationExercise} />;
+      }
+      if (skill.slug === 'currency') {
+        return <CurrencySettings onStart={startCurrencyExercise} />;
+      }
+      if (skill.slug === 'time') {
+        return <TimeSettings onStart={startTimeExercise} />;
+      }
+      // For other skills, this will show a loading state until questions are set.
        return (
             <Card className="w-full shadow-2xl p-8 text-center">
                 Chargement de l'exercice...
@@ -260,11 +293,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           
           <ScoreTube score={score} />
          
-          {isLoadingHistory && (
+          {isLoadingHistory ? (
             <div className="space-y-4 mt-6">
               <Skeleton className="h-8 w-1/3 mx-auto" />
               <Skeleton className="h-48 w-full" />
             </div>
+          ) : (
+            scoreHistory.length > 0 && <ScoreHistoryDisplay scoreHistory={scoreHistory} />
           )}
 
           <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
@@ -339,6 +374,124 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     </>
   );
 
+  const renderComposeSum = () => (
+    <div className="flex flex-col items-center justify-center w-full space-y-4">
+        
+        {/* Visual context for Level 4 */}
+        {typeof exerciseData.cost !== 'undefined' && exerciseData.paymentImages && (
+          <div className="w-full flex flex-col sm:flex-row items-center justify-around gap-4 mb-4 p-4 bg-muted/50 rounded-lg">
+              <div className="flex flex-col items-center gap-2">
+                  <p className="text-muted-foreground font-semibold">Prix de l'article</p>
+                  <PriceTag price={formatCurrency(exerciseData.cost)} />
+              </div>
+              <ArrowRight className="h-8 w-8 text-muted-foreground hidden sm:block" />
+              <div className="flex flex-col items-center gap-2">
+                  <p className="text-muted-foreground font-semibold">Argent donné</p>
+                  <div className="flex gap-2">
+                  {exerciseData.paymentImages.map((item, index) => (
+                      <img key={index} src={item.image} alt={item.name} className="h-16 object-contain" />
+                  ))}
+                  </div>
+              </div>
+          </div>
+        )}
+
+        {/* Current sum display */}
+        <div className={cn("rounded-lg border-2 p-4 w-full text-center mb-4 transition-colors",
+            feedback === 'correct' ? 'bg-green-100 border-green-500' :
+            feedback === 'incorrect' ? 'bg-red-100 border-red-500' :
+            'bg-secondary'
+        )}>
+            <p className="text-muted-foreground">Votre somme</p>
+            <p className="text-4xl font-bold font-numbers">{formatCurrency(composedAmount)}</p>
+            <div className="h-16 mt-2 flex flex-wrap gap-1 justify-center items-center overflow-y-auto">
+                {selectedCoins.map((coin, index) => (
+                    <img key={index} src={coin.src} alt={coin.alt} className="h-8 object-contain" />
+                ))}
+            </div>
+        </div>
+
+        {/* Currency selection */}
+        <Card className="w-full p-4">
+            <CardContent className="flex flex-wrap items-center justify-center gap-2 p-0">
+                {currencyData.map((item) => (
+                    <Button 
+                        key={item.name} 
+                        variant="ghost" 
+                        onClick={() => handleAddToSum(item)}
+                        disabled={!!feedback}
+                        className="h-auto p-1 flex flex-col gap-1 items-center transform active:scale-95 hover:bg-accent/50"
+                    >
+                        <img src={item.image} alt={item.name} className="h-12 object-contain" />
+                        <span className="text-xs font-numbers">{item.name}</span>
+                    </Button>
+                ))}
+            </CardContent>
+        </Card>
+
+        {/* Action buttons */}
+        <div className="flex w-full gap-4">
+             <Button
+                variant="outline"
+                size="lg"
+                className="w-full"
+                onClick={() => { setComposedAmount(0); setSelectedCoins([]); }}
+                disabled={!!feedback}
+            >
+                <Trash2 className="mr-2" />
+                Effacer
+            </Button>
+            <Button
+                size="lg"
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={handleComposeSumSubmit}
+                disabled={!!feedback}
+            >
+                <Check className="mr-2" />
+                Valider
+            </Button>
+        </div>
+    </div>
+);
+
+const renderSelectMultiple = () => (
+    <div className="flex flex-col items-center justify-center w-full space-y-4">
+        {/* Item cloud */}
+        <Card className="w-full p-4">
+            <CardContent className="flex flex-wrap items-center justify-center gap-3 p-0">
+                {exerciseData.items?.map((item, index) => (
+                    <button
+                        key={index}
+                        onClick={() => handleToggleSelectItem(index)}
+                        disabled={!!feedback}
+                        className={cn("h-auto p-1 rounded-md transform active:scale-95 transition-all",
+                            selectedIndices.includes(index) ? 'ring-4 ring-accent' : 'ring-2 ring-transparent',
+                            feedback === 'correct' && selectedIndices.includes(index) && 'ring-green-500',
+                            feedback === 'incorrect' && selectedIndices.includes(index) && 'ring-red-500 animate-shake',
+                            feedback && !selectedIndices.includes(index) && 'opacity-50'
+                        )}
+                    >
+                        <img src={item.image} alt={item.name} className="h-14 object-contain" />
+                    </button>
+                ))}
+            </CardContent>
+        </Card>
+
+        {/* Action buttons */}
+        <div className="flex w-full gap-4 pt-4">
+            <Button
+                size="lg"
+                className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={handleSelectMultipleSubmit}
+                disabled={!!feedback || selectedIndices.length === 0}
+            >
+                <Check className="mr-2" />
+                Valider
+            </Button>
+        </div>
+    </div>
+);
+
 const renderSetTime = () => (
     <InteractiveClock
       hour={exerciseData.hour!}
@@ -379,6 +532,8 @@ const renderSetTime = () => (
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
+          {exerciseData.type === 'compose-sum' && renderComposeSum()}
+          {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
           {exerciseData.type === 'set-time' && renderSetTime()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
