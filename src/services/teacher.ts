@@ -5,7 +5,7 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, orderBy, query, where, Timestamp, limit } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
-import { startOfWeek, addDays, getUTCDay, getUTCHours } from 'date-fns';
+import { startOfWeek, addDays } from 'date-fns';
 
 const SETTINGS_COLLECTION = 'teacher';
 const HOMEWORK_COLLECTION = 'homework';
@@ -73,17 +73,6 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
         const now = new Date();
-        const utcDay = getUTCDay(now); // Sunday=0, Monday=1, ..., Thursday=4
-        const utcHour = getUTCHours(now);
-
-        const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
-        const nextWeekMonday = addDays(currentWeekMonday, 7);
-
-        // The threshold is Thursday 11:00 Paris time (UTC+2 summer, UTC+1 winter).
-        // Let's use 09:00 UTC as a stable threshold.
-        const isAfterThreshold = (utcDay === 4 && utcHour >= 9) || utcDay > 4 || utcDay === 0;
-
-        let targetMonday = isAfterThreshold ? nextWeekMonday : currentWeekMonday;
 
         const findAssignmentForWeek = async (mondayDate: Date) => {
             const mondayISO = mondayDate.toISOString().split('T')[0] + 'T12:00:00.000Z';
@@ -101,16 +90,27 @@ export async function getCurrentHomeworkConfig(): Promise<{ listId: string | nul
             return null;
         };
 
-        // 1. Try to find the assignment for the target week (current or next).
+        const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
+        const nextWeekMonday = addDays(currentWeekMonday, 7);
+        
+        // Use native getDay() and getHours() which use the server's local time.
+        // Sunday=0, Monday=1, ..., Thursday=4
+        const dayOfWeek = now.getDay(); 
+        const hour = now.getHours();
+
+        // The threshold is Thursday 11:00 AM server time.
+        const isAfterThreshold = (dayOfWeek === 4 && hour >= 11) || dayOfWeek > 4 || dayOfWeek === 0;
+
+        let targetMonday = isAfterThreshold ? nextWeekMonday : currentWeekMonday;
         let assignment = await findAssignmentForWeek(targetMonday);
         
-        // 2. If no assignment is found for the target week, try the other week as a fallback.
+        // If no assignment for the target week, try the other one as fallback.
         if (!assignment) {
              const fallbackMonday = isAfterThreshold ? currentWeekMonday : nextWeekMonday;
              assignment = await findAssignmentForWeek(fallbackMonday);
         }
 
-        // 3. If still no assignment, find the most recent one in the past.
+        // If still no assignment, find the most recent one in the past.
         if (!assignment) {
             const fallbackQuery = query(
                 collection(db, HOMEWORK_COLLECTION),
@@ -210,4 +210,5 @@ export async function setCurrentSchoolYear(year: string): Promise<{ success: boo
         return { success: false, error: "An unknown error occurred." };
     }
 }
+
 
