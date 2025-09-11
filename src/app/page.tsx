@@ -5,7 +5,7 @@ import { useState, FormEvent, useContext } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart } from 'lucide-react';
+import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart, ListChecks } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -154,15 +154,15 @@ export default function ModeSelectionPage() {
             </CardHeader>
           </Card>
         </Link>
-        <Link href="/story-box" className="group" aria-label="Accéder à la boîte à histoires">
+        <Link href="/planning" className="group" aria-label="Accéder au planning de la journée">
           <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
             <div className="mb-6 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
-              <BookHeart />
+              <ListChecks />
             </div>
              <CardHeader>
-              <CardTitle className="font-headline text-3xl sm:text-4xl">Boîte à Histoires</CardTitle>
+              <CardTitle className="font-headline text-3xl sm:text-4xl">Mon Planning</CardTitle>
               <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
-                Crée une histoire magique à partir de tes idées.
+                Organise ta journée et suis tes progrès.
               </CardDescription>
             </CardHeader>
           </Card>
