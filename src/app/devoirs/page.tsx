@@ -1,5 +1,5 @@
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -72,7 +72,7 @@ export default async function DevoirsPage() {
           <CardHeader>
             <div className="flex items-center gap-4">
               <div className="bg-blue-100 p-3 rounded-full">
-                <BookOpen className="h-8 w-8 text-blue-600" />
+                {frenchSkill ? <div className="[&>svg]:h-8 [&>svg]:w-8 text-blue-600">{frenchSkill.icon}</div> : <BookOpen className="h-8 w-8 text-blue-600" />}
               </div>
               <div>
                 <CardTitle className="font-headline text-3xl">Français</CardTitle>
@@ -106,7 +106,7 @@ export default async function DevoirsPage() {
           <CardHeader>
             <div className="flex items-center gap-4">
               <div className="bg-red-100 p-3 rounded-full">
-                <BrainCircuit className="h-8 w-8 text-red-600" />
+                {mathSkill ? <div className="[&>svg]:h-8 [&>svg]:w-8 text-red-600">{mathSkill.icon}</div> : <BrainCircuit className="h-8 w-8 text-red-600" />}
               </div>
               <div>
                 <CardTitle className="font-headline text-3xl">Mathématiques</CardTitle>
