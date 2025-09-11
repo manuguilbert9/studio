@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useContext } from 'react';
@@ -264,3 +263,5 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     </>
   );
 }
+
+    

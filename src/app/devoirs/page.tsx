@@ -114,8 +114,7 @@ export default function DevoirsPage() {
 
         allAssignments.forEach(item => {
             try {
-                // Correctly parse YYYY-MM-DD as a local date by replacing hyphens to avoid timezone issues
-                const itemDate = new Date(item.date.replace(/-/g, '/'));
+                const itemDate = parseISO(item.date);
                 if (isBefore(itemDate, today)) {
                     past.push(item);
                 } else {
@@ -195,8 +194,12 @@ export default function DevoirsPage() {
           futureHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} completedHomework={completedHomework} />)
         ) : (
           <Card className="text-center p-8">
-            <CardTitle>Aucun devoir à venir</CardTitle>
-            <CardDescription className="mt-2">Il n'y a pas de devoirs prévus pour les jours prochains.</CardDescription>
+            <CardHeader>
+                <CardTitle>Aucun devoir à venir</CardTitle>
+                <CardContent>
+                    <p className="text-muted-foreground mt-2">Il n'y a pas de devoirs prévus pour les jours prochains.</p>
+                </CardContent>
+            </CardHeader>
           </Card>
         )}
 
@@ -216,3 +219,5 @@ export default function DevoirsPage() {
     </main>
   );
 }
+
+    
