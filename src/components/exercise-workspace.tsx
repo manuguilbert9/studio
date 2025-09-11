@@ -280,9 +280,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   };
 
   if (!isReadyToStart) {
-      if (skill.slug === 'calculation') return <CalculationSettings onStart={startCalculationExercise} />;
-      if (skill.slug === 'currency') return <CurrencySettings onStart={startCurrencyExercise} />;
-      if (skill.slug === 'time') return <TimeSettings onStart={startTimeExercise} />;
+      if (skill.slug === 'calculation' && !isHomework) return <CalculationSettings onStart={startCalculationExercise} />;
+      if (skill.slug === 'currency' && !isHomework) return <CurrencySettings onStart={startCurrencyExercise} />;
+      if (skill.slug === 'time' && !isHomework) return <TimeSettings onStart={startTimeExercise} />;
       return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'exercice...</Card>;
   }
 
