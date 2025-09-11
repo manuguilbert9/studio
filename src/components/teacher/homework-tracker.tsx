@@ -119,9 +119,9 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                             
                             return (
                                 <AccordionItem value={assignment.id} key={assignment.id} className="border bg-secondary/30 rounded-lg px-4">
-                                     <AccordionTrigger className="hover:no-underline">
-                                        <div className="flex justify-between items-center w-full">
-                                             <div>
+                                     <div className="flex justify-between items-center w-full">
+                                        <AccordionTrigger className="hover:no-underline flex-grow">
+                                            <div>
                                                 <h3 className="text-lg font-semibold text-left">
                                                     Semaine du {format(parseISO(assignment.weekOf), "d MMMM yyyy", { locale: fr })}
                                                 </h3>
@@ -131,23 +131,23 @@ export function HomeworkTracker({ students, spellingLists, allProgress, allScore
                                                     Maths Jeudi: {mathSkillJeudi?.name || 'Aucun'}
                                                 </p>
                                             </div>
-                                             <AlertDialog onOpenChange={(open) => open && event.stopPropagation()}>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader><AlertDialogTitle>Supprimer cette semaine de devoirs ?</AlertDialogTitle></AlertDialogHeader>
-                                                    <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDeleteAssignment(assignment.id)}>Supprimer</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </div>
-                                    </AccordionTrigger>
+                                        </AccordionTrigger>
+                                        <AlertDialog onOpenChange={(open) => open && event.stopPropagation()}>
+                                            <AlertDialogTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="text-destructive h-8 w-8 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader><AlertDialogTitle>Supprimer cette semaine de devoirs ?</AlertDialogTitle></AlertDialogHeader>
+                                                <AlertDialogDescription>Cette action est irréversible.</AlertDialogDescription>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleDeleteAssignment(assignment.id)}>Supprimer</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </div>
                                     <AccordionContent>
                                         <Table>
                                             <TableHeader>
