@@ -70,20 +70,21 @@ export async function getHomeworkForGroup(groupId: string): Promise<{ date: stri
     if (!groupId) return [];
 
     try {
-        const q = query(collection(db, "homework"), orderBy("id", "desc"));
-        const querySnapshot = await getDocs(q);
+        const homeworkCollectionRef = collection(db, "homework");
+        const querySnapshot = await getDocs(homeworkCollectionRef);
+        
         const groupAssignments: { date: string; assignment: Assignment }[] = [];
 
         querySnapshot.forEach((doc) => {
-            const homework = doc.data() as Omit<Homework, 'id'>;
-            if (homework.assignments && homework.assignments[groupId]) {
+            const homeworkData = doc.data();
+            if (homeworkData.assignments && homeworkData.assignments[groupId]) {
                 groupAssignments.push({
                     date: doc.id,
-                    assignment: homework.assignments[groupId],
+                    assignment: homeworkData.assignments[groupId],
                 });
             }
         });
-
+        
         return groupAssignments;
     } catch (error) {
         console.error("Error loading homework for group from Firestore:", error);
