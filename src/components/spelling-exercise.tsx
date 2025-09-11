@@ -19,9 +19,10 @@ const WORD_DISPLAY_TIME_MS = 6000;
 
 interface SpellingExerciseProps {
     exerciseId: string;
+    onFinish: () => void;
 }
 
-export function SpellingExercise({ exerciseId }: SpellingExerciseProps) {
+export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps) {
   const router = useRouter();
   const { student, isLoading: isUserLoading } = useContext(UserContext);
 
@@ -139,11 +140,9 @@ export function SpellingExercise({ exerciseId }: SpellingExerciseProps) {
             <Card className="p-8 text-center">
                 <h2 className="text-xl font-semibold text-destructive">Erreur</h2>
                 <p className="text-muted-foreground mt-2">Vous devez être connecté pour faire un exercice.</p>
-                <Button asChild onClick={() => router.push('/devoirs')} className="mt-4">
-                    <Link href="/devoirs">
+                <Button onClick={onFinish} className="mt-4">
                      <ArrowLeft className="mr-2 h-4 w-4" />
                      Retour à la liste
-                    </Link>
                 </Button>
             </Card>
         </main>
@@ -183,7 +182,7 @@ export function SpellingExercise({ exerciseId }: SpellingExerciseProps) {
                     </p>
                 )}
 
-                 <Button onClick={() => router.push('/devoirs')} size="lg" className="mt-8 w-full">
+                 <Button onClick={onFinish} size="lg" className="mt-8 w-full">
                     Retourner à la liste des devoirs
                 </Button>
             </Card>
@@ -194,11 +193,9 @@ export function SpellingExercise({ exerciseId }: SpellingExerciseProps) {
   return (
     <>
       <header className="relative flex items-center justify-center mb-4 w-full max-w-2xl">
-         <Button asChild variant="ghost" className="absolute left-0">
-            <Link href={`/devoirs/${exerciseId}/select`}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour
-            </Link>
+         <Button variant="ghost" className="absolute left-0" onClick={onFinish}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
         </Button>
         <h1 className="font-headline text-2xl sm:text-3xl text-center">{list.id} - {list.title}</h1>
       </header>
