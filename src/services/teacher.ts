@@ -5,7 +5,7 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
-import { startOfWeek, addDays, endOfDay } from 'date-fns';
+import { startOfWeek, addDays, getDay } from 'date-fns';
 import type { Student } from './students';
 import type { Homework, Assignment } from './homework';
 
@@ -85,7 +85,10 @@ export async function setCurrentSchoolYear(year: string): Promise<{ success: boo
 
 /**
  * Gets the relevant homework assignment for a student based on the current date.
- * Implements the "Thursday rule": from Thursday onwards, it shows next week's homework.
+ * Rules:
+ * - Saturday to Tuesday: Show Monday's homework.
+ * - Wednesday, Thursday: Show Thursday's homework.
+ * - Friday: Show nothing.
  */
 export async function getCurrentHomeworkForStudent(student: Student): Promise<Assignment | null> {
     if (!student.groupId) {
@@ -93,34 +96,31 @@ export async function getCurrentHomeworkForStudent(student: Student): Promise<As
     }
 
     const today = new Date();
-    const dayOfWeek = today.getDay(); // Sunday: 0, Monday: 1, ..., Saturday: 6
-
-    // Thursday, Friday, Saturday, Sunday (0, 4, 5, 6) show next week's homework.
-    const isNextWeek = [0, 4, 5, 6].includes(dayOfWeek);
-
-    const thisMonday = startOfWeek(today, { weekStartsOn: 1 });
-    const targetMonday = isNextWeek ? addDays(thisMonday, 7) : thisMonday;
+    const dayOfWeek = getDay(today); // Sunday: 0, Monday: 1, ..., Saturday: 6
     
-    const targetWeekId = targetMonday.toISOString().split('T')[0];
+    let targetDate: Date | null = null;
+    const mondayOfThisWeek = startOfWeek(today, { weekStartsOn: 1 });
+
+    // Days: Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
+    if ([6, 0, 1, 2].includes(dayOfWeek)) { // Saturday, Sunday, Monday, Tuesday
+        targetDate = mondayOfThisWeek;
+    } else if ([3, 4].includes(dayOfWeek)) { // Wednesday, Thursday
+        targetDate = addDays(mondayOfThisWeek, 3); // Thursday
+    } else { // Friday
+        return null;
+    }
+    
+    if (!targetDate) return null;
+
+    const targetDateId = targetDate.toISOString().split('T')[0];
 
     try {
-        const homeworkDocRef = doc(db, HOMEWORK_COLLECTION, targetWeekId);
+        const homeworkDocRef = doc(db, HOMEWORK_COLLECTION, targetDateId);
         const docSnap = await getDoc(homeworkDocRef);
 
         if (docSnap.exists()) {
             const homeworkData = docSnap.data() as Omit<Homework, 'id'>;
             return homeworkData.assignments[student.groupId] || null;
-        }
-
-        // Fallback: If next week's homework isn't set, show this week's homework (if not already showing it).
-        if (isNextWeek) {
-             const thisWeekId = thisMonday.toISOString().split('T')[0];
-             const thisWeekDocRef = doc(db, HOMEWORK_COLLECTION, thisWeekId);
-             const thisWeekDocSnap = await getDoc(thisWeekDocRef);
-             if (thisWeekDocSnap.exists()) {
-                 const homeworkData = thisWeekDocSnap.data() as Omit<Homework, 'id'>;
-                 return homeworkData.assignments[student.groupId] || null;
-             }
         }
         
         return null;

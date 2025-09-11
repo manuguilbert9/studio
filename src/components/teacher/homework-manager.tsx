@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { startOfWeek, format } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { type Group } from '@/services/groups';
 import { skills, type Skill } from '@/lib/skills';
@@ -31,39 +31,33 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  const selectedWeekMonday = useMemo(() => {
-    if (!selectedDate) return null;
-    // Set Monday as the start of the week for `date-fns`
-    return startOfWeek(selectedDate, { weekStartsOn: 1 });
-  }, [selectedDate]);
-
   useEffect(() => {
-    if (selectedWeekMonday) {
-      const weekId = selectedWeekMonday.toISOString().split('T')[0];
-      const existingHomework = allHomework.find(h => h.id === weekId);
+    if (selectedDate) {
+      const dateId = selectedDate.toISOString().split('T')[0];
+      const existingHomework = allHomework.find(h => h.id === dateId);
       setAssignments(existingHomework?.assignments || {});
     }
-  }, [selectedWeekMonday, allHomework]);
+  }, [selectedDate, allHomework]);
 
   const handleAssignmentChange = (groupId: string, type: 'francais' | 'maths', skillSlug: string) => {
     setAssignments(prev => ({
       ...prev,
       [groupId]: {
         ...(prev[groupId] || { francais: null, maths: null }),
-        [type]: skillSlug,
+        [type]: skillSlug === 'none' ? null : skillSlug,
       },
     }));
   };
 
   const handleSave = async () => {
-    if (!selectedWeekMonday) return;
+    if (!selectedDate) return;
     setIsSaving(true);
     
-    const weekId = selectedWeekMonday.toISOString().split('T')[0];
-    const result = await saveHomework(weekId, assignments);
+    const dateId = selectedDate.toISOString().split('T')[0];
+    const result = await saveHomework(dateId, assignments);
 
     if (result.success) {
-      toast({ title: 'Devoirs enregistrés', description: 'Les devoirs pour la semaine sélectionnée ont été mis à jour.' });
+      toast({ title: 'Devoirs enregistrés', description: 'Les devoirs pour le jour sélectionné ont été mis à jour.' });
       onHomeworkChange();
     } else {
       toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'enregistrer les devoirs." });
@@ -76,7 +70,7 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
       <div className="md:col-span-1">
         <Card>
           <CardHeader>
-            <CardTitle>Choisir la semaine</CardTitle>
+            <CardTitle>Choisir la date</CardTitle>
           </CardHeader>
           <CardContent className="flex justify-center">
             <Calendar
@@ -98,7 +92,7 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
               Assigner les devoirs
             </CardTitle>
             <CardDescription>
-              Semaine du {selectedWeekMonday ? format(selectedWeekMonday, 'd MMMM yyyy', { locale: fr }) : '...'}
+              Pour le {selectedDate ? format(selectedDate, 'EEEE d MMMM yyyy', { locale: fr }) : '...'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -110,7 +104,7 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
                             <div className="space-y-2">
                                 <Label>Exercice de Français</Label>
                                 <Select
-                                    value={assignments[group.id]?.francais || ''}
+                                    value={assignments[group.id]?.francais || 'none'}
                                     onValueChange={(value) => handleAssignmentChange(group.id, 'francais', value)}
                                 >
                                     <SelectTrigger><SelectValue placeholder="Choisir un exercice..." /></SelectTrigger>
@@ -125,7 +119,7 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
                              <div className="space-y-2">
                                 <Label>Exercice de Mathématiques</Label>
                                 <Select
-                                    value={assignments[group.id]?.maths || ''}
+                                    value={assignments[group.id]?.maths || 'none'}
                                     onValueChange={(value) => handleAssignmentChange(group.id, 'maths', value)}
                                 >
                                     <SelectTrigger><SelectValue placeholder="Choisir un exercice..." /></SelectTrigger>

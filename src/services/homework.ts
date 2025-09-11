@@ -10,22 +10,22 @@ export interface Assignment {
 }
 
 export interface Homework {
-  id: string; // The ID will be the ISO date of the Monday of the week, e.g., "2024-09-16"
+  id: string; // The ID will be the ISO date of the assignment, e.g., "2024-09-16"
   assignments: Record<string, Assignment>; // Key is groupId
 }
 
 /**
- * Saves or updates homework for a specific week.
- * @param weekId The ISO date string (YYYY-MM-DD) of the Monday for that week.
+ * Saves or updates homework for a specific date.
+ * @param dateId The ISO date string (YYYY-MM-DD) for that day's homework.
  * @param assignments A record of assignments, keyed by groupId.
  * @returns An object indicating success or failure.
  */
-export async function saveHomework(weekId: string, assignments: Record<string, Assignment>): Promise<{ success: boolean; error?: string }> {
-  if (!weekId) {
-    return { success: false, error: 'Week ID is required.' };
+export async function saveHomework(dateId: string, assignments: Record<string, Assignment>): Promise<{ success: boolean; error?: string }> {
+  if (!dateId) {
+    return { success: false, error: 'Date ID is required.' };
   }
   try {
-    const homeworkDocRef = doc(db, 'homework', weekId);
+    const homeworkDocRef = doc(db, 'homework', dateId);
     await setDoc(homeworkDocRef, { assignments });
     return { success: true };
   } catch (error) {
@@ -52,7 +52,7 @@ export async function getAllHomework(): Promise<Homework[]> {
             assignments: doc.data().assignments || {},
         });
     });
-    // Sort by week date descending
+    // Sort by date descending
     return homeworks.sort((a, b) => b.id.localeCompare(a.id));
   } catch (error) {
     console.error("Error loading homework from Firestore:", error);
