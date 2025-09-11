@@ -5,16 +5,8 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { skills } from '@/lib/skills';
-import type { HomeworkAssignment } from './teacher';
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
-
-// Overrides for a specific week
-export interface HomeworkOverride {
-    spellingListId: string | null;
-    mathSkillSlugLundi: string | null;
-    mathSkillSlugJeudi: string | null;
-}
 
 export interface ScheduleStep {
     id: string;
@@ -28,7 +20,6 @@ export interface Student {
     code: string;
     levels?: Record<string, SkillLevel>;
     enabledSkills?: Record<string, boolean>;
-    homeworkOverrides?: Record<string, HomeworkOverride>; // Key: weekOf ISO string
     hasCustomSchedule?: boolean;
     schedule?: ScheduleStep[];
 }
@@ -58,7 +49,6 @@ export async function createStudent(name: string, code: string): Promise<Student
         code: code,
         levels: defaultLevels,
         enabledSkills: defaultEnabledSkills,
-        homeworkOverrides: {},
         hasCustomSchedule: false,
         schedule: [],
     });
@@ -69,7 +59,6 @@ export async function createStudent(name: string, code: string): Promise<Student
         code: code,
         levels: defaultLevels,
         enabledSkills: defaultEnabledSkills,
-        homeworkOverrides: {},
         hasCustomSchedule: false,
         schedule: [],
     };
@@ -140,7 +129,6 @@ export async function getStudents(): Promise<Student[]> {
                 code: data.code,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
-                homeworkOverrides: data.homeworkOverrides || {},
                 hasCustomSchedule: data.hasCustomSchedule || false,
                 schedule: data.schedule || [],
             });
@@ -178,7 +166,6 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     code: studentData.code,
                     levels: studentData.levels || {},
                     enabledSkills: studentData.enabledSkills,
-                    homeworkOverrides: studentData.homeworkOverrides || {},
                     hasCustomSchedule: studentData.hasCustomSchedule || false,
                     schedule: studentData.schedule || [],
                 };
@@ -210,7 +197,6 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 code: data.code,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
-                homeworkOverrides: data.homeworkOverrides || {},
                 hasCustomSchedule: data.hasCustomSchedule || false,
                 schedule: data.schedule || [],
             };

@@ -3,7 +3,6 @@
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { RefreshCw, Keyboard, Volume2 } from 'lucide-react';
@@ -15,20 +14,11 @@ import { ScoreTube } from './score-tube';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { VirtualKeyboard } from './virtual-keyboard';
-import { getSpellingLists, SpellingList, saveSpellingResult } from '@/services/spelling';
-import { Loader2 } from 'lucide-react';
 
 const WORDS_PER_EXERCISE = 10;
 
-interface KeyboardCopyExerciseProps {
-    isHomework?: boolean;
-}
-
-export function KeyboardCopyExercise({ isHomework = false }: KeyboardCopyExerciseProps) {
+export function KeyboardCopyExercise() {
     const { student } = useContext(UserContext);
-    const router = useRouter();
-    const params = useParams();
-    const { exerciseId } = params as { exerciseId: string };
 
     const [words, setWords] = useState<WordWithEmoji[]>([]);
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -39,30 +29,10 @@ export function KeyboardCopyExercise({ isHomework = false }: KeyboardCopyExercis
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showVirtualKeyboard, setShowVirtualKeyboard] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        async function loadWords() {
-            setIsLoading(true);
-            if (isHomework && exerciseId) {
-                const allLists = await getSpellingLists();
-                const listId = exerciseId.split('-')[0];
-                const session = exerciseId.split('-')[1];
-                const foundList = allLists.find(l => l.id === listId);
-
-                if (foundList && session) {
-                    const half = Math.ceil(foundList.words.length / 2);
-                    const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
-                    const shuffled = [...sessionWords].sort(() => 0.5 - Math.random());
-                    setWords(shuffled.map(word => ({ word: word, emoji: '📝' }))); // Default emoji
-                }
-            } else {
-                setWords(getSimpleWords(WORDS_PER_EXERCISE));
-            }
-            setIsLoading(false);
-        }
-        loadWords();
-    }, [isHomework, exerciseId]);
+        setWords(getSimpleWords(WORDS_PER_EXERCISE));
+    }, []);
 
     const wordsCount = words.length > 0 ? words.length : WORDS_PER_EXERCISE;
     const currentWordObject = useMemo(() => words[currentWordIndex] || null, [words, currentWordIndex]);
@@ -145,22 +115,16 @@ export function KeyboardCopyExercise({ isHomework = false }: KeyboardCopyExercis
                 setHasBeenSaved(true);
                 const score = (correctAnswers / wordsCount) * 100;
                 
-                if (isHomework && exerciseId) {
-                    // For homework, we save it as a spelling result with 0 errors
-                    await saveSpellingResult(student.id, exerciseId, []);
-                } else {
-                    // For regular exercise, we save it as a score
-                    await addScore({
-                        userId: student.id,
-                        skill: 'keyboard-copy',
-                        score: score,
-                        details: sessionDetails,
-                    });
-                }
+                await addScore({
+                    userId: student.id,
+                    skill: 'keyboard-copy',
+                    score: score,
+                    details: sessionDetails,
+                });
             }
         };
         saveResult();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, exerciseId, wordsCount]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, wordsCount]);
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,9 +132,7 @@ export function KeyboardCopyExercise({ isHomework = false }: KeyboardCopyExercis
     };
 
     const restartExercise = () => {
-        if (!isHomework) {
-            setWords(getSimpleWords(WORDS_PER_EXERCISE));
-        }
+        setWords(getSimpleWords(WORDS_PER_EXERCISE));
         setCurrentWordIndex(0);
         setTypedWord('');
         setIsFinished(false);
@@ -179,10 +141,6 @@ export function KeyboardCopyExercise({ isHomework = false }: KeyboardCopyExercis
         setSessionDetails([]);
     };
     
-    if(isLoading) {
-        return <Loader2 className="h-12 w-12 animate-spin" />
-    }
-
     if (isFinished) {
         const score = (correctAnswers / wordsCount) * 100;
         return (
@@ -195,16 +153,10 @@ export function KeyboardCopyExercise({ isHomework = false }: KeyboardCopyExercis
                         Bravo ! Tu as recopié <span className="font-bold text-primary">{correctAnswers}</span> mots sur <span className="font-bold">{wordsCount}</span>.
                     </p>
                     <ScoreTube score={score} />
-                    {isHomework ? (
-                         <Button onClick={() => router.push('/devoirs')} size="lg" className="mt-8 w-full">
-                            Retourner à la liste des devoirs
-                        </Button>
-                    ) : (
-                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                            <RefreshCw className="mr-2" />
-                            Recommencer
-                        </Button>
-                    )}
+                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+                        <RefreshCw className="mr-2" />
+                        Recommencer
+                    </Button>
                 </CardContent>
             </Card>
         );

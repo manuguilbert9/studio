@@ -2,17 +2,17 @@
 
 'use client';
 
-import { useState, FormEvent, useEffect, useCallback, useMemo } from 'react';
+import { useState, FormEvent, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, UserPlus, Pencil, Trash2, CalendarPlus, GripVertical, PlusCircle } from 'lucide-react';
-import { createStudent, getStudents, type Student, updateStudent, deleteStudent, HomeworkOverride, ScheduleStep } from '@/services/students';
+import { Loader2, UserPlus, Pencil, Trash2 } from 'lucide-react';
+import { createStudent, type Student, updateStudent, deleteStudent } from '@/services/students';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -20,16 +20,7 @@ import { skills as availableSkills, type SkillLevel, allSkillCategories } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getHomeworkAssignments, HomeworkAssignment } from '@/services/teacher';
-import { SpellingList, getSpellingLists } from '@/services/spelling';
-import { format, parseISO } from 'date-fns';
-import { fr } from 'date-fns/locale';
 
-const mathSkills = availableSkills.filter(s => 
-    s.category === 'Nombres et calcul' || 
-    s.category === 'Grandeurs et mesures' ||
-    s.category === 'Problèmes'
-);
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'A', label: 'A - Maternelle' },
@@ -55,14 +46,7 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
     const [editedCode, setEditedCode] = useState('');
     const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
     const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
-    const [editedHomeworkOverrides, setEditedHomeworkOverrides] = useState<Record<string, HomeworkOverride>>({});
-    const [hasCustomSchedule, setHasCustomSchedule] = useState(false);
-    const [editedSchedule, setEditedSchedule] = useState<ScheduleStep[]>([]);
     const [isUpdating, setIsUpdating] = useState(false);
-
-    // Data for homework overrides
-    const [homeworkAssignments, setHomeworkAssignments] = useState<HomeworkAssignment[]>([]);
-    const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
 
 
      const handleCreateStudent = async (e: FormEvent) => {
@@ -98,14 +82,11 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         }
     }
     
-    const openEditModal = async (student: Student) => {
+    const openEditModal = (student: Student) => {
         setEditingStudent(student);
         setEditedName(student.name);
         setEditedCode(student.code);
         setEditedLevels(student.levels || {});
-        setEditedHomeworkOverrides(student.homeworkOverrides || {});
-        setHasCustomSchedule(student.hasCustomSchedule || false);
-        setEditedSchedule(student.schedule || []);
 
         if (student.enabledSkills) {
              setEditedEnabledSkills(student.enabledSkills);
@@ -114,13 +95,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
             availableSkills.forEach(skill => allEnabled[skill.slug] = true);
             setEditedEnabledSkills(allEnabled);
         }
-
-        const [assignments, sLists] = await Promise.all([
-            getHomeworkAssignments(),
-            getSpellingLists()
-        ]);
-        setHomeworkAssignments(assignments);
-        setSpellingLists(sLists);
     };
 
     const closeEditModal = () => {
@@ -135,24 +109,12 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         return;
         }
 
-        // Clean up empty homework overrides before saving
-        const cleanedOverrides: Record<string, HomeworkOverride> = {};
-        for (const weekKey in editedHomeworkOverrides) {
-            const override = editedHomeworkOverrides[weekKey];
-            if (override.spellingListId !== null || override.mathSkillSlugLundi !== null || override.mathSkillSlugJeudi !== null) {
-                cleanedOverrides[weekKey] = override;
-            }
-        }
-
         setIsUpdating(true);
         const result = await updateStudent(editingStudent.id, {
             name: editedName,
             code: editedCode,
             levels: editedLevels,
             enabledSkills: editedEnabledSkills,
-            homeworkOverrides: cleanedOverrides,
-            hasCustomSchedule: hasCustomSchedule,
-            schedule: editedSchedule,
         });
         
         if (result.success) {
@@ -182,33 +144,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
     const handleEnabledSkillChange = (skillSlug: string, isEnabled: boolean) => {
         setEditedEnabledSkills(prev => ({...prev, [skillSlug]: isEnabled}));
     };
-    
-    const handleHomeworkOverrideChange = (weekOf: string, field: keyof HomeworkOverride, value: string | null) => {
-        setEditedHomeworkOverrides(prev => ({
-            ...prev,
-            [weekOf]: {
-                ...(prev[weekOf] || { spellingListId: null, mathSkillSlugLundi: null, mathSkillSlugJeudi: null }),
-                [field]: value,
-            }
-        }));
-    };
-
-    const handleAddScheduleStep = () => {
-        setEditedSchedule(prev => [...prev, { id: Date.now().toString(), text: '', icon: 'Pen' }]);
-    };
-    
-    const handleScheduleStepChange = (index: number, field: 'text' | 'icon', value: string) => {
-        setEditedSchedule(prev => {
-            const newSchedule = [...prev];
-            newSchedule[index] = { ...newSchedule[index], [field]: value };
-            return newSchedule;
-        });
-    };
-
-    const handleRemoveScheduleStep = (index: number) => {
-        setEditedSchedule(prev => prev.filter((_, i) => i !== index));
-    };
-
     
     const skillsByCategory = useMemo(() => {
         const grouped: Record<string, typeof availableSkills> = {};
@@ -269,7 +204,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                             <TableHead>Prénom</TableHead>
                                             <TableHead>Code Secret</TableHead>
                                             <TableHead>Niveaux</TableHead>
-                                            <TableHead>Planning</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -295,9 +229,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                                         <span className="text-muted-foreground text-xs">Aucun</span>
                                                     )}
                                                     </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {student.hasCustomSchedule && <Badge>Activé</Badge>}
                                                 </TableCell>
                                                 <TableCell className="text-right">
                                                     <div className="flex gap-1 justify-end">
@@ -343,11 +274,9 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                         <DialogTitle>Modifier les informations de {editingStudent?.name}</DialogTitle>
                     </DialogHeader>
                      <Tabs defaultValue="levels" className="pt-4">
-                        <TabsList className="grid w-full grid-cols-4">
+                        <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="general">Général</TabsTrigger>
                             <TabsTrigger value="levels">Niveaux</TabsTrigger>
-                            <TabsTrigger value="homework">Devoirs</TabsTrigger>
-                            <TabsTrigger value="schedule">Planning</TabsTrigger>
                         </TabsList>
                         
                         <TabsContent value="general" className="h-full">
@@ -436,104 +365,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                             </div>
                                         )
                                     })}
-                                </div>
-                            </ScrollArea>
-                        </TabsContent>
-
-                        <TabsContent value="homework" className="h-full">
-                             <ScrollArea className="h-[calc(80vh-150px)]">
-                                 <div className="space-y-4 py-4 pr-6">
-                                     <h3 className="font-semibold border-b pb-2">Devoirs personnalisés</h3>
-                                     <p className="text-sm text-muted-foreground">Définissez ici des devoirs spécifiques pour cet élève. Ils remplaceront les devoirs généraux de la classe pour la semaine concernée.</p>
-                                     <div className="space-y-4">
-                                        {homeworkAssignments.map(assignment => {
-                                            const studentOverride = editedHomeworkOverrides[assignment.weekOf];
-                                            const spellingList = studentOverride?.spellingListId !== undefined ? studentOverride.spellingListId : assignment.spellingListId;
-                                            const mathLundi = studentOverride?.mathSkillSlugLundi !== undefined ? studentOverride.mathSkillSlugLundi : assignment.mathSkillSlugLundi;
-                                            const mathJeudi = studentOverride?.mathSkillSlugJeudi !== undefined ? studentOverride.mathSkillSlugJeudi : assignment.mathSkillSlugJeudi;
-
-                                            return (
-                                                <Card key={assignment.id} className="p-4">
-                                                    <p className="font-semibold mb-3">Semaine du {format(parseISO(assignment.weekOf), "d MMMM yyyy", { locale: fr })}</p>
-                                                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-                                                         <div className="grid gap-1.5">
-                                                            <Label>Orthographe</Label>
-                                                            <Select onValueChange={(val) => handleHomeworkOverrideChange(assignment.weekOf, 'spellingListId', val === 'null' ? null : val)} value={spellingList || 'null'}>
-                                                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="null">Par défaut</SelectItem>
-                                                                    {spellingLists.map(list => <SelectItem key={list.id} value={list.id}>{list.id}</SelectItem>)}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                        <div className="grid gap-1.5">
-                                                            <Label>Maths Lundi</Label>
-                                                             <Select onValueChange={(val) => handleHomeworkOverrideChange(assignment.weekOf, 'mathSkillSlugLundi', val === 'null' ? null : val)} value={mathLundi || 'null'}>
-                                                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="null">Par défaut</SelectItem>
-                                                                    {mathSkills.map(skill => <SelectItem key={skill.slug} value={skill.slug}>{skill.name}</SelectItem>)}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                        <div className="grid gap-1.5">
-                                                            <Label>Maths Jeudi</Label>
-                                                             <Select onValueChange={(val) => handleHomeworkOverrideChange(assignment.weekOf, 'mathSkillSlugJeudi', val === 'null' ? null : val)} value={mathJeudi || 'null'}>
-                                                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="null">Par défaut</SelectItem>
-                                                                    {mathSkills.map(skill => <SelectItem key={skill.slug} value={skill.slug}>{skill.name}</SelectItem>)}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                    </div>
-                                                </Card>
-                                            )
-                                        })}
-                                     </div>
-                                 </div>
-                             </ScrollArea>
-                        </TabsContent>
-
-                        <TabsContent value="schedule" className="h-full">
-                            <ScrollArea className="h-[calc(80vh-150px)]">
-                                <div className="space-y-4 py-4 pr-6">
-                                    <div className="flex items-center space-x-2">
-                                        <Switch id="custom-schedule-toggle" checked={hasCustomSchedule} onCheckedChange={setHasCustomSchedule} />
-                                        <Label htmlFor="custom-schedule-toggle">Activer le planning personnalisé pour cet élève</Label>
-                                    </div>
-
-                                    {hasCustomSchedule && (
-                                        <div className="space-y-4 pt-4">
-                                             <h3 className="font-semibold">Étapes de la journée</h3>
-                                             <div className='space-y-3'>
-                                                {editedSchedule.map((step, index) => (
-                                                    <div key={step.id} className="flex items-center gap-2 p-2 border rounded-lg">
-                                                        <GripVertical className="cursor-move text-muted-foreground" />
-                                                        <Input 
-                                                            placeholder="Nom de l'étape" 
-                                                            value={step.text} 
-                                                            onChange={(e) => handleScheduleStepChange(index, 'text', e.target.value)} 
-                                                            className="h-9"
-                                                        />
-                                                        <Input 
-                                                            placeholder="Icône (ex: Pen)" 
-                                                            value={step.icon} 
-                                                            onChange={(e) => handleScheduleStepChange(index, 'icon', e.target.value)}
-                                                            className="h-9 w-32"
-                                                        />
-                                                        <Button variant="ghost" size="icon" className="text-destructive h-8 w-8" onClick={() => handleRemoveScheduleStep(index)}>
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
-                                                ))}
-                                             </div>
-                                            <Button variant="outline" size="sm" onClick={handleAddScheduleStep}>
-                                                <PlusCircle className="mr-2 h-4 w-4"/>
-                                                Ajouter une étape
-                                            </Button>
-                                        </div>
-                                    )}
                                 </div>
                             </ScrollArea>
                         </TabsContent>

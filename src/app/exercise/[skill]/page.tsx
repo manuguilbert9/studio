@@ -3,7 +3,7 @@
 'use client';
 
 import Link from 'next/link';
-import { notFound, useParams, useSearchParams } from 'next/navigation';
+import { notFound, useParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { getSkillBySlug } from '@/lib/skills';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button';
 import { LongCalculationExercise } from '@/components/long-calculation-exercise';
 import { WordFamiliesExercise } from '@/components/word-families-exercise';
 import { MentalCalculationExercise } from '@/components/mental-calculation-exercise';
-import { HomeworkSession } from '@/services/scores';
 import { CalendarExercise } from '@/components/calendar-exercise';
 import { ReadingRaceExercise } from '@/components/reading-race-exercise';
 import { SimpleWordReadingExercise } from '@/components/simple-word-reading-exercise';
@@ -23,11 +22,8 @@ import { LetterRecognitionExercise } from '@/components/letter-recognition-exerc
 
 export default function ExercisePage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const skillSlug = typeof params.skill === 'string' ? params.skill : '';
   const skill = getSkillBySlug(skillSlug);
-
-  const homeworkSession = searchParams.get('homework') as HomeworkSession | null;
 
   if (!skill) {
     notFound();
@@ -65,13 +61,13 @@ export default function ExercisePage() {
       <div className="w-full max-w-4xl">
         <header className="relative flex items-center justify-between mb-8">
            <Button asChild variant="ghost" className="hidden sm:inline-flex">
-            <Link href={homeworkSession ? "/devoirs" : "/en-classe"}>
+            <Link href={"/en-classe"}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour
             </Link>
           </Button>
            <Button asChild variant="ghost" size="icon" className="sm:hidden">
-            <Link href={homeworkSession ? "/devoirs" : "/en-classe"} aria-label="Retour">
+            <Link href={"/en-classe"} aria-label="Retour">
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>

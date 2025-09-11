@@ -6,8 +6,6 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, orderBy, limit, Timestamp, doc, deleteDoc } from "firebase/firestore"; 
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, CountSettings, NumberLevelSettings, ReadingRaceSettings } from '@/lib/questions';
 
-export type HomeworkSession = 'lundi' | 'jeudi';
-
 export interface CalculationState {
   [cellId: string]: {
     value: string;
@@ -40,7 +38,6 @@ export interface Score {
     countSettings?: CountSettings;
     numberLevelSettings?: NumberLevelSettings;
     readingRaceSettings?: ReadingRaceSettings;
-    homeworkSession?: HomeworkSession; // To mark which homework was done
 }
 
 // Adds a new score document to the 'scores' collection.
@@ -101,28 +98,6 @@ export async function getScoresForUser(userId: string, skillSlug?: string): Prom
         return [];
     }
 }
-
-// Checks if a student has completed a specific math homework
-export async function hasDoneMathHomework(userId: string, skillSlug: string, session: HomeworkSession): Promise<boolean> {
-    if (!userId || !skillSlug || !session) {
-        return false;
-    }
-    try {
-        const q = query(
-            collection(db, "scores"),
-            where("userId", "==", userId),
-            where("skill", "==", skillSlug),
-            where("homeworkSession", "==", session),
-            limit(1) // We only need to know if at least one exists
-        );
-        const querySnapshot = await getDocs(q);
-        return !querySnapshot.empty;
-    } catch (error) {
-        console.error("Error checking math homework status:", error);
-        return false;
-    }
-}
-
 
 // Retrieves all scores for all users, for the teacher dashboard.
 export async function getAllScores(): Promise<Score[]> {

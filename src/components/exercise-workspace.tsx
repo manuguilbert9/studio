@@ -18,7 +18,7 @@ import { TimeSettings } from './time-settings';
 import { CountSettings } from './count-settings';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
-import { addScore, getScoresForUser, Score, HomeworkSession, ScoreDetail } from '@/services/scores';
+import { addScore, getScoresForUser, Score, ScoreDetail } from '@/services/scores';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
@@ -40,10 +40,9 @@ const NUM_QUESTIONS = 10;
 interface ExerciseWorkspaceProps {
   skill: Skill;
   isTableauMode?: boolean;
-  homeworkSession?: HomeworkSession | null;
 }
 
-export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSession = null }: ExerciseWorkspaceProps) {
+export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWorkspaceProps) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [correctAnswers, setCorrectAnswers] = useState(0);
@@ -313,7 +312,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
         if (timeSettings) scoreData.timeSettings = timeSettings;
         if (countSettings) scoreData.countSettings = countSettings;
         if (numberLevelSettings) scoreData.numberLevelSettings = numberLevelSettings;
-        if (homeworkSession) scoreData.homeworkSession = homeworkSession;
         if (sessionDetails.length > 0) scoreData.details = sessionDetails;
 
         await addScore(scoreData);
@@ -330,7 +328,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false, homeworkSessio
     };
     
     saveScoreAndFetchHistory();
-  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, countSettings, numberLevelSettings, isTableauMode, hasBeenSaved, homeworkSession, sessionDetails]);
+  }, [isFinished, student, skill.slug, correctAnswers, timeSettings, countSettings, numberLevelSettings, isTableauMode, hasBeenSaved, sessionDetails]);
   
   // This effect handles the keyboard count exercise logic.
   useEffect(() => {
@@ -798,7 +796,7 @@ const renderImageQCM = () => {
             </div>
           )}
         </CardFooter>
-        <style jsx>{`
+        <style jsx>{\`
           @keyframes fall {
             0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
             100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
@@ -811,7 +809,7 @@ const renderImageQCM = () => {
           .animate-shake {
             animation: shake 0.5s ease-in-out;
           }
-        `}</style>
+        \`}</style>
       </Card>
     </div>
   );
