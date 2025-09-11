@@ -84,30 +84,45 @@ export async function setCurrentSchoolYear(year: string): Promise<{ success: boo
 }
 
 /**
- * Gets the relevant homework assignment for a student based on the current date.
+ * Gets the relevant homework assignment for a student based on the current date and time.
  * Rules:
- * - Saturday to Tuesday: Show Monday's homework.
- * - Wednesday, Thursday: Show Thursday's homework.
- * - Friday: Show nothing.
+ * - From Thursday 17:00, show homework for the upcoming Monday.
+ * - From Monday 17:00, show homework for the upcoming Thursday.
  */
 export async function getCurrentHomeworkForStudent(student: Student): Promise<Assignment | null> {
     if (!student.groupId) {
         return null; // No group, no homework
     }
 
-    const today = new Date();
-    const dayOfWeek = getDay(today); // Sunday: 0, Monday: 1, ..., Saturday: 6
-    
-    let targetDate: Date | null = null;
-    const mondayOfThisWeek = startOfWeek(today, { weekStartsOn: 1 });
+    const now = new Date();
+    const day = now.getDay(); // Sunday: 0, Monday: 1, ..., Saturday: 6
+    const hour = now.getHours();
 
-    // Days: Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6
-    if ([6, 0, 1, 2].includes(dayOfWeek)) { // Saturday, Sunday, Monday, Tuesday
-        targetDate = mondayOfThisWeek;
-    } else if ([3, 4].includes(dayOfWeek)) { // Wednesday, Thursday
-        targetDate = addDays(mondayOfThisWeek, 3); // Thursday
-    } else { // Friday
-        return null;
+    let targetDate: Date | null = null;
+    const daysUntilMonday = (1 - day + 7) % 7;
+    const daysUntilThursday = (4 - day + 7) % 7;
+
+    let nextMonday = addDays(now, daysUntilMonday);
+    let nextThursday = addDays(now, daysUntilThursday);
+
+    // If it's Monday but past 17:00, we need the *next* week's Monday.
+    if (day === 1 && hour >= 17) {
+        nextMonday = addDays(nextMonday, 7);
+    }
+    // If it's Thursday but past 17:00, we need the *next* week's Thursday.
+    if (day === 4 && hour >= 17) {
+        nextThursday = addDays(nextThursday, 7);
+    }
+
+    // Determine which target date to use based on current day and time
+    if (day === 4 && hour >= 17) { // Thursday after 5 PM
+        targetDate = nextMonday;
+    } else if (day > 4 || day === 0) { // Friday, Saturday, Sunday
+        targetDate = nextMonday;
+    } else if (day < 4 && !(day === 1 && hour >=17)) { // Monday before 5PM, Tuesday, Wednesday
+        targetDate = nextThursday;
+    } else if (day === 1 && hour >=17) { // Monday after 5PM
+        targetDate = nextThursday;
     }
     
     if (!targetDate) return null;
