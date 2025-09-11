@@ -10,7 +10,7 @@ import { Home, ArrowRight, BookOpen, BrainCircuit, Loader2 } from 'lucide-react'
 import { getSkillBySlug } from '@/lib/skills';
 import { UserContext } from '@/context/user-context';
 import { getHomeworkForGroup, type Assignment } from '@/services/homework';
-import { format, isBefore, startOfToday } from 'date-fns';
+import { format, isBefore, startOfToday, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
@@ -27,7 +27,7 @@ function HomeworkCard({ date, assignment }: { date: string, assignment: Assignme
     <Card>
       <CardHeader>
         <CardTitle className="font-headline text-2xl">
-          Pour le {format(new Date(date), 'EEEE d MMMM', { locale: fr })}
+          Pour le {format(new Date(date.replace(/-/g, '/')), 'EEEE d MMMM', { locale: fr })}
         </CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -73,26 +73,23 @@ export default function DevoirsPage() {
   const [futureHomework, setFutureHomework] = useState<DatedAssignment[]>([]);
   const [pastHomework, setPastHomework] = useState<DatedAssignment[]>([]);
   const [isLoadingHomework, setIsLoadingHomework] = useState(true);
-  const [debugData, setDebugData] = useState<any>(null); // For debugging
 
   useEffect(() => {
     async function fetchHomework() {
       if (student?.groupId) {
         setIsLoadingHomework(true);
         const allAssignments = await getHomeworkForGroup(student.groupId);
-        setDebugData(allAssignments); // <-- Store raw data for debugging
         
         const today = startOfToday();
         const future: DatedAssignment[] = [];
         const past: DatedAssignment[] = [];
 
         allAssignments.forEach(item => {
-          // The date from firestore is 'YYYY-MM-DD', which gets parsed as UTC midnight.
-          // Add timezone offset to treat it as local date to prevent off-by-one day errors.
-          const itemDate = new Date(item.date);
-          const adjustedDate = new Date(itemDate.valueOf() + itemDate.getTimezoneOffset() * 60 * 1000);
+          // item.date is a "YYYY-MM-DD" string. parseISO treats it as local time.
+          // This avoids timezone conversion issues.
+          const itemDate = parseISO(item.date);
 
-          if (isBefore(adjustedDate, today)) {
+          if (isBefore(itemDate, today)) {
             past.push(item);
           } else {
             future.push(item);
@@ -165,19 +162,6 @@ export default function DevoirsPage() {
       </div>
 
       <div className="w-full max-w-4xl space-y-8">
-        {/* --- DEBUG BLOCK START --- */}
-        <Card className="bg-destructive/10 border-destructive">
-            <CardHeader>
-                <CardTitle>Données brutes de Firestore (Debug)</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <pre className="text-xs whitespace-pre-wrap">
-                    {JSON.stringify(debugData, null, 2)}
-                </pre>
-            </CardContent>
-        </Card>
-        {/* --- DEBUG BLOCK END --- */}
-
         {futureHomework.length > 0 ? (
           futureHomework.map(item => <HomeworkCard key={item.date} date={item.date} assignment={item.assignment} />)
         ) : (

@@ -33,7 +33,8 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
 
   useEffect(() => {
     if (selectedDate) {
-      const dateId = selectedDate.toISOString().split('T')[0];
+      // Format the date to YYYY-MM-DD, ignoring timezone.
+      const dateId = format(selectedDate, 'yyyy-MM-dd');
       const existingHomework = allHomework.find(h => h.id === dateId);
       setAssignments(existingHomework?.assignments || {});
     }
@@ -53,7 +54,8 @@ export function HomeworkManager({ groups, allHomework, onHomeworkChange }: Homew
     if (!selectedDate) return;
     setIsSaving(true);
     
-    const dateId = selectedDate.toISOString().split('T')[0];
+    // Format the date to YYYY-MM-DD, ignoring timezone.
+    const dateId = format(selectedDate, 'yyyy-MM-dd');
     const result = await saveHomework(dateId, assignments);
 
     if (result.success) {
