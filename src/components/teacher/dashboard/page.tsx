@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -12,17 +11,17 @@ import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StudentManager } from '@/components/teacher/student-manager';
-import { HomeworkTracker } from '@/components/teacher/homework-tracker';
 import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
 import { GroupManager } from '@/components/teacher/group-manager';
-import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
+import { HomeworkManager } from '@/components/teacher/homework-manager';
 import { getStudents, Student } from '@/services/students';
 import { getGroups, type Group } from '@/services/groups';
 import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { BuildInfo } from '@/components/teacher/build-info';
 import { getAllWritingEntries, WritingEntry } from '@/services/writing';
+import { getAllHomework, type Homework, getHomeworkResultsForUser, HomeworkResult } from '@/services/homework';
 
 
 export default function TeacherDashboardPage() {
@@ -33,32 +32,29 @@ export default function TeacherDashboardPage() {
    // Data states
   const [students, setStudents] = useState<Student[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
-  const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
-  const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
+  const [allHomework, setAllHomework] = useState<Homework[]>([]);
+  const [allHomeworkResults, setAllHomeworkResults] = useState<HomeworkResult[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, groupData, listsData, progressData, scoresData, writingData, spellingProgressData] = await Promise.all([
+    const [studentData, groupData, scoresData, writingData, homeworkData, homeworkResultsData] = await Promise.all([
       getStudents(),
       getGroups(),
-      getSpellingLists(),
-      getAllSpellingProgress(),
       getAllScores(),
       getAllWritingEntries(),
-      getAllSpellingProgress(),
+      getAllHomework(),
+      Promise.all(students.map(s => getHomeworkResultsForUser(s.id))).then(res => res.flat())
     ]);
     setStudents(studentData);
     setGroups(groupData);
-    setSpellingLists(listsData);
-    setAllProgress(progressData);
     setAllScores(scoresData);
     setAllWritingEntries(writingData);
-    setAllSpellingProgress(spellingProgressData);
+    setAllHomework(homeworkData);
+    setAllHomeworkResults(homeworkResultsData);
     setIsLoading(false);
-  }, []);
+  }, [students]);
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem('teacher_authenticated') === 'true';
@@ -109,7 +105,7 @@ export default function TeacherDashboardPage() {
                 <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
                     <TabsTrigger value="groups">Gestion des groupes</TabsTrigger>
-                    <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
+                    <TabsTrigger value="homework">Gestion des devoirs</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
                     <TabsTrigger value="database">Réglages</TabsTrigger>
                 </TabsList>
@@ -117,21 +113,19 @@ export default function TeacherDashboardPage() {
                     <StudentManager students={students} onStudentsChange={loadData} />
                 </TabsContent>
                 <TabsContent value="groups" className="mt-6">
-                    <GroupManager students={students} groups={groups} onDataChange={loadData} />
+                    <GroupManager initialStudents={students} initialGroups={groups} onGroupsChange={loadData} />
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
-                    <HomeworkTracker 
-                        students={students} 
-                        spellingLists={spellingLists} 
-                        allProgress={allProgress}
-                        allScores={allScores}
+                    <HomeworkManager 
+                        groups={groups}
+                        allHomework={allHomework}
+                        onHomeworkChange={loadData}
                     />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
                     <ResultsManager 
                         students={students} 
                         allScores={allScores} 
-                        allSpellingProgress={allSpellingProgress} 
                         allWritingEntries={allWritingEntries}
                         onDataRefresh={loadData} 
                     />

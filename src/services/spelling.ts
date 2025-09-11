@@ -72,41 +72,27 @@ export async function getSpellingLists(): Promise<SpellingList[]> {
 
 // --- Firestore Progress Functions ---
 
-export async function getSpellingProgress(userId: string): Promise<Record<string, boolean>> {
-  if (!userId) return {};
-  try {
-    const progressRef = doc(db, 'spellingProgress', userId);
-    const docSnap = await getDoc(progressRef);
-    if(docSnap.exists()){
-      const data = docSnap.data();
-      // Ensure data is not null and is an object before processing
-      if(data && typeof data === 'object'){
-        const progress: Record<string, boolean> = {};
-        for(const key in data){
-            if (Object.prototype.hasOwnProperty.call(data, key)) {
-                progress[key] = true;
-            }
-        }
-        return progress;
-      }
-    }
-    return {};
-  } catch (e) {
-    console.error("Failed to get spelling progress from Firestore", e);
-    return {};
-  }
-}
-
 export async function saveSpellingResult(userId: string, exerciseId: string, errors: string[]): Promise<{success: boolean, error?: string}> {
   if (!userId) return { success: false, error: "User ID is required."};
+  // This function might become obsolete if spelling is only done via homework system
+  // For now, it saves to a `scores` collection for general practice.
   try {
-    const userProgressRef = doc(db, 'spellingProgress', userId);
-    await setDoc(userProgressRef, {
-      [exerciseId.toLowerCase()]: {
-        completedAt: Timestamp.now(),
-        errors: errors,
-      }
-    }, { merge: true });
+    const score = ((exerciseId.split('-')[1] === 'lundi' ? 10 : 10) - errors.length) / (exerciseId.split('-')[1] === 'lundi' ? 10 : 10) * 100;
+    await addDoc(collection(db, 'scores'), {
+      userId: userId,
+      skill: 'orthographe',
+      score: score,
+      createdAt: Timestamp.now(),
+      details: [
+        {
+          question: `Dictée ${exerciseId}`,
+          userAnswer: `Erreurs: ${errors.length}`,
+          correctAnswer: '0 erreurs',
+          status: errors.length === 0 ? 'correct' : 'incorrect',
+          mistakes: errors,
+        }
+      ]
+    });
     return { success: true };
   } catch (e) {
     console.error("Failed to save spelling result to Firestore", e);
@@ -115,38 +101,4 @@ export async function saveSpellingResult(userId: string, exerciseId: string, err
     }
     return { success: false, error: "An unknown error occurred."};
   }
-}
-
-export async function getAllSpellingProgress(): Promise<SpellingProgress[]> {
-    try {
-        const spellingProgressCollectionRef = collection(db, "spellingProgress");
-        const querySnapshot = await getDocs(spellingProgressCollectionRef);
-        const allProgress: SpellingProgress[] = [];
-        querySnapshot.forEach((doc) => {
-            const rawData = doc.data();
-            const processedProgress: Record<string, SpellingResult> = {};
-            // Ensure rawData is not null and is an object
-            if (rawData && typeof rawData === 'object') {
-              for (const key in rawData) {
-                  if (Object.prototype.hasOwnProperty.call(rawData, key)) {
-                      const result = rawData[key];
-                      if (result && result.completedAt instanceof Timestamp) {
-                           processedProgress[key] = {
-                              completedAt: result.completedAt.toDate().toISOString(),
-                              errors: result.errors || []
-                           };
-                      }
-                  }
-              }
-            }
-            allProgress.push({
-                userId: doc.id,
-                progress: processedProgress
-            });
-        });
-        return allProgress;
-    } catch (error) {
-        console.error("Error loading all spelling progress from Firestore:", error);
-        return [];
-    }
 }

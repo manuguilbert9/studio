@@ -21,7 +21,7 @@ export interface HomeworkResult {
     date: string; // Date of the homework assignment (e.g., "2024-09-16")
     skillSlug: string;
     score: number;
-    createdAt: string | Timestamp; // When the user completed it
+    createdAt?: string | Timestamp; // When the user completed it
 }
 
 

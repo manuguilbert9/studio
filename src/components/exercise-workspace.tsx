@@ -563,5 +563,3 @@ const renderSetTime = () => (
     </div>
   );
 }
-
-    

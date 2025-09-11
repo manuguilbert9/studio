@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, Fragment } from 'react';
@@ -16,7 +15,6 @@ import { getSkillBySlug, difficultyLevelToString } from '@/lib/skills';
 import { format, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ReportGenerator } from './report-generator';
-import type { SpellingProgress } from '@/services/spelling';
 import { cn } from '@/lib/utils';
 import { AdditionWidget } from '../tableau/addition-widget';
 import { SoustractionWidget } from '../tableau/soustraction-widget';
@@ -25,7 +23,6 @@ import type { WritingEntry } from '@/services/writing';
 interface ResultsManagerProps {
     students: Student[];
     allScores: Score[];
-    allSpellingProgress: SpellingProgress[];
     allWritingEntries: WritingEntry[];
     onDataRefresh: () => void;
 }
@@ -53,7 +50,7 @@ const ReadOnlyCalculationWidget = ({ score }: { score: Score }) => {
 }
 
 
-export function ResultsManager({ students, allScores, allSpellingProgress, allWritingEntries, onDataRefresh }: ResultsManagerProps) {
+export function ResultsManager({ students, allScores, allWritingEntries, onDataRefresh }: ResultsManagerProps) {
     const { toast } = useToast();
     const [expandedScoreId, setExpandedScoreId] = useState<string | null>(null);
 
@@ -112,7 +109,7 @@ export function ResultsManager({ students, allScores, allSpellingProgress, allWr
 
     return (
         <div className="space-y-8">
-            <ReportGenerator students={students} allScores={allScores} allSpellingProgress={allSpellingProgress} />
+            <ReportGenerator students={students} allScores={allScores} />
             <Card>
                 <CardHeader>
                     <CardTitle>Résultats Détaillés par Élève</CardTitle>

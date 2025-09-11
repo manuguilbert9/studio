@@ -263,5 +263,3 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     </>
   );
 }
-
-    

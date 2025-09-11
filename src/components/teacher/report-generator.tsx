@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -18,7 +17,6 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { type Student } from '@/services/students';
 import { type Score, CalculationState, ScoreDetail } from '@/services/scores';
-import { type SpellingProgress } from '@/services/spelling';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 import { AdditionWidget } from '../tableau/addition-widget';
 import { SoustractionWidget } from '../tableau/soustraction-widget';
@@ -36,7 +34,6 @@ const WIDGET_FONT_SIZE = 6;
 interface ReportGeneratorProps {
     students: Student[];
     allScores: Score[];
-    allSpellingProgress: SpellingProgress[];
 }
 
 const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, startY: number): { endX: number, endY: number } => {
@@ -140,7 +137,7 @@ const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, 
 };
 
 
-export function ReportGenerator({ students, allScores, allSpellingProgress }: ReportGeneratorProps) {
+export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: startOfMonth(new Date()),
