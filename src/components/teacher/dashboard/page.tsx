@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -14,11 +15,14 @@ import { StudentManager } from '@/components/teacher/student-manager';
 import { HomeworkTracker } from '@/components/teacher/homework-tracker';
 import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
+import { GroupManager } from '@/components/teacher/group-manager';
 import { getSpellingLists, SpellingList, getAllSpellingProgress, SpellingProgress } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
+import { getGroups, type Group } from '@/services/groups';
 import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { BuildInfo } from '@/components/teacher/build-info';
+import { getAllWritingEntries, WritingEntry } from '@/services/writing';
 
 
 export default function TeacherDashboardPage() {
@@ -28,22 +32,31 @@ export default function TeacherDashboardPage() {
 
    // Data states
   const [students, setStudents] = useState<Student[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [allProgress, setAllProgress] = useState<SpellingProgress[]>([]);
   const [allScores, setAllScores] = useState<Score[]>([]);
+  const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
+  const [allSpellingProgress, setAllSpellingProgress] = useState<SpellingProgress[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, listsData, progressData, scoresData] = await Promise.all([
+    const [studentData, groupData, listsData, progressData, scoresData, writingData, spellingProgressData] = await Promise.all([
       getStudents(),
+      getGroups(),
       getSpellingLists(),
       getAllSpellingProgress(),
-      getAllScores()
+      getAllScores(),
+      getAllWritingEntries(),
+      getAllSpellingProgress(),
     ]);
     setStudents(studentData);
+    setGroups(groupData);
     setSpellingLists(listsData);
     setAllProgress(progressData);
     setAllScores(scoresData);
+    setAllWritingEntries(writingData);
+    setAllSpellingProgress(spellingProgressData);
     setIsLoading(false);
   }, []);
 
@@ -93,14 +106,18 @@ export default function TeacherDashboardPage() {
             </div>
           ) : (
             <Tabs defaultValue="students" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
+                    <TabsTrigger value="groups">Gestion des groupes</TabsTrigger>
                     <TabsTrigger value="homework">Suivi des devoirs</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
                     <TabsTrigger value="database">Réglages</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
                     <StudentManager students={students} onStudentsChange={loadData} />
+                </TabsContent>
+                <TabsContent value="groups" className="mt-6">
+                    <GroupManager students={students} groups={groups} onDataChange={loadData} />
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
                     <HomeworkTracker 
@@ -111,7 +128,13 @@ export default function TeacherDashboardPage() {
                     />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
-                    <ResultsManager students={students} allScores={allScores} allSpellingProgress={allProgress} onDataRefresh={loadData} />
+                    <ResultsManager 
+                        students={students} 
+                        allScores={allScores} 
+                        allSpellingProgress={allSpellingProgress} 
+                        allWritingEntries={allWritingEntries}
+                        onDataRefresh={loadData} 
+                    />
                 </TabsContent>
                  <TabsContent value="database" className="mt-6">
                     <DatabaseManager />

@@ -18,6 +18,7 @@ export interface Student {
     id: string;
     name: string;
     code: string;
+    groupId?: string; // Add groupId to student model
     levels?: Record<string, SkillLevel>;
     enabledSkills?: Record<string, boolean>;
     hasCustomSchedule?: boolean;
@@ -127,6 +128,7 @@ export async function getStudents(): Promise<Student[]> {
                 id: doc.id,
                 name: data.name,
                 code: data.code,
+                groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
                 hasCustomSchedule: data.hasCustomSchedule || false,
@@ -164,6 +166,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     id: doc.id,
                     name: studentData.name,
                     code: studentData.code,
+                    groupId: studentData.groupId,
                     levels: studentData.levels || {},
                     enabledSkills: studentData.enabledSkills,
                     hasCustomSchedule: studentData.hasCustomSchedule || false,
@@ -195,6 +198,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 id: docSnap.id,
                 name: data.name,
                 code: data.code,
+                groupId: data.groupId,
                 levels: data.levels || {},
                 enabledSkills: data.enabledSkills,
                 hasCustomSchedule: data.hasCustomSchedule || false,
