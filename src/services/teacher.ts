@@ -73,12 +73,12 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
         const today = new Date();
-        const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 5 for Friday
+        const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 6 for Saturday
 
         let referenceDate = today;
-        // If it's Friday, Saturday, or Sunday, look for next week's homework
-        if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) {
-            referenceDate = addDays(today, 3); // Move to sometime next week to get the correct start of week
+        // If it's Thursday, Friday, Saturday, or Sunday, look for next week's homework
+        if (dayOfWeek >= 4 || dayOfWeek === 0) { // 4 is Thursday
+            referenceDate = addDays(today, 4); // Move to sometime next week to get the correct start of week
         }
         
         const monday = startOfWeek(referenceDate, { weekStartsOn: 1 });
