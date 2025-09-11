@@ -5,7 +5,7 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, orderBy, query, where, Timestamp, limit } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
-import { startOfWeek, addDays } from 'date-fns';
+import { startOfWeek, addDays, getUTCDay, getUTCHours } from 'date-fns';
 
 const SETTINGS_COLLECTION = 'teacher';
 const HOMEWORK_COLLECTION = 'homework';
@@ -73,66 +73,64 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
         const now = new Date();
-        const utcDay = now.getUTCDay(); // 0 for Sunday, 1 for Monday... 6 for Saturday
-        const utcHour = now.getUTCHours();
-        
-        let referenceDate = now;
+        const utcDay = getUTCDay(now); // Sunday=0, Monday=1, ..., Thursday=4
+        const utcHour = getUTCHours(now);
 
-        // Determine if we should look for next week's homework.
-        // The threshold is Thursday 11:00 Paris time.
-        // Paris is UTC+2 in summer, UTC+1 in winter. Let's use 09:00 UTC as a stable threshold.
-        // Thursday in getUTCDay() is 4.
-        const isAfterThreshold = 
-            (utcDay === 4 && utcHour >= 9) || // Thursday 09:00 UTC (11:00 Paris summer time) or later
-            (utcDay > 4) || // Friday, Saturday
-            (utcDay === 0); // Sunday
+        const currentWeekMonday = startOfWeek(now, { weekStartsOn: 1 });
+        const nextWeekMonday = addDays(currentWeekMonday, 7);
 
-        if (isAfterThreshold) {
-            referenceDate = addDays(now, 7); // Look for next week's assignment
-        }
-        
-        const monday = startOfWeek(referenceDate, { weekStartsOn: 1 });
-        const mondayISO = monday.toISOString();
-        
-        // Firestore queries on timestamps are precise. We query for the specific Monday.
-        const q = query(
-            collection(db, HOMEWORK_COLLECTION),
-            where("weekOf", "==", mondayISO),
-            limit(1)
-        );
-        
-        const querySnapshot = await getDocs(q);
+        // The threshold is Thursday 11:00 Paris time (UTC+2 summer, UTC+1 winter).
+        // Let's use 09:00 UTC as a stable threshold.
+        const isAfterThreshold = (utcDay === 4 && utcHour >= 9) || utcDay > 4 || utcDay === 0;
 
-        if (!querySnapshot.empty) {
-            const assignment = querySnapshot.docs[0].data();
-            return {
-                listId: assignment.spellingListId || null,
-                skillSlugLundi: assignment.mathSkillSlugLundi || null,
-                skillSlugJeudi: assignment.mathSkillSlugJeudi || null,
-                weekOf: mondayISO,
-            };
+        let targetMonday = isAfterThreshold ? nextWeekMonday : currentWeekMonday;
+
+        const findAssignmentForWeek = async (mondayDate: Date) => {
+            const mondayISO = mondayDate.toISOString().split('T')[0] + 'T12:00:00.000Z';
+            const q = query(collection(db, HOMEWORK_COLLECTION), where("weekOf", "==", mondayISO), limit(1));
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+                const data = snapshot.docs[0].data();
+                return {
+                    listId: data.spellingListId || null,
+                    skillSlugLundi: data.mathSkillSlugLundi || null,
+                    skillSlugJeudi: data.mathSkillSlugJeudi || null,
+                    weekOf: data.weekOf,
+                };
+            }
+            return null;
+        };
+
+        // 1. Try to find the assignment for the target week (current or next).
+        let assignment = await findAssignmentForWeek(targetMonday);
+        
+        // 2. If no assignment is found for the target week, try the other week as a fallback.
+        if (!assignment) {
+             const fallbackMonday = isAfterThreshold ? currentWeekMonday : nextWeekMonday;
+             assignment = await findAssignmentForWeek(fallbackMonday);
         }
 
-        // Fallback: If no assignment for this specific week, find the most recent one in the past
-        const fallbackQuery = query(
-            collection(db, HOMEWORK_COLLECTION),
-            where("weekOf", "<=", now.toISOString()),
-            orderBy("weekOf", "desc"),
-            limit(1)
-        );
-        const fallbackSnapshot = await getDocs(fallbackQuery);
-        if(!fallbackSnapshot.empty) {
-            const assignmentDoc = fallbackSnapshot.docs[0];
-            const assignment = assignmentDoc.data();
-            return {
-                listId: assignment.spellingListId || null,
-                skillSlugLundi: assignment.mathSkillSlugLundi || null,
-                skillSlugJeudi: assignment.mathSkillSlugJeudi || null,
-                weekOf: assignment.weekOf,
-            };
+        // 3. If still no assignment, find the most recent one in the past.
+        if (!assignment) {
+            const fallbackQuery = query(
+                collection(db, HOMEWORK_COLLECTION),
+                where("weekOf", "<=", now.toISOString()),
+                orderBy("weekOf", "desc"),
+                limit(1)
+            );
+            const fallbackSnapshot = await getDocs(fallbackQuery);
+            if (!fallbackSnapshot.empty) {
+                 const data = fallbackSnapshot.docs[0].data();
+                 assignment = {
+                    listId: data.spellingListId || null,
+                    skillSlugLundi: data.mathSkillSlugLundi || null,
+                    skillSlugJeudi: data.mathSkillSlugJeudi || null,
+                    weekOf: data.weekOf,
+                };
+            }
         }
-
-        return { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: null };
+        
+        return assignment || { listId: null, skillSlugLundi: null, skillSlugJeudi: null, weekOf: null };
 
     } catch(e) {
          console.error("Error fetching current homework config:", e);
@@ -212,3 +210,4 @@ export async function setCurrentSchoolYear(year: string): Promise<{ success: boo
         return { success: false, error: "An unknown error occurred." };
     }
 }
+
