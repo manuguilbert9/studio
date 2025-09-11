@@ -26,7 +26,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const initializeUser = async () => {
       setIsLoading(true);
       try {
-        const storedId = sessionStorage.getItem('classemagique_student_id');
+        // Use cookies on the server, but sessionStorage on the client
+        const storedId = typeof window !== 'undefined' ? sessionStorage.getItem('classemagique_student_id') : null;
         if (storedId) {
           const loggedInStudent = await getStudentById(storedId);
           setStudentState(loggedInStudent);
@@ -34,7 +35,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       } catch (error) {
         console.error("Could not access sessionStorage or fetch student", error);
         // Clear broken session data
-        sessionStorage.removeItem('classemagique_student_id');
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('classemagique_student_id');
+        }
         setStudentState(null);
       } finally {
         setIsLoading(false);
@@ -47,8 +50,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     try {
       if (studentData) {
         sessionStorage.setItem('classemagique_student_id', studentData.id);
+        // Also set a cookie for Server Components to access
+        document.cookie = `classemagique_student_id=${studentData.id}; path=/; max-age=86400; SameSite=Lax`;
       } else {
         sessionStorage.removeItem('classemagique_student_id');
+        // Expire the cookie
+        document.cookie = 'classemagique_student_id=; path=/; max-age=-1; SameSite=Lax';
       }
     } catch (error) {
         console.error("Could not access sessionStorage", error);

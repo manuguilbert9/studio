@@ -143,7 +143,7 @@ export default function ModeSelectionPage() {
         </Link>
         <Link href="/en-classe" className="group" aria-label="Accéder au mode En classe">
           <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
-            <div className="mb-6 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm_:[&>svg]:w-24">
+            <div className="mb-6 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
               <Users />
             </div>
              <CardHeader>

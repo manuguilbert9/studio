@@ -5,6 +5,7 @@
 import { db } from '@/lib/firebase';
 import { collection, addDoc, query, where, getDocs, doc, getDoc, updateDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { skills } from '@/lib/skills';
+import { getGloballyEnabledSkills } from './teacher';
 
 export type SkillLevel = 'A' | 'B' | 'C' | 'D';
 
@@ -40,10 +41,8 @@ export async function createStudent(name: string, code: string): Promise<Student
         defaultLevels[skill.slug] = 'B';
     });
 
-    const defaultEnabledSkills: Record<string, boolean> = {};
-    skills.forEach(skill => {
-        defaultEnabledSkills[skill.slug] = true;
-    });
+    // Use the globally defined enabled skills as the default for the new student
+    const defaultEnabledSkills = await getGloballyEnabledSkills();
 
     const docRef = await addDoc(collection(db, 'students'), {
         name: name.trim(),
@@ -156,7 +155,8 @@ export async function loginStudent(name: string, code: string): Promise<Student 
         const querySnapshot = await getDocs(studentsRef);
 
         if (querySnapshot.empty) {
-            return null;
+            // As a fallback, create the student if the list is empty
+            return await createStudent(name, code);
         }
 
         for (const doc of querySnapshot.docs) {
