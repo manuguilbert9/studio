@@ -112,7 +112,7 @@ export default function TeacherDashboardPage() {
                     <StudentManager students={students} onStudentsChange={loadData} />
                 </TabsContent>
                 <TabsContent value="groups" className="mt-6">
-                    <GroupManager students={students} groups={groups} onDataChange={loadData} />
+                    <GroupManager initialStudents={students} initialGroups={groups} onGroupsChange={loadData} />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
                     <ResultsManager 
@@ -136,4 +136,3 @@ export default function TeacherDashboardPage() {
     </TooltipProvider>
   );
 }
-

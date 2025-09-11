@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, FormEvent, useMemo } from 'react';
@@ -16,13 +17,16 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Label } from '../ui/label';
 
 interface GroupManagerProps {
-    students: Student[];
-    groups: Group[];
-    onDataChange: () => void;
+    initialStudents: Student[];
+    initialGroups: Group[];
+    onGroupsChange: () => void; // Renamed for clarity, will be used for groups CUD operations
 }
 
-export function GroupManager({ students, groups, onDataChange }: GroupManagerProps) {
+export function GroupManager({ initialStudents, initialGroups, onGroupsChange }: GroupManagerProps) {
     const { toast } = useToast();
+    const [students, setStudents] = useState(initialStudents);
+    const [groups, setGroups] = useState(initialGroups);
+
     const [newGroupName, setNewGroupName] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -51,7 +55,7 @@ export function GroupManager({ students, groups, onDataChange }: GroupManagerPro
         if (result.id) {
             toast({ title: "Groupe créé !", description: `Le groupe "${newGroupName}" a été ajouté.` });
             setNewGroupName('');
-            onDataChange();
+            onGroupsChange(); // Refresh groups from DB
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible de créer le groupe." });
         }
@@ -63,7 +67,7 @@ export function GroupManager({ students, groups, onDataChange }: GroupManagerPro
         const result = await updateGroup(groupId, { name: editingGroupName });
          if (result.success) {
             toast({ title: "Groupe mis à jour."});
-            onDataChange();
+            onGroupsChange();
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible de renommer le groupe." });
         }
@@ -72,7 +76,10 @@ export function GroupManager({ students, groups, onDataChange }: GroupManagerPro
     }
     
     const handleDeleteGroup = async (groupId: string) => {
-        // Unassign students first
+        // Unassign students locally first
+        setStudents(prevStudents => prevStudents.map(s => s.groupId === groupId ? { ...s, groupId: '' } : s));
+
+        // Then call DB operations
         const studentsInGroup = students.filter(s => s.groupId === groupId);
         for (const student of studentsInGroup) {
             await updateStudent(student.id, { groupId: '' });
@@ -81,7 +88,7 @@ export function GroupManager({ students, groups, onDataChange }: GroupManagerPro
         const result = await deleteGroup(groupId);
         if(result.success) {
              toast({ title: "Groupe supprimé."});
-             onDataChange();
+             onGroupsChange();
         } else {
              toast({ variant: 'destructive', title: "Erreur", description: "Impossible de supprimer le groupe." });
         }
@@ -89,17 +96,16 @@ export function GroupManager({ students, groups, onDataChange }: GroupManagerPro
 
      const handleToggleStudentInGroup = async (studentId: string, groupId: string, isChecked: boolean) => {
         const newGroupId = isChecked ? groupId : '';
+
+        // Optimistic UI update
+        setStudents(prevStudents => prevStudents.map(s => s.id === studentId ? { ...s, groupId: newGroupId } : s));
+
         const result = await updateStudent(studentId, { groupId: newGroupId });
-        if(result.success) {
-             const studentName = students.find(s => s.id === studentId)?.name;
-             const groupName = groups.find(g => g.id === groupId)?.name;
-             const message = isChecked 
-                ? `${studentName} a été ajouté au groupe ${groupName}.`
-                : `${studentName} a été retiré du groupe.`;
-             toast({ title: "Assignation mise à jour", description: message });
-             onDataChange();
-        } else {
+        
+        if(!result.success) {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'assigner l'élève." });
+            // Revert UI change on failure
+            setStudents(prevStudents => prevStudents.map(s => s.id === studentId ? { ...s, groupId: isChecked ? '' : groupId } : s));
         }
     }
 
@@ -225,4 +231,3 @@ export function GroupManager({ students, groups, onDataChange }: GroupManagerPro
         </div>
     );
 }
-
