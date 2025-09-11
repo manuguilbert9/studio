@@ -5,7 +5,7 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, addDoc, getDocs, deleteDoc, orderBy, query, where, Timestamp, limit } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
-import { startOfWeek, endOfWeek } from 'date-fns';
+import { startOfWeek, addDays } from 'date-fns';
 
 const SETTINGS_COLLECTION = 'teacher';
 const HOMEWORK_COLLECTION = 'homework';
@@ -73,7 +73,15 @@ export async function deleteHomeworkAssignment(id: string): Promise<{ success: b
 export async function getCurrentHomeworkConfig(): Promise<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null }> {
     try {
         const today = new Date();
-        const monday = startOfWeek(today, { weekStartsOn: 1 });
+        const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, ..., 5 for Friday
+
+        let referenceDate = today;
+        // If it's Friday, Saturday, or Sunday, look for next week's homework
+        if (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0) {
+            referenceDate = addDays(today, 3); // Move to sometime next week to get the correct start of week
+        }
+        
+        const monday = startOfWeek(referenceDate, { weekStartsOn: 1 });
         const mondayISO = monday.toISOString().split('T')[0] + 'T00:00:00.000Z';
         
         // Firestore queries on timestamps are precise. We query for the specific Monday.

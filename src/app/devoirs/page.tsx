@@ -14,6 +14,8 @@ import { UserContext } from '@/context/user-context';
 import { getCurrentHomeworkConfig, HomeworkAssignment } from '@/services/teacher';
 import { getSkillBySlug } from '@/lib/skills';
 import { getScoresForUser, hasDoneMathHomework } from '@/services/scores';
+import { addDays, parseISO, format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 function HomeworkList() {
   const router = useRouter();
@@ -22,7 +24,7 @@ function HomeworkList() {
   const [spellingLists, setSpellingLists] = useState<SpellingList[]>([]);
   const [spellingProgress, setSpellingProgress] = useState<Record<string, boolean>>({});
   
-  const [currentHomework, setCurrentHomework] = useState<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null } | null>(null);
+  const [currentHomework, setCurrentHomework] = useState<{ listId: string | null, skillSlugLundi: string | null, skillSlugJeudi: string | null, weekOf: string | null } | null>(null);
 
   const [isMathLundiDone, setIsMathLundiDone] = useState(false);
   const [isMathJeudiDone, setIsMathJeudiDone] = useState(false);
@@ -102,17 +104,26 @@ function HomeworkList() {
   const hasHomeworkForLundi = currentList || mathSkillLundi;
   const hasHomeworkForJeudi = currentList || mathSkillJeudi;
 
+  const getWeekDayDate = (day: 'lundi' | 'jeudi'): string => {
+    if (!currentHomework?.weekOf) return '';
+    const monday = parseISO(currentHomework.weekOf);
+    const targetDay = addDays(monday, day === 'lundi' ? 0 : 3);
+    return format(targetDay, 'd/MM');
+  }
+
   return (
     <div className="space-y-8">
         <Card className="w-full bg-secondary/50 border-primary/50">
             <CardHeader>
-                <CardTitle className="font-headline text-3xl sm:text-4xl text-center">Devoirs de la semaine</CardTitle>
+                <CardTitle className="font-headline text-3xl sm:text-4xl text-center">
+                    Devoirs de la semaine du {currentHomework?.weekOf ? format(parseISO(currentHomework.weekOf), 'd MMMM', {locale: fr}) : ''}
+                </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Lundi Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline text-2xl">Pour Lundi</CardTitle>
+                        <CardTitle className="font-headline text-2xl">Pour Lundi <span className="font-sans font-normal text-muted-foreground">{getWeekDayDate('lundi')}</span></CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {currentList && (
@@ -144,7 +155,7 @@ function HomeworkList() {
                  {/* Jeudi Card */}
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline text-2xl">Pour Jeudi</CardTitle>
+                        <CardTitle className="font-headline text-2xl">Pour Jeudi <span className="font-sans font-normal text-muted-foreground">{getWeekDayDate('jeudi')}</span></CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                         {currentList && (
