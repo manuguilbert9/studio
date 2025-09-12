@@ -1,24 +1,29 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect, useRef, useCallback, useContext } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardHeader, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Check, X, ArrowLeft, Loader2, Volume2, ThumbsUp, Star } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { getSpellingLists, saveSpellingResult, type SpellingList } from '@/services/spelling';
+import { getSpellingLists, type SpellingList } from '@/services/spelling';
+import { saveHomeworkResult } from '@/services/homework';
+import { addScore } from '@/services/scores';
+import { UserContext } from '@/context/user-context';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
-
-const WORD_DISPLAY_TIME_MS = 6000;
-
-interface SpellingExerciseProps {
-    exerciseId: string;
-    onFinish: () => void;
-}
+import { Slider } from './ui/slider';
+import { Label } from './ui/label';
 
 export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps) {
+  const searchParams = useSearchParams();
+  const isHomework = searchParams.get('from') === 'devoirs';
+  const homeworkDate = searchParams.get('date');
+
+  const { student } = useContext(UserContext);
+
   const [list, setList] = useState<SpellingList | null>(null);
   const [words, setWords] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,15 +33,14 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'idle' | 'showing'>('showing');
   const [isFinished, setIsFinished] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
-  const [username, setUsername] = useState<string | null>(null);
+  
+  const [wordDisplayTime, setWordDisplayTime] = useState(6000); // Default 6 seconds
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const storedName = localStorage.getItem('classemagique_username');
-    setUsername(storedName);
-
     async function loadExercise() {
       if (!exerciseId) return;
       
@@ -67,19 +71,26 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     showTimeoutRef.current = setTimeout(() => {
       setFeedback('idle');
       setTimeout(() => inputRef.current?.focus(), 100);
-    }, WORD_DISPLAY_TIME_MS);
-  }, []);
+    }, wordDisplayTime);
+  }, [wordDisplayTime]);
 
   useEffect(() => {
     if (words.length > 0 && !isFinished) {
       showWord();
     }
-    // Cleanup timeout on component unmount
     return () => {
       if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
     }
   }, [words, currentWordIndex, isFinished, showWord]);
 
+  const handleNextWord = useCallback(() => {
+    if (currentWordIndex < words.length - 1) {
+      setCurrentWordIndex(prev => prev + 1);
+    } else {
+      setIsFinished(true);
+    }
+  }, [currentWordIndex, words.length]);
+  
   const handleSubmit = () => {
     if (feedback !== 'idle') return;
 
@@ -92,23 +103,44 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
       if (!errors.includes(currentWord)) {
           setErrors(prev => [...prev, currentWord]);
       }
-      // No timeout, user has to click "Try Again"
     }
   };
+
+  useEffect(() => {
+    async function saveResult() {
+      if (isFinished && student && !hasBeenSaved) {
+        setHasBeenSaved(true);
+        const score = ((words.length - errors.length) / words.length) * 100;
+        
+        const details = words.map(word => ({
+            question: "Écrire le mot",
+            userAnswer: errors.includes(word) ? "Incorrect" : word,
+            correctAnswer: word,
+            status: errors.includes(word) ? 'incorrect' : 'correct'
+        }));
+
+        if (isHomework && homeworkDate) {
+           await saveHomeworkResult({
+              userId: student.id,
+              date: homeworkDate,
+              skillSlug: `orthographe-${exerciseId}`,
+              score: score,
+           });
+        } else {
+            await addScore({
+                userId: student.id,
+                skill: `orthographe-${exerciseId}`,
+                score: score,
+                details: details
+            });
+        }
+      }
+    }
+    saveResult();
+  }, [isFinished, student, words, errors, exerciseId, hasBeenSaved, isHomework, homeworkDate]);
 
   const handleTryAgain = () => {
     showWord();
-  };
-
-  const handleNextWord = () => {
-    if (currentWordIndex < words.length - 1) {
-      setCurrentWordIndex(prev => prev + 1);
-    } else {
-      if (username && exerciseId) {
-        saveSpellingResult(username, exerciseId, errors);
-      }
-      setIsFinished(true);
-    }
   };
 
   const handleSpeak = () => {
@@ -186,6 +218,22 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
       </header>
 
       <div className="w-full max-w-2xl">
+        <Card className="p-4 mb-4">
+            <CardHeader className="p-0 mb-2">
+                <CardDescription>Temps d'affichage du mot</CardDescription>
+            </CardHeader>
+            <div className='flex items-center gap-4'>
+                <Slider 
+                    min={2} 
+                    max={10} 
+                    step={1} 
+                    value={[wordDisplayTime / 1000]} 
+                    onValueChange={(val) => setWordDisplayTime(val[0] * 1000)}
+                />
+                <span className="font-bold w-12 text-center">{wordDisplayTime/1000}s</span>
+            </div>
+        </Card>
+        
         <Progress value={progress} className="w-full mb-8 h-3" />
 
         <Card className="w-full min-h-[350px] sm:min-h-[400px] p-6 sm:p-8 flex flex-col justify-between items-center shadow-2xl">

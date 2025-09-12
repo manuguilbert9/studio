@@ -64,8 +64,8 @@ export async function getSpellingLists(): Promise<SpellingList[]> {
     return parseSpellingFile();
 }
 
-// --- Firestore Progress Functions ---
-
+// This function is now deprecated in favor of saving results via `addScore` or `saveHomeworkResult` directly in components.
+// It is kept for reference but should not be used for new development.
 export async function saveSpellingResult(userId: string, exerciseId: string, errors: string[]): Promise<{success: boolean, error?: string}> {
   if (!userId) return { success: false, error: "User ID is required."};
   // This function might become obsolete if spelling is only done via homework system
