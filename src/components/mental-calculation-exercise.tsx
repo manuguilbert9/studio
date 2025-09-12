@@ -2,15 +2,15 @@
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
 import type { SkillLevel } from '@/lib/skills';
+import { useSearchParams } from 'next/navigation';
 import { generateMentalMathQuestions } from '@/lib/mental-math';
 import type { MentalMathQuestion } from '@/lib/mental-math';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { cn } from '@/lib/utils';
-import { Check, RefreshCw, X, Loader2, Star } from 'lucide-react';
+import { Check, RefreshCw, X, Loader2 } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
@@ -19,7 +19,6 @@ import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 
 const NUM_QUESTIONS = 10;
-const ANSWER_TIME_MS = 10000; // 10 seconds
 
 export function MentalCalculationExercise() {
   const { student } = useContext(UserContext);
@@ -113,20 +112,20 @@ export function MentalCalculationExercise() {
               setHasBeenSaved(true);
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
               if (isHomework && homeworkDate) {
-                 await saveHomeworkResult({
-                    userId: student.id,
-                    date: homeworkDate,
-                    skillSlug: 'mental-calculation',
-                    score: score
-                 });
+                  await saveHomeworkResult({
+                      userId: student.id,
+                      date: homeworkDate,
+                      skillSlug: 'mental-calculation',
+                      score: score,
+                  });
               } else {
-                await addScore({
-                    userId: student.id,
-                    skill: 'mental-calculation',
-                    score: score,
-                    details: sessionDetails,
-                    numberLevelSettings: { level: level }
-                });
+                  await addScore({
+                      userId: student.id,
+                      skill: 'mental-calculation',
+                      score: score,
+                      details: sessionDetails,
+                      numberLevelSettings: { level: level }
+                  });
               }
           }
       }
@@ -164,14 +163,14 @@ export function MentalCalculationExercise() {
             Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
           </p>
           <ScoreTube score={score} />
-          {isHomework ? (
-            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-          ) : (
-            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-              <RefreshCw className="mr-2" />
-              Recommencer
-            </Button>
-          )}
+           {isHomework ? (
+                <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+            ) : (
+                <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+                    <RefreshCw className="mr-2" />
+                    Recommencer
+                </Button>
+            )}
         </CardContent>
       </Card>
     );
