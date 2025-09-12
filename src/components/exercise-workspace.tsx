@@ -3,7 +3,7 @@
 'use client';
 
 import type { Skill, SkillLevel } from '@/lib/skills';
-import { useState, useMemo, useEffect, useContext } from 'react';
+import { useState, useMemo, useEffect, useContext, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
@@ -57,8 +57,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [showConfetti, setShowConfetti] = useState(false);
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isSavingAsHomework, setIsSavingAsHomework] = useState(false);
   
   const { student, isLoading: isUserLoading } = useContext(UserContext);
 
@@ -68,6 +66,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [currencySettings, setCurrencySettings] = useState<CurrSettings | null>(null);
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
+
+  // useRef to hold a stable reference to settings for the save effect
+  const timeSettingsRef = useRef(timeSettings);
+  useEffect(() => {
+    timeSettingsRef.current = timeSettings;
+  }, [timeSettings]);
   
   // State for compose-sum
   const [composedAmount, setComposedAmount] = useState(0);
@@ -80,7 +84,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   useEffect(() => {
     // For non-configurable skills
     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
-      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+      generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
     } 
     // For configurable skills that ARE homework, use default settings
@@ -96,7 +100,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     // For 'time' skill in 'en-classe' mode, derive level from student profile
     else if (skill.slug === 'time' && !isUserLoading && !isHomework) {
         const studentLevel = student?.levels?.[skill.slug] || 'A';
-        const settings = {
+        const settings: TimeSettingsType = {
             level: studentLevel,
             showMinuteCircle: studentLevel !== 'D',
             matchColors: studentLevel === 'A',
@@ -119,7 +123,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   };
 
   const startTimeExercise = (settings: TimeSettingsType) => {
-    setTimeSettings(settings);
+    setTimeSettings(settings); // Set settings in state once
     generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }).then(setQuestions);
     setIsReadyToStart(true);
   }
@@ -229,60 +233,57 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     );
   };
   
+   // Using a flag to prevent multiple saves
+  const hasSavedRef = useRef(false);
+
   useEffect(() => {
     const saveResult = async () => {
-      if (isFinished && student && !isSaving && !isTableauMode) {
-        setIsSaving(true);
-        const score = (correctAnswers / NUM_QUESTIONS) * 100;
+      if (isFinished && student && !hasSavedRef.current && !isTableauMode) {
+        hasSavedRef.current = true; // Set flag immediately
         
-        console.log(`[DEBUG] Save logic triggered. isHomework: ${isHomework}, homeworkDate: ${homeworkDate}`);
+        const scoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
 
         if (isHomework && homeworkDate) {
-            console.log("[DEBUG] Saving to 'homeworkResults' collection.");
-            await saveHomeworkResult({
-                userId: student.id,
-                date: homeworkDate,
-                skillSlug: skill.slug,
-                score: score,
-            });
-            setIsLoadingHistory(false); // No history to load for homework
-            setIsSaving(false);
-            return; // IMPORTANT: Stop execution here
+          console.log("[DEBUG] Saving to 'homeworkResults' collection.");
+          await saveHomeworkResult({
+            userId: student.id,
+            date: homeworkDate,
+            skillSlug: skill.slug,
+            score: scoreValue,
+          });
+          setIsLoadingHistory(false); // No history to load for homework
         } else {
-            console.log("[DEBUG] Saving to 'scores' collection.");
-            setIsLoadingHistory(true);
-            const scoreData: Omit<Score, 'createdAt' | 'id'> = {
-                userId: student.id,
-                skill: skill.slug,
-                score: score,
-            };
+          console.log("[DEBUG] Saving to 'scores' collection.");
+          setIsLoadingHistory(true);
+          const scoreData: Omit<Score, 'createdAt' | 'id'> = {
+            userId: student.id,
+            skill: skill.slug,
+            score: scoreValue,
+          };
 
-            if (skill.slug === 'calculation' && calculationSettings) scoreData.calculationSettings = calculationSettings;
-            if (skill.slug === 'currency' && currencySettings) scoreData.currencySettings = currencySettings;
-            if (skill.slug === 'time' && timeSettings) scoreData.timeSettings = timeSettings;
-
-            await addScore(scoreData);
-            
-            try {
-              const userSkillHistory = await getScoresForUser(student.id, skill.slug);
-              setScoreHistory(userSkillHistory);
-            } catch (e) {
-              console.error("Error fetching scores: ", e);
-            } finally {
-                setIsLoadingHistory(false);
-            }
+          if (skill.slug === 'calculation' && calculationSettings) scoreData.calculationSettings = calculationSettings;
+          if (skill.slug === 'currency' && currencySettings) scoreData.currencySettings = currencySettings;
+          if (skill.slug === 'time' && timeSettingsRef.current) scoreData.timeSettings = timeSettingsRef.current;
+          
+          await addScore(scoreData);
+          
+          try {
+            const userSkillHistory = await getScoresForUser(student.id, skill.slug);
+            setScoreHistory(userSkillHistory);
+          } catch (e) {
+            console.error("Error fetching scores: ", e);
+          } finally {
+            setIsLoadingHistory(false);
+          }
         }
-        setIsSaving(false);
       }
     };
     
     saveResult();
-  }, [isFinished, student, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode, isHomework, homeworkDate]);
+  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, isTableauMode, isHomework, homeworkDate]);
 
   const handleSaveAsHomework = async () => {
-      if (!student || isSavingAsHomework) return;
-      
-      setIsSavingAsHomework(true);
+      if (!student) return;
       const score = (correctAnswers / NUM_QUESTIONS) * 100;
       const todayDate = format(new Date(), 'yyyy-MM-dd');
 
@@ -292,10 +293,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           skillSlug: skill.slug,
           score: score,
       });
-      // Optionally show a confirmation message
   }
   
   const restartExercise = () => {
+    hasSavedRef.current = false;
     setQuestions([]);
     setCurrentQuestionIndex(0);
     setCorrectAnswers(0);
@@ -304,14 +305,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setShowConfetti(false);
     setScoreHistory([]);
     setIsLoadingHistory(true);
-    setIsSaving(false);
-    setIsSavingAsHomework(false);
     setIsReadyToStart(false);
     setCalculationSettings(null);
     setCurrencySettings(null);
     setTimeSettings(null);
     resetInteractiveStates();
-     // For non-configurable skills, just regenerate
+    // For non-configurable skills, just regenerate
     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
@@ -356,9 +355,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
               Recommencer un autre exercice
             </Button>
             {!isHomework && (
-              <Button onClick={handleSaveAsHomework} disabled={isSavingAsHomework} size="lg">
-                {isSavingAsHomework ? <Check className="mr-2"/> : <Save className="mr-2" />}
-                {isSavingAsHomework ? 'Enregistré !' : 'Enregistrer comme devoir'}
+              <Button onClick={handleSaveAsHomework} size="lg">
+                <Save className="mr-2" />
+                Enregistrer comme devoir
               </Button>
             )}
           </div>
@@ -612,3 +611,4 @@ const renderSetTime = () => (
     </div>
   );
 }
+

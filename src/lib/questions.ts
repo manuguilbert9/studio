@@ -89,6 +89,8 @@ export interface AllSettings {
   numberLevel?: NumberLevelSettings;
   calendar?: CalendarSettings;
   readingRace?: ReadingRaceSettings;
+  calculation?: CalculationSettings;
+  currency?: CurrencySettings;
 }
 
 export async function generateQuestions(
@@ -102,7 +104,9 @@ export async function generateQuestions(
     for (let i = 0; i < count; i++) {
         promises.push(generateTimeQuestion(settings.time.level));
     }
-    return Promise.all(promises);
+    const questions = await Promise.all(promises);
+    // Important: Attach the settings object to each question for stable reference
+    return questions.map(q => ({...q, timeSettings: settings.time}));
   }
   
   if (skill === 'denombrement' && settings?.count) {
@@ -187,3 +191,4 @@ export async function generateQuestions(
     hint: "point d'interrogation",
   }));
 }
+
