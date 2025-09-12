@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import type { Skill } from '@/lib/skills';
@@ -7,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Save } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType } from '@/lib/questions';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
@@ -23,6 +24,7 @@ import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
+import { format } from 'date-fns';
 
 
 const motivationalMessages = [
@@ -56,6 +58,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [motivationalMessage, setMotivationalMessage] = useState('');
   const [isFinished, setIsFinished] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAsHomework, setIsSavingAsHomework] = useState(false);
   
   const { student, isLoading: isUserLoading } = useContext(UserContext);
 
@@ -228,7 +231,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 skillSlug: skill.slug,
                 score: score,
             });
-            setIsLoadingHistory(false);
+            setIsLoadingHistory(false); // No history to load for homework
+            setIsSaving(false);
+            return; // IMPORTANT: Stop execution here
         } else {
             console.log("[DEBUG] Saving to 'scores' collection.");
             setIsLoadingHistory(true);
@@ -259,6 +264,22 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     
     saveResult();
   }, [isFinished, student, skill.slug, isSaving, correctAnswers, calculationSettings, currencySettings, timeSettings, isTableauMode, isHomework, homeworkDate]);
+
+  const handleSaveAsHomework = async () => {
+      if (!student || isSavingAsHomework) return;
+      
+      setIsSavingAsHomework(true);
+      const score = (correctAnswers / NUM_QUESTIONS) * 100;
+      const todayDate = format(new Date(), 'yyyy-MM-dd');
+
+      await saveHomeworkResult({
+          userId: student.id,
+          date: todayDate,
+          skillSlug: skill.slug,
+          score: score,
+      });
+      // Optionally show a confirmation message
+  }
   
   const restartExercise = () => {
     setQuestions([]);
@@ -270,6 +291,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setScoreHistory([]);
     setIsLoadingHistory(true);
     setIsSaving(false);
+    setIsSavingAsHomework(false);
     setIsReadyToStart(false);
     setCalculationSettings(null);
     setCurrencySettings(null);
@@ -313,10 +335,18 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             scoreHistory.length > 0 && <ScoreHistoryDisplay scoreHistory={scoreHistory} />
           )}
 
-          <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-            <RefreshCw className="mr-2" />
-            Recommencer un autre exercice
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4">
+            <Button onClick={restartExercise} variant="outline" size="lg">
+              <RefreshCw className="mr-2" />
+              Recommencer un autre exercice
+            </Button>
+            {!isHomework && (
+              <Button onClick={handleSaveAsHomework} disabled={isSavingAsHomework} size="lg">
+                {isSavingAsHomework ? <Check className="mr-2"/> : <Save className="mr-2" />}
+                {isSavingAsHomework ? 'Enregistré !' : 'Enregistrer comme devoir'}
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     );
@@ -567,3 +597,4 @@ const renderSetTime = () => (
     </div>
   );
 }
+
