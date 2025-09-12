@@ -311,7 +311,7 @@ export function WordFamiliesExercise() {
                 <ScoreTube score={finalScore} />
                 <p className="text-sm text-muted-foreground">{allPairs.length} paires correctes, {incorrectPairsCount} erreurs.</p>
                  {isHomework ? (
-                    <p className=\"text-muted-foreground\">Tes devoirs sont terminés !</p>
+                    <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
                  ) : (
                     <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
                         <RefreshCw className="mr-2" />
