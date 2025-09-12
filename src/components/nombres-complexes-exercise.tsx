@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import { useState, useEffect, useMemo, useContext, useRef, useCallback } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
 import { generateNombresComplexesQuestion } from '@/lib/complex-number-questions';
@@ -17,7 +17,6 @@ import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
-import { generateSpeech } from '@/ai/flows/tts-flow';
 
 const NUM_QUESTIONS = 10;
 
@@ -40,9 +39,6 @@ export function NombresComplexesExercise() {
   const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const [audioCache, setAudioCache] = useState<Record<string, string>>({});
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-
   useEffect(() => {
     async function fetchQuestions() {
         setIsLoading(true);
@@ -63,23 +59,13 @@ export function NombresComplexesExercise() {
     return null;
   }, [questions, currentQuestionIndex]);
 
-  const handleSpeak = async (text: string) => {
-    if (!text || isGeneratingAudio) return;
-    if (audioCache[text]) {
-      new Audio(audioCache[text]).play();
-      return;
-    }
-    setIsGeneratingAudio(true);
-    try {
-      const result = await generateSpeech(text);
-      setAudioCache(prev => ({...prev, [text]: result.audioDataUri }));
-      new Audio(result.audioDataUri).play();
-    } catch (e) {
-      console.error("Audio generation failed", e);
-    } finally {
-      setIsGeneratingAudio(false);
-    }
-  }
+  const handleSpeak = useCallback((text: string) => {
+    if (!text || !('speechSynthesis' in window)) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  }, []);
 
   const handleNextQuestion = () => {
     setShowConfetti(false);
@@ -169,7 +155,7 @@ export function NombresComplexesExercise() {
       case 'audio-qcm':
         return (
           <div className="flex flex-col items-center gap-6">
-            <Button onClick={() => handleSpeak(currentQuestion.textToSpeak!)} disabled={isGeneratingAudio}>
+            <Button onClick={() => handleSpeak(currentQuestion.textToSpeak!)}>
               <Volume2 className="mr-2"/> Écouter le nombre
             </Button>
             <div className="grid grid-cols-2 gap-4">
@@ -184,7 +170,7 @@ export function NombresComplexesExercise() {
       case 'audio-to-text-input':
         return (
           <div className="flex flex-col items-center gap-6">
-             <Button onClick={() => handleSpeak(currentQuestion.textToSpeak!)} disabled={isGeneratingAudio}>
+             <Button onClick={() => handleSpeak(currentQuestion.textToSpeak!)}>
               <Volume2 className="mr-2"/> Écouter le nombre
             </Button>
              <Input
