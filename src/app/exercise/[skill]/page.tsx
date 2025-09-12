@@ -20,6 +20,7 @@ import { KeyboardCopyExercise } from '@/components/keyboard-copy-exercise';
 import { SommeDixExercise } from '@/components/somme-dix-exercise';
 import { LetterRecognitionExercise } from '@/components/letter-recognition-exercise';
 import { ReadingDirectionExercise } from '@/components/reading-direction-exercise';
+import { ComplementDixExercise } from '@/components/complement-dix-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -60,6 +61,8 @@ export default function ExercisePage() {
         return <LetterRecognitionExercise />;
       case 'reading-direction':
         return <ReadingDirectionExercise />;
+      case 'complement-dix':
+        return <ComplementDixExercise />;
       case 'denombrement':
       case 'time':
       default:

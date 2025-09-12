@@ -22,6 +22,7 @@ import {
   Plus,
   Type,
   ArrowRight,
+  Target,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -169,6 +170,14 @@ export const skills: Skill[] = [
     icon: <Plus />,
     category: 'Nombres et calcul',
     isFixedLevel: 'A',
+  },
+  {
+    name: 'Compléments à 10',
+    slug: 'complement-dix',
+    description: "Trouve le complément à 10 le plus vite possible.",
+    icon: <Target />,
+    category: 'Nombres et calcul',
+    isFixedLevel: 'B',
   },
   {
     name: "J'écoute entre 60 et 99",
