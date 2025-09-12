@@ -19,6 +19,7 @@ import { WritingNotebook } from '@/components/writing-notebook';
 import { KeyboardCopyExercise } from '@/components/keyboard-copy-exercise';
 import { SommeDixExercise } from '@/components/somme-dix-exercise';
 import { LetterRecognitionExercise } from '@/components/letter-recognition-exercise';
+import { ReadingDirectionExercise } from '@/components/reading-direction-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -57,6 +58,8 @@ export default function ExercisePage() {
         return <KeyboardCopyExercise />;
       case 'letter-recognition':
         return <LetterRecognitionExercise />;
+      case 'reading-direction':
+        return <ReadingDirectionExercise />;
       case 'denombrement':
       default:
         return <ExerciseWorkspace skill={skill} />;

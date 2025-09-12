@@ -20,6 +20,7 @@ import {
   Keyboard,
   Plus,
   Type,
+  ArrowRight,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -88,6 +89,14 @@ export const skills: Skill[] = [
     description: "Associe une lettre au son qu'elle produit en choisissant la bonne image.",
     icon: <Ear />,
     category: 'Phonologie',
+    isFixedLevel: 'A',
+  },
+  {
+    name: 'Sens de lecture',
+    slug: 'reading-direction',
+    description: 'Appuie sur les objets de gauche à droite, ligne par ligne, pour t\'habituer au sens de la lecture.',
+    icon: <ArrowRight />,
+    category: 'Lecture / compréhension',
     isFixedLevel: 'A',
   },
   {
@@ -240,13 +249,6 @@ export function difficultyLevelToString(
         return `Niveau ${calendarSettings.level}`;
     }
 
-    if (skill?.allowedLevels) {
-        // For skills with selectable levels but no specific settings object for the result (e.g. mental-calculation)
-        if (scoreValue < 50) return "Niveau A";
-        if (scoreValue < 80) return "Niveau B";
-        return "Niveau C";
-    }
-
     if (skillSlug === 'time' && timeSettings) {
         const levels: SkillLevel[] = ['A', 'B', 'C', 'D'];
         return `Niveau ${levels[timeSettings.difficulty] || 'A'}`;
@@ -255,6 +257,15 @@ export function difficultyLevelToString(
     if (skillSlug === 'denombrement') {
         return "Niveau A"; // isFixedLevel handles this, but as a fallback.
     }
+    
+    // Fallback for skills that might not have detailed settings but are level-based
+    if (skill?.allowedLevels) {
+        // Find student level for this skill if available, otherwise make a guess
+         if (scoreValue < 50) return `Niveau ${skill.allowedLevels[0]}`;
+         if (scoreValue < 80 && skill.allowedLevels.length > 1) return `Niveau ${skill.allowedLevels[1]}`;
+         return `Niveau ${skill.allowedLevels[skill.allowedLevels.length-1]}`;
+    }
+
 
     // Fallback for any other case where level can't be determined
     return null;
