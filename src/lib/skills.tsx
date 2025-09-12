@@ -1,4 +1,5 @@
 
+
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -250,8 +251,7 @@ export function difficultyLevelToString(
     }
 
     if (skillSlug === 'time' && timeSettings) {
-        const levels: SkillLevel[] = ['A', 'B', 'C', 'D'];
-        return `Niveau ${levels[timeSettings.difficulty] || 'A'}`;
+        return `Niveau ${timeSettings.level}`;
     }
 
     if (skillSlug === 'denombrement') {

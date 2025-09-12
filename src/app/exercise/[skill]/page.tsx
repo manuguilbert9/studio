@@ -61,6 +61,7 @@ export default function ExercisePage() {
       case 'reading-direction':
         return <ReadingDirectionExercise />;
       case 'denombrement':
+      case 'time':
       default:
         return <ExerciseWorkspace skill={skill} />;
     }
