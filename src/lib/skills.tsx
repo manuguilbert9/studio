@@ -175,7 +175,7 @@ export const skills: Skill[] = [
     name: 'Compléments à 10',
     slug: 'complement-dix',
     description: "Trouve le complément à 10 le plus vite possible.",
-    icon: <Target />,
+    icon: <div className="h-full w-full rounded-full border-4 border-current flex items-center justify-center text-2xl font-bold">10</div>,
     category: 'Nombres et calcul',
     isFixedLevel: 'B',
   },
