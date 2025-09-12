@@ -83,10 +83,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   // State for select-multiple
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
-  // State for count
-  const [countInput, setCountInput] = useState('');
-
-
   useEffect(() => {
     // For non-configurable skills
     if (!['calculation', 'currency', 'time', 'denombrement'].includes(skill.slug)) {
@@ -151,7 +147,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setComposedAmount(0);
     setSelectedCoins([]);
     setSelectedIndices([]);
-    setCountInput('');
     setFeedback(null);
   }
 
@@ -193,10 +188,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     }
   };
 
-  const handleCountSubmit = () => {
+  const handleCountSubmit = (answer: number) => {
     if (!exerciseData || feedback || typeof exerciseData.countNumber === 'undefined') return;
     
-    if (parseInt(countInput) === exerciseData.countNumber) {
+    if (answer === exerciseData.countNumber) {
       processCorrectAnswer();
     } else {
       processIncorrectAnswer();
@@ -384,18 +379,22 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
                 <span key={index}>{exerciseData.countEmoji}</span>
             ))}
         </div>
-        <div className="flex items-center gap-4">
-            <Input 
-                type="number"
-                value={countInput}
-                onChange={e => setCountInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleCountSubmit()}
-                className="h-20 w-40 text-center text-4xl font-bold font-numbers"
-                disabled={!!feedback}
-            />
-            <Button onClick={handleCountSubmit} size="lg" className="h-20" disabled={!countInput || !!feedback}>
-                <Check className="h-8 w-8"/>
-            </Button>
+        <div className="flex flex-wrap items-center justify-center gap-2 max-w-lg">
+            {Array.from({length: countSettings?.maxNumber || 10}, (_, i) => i + 1).map((num) => (
+                <Button 
+                    key={num}
+                    variant="outline"
+                    onClick={() => handleCountSubmit(num)}
+                    className={cn(
+                        "h-16 w-16 text-3xl font-bold font-numbers",
+                         feedback === 'correct' && num === exerciseData.countNumber && 'bg-green-500/80 text-white border-green-600 scale-105',
+                         feedback === 'incorrect' && num !== exerciseData.countNumber && 'bg-red-500/80 text-white border-red-600 animate-shake'
+                    )}
+                    disabled={!!feedback}
+                >
+                    {num}
+                </Button>
+            ))}
         </div>
     </div>
 );
