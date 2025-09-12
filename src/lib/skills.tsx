@@ -23,6 +23,7 @@ import {
   Type,
   ArrowRight,
   Target,
+  ALargeSmall,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -92,6 +93,14 @@ export const skills: Skill[] = [
     icon: <Ear />,
     category: 'Phonologie',
     isFixedLevel: 'A',
+  },
+  {
+    name: 'Le son [an]',
+    slug: 'son-an',
+    description: "Choisis la bonne écriture (an, en, am, em) pour compléter les mots.",
+    icon: <ALargeSmall />,
+    category: 'Orthographe',
+    isFixedLevel: 'B',
   },
   {
     name: 'Sens de lecture',
