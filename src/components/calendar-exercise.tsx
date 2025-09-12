@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useContext } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { SkillLevel } from '@/lib/skills';
 import { generateCalendarQuestions, type CalendarQuestion } from '@/lib/calendar-questions';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -12,6 +13,7 @@ import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Label } from './ui/label';
@@ -31,6 +33,10 @@ const skillLevels: { value: SkillLevel, label: string }[] = [
 
 export function CalendarExercise() {
   const { student } = useContext(UserContext);
+  const searchParams = useSearchParams();
+  const isHomework = searchParams.get('from') === 'devoirs';
+  const homeworkDate = searchParams.get('date');
+  
   const [level, setLevel] = useState<SkillLevel | null>(null);
   
   const [questions, setQuestions] = useState<CalendarQuestion[]>([]);
@@ -172,17 +178,26 @@ export function CalendarExercise() {
            if (isFinished && student && !hasBeenSaved && level) {
               setHasBeenSaved(true);
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
-              await addScore({
-                  userId: student.id,
-                  skill: 'calendar',
-                  score: score,
-                  calendarSettings: { level: level },
-                  details: sessionDetails,
-              });
+              if (isHomework && homeworkDate) {
+                await saveHomeworkResult({
+                    userId: student.id,
+                    date: homeworkDate,
+                    skillSlug: 'calendar',
+                    score: score
+                });
+              } else {
+                await addScore({
+                    userId: student.id,
+                    skill: 'calendar',
+                    score: score,
+                    calendarSettings: { level: level },
+                    details: sessionDetails,
+                });
+              }
           }
       }
       saveFinalScore();
-  }, [isFinished, student, correctAnswers, hasBeenSaved, level, sessionDetails]);
+  }, [isFinished, student, correctAnswers, hasBeenSaved, level, sessionDetails, isHomework, homeworkDate]);
 
   const restartExercise = () => {
     if(level) {
@@ -230,10 +245,14 @@ export function CalendarExercise() {
             Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
           </p>
           <ScoreTube score={score} />
-          <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-            <RefreshCw className="mr-2" />
-            Recommencer
-          </Button>
+          {isHomework ? (
+            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+          ) : (
+            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+              <RefreshCw className="mr-2" />
+              Recommencer
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
@@ -362,4 +381,3 @@ export function CalendarExercise() {
     </div>
   );
 }
-

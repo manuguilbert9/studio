@@ -1,8 +1,8 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useContext } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Loader2, Mic, MicOff, Flag, Repeat, ArrowLeft } from 'lucide-react';
@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 import { readingTexts, ReadingText } from '@/lib/reading-texts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
@@ -18,6 +19,10 @@ type ExerciseState = 'selecting' | 'ready' | 'racing' | 'finished';
 
 export function ReadingRaceExercise() {
   const { student } = useContext(UserContext);
+  const searchParams = useSearchParams();
+  const isHomework = searchParams.get('from') === 'devoirs';
+  const homeworkDate = searchParams.get('date');
+
   const [selectedText, setSelectedText] = useState<ReadingText | null>(null);
   const [exerciseState, setExerciseState] = useState<ExerciseState>('selecting');
   
@@ -96,23 +101,32 @@ export function ReadingRaceExercise() {
 
     setFinalWPM(wpm);
     setExerciseState('finished');
-  }, [stopListening, timeElapsed, spokenWordsForComparison, textWordsForComparison, selectedText]);
+  }, [stopListening, timeElapsed, spokenWordsForComparison, textWordsForComparison, selectedText, transcript]);
 
    useEffect(() => {
       const saveResult = async () => {
           if (exerciseState === 'finished' && student && !hasBeenSaved && selectedText) {
               setHasBeenSaved(true);
-              await addScore({
-                  userId: student.id,
-                  skill: 'reading-race',
-                  score: finalWPM,
-                  details: sessionDetails,
-                  readingRaceSettings: { level: selectedText.level }
-              });
+              if (isHomework && homeworkDate) {
+                await saveHomeworkResult({
+                    userId: student.id,
+                    date: homeworkDate,
+                    skillSlug: 'reading-race',
+                    score: finalWPM
+                });
+              } else {
+                await addScore({
+                    userId: student.id,
+                    skill: 'reading-race',
+                    score: finalWPM,
+                    details: sessionDetails,
+                    readingRaceSettings: { level: selectedText.level }
+                });
+              }
           }
       };
       saveResult();
-   }, [exerciseState, student, finalWPM, hasBeenSaved, sessionDetails, selectedText]);
+   }, [exerciseState, student, finalWPM, hasBeenSaved, sessionDetails, selectedText, isHomework, homeworkDate]);
   
   useEffect(() => {
       if (!selectedText || exerciseState !== 'racing') return;
@@ -305,14 +319,20 @@ export function ReadingRaceExercise() {
                 )}
             </CardContent>
             <CardFooter className="flex-col gap-4 pt-6">
-                 <Button onClick={tryAgain} size="lg">
-                    <Repeat className="mr-2" />
-                    Recommencer la même course
-                </Button>
-                 <Button onClick={resetExercise} variant="ghost" size="sm">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Choisir un autre texte
-                </Button>
+                 {isHomework ? (
+                    <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+                 ) : (
+                    <>
+                        <Button onClick={tryAgain} size="lg">
+                            <Repeat className="mr-2" />
+                            Recommencer la même course
+                        </Button>
+                        <Button onClick={resetExercise} variant="ghost" size="sm">
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Choisir un autre texte
+                        </Button>
+                    </>
+                 )}
             </CardFooter>
         </Card>
       )

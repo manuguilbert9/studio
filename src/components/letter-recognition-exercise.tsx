@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useContext } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { RefreshCw, Keyboard, Check, X } from 'lucide-react';
@@ -11,6 +12,7 @@ import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 import { VirtualKeyboard } from './virtual-keyboard';
 
 const LETTERS_PER_EXERCISE = 20;
@@ -18,6 +20,10 @@ const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 export function LetterRecognitionExercise() {
     const { student } = useContext(UserContext);
+    const searchParams = useSearchParams();
+    const isHomework = searchParams.get('from') === 'devoirs';
+    const homeworkDate = searchParams.get('date');
+
     const [currentLetter, setCurrentLetter] = useState('');
     const [lettersDone, setLettersDone] = useState(0);
     
@@ -109,16 +115,25 @@ export function LetterRecognitionExercise() {
             if (isFinished && student && !hasBeenSaved) {
                 setHasBeenSaved(true);
                 const score = (correctAnswers / LETTERS_PER_EXERCISE) * 100;
-                await addScore({
-                    userId: student.id,
-                    skill: 'letter-recognition',
-                    score: score,
-                    details: sessionDetails,
-                });
+                if (isHomework && homeworkDate) {
+                    await saveHomeworkResult({
+                        userId: student.id,
+                        date: homeworkDate,
+                        skillSlug: 'letter-recognition',
+                        score: score
+                    });
+                } else {
+                    await addScore({
+                        userId: student.id,
+                        skill: 'letter-recognition',
+                        score: score,
+                        details: sessionDetails,
+                    });
+                }
             }
         };
         saveResult();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
 
     const restartExercise = () => {
         setCurrentLetter('');
@@ -144,10 +159,14 @@ export function LetterRecognitionExercise() {
                         Bravo ! Tu as reconnu <span className="font-bold text-primary">{correctAnswers}</span> lettres sur <span className="font-bold">{LETTERS_PER_EXERCISE}</span>.
                     </p>
                     <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                        <RefreshCw className="mr-2" />
-                        Recommencer
-                    </Button>
+                     {isHomework ? (
+                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+                    ) : (
+                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+                            <RefreshCw className="mr-2" />
+                            Recommencer
+                        </Button>
+                    )}
                 </CardContent>
             </Card>
         );

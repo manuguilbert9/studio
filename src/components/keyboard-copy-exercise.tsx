@@ -1,8 +1,8 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { RefreshCw, Keyboard, Volume2 } from 'lucide-react';
@@ -13,12 +13,16 @@ import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 import { VirtualKeyboard } from './virtual-keyboard';
 
 const WORDS_PER_EXERCISE = 10;
 
 export function KeyboardCopyExercise() {
     const { student } = useContext(UserContext);
+    const searchParams = useSearchParams();
+    const isHomework = searchParams.get('from') === 'devoirs';
+    const homeworkDate = searchParams.get('date');
 
     const [words, setWords] = useState<WordWithEmoji[]>([]);
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
@@ -115,16 +119,25 @@ export function KeyboardCopyExercise() {
                 setHasBeenSaved(true);
                 const score = (correctAnswers / wordsCount) * 100;
                 
-                await addScore({
-                    userId: student.id,
-                    skill: 'keyboard-copy',
-                    score: score,
-                    details: sessionDetails,
-                });
+                if (isHomework && homeworkDate) {
+                     await saveHomeworkResult({
+                        userId: student.id,
+                        date: homeworkDate,
+                        skillSlug: 'keyboard-copy',
+                        score: score
+                     });
+                } else {
+                    await addScore({
+                        userId: student.id,
+                        skill: 'keyboard-copy',
+                        score: score,
+                        details: sessionDetails,
+                    });
+                }
             }
         };
         saveResult();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, wordsCount]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, wordsCount, isHomework, homeworkDate]);
 
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,10 +166,14 @@ export function KeyboardCopyExercise() {
                         Bravo ! Tu as recopié <span className="font-bold text-primary">{correctAnswers}</span> mots sur <span className="font-bold">{wordsCount}</span>.
                     </p>
                     <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                        <RefreshCw className="mr-2" />
-                        Recommencer
-                    </Button>
+                    {isHomework ? (
+                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+                    ) : (
+                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+                            <RefreshCw className="mr-2" />
+                            Recommencer
+                        </Button>
+                    )}
                 </CardContent>
             </Card>
         );

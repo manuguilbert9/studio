@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { SkillLevel } from '@/lib/skills';
 import { generateMentalMathQuestions } from '@/lib/mental-math';
 import type { MentalMathQuestion } from '@/lib/mental-math';
@@ -14,6 +15,7 @@ import Confetti from 'react-dom-confetti';
 import { Progress } from '@/components/ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 
 const NUM_QUESTIONS = 10;
@@ -21,6 +23,10 @@ const ANSWER_TIME_MS = 10000; // 10 seconds
 
 export function MentalCalculationExercise() {
   const { student } = useContext(UserContext);
+  const searchParams = useSearchParams();
+  const isHomework = searchParams.get('from') === 'devoirs';
+  const homeworkDate = searchParams.get('date');
+
   const [level, setLevel] = useState<SkillLevel | null>(null);
   
   const [questions, setQuestions] = useState<MentalMathQuestion[]>([]);
@@ -106,17 +112,26 @@ export function MentalCalculationExercise() {
            if (isFinished && student && !hasBeenSaved && level) {
               setHasBeenSaved(true);
               const score = (correctAnswers / NUM_QUESTIONS) * 100;
-              await addScore({
-                  userId: student.id,
-                  skill: 'mental-calculation',
-                  score: score,
-                  details: sessionDetails,
-                  numberLevelSettings: { level: level }
-              });
+              if (isHomework && homeworkDate) {
+                 await saveHomeworkResult({
+                    userId: student.id,
+                    date: homeworkDate,
+                    skillSlug: 'mental-calculation',
+                    score: score
+                 });
+              } else {
+                await addScore({
+                    userId: student.id,
+                    skill: 'mental-calculation',
+                    score: score,
+                    details: sessionDetails,
+                    numberLevelSettings: { level: level }
+                });
+              }
           }
       }
       saveFinalScore();
-  }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, level]);
+  }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, level, isHomework, homeworkDate]);
 
   const restartExercise = () => {
     setIsFinished(false);
@@ -149,10 +164,14 @@ export function MentalCalculationExercise() {
             Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_QUESTIONS}</span>.
           </p>
           <ScoreTube score={score} />
-          <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-            <RefreshCw className="mr-2" />
-            Recommencer
-          </Button>
+          {isHomework ? (
+            <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+          ) : (
+            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+              <RefreshCw className="mr-2" />
+              Recommencer
+            </Button>
+          )}
         </CardContent>
       </Card>
     );
