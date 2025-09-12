@@ -17,6 +17,8 @@ import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
+import { Label } from './ui/label';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 const NUM_QUESTIONS = 10;
 
@@ -31,6 +33,8 @@ export function NombresComplexesExercise() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [userInput, setUserInput] = useState('');
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [isFinished, setIsFinished] = useState(false);
   const [correctAnswers, setCorrectAnswers] = useState(0);
@@ -72,21 +76,31 @@ export function NombresComplexesExercise() {
     if (currentQuestionIndex < NUM_QUESTIONS - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
       setUserInput('');
+      setSelectedOption(null);
       setFeedback(null);
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       setIsFinished(true);
     }
   };
-
-  const checkAnswer = (answer: string) => {
+  
+  const checkAnswer = () => {
     if (!currentQuestion || feedback) return;
-    
-    const isCorrect = answer.trim().toLowerCase() === currentQuestion.answer?.toLowerCase();
-    
+
+    let userAnswer: string;
+    let isCorrect = false;
+
+    if (currentQuestion.type === 'audio-to-text-input') {
+        userAnswer = userInput;
+        isCorrect = userAnswer.trim() === currentQuestion.answer;
+    } else {
+        userAnswer = selectedOption || '';
+        isCorrect = userAnswer === currentQuestion.answer;
+    }
+
     const detail: ScoreDetail = {
       question: currentQuestion.question,
-      userAnswer: answer,
+      userAnswer: userAnswer,
       correctAnswer: currentQuestion.answer || 'N/A',
       status: isCorrect ? 'correct' : 'incorrect',
     };
@@ -142,6 +156,7 @@ export function NombresComplexesExercise() {
         setCorrectAnswers(0);
         setCurrentQuestionIndex(0);
         setUserInput('');
+        setSelectedOption(null);
         setFeedback(null);
         setHasBeenSaved(false);
         setSessionDetails([]);
@@ -154,17 +169,20 @@ export function NombresComplexesExercise() {
     switch(currentQuestion.type) {
       case 'audio-qcm':
         return (
-          <div className="flex flex-col items-center gap-6">
+          <div className="flex flex-col items-center gap-6 w-full">
             <Button onClick={() => handleSpeak(currentQuestion.textToSpeak!)}>
               <Volume2 className="mr-2"/> Écouter le nombre
             </Button>
-            <div className="grid grid-cols-2 gap-4">
+            <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ''} className="grid grid-cols-2 gap-4 w-full max-w-sm">
               {currentQuestion.options?.map(opt => (
-                <Button key={opt} variant="outline" className="h-20 text-3xl" onClick={() => checkAnswer(opt)} disabled={!!feedback}>
-                  {opt}
-                </Button>
+                <div key={opt}>
+                    <RadioGroupItem value={opt} id={opt} className="sr-only" />
+                    <Label htmlFor={opt} className={cn("flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-20 text-3xl font-numbers", selectedOption === opt && 'border-primary')}>
+                       {opt}
+                    </Label>
+                </div>
               ))}
-            </div>
+            </RadioGroup>
           </div>
         );
       case 'audio-to-text-input':
@@ -179,7 +197,7 @@ export function NombresComplexesExercise() {
                 inputMode="numeric"
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && checkAnswer(userInput)}
+                onKeyDown={(e) => e.key === 'Enter' && checkAnswer()}
                 placeholder="Ta réponse..."
                 className="h-20 text-4xl text-center font-numbers w-48"
                 disabled={!!feedback}
@@ -189,15 +207,20 @@ export function NombresComplexesExercise() {
         );
       case 'written-to-audio-qcm':
         return (
-           <div className="flex flex-col items-center gap-6">
+           <div className="flex flex-col items-center gap-6 w-full">
               <p className="font-numbers text-8xl font-bold">{currentQuestion.answer}</p>
-              <div className="grid grid-cols-2 gap-4">
+              <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ''} className="grid grid-cols-2 gap-4 w-full max-w-md">
                 {currentQuestion.optionsWithAudio?.map(opt => (
-                  <Button key={opt.text} variant="outline" className="h-20 text-xl" onClick={() => { handleSpeak(opt.audio); checkAnswer(opt.text); }} disabled={!!feedback}>
-                     <Volume2 className="mr-2"/> Écouter
-                  </Button>
+                    <div key={opt.text}>
+                        <RadioGroupItem value={opt.text} id={opt.text} className="sr-only" />
+                        <Label htmlFor={opt.text} className={cn("flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-20 text-xl", selectedOption === opt.text && 'border-primary')}>
+                             <Button variant="ghost" size="icon" className="h-12 w-12" onClick={(e) => { e.preventDefault(); handleSpeak(opt.audio); }}>
+                                 <Volume2 className="h-8 w-8 text-muted-foreground" />
+                             </Button>
+                        </Label>
+                    </div>
                 ))}
-            </div>
+            </RadioGroup>
            </div>
         );
       default:
@@ -248,15 +271,22 @@ export function NombresComplexesExercise() {
         <CardContent className="min-h-[250px] flex flex-col items-center justify-center gap-8 p-6">
           {renderQuestion()}
         </CardContent>
-        <CardFooter className="h-24 flex items-center justify-center">
-            {feedback === 'correct' && (
-              <div className="text-2xl font-bold text-green-600 animate-pulse flex items-center gap-2"><Check/> Correct !</div>
+        <CardFooter className="h-24 flex flex-col items-center justify-center">
+            {currentQuestion.type !== 'audio-to-text-input' && (
+              <Button onClick={checkAnswer} disabled={!selectedOption || !!feedback}>
+                Valider
+              </Button>
             )}
-            {feedback === 'incorrect' && (
-              <div className="text-xl font-bold text-red-600 animate-shake">
-                Oups ! La bonne réponse était {currentQuestion.answer}.
-              </div>
-            )}
+            <div className="pt-4">
+              {feedback === 'correct' && (
+                <div className="text-2xl font-bold text-green-600 animate-pulse flex items-center gap-2"><Check/> Correct !</div>
+              )}
+              {feedback === 'incorrect' && (
+                <div className="text-xl font-bold text-red-600 animate-shake">
+                  Oups ! La bonne réponse était {currentQuestion.answer}.
+                </div>
+              )}
+            </div>
         </CardFooter>
       </Card>
       <style jsx>{`
