@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Save } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType } from '@/lib/questions';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
@@ -281,19 +281,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     
     saveResult();
   }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, isTableauMode, isHomework, homeworkDate]);
-
-  const handleSaveAsHomework = async () => {
-      if (!student) return;
-      const score = (correctAnswers / NUM_QUESTIONS) * 100;
-      const todayDate = format(new Date(), 'yyyy-MM-dd');
-
-      await saveHomeworkResult({
-          userId: student.id,
-          date: todayDate,
-          skillSlug: skill.slug,
-          score: score,
-      });
-  }
   
   const restartExercise = () => {
     hasSavedRef.current = false;
@@ -349,18 +336,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             scoreHistory.length > 0 && <ScoreHistoryDisplay scoreHistory={scoreHistory} />
           )}
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4">
-            <Button onClick={restartExercise} variant="outline" size="lg">
+          {!isHomework && (
+            <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
               <RefreshCw className="mr-2" />
               Recommencer un autre exercice
             </Button>
-            {!isHomework && (
-              <Button onClick={handleSaveAsHomework} size="lg">
-                <Save className="mr-2" />
-                Enregistrer comme devoir
-              </Button>
-            )}
-          </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -611,4 +592,3 @@ const renderSetTime = () => (
     </div>
   );
 }
-
