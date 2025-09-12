@@ -219,5 +219,3 @@ export default function DevoirsPage() {
     </main>
   );
 }
-
-    

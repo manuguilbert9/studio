@@ -90,10 +90,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     const currentWord = words[currentWordIndex];
     const isCorrect = inputValue.trim().toLowerCase() === currentWord.toLowerCase();
     
-    console.log(`[DEBUG] Spelling handleSubmit. isHomework: ${isHomework}, homeworkDate: ${homeworkDate}`);
-
     if (isHomework && homeworkDate) {
-        console.log("[DEBUG] Spelling: Saving to 'homeworkResults' collection.");
         await saveHomeworkResult({
             userId: student.id,
             date: homeworkDate,
@@ -111,7 +108,6 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
           }
         }
     } else {
-        console.log("[DEBUG] Spelling: Saving to 'scores' collection.");
         if (isCorrect) {
           setFeedback('correct');
           setTimeout(handleNextWord, 1500);
@@ -263,7 +259,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
           )}
         </Card>
       </div>
-      <style jsx>{`
+      <style jsx>{\`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -272,7 +268,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
         .animate-shake {
           animation: shake 0.5s ease-in-out;
         }
-      `}</style>
+      \`}</style>
     </>
   );
 }

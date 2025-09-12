@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, Timestamp, collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, collection, getDocs, addDoc } from 'firebase/firestore';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -18,12 +18,6 @@ export interface SpellingResult {
     completedAt: string;
     errors: string[];
 }
-
-export interface SpellingProgress {
-  userId: string;
-  progress: Record<string, SpellingResult>;
-}
-
 
 async function parseSpellingFile(): Promise<SpellingList[]> {
     const lists: SpellingList[] = [];
