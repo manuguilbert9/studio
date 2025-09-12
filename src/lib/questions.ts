@@ -61,7 +61,7 @@ export interface CurrencySettings {
 }
 
 export interface TimeSettings {
-  difficulty: number; // 0-3
+  level: SkillLevel;
   showMinuteCircle: boolean;
   matchColors: boolean;
   coloredHands: boolean;
@@ -100,7 +100,7 @@ export async function generateQuestions(
   
   if (skill === 'time' && settings?.time) {
     for (let i = 0; i < count; i++) {
-        promises.push(generateTimeQuestion(settings.time!));
+        promises.push(generateTimeQuestion(settings.time.level));
     }
     return Promise.all(promises);
   }

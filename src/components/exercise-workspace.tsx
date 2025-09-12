@@ -2,7 +2,7 @@
 
 'use client';
 
-import type { Skill } from '@/lib/skills';
+import type { Skill, SkillLevel } from '@/lib/skills';
 import { useState, useMemo, useEffect, useContext } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -85,22 +85,22 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     } 
     // For configurable skills that ARE homework, use default settings
     else if (isHomework) {
-       const defaultSettings = { difficulty: 1, operations: 0, numberSize: 1, complexity: 0, showMinuteCircle: true, matchColors: true, coloredHands: true };
-       if (skill.slug === 'calculation') startCalculationExercise(defaultSettings);
-       else if (skill.slug === 'currency') startCurrencyExercise(defaultSettings);
-       else if (skill.slug === 'time') startTimeExercise(defaultSettings);
+       const defaultCalcSettings = { operations: 0, numberSize: 1, complexity: 0 };
+       const defaultCurrSettings = { difficulty: 1 };
+       const defaultTimeSettings = { level: 'A' as SkillLevel, showMinuteCircle: true, matchColors: true, coloredHands: true };
+       
+       if (skill.slug === 'calculation') startCalculationExercise(defaultCalcSettings);
+       else if (skill.slug === 'currency') startCurrencyExercise(defaultCurrSettings);
+       else if (skill.slug === 'time') startTimeExercise(defaultTimeSettings);
     }
     // For 'time' skill in 'en-classe' mode, derive level from student profile
     else if (skill.slug === 'time' && !isUserLoading && !isHomework) {
-        const studentLevel = student?.levels?.[skill.slug];
-        const difficultyMap: Record<string, number> = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
-        const difficulty = studentLevel ? difficultyMap[studentLevel] : 0;
-        
-        const settings: TimeSettingsType = {
-            difficulty: difficulty,
-            showMinuteCircle: difficulty < 3,
-            matchColors: difficulty === 0,
-            coloredHands: difficulty < 2,
+        const studentLevel = student?.levels?.[skill.slug] || 'A';
+        const settings = {
+            level: studentLevel,
+            showMinuteCircle: studentLevel !== 'D',
+            matchColors: studentLevel === 'A',
+            coloredHands: studentLevel === 'A' || studentLevel === 'B',
         };
         startTimeExercise(settings);
     }
@@ -108,19 +108,19 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   
   const startCalculationExercise = (settings: CalcSettings) => {
     setCalculationSettings(settings);
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { calculation: settings }));
+    generateQuestions(skill.slug, NUM_QUESTIONS, { calculation: settings }).then(setQuestions);
     setIsReadyToStart(true);
   };
   
   const startCurrencyExercise = (settings: CurrSettings) => {
     setCurrencySettings(settings);
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { currency: settings }));
+    generateQuestions(skill.slug, NUM_QUESTIONS, { currency: settings }).then(setQuestions);
     setIsReadyToStart(true);
   };
 
   const startTimeExercise = (settings: TimeSettingsType) => {
     setTimeSettings(settings);
-    setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }));
+    generateQuestions(skill.slug, NUM_QUESTIONS, { time: settings }).then(setQuestions);
     setIsReadyToStart(true);
   }
 
@@ -313,7 +313,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     resetInteractiveStates();
      // For non-configurable skills, just regenerate
     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
-      setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
+      generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
     }
   };
@@ -321,9 +321,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   if (!isReadyToStart) {
       if (skill.slug === 'calculation' && !isHomework) return <CalculationSettings onStart={startCalculationExercise} />;
       if (skill.slug === 'currency' && !isHomework) return <CurrencySettings onStart={startCurrencyExercise} />;
-      if (skill.slug === 'time' && !isHomework) {
-        return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'exercice...</Card>;
-      }
+      // Time exercise now loads automatically, so we just show a loading state
       return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'exercice...</Card>;
   }
 
@@ -614,4 +612,3 @@ const renderSetTime = () => (
     </div>
   );
 }
-

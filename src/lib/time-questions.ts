@@ -1,39 +1,38 @@
 
+
 'use server';
 
-import { addDays, getDay, format } from "date-fns";
 import type { Question, TimeSettings } from './questions';
+import type { SkillLevel } from './skills';
 
-export async function generateTimeQuestion(settings: TimeSettings): Promise<Question> {
-  const { difficulty } = settings;
+export async function generateTimeQuestion(level: SkillLevel): Promise<Question> {
   let hour: number;
   let minute: number;
+  let settings: TimeSettings;
 
   const questionTypeRandomizer = Math.random();
 
-  // Determine hour based on difficulty
-  if (difficulty < 2) {
-    // Levels 1-2
-    hour = Math.floor(Math.random() * 13); // 0-12
-  } else {
-    // Levels 3-4
-    hour = Math.floor(Math.random() * 24); // 0-23
-  }
-
-  // Determine minute based on difficulty
-  switch (difficulty) {
-    case 0: // Level 1: :00 or :30
+  switch (level) {
+    case 'A':
+      hour = Math.floor(Math.random() * 13); // 0-12
       minute = Math.random() < 0.5 ? 0 : 30;
+      settings = { level: 'A', showMinuteCircle: true, matchColors: true, coloredHands: true };
       break;
-    case 1: // Level 2: :00 :15 :30 :45
+    case 'B':
+      hour = Math.floor(Math.random() * 13); // 0-12
       minute = [0, 15, 30, 45][Math.floor(Math.random() * 4)];
+      settings = { level: 'B', showMinuteCircle: true, matchColors: false, coloredHands: true };
       break;
-    case 2: // Level 3: multiples of 5
+    case 'C':
+      hour = Math.floor(Math.random() * 24); // 0-23
       minute = Math.floor(Math.random() * 12) * 5;
+      settings = { level: 'C', showMinuteCircle: true, matchColors: false, coloredHands: false };
       break;
-    case 3: // Level 4: any minute
+    case 'D':
     default:
+      hour = Math.floor(Math.random() * 24); // 0-23
       minute = Math.floor(Math.random() * 60);
+      settings = { level: 'D', showMinuteCircle: false, matchColors: false, coloredHands: false };
       break;
   }
 
@@ -50,8 +49,8 @@ export async function generateTimeQuestion(settings: TimeSettings): Promise<Ques
       .padStart(2, '0')}`;
     const options = new Set<string>([answer]);
 
-    // Add trap answer for levels >= 2
-    if (difficulty >= 1) {
+    // Add trap answer for levels >= B
+    if (level !== 'A') {
       if (
         minute > 0 &&
         minute <= 12 * 5 &&
@@ -66,7 +65,6 @@ export async function generateTimeQuestion(settings: TimeSettings): Promise<Ques
         if (hour >= 13 && trapHour > 0 && trapHour < 12) {
           trapHour += 12;
         }
-        // morning 12 stays 12
 
         const trapOption = `${trapHour
           .toString()
@@ -79,7 +77,7 @@ export async function generateTimeQuestion(settings: TimeSettings): Promise<Ques
 
     while (options.size < 4) {
       let wrongHour: number;
-      if (difficulty >= 2) {
+      if (level === 'C' || level === 'D') {
         wrongHour = Math.floor(Math.random() * 24);
       } else {
         wrongHour = Math.floor(Math.random() * 13);
@@ -96,7 +94,7 @@ export async function generateTimeQuestion(settings: TimeSettings): Promise<Ques
 
     return {
       id: Date.now(),
-      level: 'A',
+      level: level,
       type: 'qcm',
       question: "Quelle heure est-il sur l'horloge ?",
       hour: displayHour,
@@ -109,7 +107,7 @@ export async function generateTimeQuestion(settings: TimeSettings): Promise<Ques
     // Set-Time Question
     return {
       id: Date.now(),
-      level: 'A',
+      level: level,
       type: 'set-time',
       question: `Réglez l'horloge sur ${hour
         .toString()
