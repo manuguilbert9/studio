@@ -57,6 +57,7 @@ export default function ExercisePage() {
         return <KeyboardCopyExercise />;
       case 'letter-recognition':
         return <LetterRecognitionExercise />;
+      case 'denombrement':
       default:
         return <ExerciseWorkspace skill={skill} />;
     }

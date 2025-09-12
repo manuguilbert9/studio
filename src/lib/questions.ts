@@ -16,7 +16,7 @@ import { generateLireLesNombresQuestion } from './reading-number-questions';
 
 
 export interface Question extends CalendarQuestion, MentalMathQuestion {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'letter-sound-qcm' | 'image-qcm' | 'click-date' | 'count-days';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'letter-sound-qcm' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple';
   question: string;
   // For QCM
   options?: string[];
@@ -48,6 +48,12 @@ export interface Question extends CalendarQuestion, MentalMathQuestion {
   answerNumber?: number;
   // For mental math
   visuals?: { emoji: string; count: number }[];
+  // For currency
+  targetAmount?: number;
+  cost?: number;
+  paymentImages?: { name: string, image: string }[];
+  items?: { name: string, image: string, value: number }[];
+  correctValue?: number;
 }
 
 export interface CalculationSettings {
@@ -191,4 +197,3 @@ export async function generateQuestions(
     hint: "point d'interrogation",
   }));
 }
-

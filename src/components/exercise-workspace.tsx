@@ -10,7 +10,7 @@ import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType } from '@/lib/questions';
+import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType } from '@/lib/questions';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryDisplay } from './score-history-display';
@@ -19,12 +19,14 @@ import { ScoreTube } from './score-tube';
 import { CalculationSettings } from './calculation-settings';
 import { CurrencySettings } from './currency-settings';
 import { TimeSettings } from './time-settings';
+import { CountSettings } from './count-settings';
 import { PriceTag } from './price-tag';
 import { InteractiveClock } from './interactive-clock';
 import { UserContext } from '@/context/user-context';
 import { addScore, getScoresForUser, Score } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { format } from 'date-fns';
+import { Input } from './ui/input';
 
 
 const motivationalMessages = [
@@ -65,6 +67,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [calculationSettings, setCalculationSettings] = useState<CalcSettings | null>(null);
   const [currencySettings, setCurrencySettings] = useState<CurrSettings | null>(null);
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
+  const [countSettings, setCountSettings] = useState<CountSettingsType | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
 
   // useRef to hold a stable reference to settings for the save effect
@@ -80,10 +83,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   // State for select-multiple
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
+  // State for count
+  const [countInput, setCountInput] = useState('');
+
 
   useEffect(() => {
     // For non-configurable skills
-    if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+    if (!['calculation', 'currency', 'time', 'denombrement'].includes(skill.slug)) {
       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
     } 
@@ -92,10 +98,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
        const defaultCalcSettings = { operations: 0, numberSize: 1, complexity: 0 };
        const defaultCurrSettings = { difficulty: 1 };
        const defaultTimeSettings = { level: 'A' as SkillLevel, showMinuteCircle: true, matchColors: true, coloredHands: true };
+       const defaultCountSettings = { maxNumber: 10 };
        
        if (skill.slug === 'calculation') startCalculationExercise(defaultCalcSettings);
        else if (skill.slug === 'currency') startCurrencyExercise(defaultCurrSettings);
        else if (skill.slug === 'time') startTimeExercise(defaultTimeSettings);
+       else if (skill.slug === 'denombrement') startCountExercise(defaultCountSettings);
     }
     // For 'time' skill in 'en-classe' mode, derive level from student profile
     else if (skill.slug === 'time' && !isUserLoading && !isHomework) {
@@ -128,6 +136,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setIsReadyToStart(true);
   }
 
+  const startCountExercise = (settings: CountSettingsType) => {
+    setCountSettings(settings);
+    generateQuestions(skill.slug, NUM_QUESTIONS, { count: settings }).then(setQuestions);
+    setIsReadyToStart(true);
+  };
+
   const exerciseData = useMemo(() => {
     if (questions.length === 0) return null;
     return questions[currentQuestionIndex];
@@ -137,6 +151,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setComposedAmount(0);
     setSelectedCoins([]);
     setSelectedIndices([]);
+    setCountInput('');
     setFeedback(null);
   }
 
@@ -172,6 +187,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     if (!exerciseData || feedback || !exerciseData.answer) return;
 
     if (option === exerciseData.answer) {
+      processCorrectAnswer();
+    } else {
+      processIncorrectAnswer();
+    }
+  };
+
+  const handleCountSubmit = () => {
+    if (!exerciseData || feedback || typeof exerciseData.countNumber === 'undefined') return;
+    
+    if (parseInt(countInput) === exerciseData.countNumber) {
       processCorrectAnswer();
     } else {
       processIncorrectAnswer();
@@ -244,7 +269,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         const scoreValue = (correctAnswers / NUM_QUESTIONS) * 100;
 
         if (isHomework && homeworkDate) {
-          console.log("[DEBUG] Saving to 'homeworkResults' collection.");
           await saveHomeworkResult({
             userId: student.id,
             date: homeworkDate,
@@ -253,7 +277,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           });
           setIsLoadingHistory(false); // No history to load for homework
         } else {
-          console.log("[DEBUG] Saving to 'scores' collection.");
           setIsLoadingHistory(true);
           const scoreData: Omit<Score, 'createdAt' | 'id'> = {
             userId: student.id,
@@ -264,6 +287,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
           if (skill.slug === 'calculation' && calculationSettings) scoreData.calculationSettings = calculationSettings;
           if (skill.slug === 'currency' && currencySettings) scoreData.currencySettings = currencySettings;
           if (skill.slug === 'time' && timeSettingsRef.current) scoreData.timeSettings = timeSettingsRef.current;
+          if (skill.slug === 'denombrement' && countSettings) scoreData.countSettings = countSettings;
           
           await addScore(scoreData);
           
@@ -280,7 +304,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveResult();
-  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, isTableauMode, isHomework, homeworkDate]);
+  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, countSettings, isTableauMode, isHomework, homeworkDate]);
   
   const restartExercise = () => {
     hasSavedRef.current = false;
@@ -296,9 +320,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setCalculationSettings(null);
     setCurrencySettings(null);
     setTimeSettings(null);
+    setCountSettings(null);
     resetInteractiveStates();
     // For non-configurable skills, just regenerate
-    if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
+    if (!['calculation', 'currency', 'time', 'denombrement'].includes(skill.slug)) {
       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
     }
@@ -307,6 +332,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   if (!isReadyToStart) {
       if (skill.slug === 'calculation' && !isHomework) return <CalculationSettings onStart={startCalculationExercise} />;
       if (skill.slug === 'currency' && !isHomework) return <CurrencySettings onStart={startCurrencyExercise} />;
+      if (skill.slug === 'denombrement' && !isHomework) return <CountSettings onStart={startCountExercise} />;
       // Time exercise now loads automatically, so we just show a loading state
       return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'exercice...</Card>;
   }
@@ -350,6 +376,29 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   if (!exerciseData) {
     return <Card className="w-full shadow-2xl p-8 text-center">Chargement des questions...</Card>;
   }
+
+  const renderCount = () => (
+    <div className="flex flex-col items-center justify-center space-y-6">
+        <div className="flex flex-wrap items-center justify-center gap-2 text-6xl max-w-xl">
+            {Array.from({length: exerciseData.countNumber || 0}).map((_, index) => (
+                <span key={index}>{exerciseData.countEmoji}</span>
+            ))}
+        </div>
+        <div className="flex items-center gap-4">
+            <Input 
+                type="number"
+                value={countInput}
+                onChange={e => setCountInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleCountSubmit()}
+                className="h-20 w-40 text-center text-4xl font-bold font-numbers"
+                disabled={!!feedback}
+            />
+            <Button onClick={handleCountSubmit} size="lg" className="h-20" disabled={!countInput || !!feedback}>
+                <Check className="h-8 w-8"/>
+            </Button>
+        </div>
+    </div>
+);
 
   const renderQCM = () => (
     <>
@@ -565,6 +614,7 @@ const renderSetTime = () => (
           {exerciseData.type === 'compose-sum' && renderComposeSum()}
           {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
           {exerciseData.type === 'set-time' && renderSetTime()}
+          {exerciseData.type === 'count' && renderCount()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
           {feedback === 'correct' && (
