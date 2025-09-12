@@ -83,6 +83,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   // State for select-multiple
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
 
+  // State for count
+  const [countedIndices, setCountedIndices] = useState<number[]>([]);
+
   useEffect(() => {
     // For non-configurable skills
     if (!['calculation', 'currency', 'time', 'denombrement'].includes(skill.slug)) {
@@ -147,6 +150,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setComposedAmount(0);
     setSelectedCoins([]);
     setSelectedIndices([]);
+    setCountedIndices([]);
     setFeedback(null);
   }
 
@@ -250,6 +254,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         prev.includes(index) 
             ? prev.filter(i => i !== index)
             : [...prev, index]
+    );
+  };
+
+  const handleToggleCountedItem = (index: number) => {
+    setCountedIndices(prev =>
+      prev.includes(index)
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
     );
   };
   
@@ -376,7 +388,15 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     <div className="flex flex-col items-center justify-center space-y-6">
         <div className="flex flex-wrap items-center justify-center gap-2 text-6xl max-w-xl">
             {Array.from({length: exerciseData.countNumber || 0}).map((_, index) => (
-                <span key={index}>{exerciseData.countEmoji}</span>
+                <button 
+                  key={index}
+                  onClick={() => handleToggleCountedItem(index)}
+                  className={cn("transition-opacity duration-200",
+                    countedIndices.includes(index) ? "opacity-30" : "opacity-100"
+                  )}
+                >
+                  <span className="cursor-pointer select-none">{exerciseData.countEmoji}</span>
+                </button>
             ))}
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2 max-w-lg">
