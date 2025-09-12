@@ -218,16 +218,20 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         setIsSaving(true);
         const score = (correctAnswers / NUM_QUESTIONS) * 100;
         
+        console.log(`[DEBUG] Save logic triggered. isHomework: ${isHomework}, homeworkDate: ${homeworkDate}`);
+
         if (isHomework && homeworkDate) {
+            console.log("[DEBUG] Saving to 'homeworkResults' collection.");
             await saveHomeworkResult({
                 userId: student.id,
                 date: homeworkDate,
                 skillSlug: skill.slug,
                 score: score,
             });
-            setIsLoadingHistory(false); // No history to load for homework
+            setIsLoadingHistory(false);
         } else {
-             setIsLoadingHistory(true);
+            console.log("[DEBUG] Saving to 'scores' collection.");
+            setIsLoadingHistory(true);
             const scoreData: Omit<Score, 'createdAt' | 'id'> = {
                 userId: student.id,
                 skill: skill.slug,

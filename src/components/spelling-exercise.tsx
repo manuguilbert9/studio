@@ -90,13 +90,15 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     const currentWord = words[currentWordIndex];
     const isCorrect = inputValue.trim().toLowerCase() === currentWord.toLowerCase();
     
+    console.log(`[DEBUG] Spelling handleSubmit. isHomework: ${isHomework}, homeworkDate: ${homeworkDate}`);
+
     if (isHomework && homeworkDate) {
-        // For homework, we save each word individually and then stop.
+        console.log("[DEBUG] Spelling: Saving to 'homeworkResults' collection.");
         await saveHomeworkResult({
             userId: student.id,
             date: homeworkDate,
             skillSlug: `orthographe-${exerciseId}`,
-            score: isCorrect ? 100 : 0, // 100 for correct, 0 for incorrect
+            score: isCorrect ? 100 : 0,
         });
 
         if (isCorrect) {
@@ -108,18 +110,17 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
               setErrors(prev => [...prev, currentWord]);
           }
         }
-        return; // Important: Stop execution here for homework.
-    }
-    
-    // This part is for non-homework exercises only.
-    if (isCorrect) {
-      setFeedback('correct');
-      setTimeout(handleNextWord, 1500);
     } else {
-      setFeedback('incorrect');
-      if (!errors.includes(currentWord)) {
-          setErrors(prev => [...prev, currentWord]);
-      }
+        console.log("[DEBUG] Spelling: Saving to 'scores' collection.");
+        if (isCorrect) {
+          setFeedback('correct');
+          setTimeout(handleNextWord, 1500);
+        } else {
+          setFeedback('incorrect');
+          if (!errors.includes(currentWord)) {
+              setErrors(prev => [...prev, currentWord]);
+          }
+        }
     }
   };
 
@@ -131,7 +132,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     if (currentWordIndex < words.length - 1) {
       setCurrentWordIndex(prev => prev + 1);
     } else {
-      // The old system is only used if it's not a homework assignment
+      // Save non-homework results at the end
       if (!isHomework && student) {
         saveSpellingResult(student.id, exerciseId, errors);
       }
