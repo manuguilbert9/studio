@@ -78,19 +78,33 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
 
   useEffect(() => {
+    // For non-configurable skills
     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
-      // For homework, we might want to have specific questions later. For now, it's the same.
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
-    } else if (isHomework) {
-      // If it's a homework for a configurable skill, use default settings for now.
-      // This could be enhanced to save and use specific homework settings.
+    } 
+    // For configurable skills that ARE homework, use default settings
+    else if (isHomework) {
        const defaultSettings = { difficulty: 1, operations: 0, numberSize: 1, complexity: 0, showMinuteCircle: true, matchColors: true, coloredHands: true };
        if (skill.slug === 'calculation') startCalculationExercise(defaultSettings);
        else if (skill.slug === 'currency') startCurrencyExercise(defaultSettings);
        else if (skill.slug === 'time') startTimeExercise(defaultSettings);
     }
-  }, [skill.slug, isHomework]);
+    // For 'time' skill in 'en-classe' mode, derive level from student profile
+    else if (skill.slug === 'time' && !isUserLoading && !isHomework) {
+        const studentLevel = student?.levels?.[skill.slug];
+        const difficultyMap: Record<string, number> = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+        const difficulty = studentLevel ? difficultyMap[studentLevel] : 0;
+        
+        const settings: TimeSettingsType = {
+            difficulty: difficulty,
+            showMinuteCircle: difficulty < 3,
+            matchColors: difficulty === 0,
+            coloredHands: difficulty < 2,
+        };
+        startTimeExercise(settings);
+    }
+  }, [skill.slug, isHomework, student, isUserLoading]);
   
   const startCalculationExercise = (settings: CalcSettings) => {
     setCalculationSettings(settings);
@@ -297,6 +311,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setCurrencySettings(null);
     setTimeSettings(null);
     resetInteractiveStates();
+     // For non-configurable skills, just regenerate
     if (skill.slug !== 'calculation' && skill.slug !== 'currency' && skill.slug !== 'time') {
       setQuestions(generateQuestions(skill.slug, NUM_QUESTIONS));
       setIsReadyToStart(true);
@@ -306,7 +321,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   if (!isReadyToStart) {
       if (skill.slug === 'calculation' && !isHomework) return <CalculationSettings onStart={startCalculationExercise} />;
       if (skill.slug === 'currency' && !isHomework) return <CurrencySettings onStart={startCurrencyExercise} />;
-      if (skill.slug === 'time' && !isHomework) return <TimeSettings onStart={startTimeExercise} />;
+      if (skill.slug === 'time' && !isHomework) {
+        return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'exercice...</Card>;
+      }
       return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'exercice...</Card>;
   }
 
