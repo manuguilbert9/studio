@@ -18,7 +18,7 @@ const emojiPool = ['🍎', '🍌', '🚗', '🍓', '🍊', '🚓', '🚑', '⚽�
 
 // --- Question Generators by Level ---
 
-// Niveau A – Maternelle (GS)
+// Niveau A – Maternelle (GS) - Découverte < 10
 const generateLevelA = (): MentalMathQuestion => {
     const type = choice(['addUnits', 'removeUnits', 'complement']);
     let question = '';
@@ -28,20 +28,15 @@ const generateLevelA = (): MentalMathQuestion => {
 
     switch (type) {
         case 'addUnits': {
-            const a = randInt(1, 5);
-            const b = randInt(1, 4);
-            const result = a + b;
-            if (result > 9) {
-                return generateLevelA(); // Recurse to get a valid question
-            }
-            const emoji2 = choice(emojiPool.filter(e => e !== emoji1));
+            const a = randInt(1, 8);
+            const b = randInt(1, 9 - a);
             question = `${a} + ${b} = ?`;
-            answer = result;
-            visuals = [{ emoji: emoji1, count: a }, { emoji: emoji2, count: b }];
+            answer = a + b;
+            visuals = [{ emoji: emoji1, count: a }, { emoji: choice(emojiPool.filter(e => e !== emoji1)), count: b }];
             break;
         }
         case 'removeUnits': {
-            const a = randInt(2, 9);
+            const a = randInt(3, 9);
             const b = randInt(1, a - 1);
             question = `${a} - ${b} = ?`;
             answer = a - b;
@@ -49,7 +44,7 @@ const generateLevelA = (): MentalMathQuestion => {
             break;
         }
         case 'complement': {
-            const target = choice([5, 10]);
+            const target = 10;
             const a = randInt(1, target - 1);
             question = `Combien pour aller de ${a} à ${target} ?`;
             answer = target - a;
@@ -60,74 +55,43 @@ const generateLevelA = (): MentalMathQuestion => {
     return { id: Date.now() + Math.random(), question, answer, level: 'A', visuals };
 };
 
-// Niveau B – CP / CE1
+// Niveau B – CP / CE1 - Add/Sub sans retenue, doubles/moitiés
 const generateLevelB = (): MentalMathQuestion => {
-    const type = choice(['addNoCarry', 'addCarry', 'subNoCarry', 'subCarry', 'tables', 'multTables', 'double', 'half']);
+    const type = choice(['addNoCarry', 'subNoCarry', 'double', 'half', 'tables']);
     let question = '';
     let answer = 0;
 
     switch (type) {
-        case 'addNoCarry': { // a + b avec a, b ∈ [1,20], résultat ≤ 30.
-            let a = randInt(1, 20);
-            let b = randInt(1, 20);
-            if (a + b > 30 || (a % 10) + (b % 10) >= 10) {
-                 return generateLevelB();
-            }
+        case 'addNoCarry': { 
+            let a = randInt(10, 80);
+            let b = randInt(10, 90 - a);
+            if ((a % 10) + (b % 10) >= 10) return generateLevelB();
             question = `${a} + ${b} = ?`;
             answer = a + b;
             break;
         }
-        case 'addCarry': { // a + b avec a, b ∈ [10,90], résultat ≤ 100.
-            let a = randInt(10, 90);
-            let b = randInt(10, 90);
-            if (a + b > 100 || (a % 10) + (b % 10) < 10) {
-                return generateLevelB();
-            }
-            question = `${a} + ${b} = ?`;
-            answer = a + b;
-            break;
-        }
-        case 'subNoCarry': { // a – b avec a ∈ [1,30], b ∈ [1,a].
-            let a = randInt(11, 30); // start from 11 to avoid trivial subtractions
-            let b = randInt(1, a - 1);
-             if ((a % 10) < (b % 10)) {
-                return generateLevelB();
-            }
-            question = `${a} - ${b} = ?`;
-            answer = a - b;
-            break;
-        }
-        case 'subCarry': { // a – b avec a, b ∈ [20,99], résultat ≥ 0.
+        case 'subNoCarry': {
             let a = randInt(20, 99);
-            let b = randInt(20, a -1);
-            if ((a % 10) >= (b % 10)) {
-                return generateLevelB();
-            }
+            let b = randInt(10, a - 1);
+            if ((a % 10) < (b % 10)) return generateLevelB();
             question = `${a} - ${b} = ?`;
             answer = a - b;
             break;
         }
-        case 'tables': { // a + b avec a, b ∈ [0,10].
-            const a = randInt(0, 10);
-            const b = randInt(0, 10);
+        case 'tables': {
+            const a = randInt(1, 10);
+            const b = randInt(1, 10);
             question = `${a} + ${b} = ?`;
             answer = a + b;
             break;
         }
-        case 'multTables': { // a × b avec a ∈ [0,10], b ∈ [0,10].
-            const a = randInt(0, 10);
-            const b = randInt(0, 10);
-            question = `${a} × ${b} = ?`;
-            answer = a * b;
-            break;
-        }
-        case 'double': { // double d’un nombre ∈ [1,50]
+        case 'double': {
             const n = randInt(1, 50);
             question = `Le double de ${n} ?`;
             answer = n * 2;
             break;
         }
-        case 'half': { // moitié d’un nombre pair ∈ [2,100]
+        case 'half': {
             const n = randInt(1, 50) * 2;
             question = `La moitié de ${n} ?`;
             answer = n / 2;
@@ -137,178 +101,69 @@ const generateLevelB = (): MentalMathQuestion => {
     return { id: Date.now() + Math.random(), question, answer, level: 'B' };
 };
 
-// Niveau C – CE2 / CM1
+// Niveau C – CE2 / CM1 - Add/Sub avec retenue, multiplications
 const generateLevelC = (): MentalMathQuestion => {
-    const type = choice(['add', 'sub', 'mult', 'mult100', 'div', 'complement', 'double', 'half', 'distributive']);
+    const type = choice(['addCarry', 'subCarry', 'multTables', 'multSimple']);
     let question = '';
     let answer = 0;
      switch (type) {
-        case 'add': { // a + b avec a, b ∈ [100,900], résultat ≤ 1 000.
-            const a = randInt(100, 900);
-            const b = randInt(100, 1000 - a);
+        case 'addCarry': {
+            let a = randInt(10, 90);
+            let b = randInt(10, 99 - a);
+            if ((a % 10) + (b % 10) < 10) return generateLevelC();
             question = `${a} + ${b} = ?`;
             answer = a + b;
             break;
         }
-        case 'sub': { // a – b avec a ∈ [100,1 000], b ∈ [1,a].
-            const a = randInt(100, 1000);
-            const b = randInt(1, a);
+        case 'subCarry': {
+            let a = randInt(30, 99);
+            let b = randInt(11, a -1);
+            if ((a % 10) >= (b % 10)) return generateLevelC();
             question = `${a} - ${b} = ?`;
             answer = a - b;
             break;
         }
-        case 'mult': { // a × b avec a ∈ [2,20], b ∈ [2,20], résultat ≤ 400.
-            let a = randInt(2, 20);
-            let b = randInt(2, 20);
-            if (a*b > 400) return generateLevelC();
+        case 'multTables': {
+            const a = randInt(2, 10);
+            const b = randInt(2, 10);
             question = `${a} × ${b} = ?`;
             answer = a * b;
             break;
         }
-        case 'mult100': { // a × 10/100/1 000 avec a ∈ [1,1 000]
-            const a = randInt(1, 1000);
-            const m = choice([10, 100, 1000]);
-            question = `${a} × ${m} = ?`;
-            answer = a * m;
-            break;
-        }
-        case 'div': { // a ÷ b avec a ∈ [20,200], b ∈ [2,10], quotient entier.
-            const b = randInt(2, 10);
-            const quotient = randInt(Math.ceil(20/b), Math.floor(200/b));
-            const a = b * quotient;
-            question = `${a} ÷ ${b} = ?`;
-            answer = quotient;
-            break;
-        }
-        case 'complement': { // trouver ce qui manque pour atteindre 100 ou 1 000 (a ∈ [1,999]).
-            const target = choice([100, 1000]);
-            const a = randInt(1, target -1);
-            question = `Combien manque-t-il à ${a} pour faire ${target} ?`;
-            answer = target - a;
-            break;
-        }
-        case 'double': { // double d’un nombre ∈ [1,500],
-            const n = randInt(1, 500);
-            question = `Le double de ${n} ?`;
-            answer = n * 2;
-            break;
-        }
-        case 'half': { // moitié d’un nombre pair ∈ [2,1 000].
-            const n = randInt(1, 500) * 2;
-            question = `La moitié de ${n} ?`;
-            answer = n / 2;
-            break;
-        }
-        case 'distributive': { // 49+36 → 50+35 ou 25×16 → (25×10)+(25×6)
-            if (Math.random() > 0.5) { // Addition
-                let a = randInt(20, 80);
-                if (a % 10 === 0) a++; // ensure it's not a round number
-                const b = randInt(20, 80);
-                question = `${a} + ${b} = ?`;
-                answer = a + b;
-            } else { // Multiplication
-                const a = choice([15, 25, 35]);
-                const b = randInt(11, 19);
-                question = `${a} × ${b} = ?`;
-                answer = a * b;
-            }
+        case 'multSimple': {
+            const a = randInt(11, 25);
+            const b = randInt(2, 5);
+            question = `${a} × ${b} = ?`;
+            answer = a * b;
             break;
         }
     }
     return { id: Date.now() + Math.random(), question, answer, level: 'C' };
 };
 
-// Niveau D – CM2 / 6e
+// Niveau D – CM2 / 6e - Grands nombres, divisions, décimaux
 const generateLevelD = (): MentalMathQuestion => {
-    const type = choice(['add', 'sub', 'mult', 'multDecimal', 'divInt', 'divDecimal', 'complement', 'double', 'half', 'triple', 'quarter', 'fraction', 'addDecimal']);
+    const type = choice(['multAdvanced', 'divExact', 'addDecimal', 'complement1000']);
     let question = '';
     let answer = 0;
     
     switch(type) {
-        case 'add': { // a + b avec a, b ∈ [1 000, 100 000], résultat ≤ 1 000 000
-            const a = randInt(1000, 100000);
-            const b = randInt(1000, 1000000 - a);
-            question = `${a} + ${b} = ?`;
-            answer = a + b;
-            break;
-        }
-         case 'sub': { // a – b avec a ∈ [1 000,1 000 000], b ∈ [1,a].
-            const a = randInt(1000, 1000000);
-            const b = randInt(1, a);
-            question = `${a} - ${b} = ?`;
-            answer = a - b;
-            break;
-        }
-        case 'mult': { // a × b avec a ∈ [2,100], b ∈ [2,100].
-            const a = randInt(2, 100);
-            const b = randInt(2, 100);
+        case 'multAdvanced': { 
+            const a = randInt(11, 30);
+            const b = randInt(11, 20);
             question = `${a} × ${b} = ?`;
             answer = a * b;
             break;
         }
-        case 'multDecimal': { // Multiplication par 0,1 ; 0,5 ; 10 ; 100 ; 1 000.
-            const a = randInt(10, 500);
-            const m = choice([0.1, 0.5, 10, 100, 1000]);
-            question = `${a} × ${String(m).replace('.',',')} = ?`;
-            answer = a * m;
-            break;
-        }
-        case 'divInt': { // a ÷ b avec a ∈ [100,10 000], b ∈ [2,20].
-            const b = randInt(2, 20);
-            const quotient = randInt(Math.ceil(100/b), Math.floor(10000/b));
+        case 'divExact': {
+            const b = randInt(2, 12);
+            const quotient = randInt(5, 20);
             const a = b * quotient;
             question = `${a} ÷ ${b} = ?`;
             answer = quotient;
             break;
         }
-        case 'divDecimal': { // a ÷ b avec a ∈ [10,100], b ∈ {2,4,5,10} (résultats décimaux exacts).
-            const b = choice([2, 4, 5, 10]);
-            let a = randInt(10, 100);
-            if ((a/b) % 1 === 0) a++; // ensure it's not a perfect division
-            question = `${a} ÷ ${b} = ?`;
-            answer = a / b;
-            break;
-        }
-        case 'complement': { // Compléments à 100 / 1 000 / 10 000.
-            const target = choice([100, 1000, 10000]);
-            const a = randInt(1, target -1);
-            question = `De ${a} pour aller à ${target} ?`;
-            answer = target - a;
-            break;
-        }
-        case 'double': { // double jusqu'à 10 000
-            const n = randInt(1, 10000);
-            question = `Double de ${n} ?`;
-            answer = n * 2;
-            break;
-        }
-        case 'half': { // moitié jusqu'à 10 000
-            const n = randInt(1, 5000) * 2;
-            question = `Moitié de ${n} ?`;
-            answer = n / 2;
-            break;
-        }
-         case 'triple': { // triple jusqu'à 1 000
-            const n = randInt(1, 1000);
-            question = `Triple de ${n} ?`;
-            answer = n * 3;
-            break;
-        }
-         case 'quarter': { // quart jusqu'à 1 000
-            const n = randInt(1, 250) * 4;
-            question = `Quart de ${n} ?`;
-            answer = n / 4;
-            break;
-        }
-        case 'fraction': { // ½, ⅓, ¼ d’un nombre ≤ 1 000.
-            const frac = choice([2, 3, 4]);
-            const n = randInt(1, Math.floor(1000 / frac)) * frac;
-            const fracSymbol = frac === 2 ? '½' : '⅓'
-            question = `Le ${fracSymbol} de ${n} ?`;
-            answer = n / frac;
-            break;
-        }
-        case 'addDecimal': { // additions/soustractions avec un chiffre après la virgule
+        case 'addDecimal': {
             let a = randInt(1, 500) / 10;
             let b = randInt(1, 500) / 10;
              if (Math.random() > 0.5) { // addition
@@ -319,6 +174,12 @@ const generateLevelD = (): MentalMathQuestion => {
                 question = `${String(a).replace('.',',')} - ${String(b).replace('.',',')} = ?`;
                 answer = parseFloat((a - b).toFixed(1));
              }
+            break;
+        }
+        case 'complement1000': {
+            const a = randInt(100, 999);
+            question = `De ${a} pour aller à 1000 ?`;
+            answer = 1000 - a;
             break;
         }
     }
