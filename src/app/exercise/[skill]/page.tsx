@@ -23,6 +23,7 @@ import { ReadingDirectionExercise } from '@/components/reading-direction-exercis
 import { ComplementDixExercise } from '@/components/complement-dix-exercise';
 import { SonAnExercise } from '@/components/son-an-exercise';
 import { NombresComplexesExercise } from '@/components/nombres-complexes-exercise';
+import { LettresEtSonsExercise } from '@/components/lettres-et-sons-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -69,6 +70,8 @@ export default function ExercisePage() {
         return <SonAnExercise />;
       case 'nombres-complexes':
         return <NombresComplexesExercise />;
+      case 'lettres-et-sons':
+        return <LettresEtSonsExercise />;
       case 'denombrement':
       case 'time':
       default:

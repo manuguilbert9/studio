@@ -3,6 +3,10 @@
 
 import type { Question } from './questions';
 
+// This file is now deprecated and will not be used. 
+// The logic has been moved to the component `src/components/lettres-et-sons-exercise.tsx`.
+// It is kept for reference but can be deleted.
+
 const letterSoundData: { [letter: string]: string[] } = {
   'a': ['arbre', 'avion', 'ananas'],
   'b': ['banane', 'bateau', 'ballon'],
@@ -54,8 +58,8 @@ export async function generateLettresEtSonsQuestion(): Promise<Question> {
         answer: correctWord,
         textToSpeak: correctLetter, // Will show the letter
         optionsWithAudio: shuffledOptions.map(word => ({
-            text: word, // The text for the radio button will be the word itself, but we won't show it.
-            audio: word // The audio to play will be the word.
+            text: word, 
+            audio: word 
         })),
     };
 }

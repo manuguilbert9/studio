@@ -9,14 +9,13 @@ import { generateTimeQuestion } from "./time-questions";
 import { generateSyllabeAttaqueQuestion } from "./syllabe-questions";
 import { generateDénombrementQuestion } from "./count-questions";
 import { generateKeyboardCountQuestion } from "./keyboard-count-questions";
-import { generateLettresEtSonsQuestion } from "./letter-sound-questions";
 import { generateEcouteLesNombresQuestion } from './number-listening-questions';
 import { generateNombresComplexesQuestion } from './complex-number-questions';
 import { generateLireLesNombresQuestion } from './reading-number-questions';
 
 
 export interface Question extends CalendarQuestion, MentalMathQuestion {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'letter-sound-qcm' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple';
   question: string;
   // For QCM
   options?: string[];
@@ -154,15 +153,7 @@ export async function generateQuestions(
       }
       return questions;
   }
-  
-  if (skill === 'lettres-et-sons') {
-    const questions: Question[] = [];
-    for (let i = 0; i < count; i++) {
-        questions.push(await generateLettresEtSonsQuestion());
-    }
-    return questions;
-  }
-  
+
   if (skill === 'syllabe-attaque') {
       const questions: Question[] = [];
       for (let i = 0; i < count; i++) {
