@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useContext } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { Progress } from './ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import type { SkillLevel } from '@/lib/skills';
 
@@ -32,6 +34,10 @@ const PAIRS_PER_ROUND = 8;
 
 export function WordFamiliesExercise() {
   const { student } = useContext(UserContext);
+  const searchParams = useSearchParams();
+  const isHomework = searchParams.get('from') === 'devoirs';
+  const homeworkDate = searchParams.get('date');
+
   const [level, setLevel] = useState<SkillLevel | null>(null);
   
   const [availableLists, setAvailableLists] = useState<SpellingList[]>([]);
@@ -92,7 +98,6 @@ export function WordFamiliesExercise() {
     async function loadLists() {
       setIsLoadingLists(true);
       const lists = await getSpellingLists();
-      // Filter lists based on selected level
       const filteredLists = lists.filter(list => {
           const listNum = parseInt(list.id.substring(1));
           if (level === 'B') return listNum <= 12;
@@ -206,19 +211,28 @@ export function WordFamiliesExercise() {
               const totalPairs = allPairs.length;
               
               const rawScore = totalPairs > 0 ? ((correctCount - incorrectCount) / totalPairs) * 100 : 0;
-              const finalScore = Math.max(0, rawScore); // Ensure score is not negative
+              const finalScore = Math.max(0, rawScore);
 
-              await addScore({
-                  userId: student.id,
-                  skill: 'word-families',
-                  score: finalScore,
-                  details: sessionDetails,
-                  numberLevelSettings: { level: level }
-              });
+              if (isHomework && homeworkDate) {
+                await saveHomeworkResult({
+                    userId: student.id,
+                    date: homeworkDate,
+                    skillSlug: 'word-families',
+                    score: finalScore,
+                });
+              } else {
+                await addScore({
+                    userId: student.id,
+                    skill: 'word-families',
+                    score: finalScore,
+                    details: sessionDetails,
+                    numberLevelSettings: { level: level }
+                });
+              }
           }
       };
       saveResult();
-   }, [isExerciseFinished, student, hasBeenSaved, sessionDetails, level, allPairs.length, incorrectPairsCount]);
+   }, [isExerciseFinished, student, hasBeenSaved, sessionDetails, level, allPairs.length, incorrectPairsCount, isHomework, homeworkDate]);
 
   const goToNextRound = () => {
     if (currentRoundIndex < rounds.length - 1) {
@@ -296,10 +310,14 @@ export function WordFamiliesExercise() {
                 </p>
                 <ScoreTube score={finalScore} />
                 <p className="text-sm text-muted-foreground">{allPairs.length} paires correctes, {incorrectPairsCount} erreurs.</p>
-                <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                    <RefreshCw className="mr-2" />
-                    Faire un autre exercice
-                </Button>
+                 {isHomework ? (
+                    <p className=\"text-muted-foreground\">Tes devoirs sont terminés !</p>
+                 ) : (
+                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+                        <RefreshCw className="mr-2" />
+                        Faire un autre exercice
+                    </Button>
+                 )}
             </CardContent>
         </Card>
     )
@@ -363,7 +381,6 @@ export function WordFamiliesExercise() {
                 </div>
             )}
             
-            {/* Feedback & Round transition overlay */}
             {(feedback || isRoundFinished) && !isExerciseFinished && (
                 <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm flex-col gap-4">
                     {feedback === 'correct' && !isRoundFinished && <Check className="h-24 w-24 text-green-500 animate-in zoom-in-150" />}

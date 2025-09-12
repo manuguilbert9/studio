@@ -2,16 +2,16 @@
 'use client';
 
 import { useState, useMemo, useEffect, useContext, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, Loader2, Check, X, Keyboard } from 'lucide-react';
+import { RefreshCw, Loader2, Check, X } from 'lucide-react';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 import { Progress } from './ui/progress';
 import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
-import { Input } from './ui/input';
-
 
 type Problem = {
     id: number;
@@ -33,6 +33,9 @@ const generateProblem = (): Problem => {
 
 export function SommeDixExercise() {
     const { student } = useContext(UserContext);
+    const searchParams = useSearchParams();
+    const isHomework = searchParams.get('from') === 'devoirs';
+    const homeworkDate = searchParams.get('date');
     
     const [problems, setProblems] = useState<Problem[]>([]);
     const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
@@ -137,17 +140,26 @@ export function SommeDixExercise() {
              if (isFinished && student && !hasBeenSaved) {
                 setHasBeenSaved(true);
                 const score = (correctAnswers / NUM_PROBLEMS) * 100;
-                await addScore({
-                    userId: student.id,
-                    skill: 'somme-dix',
-                    score: score,
-                    numberLevelSettings: { level: 'A' },
-                    details: sessionDetails,
-                });
+                if (isHomework && homeworkDate) {
+                    await saveHomeworkResult({
+                        userId: student.id,
+                        date: homeworkDate,
+                        skillSlug: 'somme-dix',
+                        score: score,
+                    });
+                } else {
+                    await addScore({
+                        userId: student.id,
+                        skill: 'somme-dix',
+                        score: score,
+                        numberLevelSettings: { level: 'A' },
+                        details: sessionDetails,
+                    });
+                }
             }
         }
         saveFinalScore();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
 
     const restartExercise = () => {
         generateNewProblems();
@@ -180,10 +192,14 @@ export function SommeDixExercise() {
                         Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_PROBLEMS}</span>.
                     </p>
                     <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                        <RefreshCw className="mr-2" />
-                        Recommencer
-                    </Button>
+                    {isHomework ? (
+                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+                     ) : (
+                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+                            <RefreshCw className="mr-2" />
+                            Recommencer
+                        </Button>
+                     )}
                 </CardContent>
             </Card>
         )

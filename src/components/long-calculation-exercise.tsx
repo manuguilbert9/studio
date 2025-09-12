@@ -2,21 +2,20 @@
 'use client';
 
 import { useState, useMemo, useEffect, useContext, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, Loader2, Check, X, Keyboard } from 'lucide-react';
+import { RefreshCw, Loader2, Check, X } from 'lucide-react';
 import { AdditionWidget } from '@/components/tableau/addition-widget';
 import { SoustractionWidget } from '@/components/tableau/soustraction-widget';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
+import { saveHomeworkResult } from '@/services/homework';
 import { Progress } from '@/components/ui/progress';
 import { ScoreTube } from './score-tube';
 import { cn } from '@/lib/utils';
 import type { SkillLevel } from '@/lib/skills';
-import { Input } from './ui/input';
 import { type CalculationState } from '@/services/scores';
-import { VirtualKeyboard } from './virtual-keyboard';
-
 
 type OperationType = 'addition' | 'subtraction';
 type Problem = {
@@ -43,7 +42,6 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
     let sum = 0;
     let attempts = 0;
     
-    // Loop until we find a valid addition that respects the carry rule
     while (attempts < 50) {
         attempts++;
         operands = Array.from({ length: numOperands }, () => generateNumber(digits));
@@ -60,8 +58,8 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
                 }
                 tempSum = columnSum;
             }
-            if (!hasCarry) break; // Found a valid no-carry addition
-        } else { // withCarry
+            if (!hasCarry) break;
+        } else {
             let hasCarry = false;
             let tempSum = 0;
              for (let d = 0; d < digits; d++) {
@@ -72,10 +70,9 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
                 }
                  tempSum = columnSum;
             }
-            if (hasCarry) break; // Found a valid with-carry addition
+            if (hasCarry) break;
         }
     }
-     // If after many attempts we fail, generate a fallback problem
     if (attempts >= 50) {
         if (withCarry) {
             operands = Array.from({ length: numOperands - 1 }, () => generateNumber(digits -1)).concat([Number("9".repeat(digits-1))]);
@@ -99,10 +96,9 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
         op2 = generateNumber(digits);
 
         if (op1 <= op2) {
-            [op1, op2] = [op2, op1]; // Ensure op1 > op2
+            [op1, op2] = [op2, op1];
             if (op1 === op2) op1++;
         }
-
 
         let hasCarry = false;
         for (let d = 0; d < digits; d++) {
@@ -110,7 +106,6 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
             const d2 = Math.floor(op2 / Math.pow(10, d)) % 10;
             let effectiveD1 = d1;
             
-            // Simulate borrowing from the left
             if(d > 0) {
               const prevD1 = Math.floor(op1 / Math.pow(10, d - 1)) % 10;
               const prevD2 = Math.floor(op2 / Math.pow(10, d - 1)) % 10;
@@ -127,7 +122,6 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
         if (hasCarry === withCarry) break;
     }
     
-     // Fallback if no suitable problem is found
     if (attempts >= 50) {
         op1 = generateNumber(digits);
         op2 = generateNumber(digits - 1);
@@ -140,6 +134,10 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
 
 export function LongCalculationExercise() {
     const { student } = useContext(UserContext);
+    const searchParams = useSearchParams();
+    const isHomework = searchParams.get('from') === 'devoirs';
+    const homeworkDate = searchParams.get('date');
+
     const [level, setLevel] = useState<SkillLevel | null>(null);
     
     const [problems, setProblems] = useState<Problem[]>([]);
@@ -177,7 +175,7 @@ export function LongCalculationExercise() {
                 ];
                 break;
         }
-        setProblems(newProblems.sort(() => Math.random() - 0.5)); // Shuffle the order
+        setProblems(newProblems.sort(() => Math.random() - 0.5));
         setIsLoading(false);
     };
     
@@ -186,7 +184,7 @@ export function LongCalculationExercise() {
              const studentLevel = student.levels?.['long-calculation'] || 'B';
              setLevel(studentLevel);
         } else if (level === null && !student) {
-             setLevel('B'); // Default level if no student
+             setLevel('B');
         }
     }, [student, level]);
 
@@ -223,19 +221,15 @@ export function LongCalculationExercise() {
         if (!currentProblem) return;
 
         let userAnswerStr = '';
-
-        // Reconstruct user's answer from input cells
         const numCols = String(Math.max(...currentProblem.operands, currentProblem.answer)).length;
-        for (let i = numCols; i >= 0; i--) { // Start from potential highest-order column
+        for (let i = numCols; i >= 0; i--) {
              const cellValue = calculationState[`result-${i}`]?.value || '';
-             // Handle borrowed '1' (e.g. "13" -> "3")
              const cleanValue = cellValue.length === 2 && cellValue.startsWith('1') ? cellValue.substring(1) : cellValue;
              userAnswerStr += cleanValue;
         }
         const userAnswerNum = parseInt(userAnswerStr, 10) || 0;
         const isCorrect = userAnswerNum === currentProblem.answer;
         
-
          const detail: ScoreDetail = {
             question: currentProblem.operands.join(` ${currentProblem.operation === 'addition' ? '+' : '-'} `),
             userAnswer: userAnswerStr,
@@ -268,17 +262,27 @@ export function LongCalculationExercise() {
              if (isFinished && student && !hasBeenSaved && level) {
                 setHasBeenSaved(true);
                 const score = (correctAnswers / NUM_PROBLEMS) * 100;
-                await addScore({
-                    userId: student.id,
-                    skill: 'long-calculation',
-                    score: score,
-                    numberLevelSettings: { level: level },
-                    details: sessionDetails,
-                });
+                
+                if (isHomework && homeworkDate) {
+                    await saveHomeworkResult({
+                        userId: student.id,
+                        date: homeworkDate,
+                        skillSlug: 'long-calculation',
+                        score: score,
+                    });
+                } else {
+                    await addScore({
+                        userId: student.id,
+                        skill: 'long-calculation',
+                        score: score,
+                        numberLevelSettings: { level: level },
+                        details: sessionDetails,
+                    });
+                }
             }
         }
         saveFinalScore();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, level, sessionDetails]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, level, sessionDetails, isHomework, homeworkDate]);
 
     const restartExercise = () => {
         setIsLoading(true);
@@ -315,10 +319,14 @@ export function LongCalculationExercise() {
                         Tu as obtenu <span className="font-bold text-primary">{correctAnswers}</span> bonnes réponses sur <span className="font-bold">{NUM_PROBLEMS}</span>.
                     </p>
                     <ScoreTube score={score} />
-                    <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
-                        <RefreshCw className="mr-2" />
-                        Recommencer
-                    </Button>
+                     {isHomework ? (
+                        <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
+                     ) : (
+                        <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+                            <RefreshCw className="mr-2" />
+                            Recommencer
+                        </Button>
+                     )}
                 </CardContent>
             </Card>
         )
