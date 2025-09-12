@@ -1,8 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useContext } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +10,6 @@ import { Progress } from '@/components/ui/progress';
 import { getSpellingLists, saveSpellingResult, type SpellingList } from '@/services/spelling';
 import { cn } from '@/lib/utils';
 import Confetti from 'react-dom-confetti';
-import { UserContext } from '@/context/user-context';
-import { saveHomeworkResult } from '@/services/homework';
 
 const WORD_DISPLAY_TIME_MS = 6000;
 
@@ -22,12 +19,6 @@ interface SpellingExerciseProps {
 }
 
 export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps) {
-  const searchParams = useSearchParams();
-  const from = searchParams.get('from');
-  const isHomework = from === 'devoirs';
-  const homeworkDate = searchParams.get('date');
-
-  const { student } = useContext(UserContext);
   const [list, setList] = useState<SpellingList | null>(null);
   const [words, setWords] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,11 +28,15 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | 'idle' | 'showing'>('showing');
   const [isFinished, setIsFinished] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
+  const [username, setUsername] = useState<string | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    const storedName = localStorage.getItem('classemagique_username');
+    setUsername(storedName);
+
     async function loadExercise() {
       if (!exerciseId) return;
       
@@ -79,44 +74,25 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     if (words.length > 0 && !isFinished) {
       showWord();
     }
+    // Cleanup timeout on component unmount
     return () => {
       if (showTimeoutRef.current) clearTimeout(showTimeoutRef.current);
     }
   }, [words, currentWordIndex, isFinished, showWord]);
 
-  const handleSubmit = async () => {
-    if (feedback !== 'idle' || !student) return;
+  const handleSubmit = () => {
+    if (feedback !== 'idle') return;
 
     const currentWord = words[currentWordIndex];
-    const isCorrect = inputValue.trim().toLowerCase() === currentWord.toLowerCase();
-    
-    if (isHomework && homeworkDate) {
-        await saveHomeworkResult({
-            userId: student.id,
-            date: homeworkDate,
-            skillSlug: `orthographe-${exerciseId}`,
-            score: isCorrect ? 100 : 0,
-        });
-
-        if (isCorrect) {
-          setFeedback('correct');
-          setTimeout(handleNextWord, 1500);
-        } else {
-          setFeedback('incorrect');
-          if (!errors.includes(currentWord)) {
-              setErrors(prev => [...prev, currentWord]);
-          }
-        }
+    if (inputValue.trim().toLowerCase() === currentWord.toLowerCase()) {
+      setFeedback('correct');
+      setTimeout(handleNextWord, 1500);
     } else {
-        if (isCorrect) {
-          setFeedback('correct');
-          setTimeout(handleNextWord, 1500);
-        } else {
-          setFeedback('incorrect');
-          if (!errors.includes(currentWord)) {
-              setErrors(prev => [...prev, currentWord]);
-          }
-        }
+      setFeedback('incorrect');
+      if (!errors.includes(currentWord)) {
+          setErrors(prev => [...prev, currentWord]);
+      }
+      // No timeout, user has to click "Try Again"
     }
   };
 
@@ -128,9 +104,8 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
     if (currentWordIndex < words.length - 1) {
       setCurrentWordIndex(prev => prev + 1);
     } else {
-      // Save non-homework results at the end
-      if (!isHomework && student) {
-        saveSpellingResult(student.id, exerciseId, errors);
+      if (username && exerciseId) {
+        saveSpellingResult(username, exerciseId, errors);
       }
       setIsFinished(true);
     }
@@ -259,7 +234,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
           )}
         </Card>
       </div>
-      <style jsx>{\`
+      <style jsx>{`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -268,7 +243,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
         .animate-shake {
           animation: shake 0.5s ease-in-out;
         }
-      \`}</style>
+      `}</style>
     </>
   );
 }
