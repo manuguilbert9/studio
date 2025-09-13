@@ -64,7 +64,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
       const half = Math.ceil(foundList.words.length / 2);
       const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
       // Shuffle the words for the exercise
-      setWords(sessionWords.sort(() => Math.random() - 0.5));
+      setWords([...sessionWords].sort(() => Math.random() - 0.5));
       setIsLoading(false);
     }
     loadExercise();
@@ -288,7 +288,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
           )}
         </Card>
       </div>
-      <style jsx>{`
+      <style jsx>{\`
         @keyframes shake {
           0%, 100% { transform: translateX(0); }
           10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
@@ -297,7 +297,7 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
         .animate-shake {
           animation: shake 0.5s ease-in-out;
         }
-      `}</style>
+      \`}</style>
     </>
   );
 }
