@@ -100,7 +100,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   useEffect(() => {
     // For non-configurable skills
-    if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
+    if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres', 'ecoute-les-nombres'].includes(skill.slug)) {
       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
     } 
@@ -117,6 +117,10 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
        else if (skill.slug === 'time') startTimeExercise(defaultTimeSettings);
        else if (skill.slug === 'denombrement') startCountExercise(defaultCountSettings);
        else if (skill.slug === 'lire-les-nombres') startNumberLevelExercise(defaultNumberLevelSettings);
+       else if (skill.slug === 'ecoute-les-nombres') {
+            generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
+            setIsReadyToStart(true);
+       }
     }
     // For configurable skills in 'en-classe' mode, derive level from student profile
     else if (['time', 'lire-les-nombres'].includes(skill.slug) && !isUserLoading && !isHomework) {
@@ -134,6 +138,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         if (skill.slug === 'lire-les-nombres') {
             startNumberLevelExercise({level: studentLevel});
         }
+    } else if (skill.slug === 'ecoute-les-nombres' && !isHomework) {
+         generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
+         setIsReadyToStart(true);
     }
   }, [skill.slug, isHomework, student, isUserLoading]);
   
@@ -366,7 +373,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setNumberLevelSettings(null);
     resetInteractiveStates();
     // For non-configurable skills, just regenerate
-    if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
+    if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres', 'ecoute-les-nombres'].includes(skill.slug)) {
       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
     }
