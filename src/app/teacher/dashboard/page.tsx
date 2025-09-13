@@ -16,14 +16,13 @@ import { ResultsManager } from '@/components/teacher/results-manager';
 import { DatabaseManager } from '@/components/teacher/database-manager';
 import { GroupManager } from '@/components/teacher/group-manager';
 import { HomeworkManager } from '@/components/teacher/homework-manager';
-import { getSpellingLists, SpellingList } from '@/services/spelling';
 import { getStudents, Student } from '@/services/students';
 import { getGroups, type Group } from '@/services/groups';
 import { getAllScores, Score } from '@/services/scores';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { BuildInfo } from '@/components/teacher/build-info';
 import { getAllWritingEntries, WritingEntry } from '@/services/writing';
-import { getAllHomework, type Homework } from '@/services/homework';
+import { getAllHomework, type Homework, getHomeworkResultsForUser, HomeworkResult } from '@/services/homework';
 
 
 export default function TeacherDashboardPage() {
@@ -37,21 +36,27 @@ export default function TeacherDashboardPage() {
   const [allScores, setAllScores] = useState<Score[]>([]);
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
   const [allHomework, setAllHomework] = useState<Homework[]>([]);
+  const [allHomeworkResults, setAllHomeworkResults] = useState<HomeworkResult[]>([]);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, groupData, scoresData, writingData, homeworkData] = await Promise.all([
-      getStudents(),
+    const studentData = await getStudents();
+    setStudents(studentData);
+
+    const [groupData, scoresData, writingData, homeworkData, homeworkResultsData] = await Promise.all([
       getGroups(),
       getAllScores(),
       getAllWritingEntries(),
       getAllHomework(),
+      // Fetch results for the students that were just loaded
+      Promise.all(studentData.map(s => getHomeworkResultsForUser(s.id))).then(res => res.flat())
     ]);
-    setStudents(studentData);
+    
     setGroups(groupData);
     setAllScores(scoresData);
     setAllWritingEntries(writingData);
     setAllHomework(homeworkData);
+    setAllHomeworkResults(homeworkResultsData);
     setIsLoading(false);
   }, []);
 
@@ -116,8 +121,10 @@ export default function TeacherDashboardPage() {
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
                     <HomeworkManager 
+                        students={students}
                         groups={groups}
                         allHomework={allHomework}
+                        allHomeworkResults={allHomeworkResults}
                         onHomeworkChange={loadData}
                     />
                 </TabsContent>
