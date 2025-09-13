@@ -15,6 +15,12 @@ export interface ScheduleStep {
     icon: string;
 }
 
+export interface ThemeColors {
+    background: string;
+    primary: string;
+    accent: string;
+}
+
 export interface Student {
     id: string;
     name: string;
@@ -24,6 +30,7 @@ export interface Student {
     enabledSkills?: Record<string, boolean>;
     hasCustomSchedule?: boolean;
     schedule?: ScheduleStep[];
+    themeColors?: ThemeColors;
 }
 
 
@@ -132,6 +139,7 @@ export async function getStudents(): Promise<Student[]> {
                 enabledSkills: data.enabledSkills,
                 hasCustomSchedule: data.hasCustomSchedule || false,
                 schedule: data.schedule || [],
+                themeColors: data.themeColors
             });
         });
         return students.sort((a,b) => a.name.localeCompare(b.name));
@@ -171,6 +179,7 @@ export async function loginStudent(name: string, code: string): Promise<Student 
                     enabledSkills: studentData.enabledSkills,
                     hasCustomSchedule: studentData.hasCustomSchedule || false,
                     schedule: studentData.schedule || [],
+                    themeColors: studentData.themeColors
                 };
             }
         }
@@ -203,6 +212,7 @@ export async function getStudentById(studentId: string): Promise<Student | null>
                 enabledSkills: data.enabledSkills,
                 hasCustomSchedule: data.hasCustomSchedule || false,
                 schedule: data.schedule || [],
+                themeColors: data.themeColors
             };
         }
         return null;

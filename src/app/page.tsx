@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useState, FormEvent, useContext } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart } from 'lucide-react';
+import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart, Palette } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -127,7 +128,7 @@ export default function ModeSelectionPage() {
        <div className="text-center mb-12">
             <p className="text-base sm:text-lg text-muted-foreground mt-2">Connecté en tant que <span className="font-bold">{student.name}</span>.</p>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 w-full max-w-sm md:max-w-6xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 w-full max-w-sm md:max-w-4xl">
         <Link href="/devoirs" className="group" aria-label="Accéder aux devoirs">
           <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
             <div className="mb-6 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
@@ -163,6 +164,19 @@ export default function ModeSelectionPage() {
               <CardTitle className="font-headline text-3xl sm:text-4xl">Boîte à Histoires</CardTitle>
               <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
                 Crée des histoires magiques avec l'aide de l'IA.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
+         <Link href="/customize" className="group" aria-label="Personnaliser l'apparence">
+          <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
+            <div className="mb-6 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
+              <Palette />
+            </div>
+             <CardHeader>
+              <CardTitle className="font-headline text-3xl sm:text-4xl">Personnaliser</CardTitle>
+              <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
+                Change les couleurs de ton espace de travail.
               </CardDescription>
             </CardHeader>
           </Card>
