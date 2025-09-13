@@ -68,6 +68,12 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
           <clipPath id="erlenmeyerClip">
             <path d={flaskPath} />
           </clipPath>
+           <linearGradient id="glassGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="white" stopOpacity="0.1" />
+                <stop offset="20%" stopColor="white" stopOpacity="0.4" />
+                <stop offset="50%" stopColor="white" stopOpacity="0.1" />
+                <stop offset="100%" stopColor="white" stopOpacity="0.2" />
+            </linearGradient>
            {isPerfectScore && (
             <linearGradient id="highlightGradientFlask" x1="0%" y1="0%" x2="100%" y2="0%">
                 <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))' }} />
@@ -98,6 +104,12 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
             />
         </g>
         
+        {/* Glass highlight effect */}
+        <path
+            d={flaskPath}
+            fill="url(#glassGradient)"
+        />
+
         {/* Score Text */}
         <text
           x={viewBoxWidth / 2}

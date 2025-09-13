@@ -68,6 +68,12 @@ export function ScoreTube({ score }: ScoreTubeProps) {
           <clipPath id="tubeClip">
             <path d={tubePath} />
           </clipPath>
+           <linearGradient id="glassGradientTube" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="white" stopOpacity="0.1" />
+                <stop offset="20%" stopColor="white" stopOpacity="0.4" />
+                <stop offset="50%" stopColor="white" stopOpacity="0.1" />
+                <stop offset="100%" stopColor="white" stopOpacity="0.2" />
+            </linearGradient>
            {isPerfectScore && (
             <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" style={{ stopColor: 'hsl(var(--primary))' }} />
@@ -97,6 +103,13 @@ export function ScoreTube({ score }: ScoreTubeProps) {
                 }}
             />
         </g>
+
+        {/* Glass highlight effect */}
+        <path
+            d={tubePath}
+            fill="url(#glassGradientTube)"
+        />
+
       </svg>
       <p 
         className={cn(
