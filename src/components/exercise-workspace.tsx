@@ -520,7 +520,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const renderImageQCM = () => (
     <div className="flex flex-col items-center justify-center space-y-8">
       {exerciseData.syllable && (
-        <div className="font-mono text-7xl font-bold p-4 bg-secondary rounded-lg">{exerciseData.syllable}</div>
+        <div className="font-mono text-7xl font-bold p-4 bg-secondary text-secondary-foreground rounded-lg">
+          {exerciseData.syllable.toUpperCase()}
+        </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
         {exerciseData.images?.map((image, index) => (
