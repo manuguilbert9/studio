@@ -75,7 +75,7 @@ const generateAddition = (numOperands: number, digits: number, withCarry: boolea
     }
     if (attempts >= 50) {
         if (withCarry) {
-            operands = Array.from({ length: numOperands - 1 }, () => generateNumber(digits -1)).concat([Number("9".repeat(digits-1))]);
+             operands = Array.from({ length: numOperands - 1 }, () => generateNumber(digits > 1 ? digits -1 : 1)).concat([Number("9".repeat(digits > 1 ? digits - 1 : 1))]);
         } else {
              operands = Array.from({ length: numOperands }, () => Number("1".repeat(digits)));
         }
@@ -99,6 +99,8 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
             [op1, op2] = [op2, op1];
             if (op1 === op2) op1++;
         }
+        
+        if (op1 === 0 || op2 === 0) continue;
 
         let hasCarry = false;
         for (let d = 0; d < digits; d++) {
@@ -123,9 +125,13 @@ const generateSubtraction = (digits: number, withCarry: boolean): Problem => {
     }
     
     if (attempts >= 50) {
-        op1 = generateNumber(digits);
-        op2 = generateNumber(digits - 1);
-        if (op1 <= op2) op1 = op2 + 10;
+        if(withCarry) {
+            op1 = parseInt(`5` + '0'.repeat(digits - 1));
+            op2 = 1;
+        } else {
+            op1 = parseInt('9'.repeat(digits));
+            op2 = parseInt('1'.repeat(digits));
+        }
     }
 
     return { id: Date.now() + Math.random(), operands: [op1, op2], operation: 'subtraction', answer: op1 - op2 };
