@@ -80,13 +80,19 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
     setIsSaving(false);
   };
   
-  const getCompletionStatus = (studentId: string, skillSlug: string | null) => {
-      if (!skillSlug) return 'not-assigned';
+  const getCompletionStatus = (studentId: string, assignedSkillSlug: string | null) => {
+      if (!assignedSkillSlug) return 'not-assigned';
       const dateId = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
       if (!dateId) return 'not-assigned';
 
-      const hasCompleted = allHomeworkResults.some(
-          result => result.userId === studentId && result.date === dateId && (result.skillSlug === skillSlug || result.skillSlug.startsWith(skillSlug))
+      const hasCompleted = allHomeworkResults.some(result => 
+          result.userId === studentId && 
+          result.date === dateId && 
+          (
+            result.skillSlug === assignedSkillSlug ||
+            // Handle dynamic slugs like orthographe-D1-lundi
+            (assignedSkillSlug.startsWith('orthographe') && result.skillSlug.startsWith(assignedSkillSlug))
+          )
       );
       
       return hasCompleted ? 'completed' : 'pending';
@@ -192,7 +198,7 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                                         {groupStudents.map(student => {
                                             const francaisStatus = getCompletionStatus(student.id, groupAssignment.francais);
                                             const mathsStatus = getCompletionStatus(student.id, groupAssignment.maths);
-                                            const orthoStatus = getCompletionStatus(student.id, groupAssignment.orthographe);
+                                            const orthoStatus = getCompletionStatus(student.id, 'orthographe-' + groupAssignment.orthographe);
                                             
                                             return (
                                             <div key={student.id} className="flex items-center gap-2 p-2 bg-background rounded-md">
