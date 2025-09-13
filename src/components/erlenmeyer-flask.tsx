@@ -62,7 +62,6 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
   const viewBoxWidth = 120;
   const viewBoxHeight = 150;
   
-  // Erlenmeyer shape path
   const flaskPath = "M 30,0 H 90 L 120,150 H 0 Z";
   
   const liquidY = viewBoxHeight - (viewBoxHeight * fillHeight) / 100;
@@ -122,6 +121,30 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
                     transition: 'd 1.5s ease-out',
                 }}
             />
+             {/* Bubbles for perfect score */}
+            {isPerfectScore && (
+                <g className="bubbles">
+                    {[...Array(25)].map((_, i) => {
+                        const size = Math.random() * 3 + 1;
+                        const x = Math.random() * (viewBoxWidth - size * 2) + size;
+                        const delay = Math.random() * 5;
+                        const duration = Math.random() * 4 + 3;
+                        return (
+                            <circle
+                                key={i}
+                                cx={x}
+                                cy={viewBoxHeight + 10}
+                                r={size}
+                                fill="white"
+                                style={{
+                                    animation: `erlenmeyer-bubble-rise ${duration}s ease-in-out ${delay}s infinite`,
+                                    opacity: 0,
+                                }}
+                            />
+                        )
+                    })}
+                </g>
+            )}
         </g>
         
         {/* Glass highlight effect */}
@@ -159,6 +182,24 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
           </text>
         )}
       </svg>
+       <style jsx>{`
+        @keyframes erlenmeyer-bubble-rise {
+          0% {
+            transform: translateY(0);
+            opacity: 0;
+          }
+          50% {
+            opacity: 0.8;
+          }
+          90% {
+            transform: translateY(-${viewBoxHeight + 10}px) translateX(${Math.sin(Math.random() * Math.PI) * 10}px);
+          }
+          100% {
+            transform: translateY(-${viewBoxHeight + 20}px);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }

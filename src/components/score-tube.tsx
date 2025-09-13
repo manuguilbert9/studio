@@ -122,6 +122,30 @@ export function ScoreTube({ score }: ScoreTubeProps) {
                     transition: 'd 1.5s ease-out',
                 }}
             />
+            {/* Bubbles for perfect score */}
+            {isPerfectScore && (
+                <g className="bubbles">
+                    {[...Array(15)].map((_, i) => {
+                        const size = Math.random() * 2 + 1;
+                        const x = Math.random() * (tubeWidth - size * 2) + size;
+                        const delay = Math.random() * 5;
+                        const duration = Math.random() * 3 + 2;
+                        return (
+                            <circle
+                                key={i}
+                                cx={x}
+                                cy={tubeHeight + 5}
+                                r={size}
+                                fill="white"
+                                style={{
+                                    animation: `bubble-rise ${duration}s ease-in-out ${delay}s infinite`,
+                                    opacity: 0,
+                                }}
+                            />
+                        )
+                    })}
+                </g>
+            )}
         </g>
 
         {/* Glass highlight effect */}
@@ -140,6 +164,24 @@ export function ScoreTube({ score }: ScoreTubeProps) {
        >
         {Math.round(score)}%
       </p>
+      <style jsx>{`
+        @keyframes bubble-rise {
+          0% {
+            transform: translateY(0);
+            opacity: 0;
+          }
+          50% {
+            opacity: 0.7;
+          }
+          90% {
+            transform: translateY(-${tubeHeight + 10}px) translateX(${Math.random() > 0.5 ? '' : '-'}2px);
+          }
+          100% {
+            transform: translateY(-${tubeHeight + 15}px);
+            opacity: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
