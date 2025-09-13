@@ -54,6 +54,7 @@ export interface Question extends CalendarQuestion, MentalMathQuestion {
   paymentImages?: { name: string, image: string }[];
   items?: { name: string, image: string, value: number }[];
   correctValue?: number;
+  boxLabel?: string;
 }
 
 export interface CalculationSettings {

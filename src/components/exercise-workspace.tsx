@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2 } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Archive } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings } from '@/lib/questions';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
@@ -668,7 +668,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
 const renderSelectMultiple = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-4">
-        {/* Item cloud */}
+        {exerciseData.boxLabel && (
+             <div className="flex flex-col items-center justify-center gap-2 mb-4 p-4 rounded-lg bg-muted/50 w-full max-w-sm">
+                <Archive className="h-12 w-12 text-muted-foreground"/>
+                <p className="font-bold text-2xl text-secondary-foreground">{exerciseData.boxLabel}</p>
+            </div>
+        )}
         <Card className="w-full p-4">
             <CardContent className="flex flex-wrap items-center justify-center gap-3 p-0">
                 {exerciseData.items?.map((item, index) => (
@@ -676,20 +681,19 @@ const renderSelectMultiple = () => (
                         key={index}
                         onClick={() => handleToggleSelectItem(index)}
                         disabled={!!feedback}
-                        className={cn("h-auto p-2 rounded-lg transform active:scale-95 transition-all",
-                            selectedIndices.includes(index) ? 'ring-4 ring-accent' : 'ring-2 ring-transparent',
-                            feedback === 'correct' && selectedIndices.includes(index) && 'ring-green-500',
-                            feedback === 'incorrect' && selectedIndices.includes(index) && 'ring-red-500 animate-shake',
-                            feedback && !selectedIndices.includes(index) && 'opacity-50'
+                        className={cn(
+                            "h-auto p-2 rounded-lg transform transition-all duration-300",
+                            selectedIndices.includes(index) ? '-translate-y-4' : 'translate-y-0',
+                            feedback === 'correct' && selectedIndices.includes(index) && 'opacity-100',
+                            feedback === 'incorrect' && selectedIndices.includes(index) && 'opacity-100 animate-shake',
+                            feedback && !selectedIndices.includes(index) && 'opacity-30'
                         )}
                     >
-                        <img src={item.image} alt={item.name} className="h-20 object-contain" />
+                        <img src={item.image} alt={item.name} className="h-20 sm:h-24 object-contain" />
                     </button>
                 ))}
             </CardContent>
         </Card>
-
-        {/* Action buttons */}
         <div className="flex w-full gap-4 pt-4">
             <Button
                 size="lg"

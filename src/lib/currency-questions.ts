@@ -41,44 +41,21 @@ const generateRecognitionQCM = (itemType: 'pièce' | 'billet'): Question => {
     };
 }
 
-// Question type 3: Associate label with coin
-const generateLabelQCM = (): Question => {
-    const coins = currency.filter(c => c.type === 'pièce');
-    const correctCoin = coins[Math.floor(Math.random() * coins.length)];
-    
-    const distractors = new Set<typeof correctCoin>();
-    while(distractors.size < 2) {
-        const randomCoin = coins[Math.floor(Math.random() * coins.length)];
-        if(randomCoin.value !== correctCoin.value) {
-            distractors.add(randomCoin);
-        }
-    }
-    
-    const options = [correctCoin, ...Array.from(distractors)].sort(() => Math.random() - 0.5);
-
-    return {
-        id: Date.now(),
-        level: 'A',
-        type: 'image-qcm',
-        question: `Où est la pièce de ${correctCoin.name} ?`,
-        answer: correctCoin.name,
-        images: options.map(item => ({ src: item.image, alt: item.name })),
-        currencySettings: { difficulty: 0 },
-    };
-}
 
 // Question type 4 & 5: Sort coins/bills
 const generateSortingQuestion = (sortType: 'euros-vs-cents' | 'coins-vs-bills'): Question => {
+    // Show a mix of coins and bills to make it more realistic
     const itemsToShow = currency.sort(() => Math.random() - 0.5).slice(0, 7);
     
-    let question = '';
+    let question = "Qu'est-ce qui va dans la boîte ?";
     let correctValue = 0; // The 'value' we will check against
+    let boxLabel = '';
 
     if (sortType === 'euros-vs-cents') {
-        question = "Trie les pièces : mets les EUROS dans la boîte.";
+        boxLabel = 'EUROS';
         correctValue = 1; // Represents items >= 1 euro
     } else { // coins-vs-bills
-        question = "Sépare les pièces et les billets : mets les BILLETS dans la boîte.";
+        boxLabel = 'BILLETS';
         correctValue = 2; // Represents items of type 'billet'
     }
 
@@ -87,6 +64,7 @@ const generateSortingQuestion = (sortType: 'euros-vs-cents' | 'coins-vs-bills'):
         level: 'A',
         type: 'select-multiple',
         question: question,
+        boxLabel: boxLabel,
         items: itemsToShow.map(item => ({
             name: item.name,
             image: item.image,
@@ -107,9 +85,9 @@ export async function generateCurrencyQuestion(settings: CurrencySettings): Prom
     // --- LEVEL A ---
     if (difficulty === 0) {
         const questionType = Math.random();
-        if (questionType < 0.25) return generateRecognitionQCM('pièce');
-        if (questionType < 0.5) return generateRecognitionQCM('billet');
-        if (questionType < 0.75) return generateSortingQuestion('coins-vs-bills');
+        if (questionType < 0.3) return generateRecognitionQCM('pièce');
+        if (questionType < 0.6) return generateRecognitionQCM('billet');
+        if (questionType < 0.8) return generateSortingQuestion('coins-vs-bills');
         return generateSortingQuestion('euros-vs-cents');
     }
 
