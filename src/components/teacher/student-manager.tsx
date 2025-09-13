@@ -19,9 +19,6 @@ import { Switch } from '@/components/ui/switch';
 import { skills as availableSkills, type SkillLevel, allSkillCategories } from '@/lib/skills';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-
 
 const skillLevels: { value: SkillLevel, label: string }[] = [
     { value: 'A', label: 'A - Maternelle' },
@@ -146,73 +143,16 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         setEditedEnabledSkills(prev => ({...prev, [skillSlug]: isEnabled}));
     };
     
-    const skillsByLevelType = useMemo(() => {
-        const grouped: {
-            fixedA: typeof availableSkills,
-            fixedB: typeof availableSkills,
-            fixedC: typeof availableSkills,
-            fixedD: typeof availableSkills,
-            variable: typeof availableSkills,
-        } = { fixedA: [], fixedB: [], fixedC: [], fixedD: [], variable: [] };
-        
+    const skillsByCategory = useMemo(() => {
+        const grouped: Record<string, typeof availableSkills> = {};
+        allSkillCategories.forEach(cat => grouped[cat] = []);
         availableSkills.forEach(skill => {
-            if(skill.isFixedLevel === 'A') grouped.fixedA.push(skill);
-            else if(skill.isFixedLevel === 'B') grouped.fixedB.push(skill);
-            else if(skill.isFixedLevel === 'C') grouped.fixedC.push(skill);
-            else if(skill.isFixedLevel === 'D') grouped.fixedD.push(skill);
-            else grouped.variable.push(skill);
+            if (grouped[skill.category]) {
+                grouped[skill.category].push(skill);
+            }
         });
-
-        const sortWithinCategories = (skills: typeof availableSkills) => {
-             const byCategory: Record<string, typeof availableSkills> = {};
-             allSkillCategories.forEach(cat => byCategory[cat] = []);
-             skills.forEach(skill => {
-                if (byCategory[skill.category]) {
-                    byCategory[skill.category].push(skill);
-                }
-             });
-             return byCategory;
-        }
-
-        return {
-            fixedA: sortWithinCategories(grouped.fixedA),
-            fixedB: sortWithinCategories(grouped.fixedB),
-            fixedC: sortWithinCategories(grouped.fixedC),
-            fixedD: sortWithinCategories(grouped.fixedD),
-            variable: sortWithinCategories(grouped.variable),
-        };
-
+        return grouped;
     }, []);
-
-    const renderSkillToggles = (skillsByCategory: Record<string, typeof availableSkills>) => {
-        return (
-             <div className="space-y-3">
-                {allSkillCategories.map(category => {
-                    const skillsInCategory = skillsByCategory[category];
-                    if (!skillsInCategory || skillsInCategory.length === 0) return null;
-                    return (
-                        <div key={category}>
-                            <h4 className="font-medium text-sm text-muted-foreground mb-1">{category}</h4>
-                            <div className="space-y-1 p-2 rounded-lg bg-secondary/30">
-                                {skillsInCategory.map(skill => (
-                                    <div key={skill.slug} className="flex items-center justify-between p-1 bg-card rounded-md shadow-sm">
-                                        <Label htmlFor={`skill-switch-${skill.slug}`} className="text-sm font-medium pl-2">
-                                            {skill.name}
-                                        </Label>
-                                        <Switch
-                                            id={`skill-switch-${skill.slug}`}
-                                            checked={editedEnabledSkills[skill.slug] ?? false}
-                                            onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )
-                })}
-            </div>
-        )
-    };
 
     return (
         <>
@@ -272,10 +212,9 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                                 <TableCell className="font-mono font-bold">{student.code}</TableCell>
                                                 <TableCell>
                                                     <div className="flex gap-1 flex-wrap">
-                                                    {student.levels && Object.entries(student.levels).length > 0 ? (
+                                                    {(student.levels && Object.entries(student.levels).length > 0) ? (
                                                         Object.entries(student.levels).map(([skillSlug, level]) => {
                                                             const skillInfo = availableSkills.find(s => s.slug === skillSlug);
-                                                            // Only show variable level badges
                                                             if (skillInfo && !skillInfo.isFixedLevel) {
                                                                 return (
                                                                      <Tooltip key={skillSlug}>
@@ -338,105 +277,66 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                     <DialogHeader>
                         <DialogTitle>Modifier les informations de {editingStudent?.name}</DialogTitle>
                     </DialogHeader>
-                     <Tabs defaultValue="general" className="pt-4">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="general">Général & Exercices</TabsTrigger>
-                            <TabsTrigger value="levels">Niveaux de compétence</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="general" className="h-full">
-                           <ScrollArea className="h-[calc(80vh-150px)]">
-                                <div className="space-y-6 py-4 pr-6">
-                                     <div className='space-y-4 grid grid-cols-2 gap-4'>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="edit-name">Prénom</Label>
-                                            <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label htmlFor="edit-code">Code Secret</Label>
-                                            <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <h3 className="font-semibold border-b pb-2 mb-4">Exercices activés</h3>
-                                        <Accordion type="multiple" className="w-full space-y-1">
-                                            <AccordionItem value="var">
-                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU VARIABLE</AccordionTrigger>
-                                                <AccordionContent className="p-2">
-                                                    {renderSkillToggles(skillsByLevelType.variable)}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                            <AccordionItem value="fix-a">
-                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU FIXE A</AccordionTrigger>
-                                                <AccordionContent className="p-2">
-                                                    {renderSkillToggles(skillsByLevelType.fixedA)}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                            <AccordionItem value="fix-b">
-                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU FIXE B</AccordionTrigger>
-                                                <AccordionContent className="p-2">
-                                                    {renderSkillToggles(skillsByLevelType.fixedB)}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                            <AccordionItem value="fix-c">
-                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU FIXE C</AccordionTrigger>
-                                                <AccordionContent className="p-2">
-                                                    {renderSkillToggles(skillsByLevelType.fixedC)}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                             <AccordionItem value="fix-d">
-                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU FIXE D</AccordionTrigger>
-                                                <AccordionContent className="p-2">
-                                                    {renderSkillToggles(skillsByLevelType.fixedD)}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        </Accordion>
-                                    </div>
+                     <ScrollArea className="h-[calc(80vh-150px)]">
+                        <div className="space-y-6 py-4 pr-6">
+                            <div className='space-y-4 grid grid-cols-2 gap-4'>
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-name">Prénom</Label>
+                                    <Input id="edit-name" value={editedName} onChange={(e) => setEditedName(e.target.value)} />
                                 </div>
-                            </ScrollArea>
-                        </TabsContent>
-                        
-                        <TabsContent value="levels" className="h-full">
-                             <ScrollArea className="h-[calc(80vh-150px)]">
-                                <div className="space-y-4 py-4 pr-6">
-                                    <h3 className="font-semibold border-b pb-2">Niveaux de compétence</h3>
-                                    {allSkillCategories.map(category => {
-                                        const skillsInCategory = Object.values(skillsByLevelType).flatMap(levelGroup => levelGroup[category] || []).filter(skill => !skill.isFixedLevel);
-                                        if (skillsInCategory.length === 0) return null;
-                                        return (
-                                            <div key={category}>
-                                                <h4 className="font-medium text-sm text-muted-foreground mb-2">{category}</h4>
-                                                <div className="space-y-2">
-                                                    {skillsInCategory.map(skill => (
-                                                        <div key={skill.slug} className="grid grid-cols-3 items-center gap-2">
-                                                            <Label htmlFor={`level-${skill.slug}`} className="text-right text-xs sm:text-sm">
-                                                                {skill.name}
-                                                            </Label>
-                                                            <Select 
-                                                                value={editedLevels[skill.slug]} 
-                                                                onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
-                                                            >
-                                                                <SelectTrigger className="col-span-2 h-9">
-                                                                    <SelectValue placeholder="Choisir..." />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {skill.allowedLevels?.map(level => (
-                                                                        <SelectItem key={level} value={level}>{skillLevels.find(sl => sl.value === level)?.label || level}</SelectItem>
-                                                                    )) || skillLevels.map(level => (
-                                                                        <SelectItem key={level.value} value={level.value}>{level.label}</SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )
-                                    })}
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-code">Code Secret</Label>
+                                    <Input id="edit-code" value={editedCode} onChange={(e) => setEditedCode(e.target.value.replace(/[^0-9]/g, ''))} maxLength={4} />
                                 </div>
-                            </ScrollArea>
-                        </TabsContent>
-                    </Tabs>
+                            </div>
+                            
+                            <div className="space-y-4">
+                               <h3 className="font-semibold border-b pb-2 mb-4">Exercices et Niveaux</h3>
+                               {allSkillCategories.map(category => {
+                                   const skillsInCategory = skillsByCategory[category];
+                                   if (!skillsInCategory || skillsInCategory.length === 0) return null;
+                                   return (
+                                     <div key={category} className="space-y-2">
+                                         <h4 className="font-medium text-sm text-muted-foreground">{category}</h4>
+                                         <div className="space-y-2 rounded-lg bg-secondary/30 p-3">
+                                             {skillsInCategory.map(skill => (
+                                                 <div key={skill.slug} className="flex items-center justify-between p-1.5 bg-card rounded-md shadow-sm gap-2">
+                                                     <Label htmlFor={`skill-switch-${skill.slug}`} className="text-sm font-medium pl-2 flex-grow">
+                                                         {skill.name}
+                                                     </Label>
+                                                      {!skill.isFixedLevel && (
+                                                        <Select 
+                                                            value={editedLevels[skill.slug]} 
+                                                            onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
+                                                            disabled={!editedEnabledSkills[skill.slug]}
+                                                        >
+                                                            <SelectTrigger className="w-24 h-8 text-xs">
+                                                                <SelectValue placeholder="Niv." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {(skill.allowedLevels || ['A', 'B', 'C', 'D']).map(level => (
+                                                                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                     )}
+                                                     {skill.isFixedLevel && (
+                                                         <Badge variant="outline" className="w-24 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
+                                                     )}
+                                                     <Switch
+                                                         id={`skill-switch-${skill.slug}`}
+                                                         checked={editedEnabledSkills[skill.slug] ?? false}
+                                                         onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
+                                                     />
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     </div>
+                                   )
+                               })}
+                            </div>
+                        </div>
+                    </ScrollArea>
                     <DialogFooter>
                         <DialogClose asChild>
                             <Button type="button" variant="secondary">Annuler</Button>
@@ -451,3 +351,4 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         </>
     );
 }
+
