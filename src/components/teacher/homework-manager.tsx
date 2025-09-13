@@ -12,11 +12,11 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { type Group } from '@/services/groups';
 import { type Student } from '@/services/students';
-import { skills, type Skill } from '@/lib/skills';
+import { skills, getSkillBySlug, type Skill } from '@/lib/skills';
 import { saveHomework, type Homework, type Assignment, HomeworkResult } from '@/services/homework';
 import { getSpellingLists, SpellingList } from '@/services/spelling';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, CheckCircle, XCircle, Users } from 'lucide-react';
+import { Loader2, Save, CheckCircle, XCircle, Users, BrainCircuit } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface HomeworkManagerProps {
@@ -80,22 +80,27 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
     setIsSaving(false);
   };
   
-  const getCompletionStatus = (studentId: string, assignedSkillSlug: string | null) => {
-      if (!assignedSkillSlug) return 'not-assigned';
-      const dateId = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
-      if (!dateId) return 'not-assigned';
+  const getCompletionStatus = (studentId: string, assignedSkillSlug: string | null): { status: 'completed' | 'pending' | 'not-assigned', completedAt?: Date } => {
+    if (!assignedSkillSlug) return { status: 'not-assigned' };
+    
+    const dateId = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+    if (!dateId) return { status: 'not-assigned' };
+    
+    const isOrtho = assignedSkillSlug.startsWith('D'); // e.g. D1-lundi
 
-      const hasCompleted = allHomeworkResults.some(result => 
-          result.userId === studentId && 
-          result.date === dateId && 
-          (
-            result.skillSlug === assignedSkillSlug ||
-            // Handle dynamic slugs like orthographe-D1-lundi
-            (assignedSkillSlug.startsWith('orthographe') && result.skillSlug.startsWith(assignedSkillSlug))
-          )
-      );
+    const result = allHomeworkResults.find(res => {
+        if (res.userId !== studentId || res.date !== dateId) return false;
+        if (isOrtho) {
+            return res.skillSlug.includes(assignedSkillSlug);
+        }
+        return res.skillSlug === assignedSkillSlug;
+    });
+
+    if (result) {
+        return { status: 'completed', completedAt: result.createdAt ? new Date(result.createdAt as any) : undefined };
+    }
       
-      return hasCompleted ? 'completed' : 'pending';
+    return { status: 'pending' };
   };
 
 
@@ -134,6 +139,11 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                 groups.map(group => {
                     const groupStudents = students.filter(s => s.groupId === group.id);
                     const groupAssignment = assignments[group.id] || {};
+
+                    const francaisIcon = getSkillBySlug(groupAssignment.francais || '')?.icon;
+                    const mathsIcon = getSkillBySlug(groupAssignment.maths || '')?.icon;
+                    const isOrthoAssigned = groupAssignment.orthographe;
+
                     return (
                         <Card key={group.id} className="p-4 bg-secondary/50 overflow-hidden">
                              <div className="flex justify-between items-center mb-4">
@@ -193,12 +203,16 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                             </div>
                             {groupStudents.length > 0 && (
                                 <div className="mt-4 pt-4 border-t">
-                                    <h4 className="text-sm font-semibold mb-2">Statut des élèves</h4>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
+                                    <div className="flex justify-end gap-2 text-xs text-muted-foreground font-semibold pr-2">
+                                        {francaisIcon && <div className="w-4 h-4 flex items-center justify-center">{francaisIcon}</div>}
+                                        {mathsIcon && <div className="w-4 h-4 flex items-center justify-center">{mathsIcon}</div>}
+                                        {isOrthoAssigned && <div className="w-4 h-4 flex items-center justify-center"><BrainCircuit/></div>}
+                                    </div>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm mt-1">
                                         {groupStudents.map(student => {
                                             const francaisStatus = getCompletionStatus(student.id, groupAssignment.francais);
                                             const mathsStatus = getCompletionStatus(student.id, groupAssignment.maths);
-                                            const orthoStatus = getCompletionStatus(student.id, 'orthographe-' + groupAssignment.orthographe);
+                                            const orthoStatus = getCompletionStatus(student.id, groupAssignment.orthographe);
                                             
                                             return (
                                             <div key={student.id} className="flex items-center gap-2 p-2 bg-background rounded-md">
@@ -206,21 +220,27 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
                                                 <div className="flex gap-1.5">
                                                      <Tooltip>
                                                         <TooltipTrigger>
-                                                            {francaisStatus === 'completed' ? <CheckCircle className="h-4 w-4 text-green-600"/> : francaisStatus === 'pending' ? <XCircle className="h-4 w-4 text-red-600"/> : <div className="h-4 w-4"/>}
+                                                            {francaisStatus.status === 'completed' ? <CheckCircle className="h-4 w-4 text-green-600"/> : francaisStatus.status === 'pending' ? <XCircle className="h-4 w-4 text-red-600"/> : <div className="h-4 w-4"/>}
                                                         </TooltipTrigger>
-                                                        <TooltipContent><p>Français</p></TooltipContent>
+                                                         {francaisStatus.status === 'completed' && francaisStatus.completedAt && (
+                                                            <TooltipContent><p>Fait le {format(francaisStatus.completedAt, "d MMM, HH:mm", { locale: fr })}</p></TooltipContent>
+                                                         )}
                                                     </Tooltip>
                                                     <Tooltip>
                                                         <TooltipTrigger>
-                                                            {mathsStatus === 'completed' ? <CheckCircle className="h-4 w-4 text-green-600"/> : mathsStatus === 'pending' ? <XCircle className="h-4 w-4 text-red-600"/> : <div className="h-4 w-4"/>}
+                                                            {mathsStatus.status === 'completed' ? <CheckCircle className="h-4 w-4 text-green-600"/> : mathsStatus.status === 'pending' ? <XCircle className="h-4 w-4 text-red-600"/> : <div className="h-4 w-4"/>}
                                                         </TooltipTrigger>
-                                                        <TooltipContent><p>Maths</p></TooltipContent>
+                                                         {mathsStatus.status === 'completed' && mathsStatus.completedAt && (
+                                                            <TooltipContent><p>Fait le {format(mathsStatus.completedAt, "d MMM, HH:mm", { locale: fr })}</p></TooltipContent>
+                                                         )}
                                                     </Tooltip>
                                                      <Tooltip>
                                                         <TooltipTrigger>
-                                                            {orthoStatus === 'completed' ? <CheckCircle className="h-4 w-4 text-green-600"/> : orthoStatus === 'pending' ? <XCircle className="h-4 w-4 text-red-600"/> : <div className="h-4 w-4"/>}
+                                                            {orthoStatus.status === 'completed' ? <CheckCircle className="h-4 w-4 text-green-600"/> : orthoStatus.status === 'pending' ? <XCircle className="h-4 w-4 text-red-600"/> : <div className="h-4 w-4"/>}
                                                         </TooltipTrigger>
-                                                        <TooltipContent><p>Orthographe</p></TooltipContent>
+                                                         {orthoStatus.status === 'completed' && orthoStatus.completedAt && (
+                                                            <TooltipContent><p>Fait le {format(orthoStatus.completedAt, "d MMM, HH:mm", { locale: fr })}</p></TooltipContent>
+                                                         )}
                                                     </Tooltip>
                                                 </div>
                                             </div>
@@ -248,3 +268,4 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
     </div>
   );
 }
+
