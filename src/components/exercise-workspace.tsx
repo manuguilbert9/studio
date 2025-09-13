@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Archive, Banknote, Coins } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings } from '@/lib/questions';
-import { currency as currencyData, formatCurrency } from '@/lib/currency';
+import { currency as currencyData, formatCurrency, euroPiecesAndBillets } from '@/lib/currency';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryDisplay } from './score-history-display';
 import { Skeleton } from './ui/skeleton';
@@ -561,6 +561,18 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             matchColors={exerciseData.timeSettings?.matchColors}
             coloredHands={exerciseData.timeSettings?.coloredHands}
         />
+      ) : exerciseData.images && exerciseData.images.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          {exerciseData.images.map((image, index) => (
+            <img
+              key={index}
+              src={image.src}
+              alt={image.alt}
+              className="max-h-24 rounded-lg object-contain"
+              data-ai-hint={image.hint}
+            />
+          ))}
+        </div>
       ) : exerciseData.image ? (
         <img
           src={exerciseData.image}
@@ -751,7 +763,7 @@ const renderSelectMultiple = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-4">
         {exerciseData.boxLabel && (
              <div className="flex flex-col items-center justify-center gap-2 mb-4 p-4 rounded-lg bg-muted/50 w-full max-w-sm">
-                <Archive className="h-12 w-12 text-muted-foreground"/>
+                {exerciseData.boxLabel.includes('Pièces') ? <Coins className="h-12 w-12 text-muted-foreground"/> : <Banknote className="h-12 w-12 text-muted-foreground"/>}
                 <p className="font-bold text-2xl text-secondary-foreground">{exerciseData.boxLabel}</p>
             </div>
         )}
