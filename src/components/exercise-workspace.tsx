@@ -473,18 +473,6 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             matchColors={exerciseData.timeSettings?.matchColors}
             coloredHands={exerciseData.timeSettings?.coloredHands}
         />
-      ) : exerciseData.images && exerciseData.images.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          {exerciseData.images.map((image, index) => (
-            <img
-              key={index}
-              src={image.src}
-              alt={image.alt}
-              className="max-h-24 rounded-lg object-contain"
-              data-ai-hint={image.hint}
-            />
-          ))}
-        </div>
       ) : exerciseData.image ? (
         <img
           src={exerciseData.image}
@@ -521,6 +509,39 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       </div>
     </>
   );
+
+  const renderImageQCM = () => (
+    <div className="flex flex-col items-center justify-center space-y-8">
+      {exerciseData.syllable && (
+        <div className="font-mono text-7xl font-bold p-4 bg-secondary rounded-lg">{exerciseData.syllable}</div>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+        {exerciseData.images?.map((image, index) => (
+          <button
+            key={index}
+            onClick={() => handleQcmAnswer(image.alt)}
+            className={cn(
+              "p-4 border-4 rounded-lg transition-all duration-300 transform active:scale-95 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-accent",
+              feedback === 'correct' && image.alt === exerciseData.answer && 'border-green-500 scale-105',
+              feedback === 'incorrect' && image.alt !== exerciseData.answer && 'border-red-500 animate-shake',
+              feedback && image.alt !== exerciseData.answer && 'opacity-30',
+              feedback && image.alt === exerciseData.answer && 'border-green-500',
+              !feedback && 'border-transparent'
+            )}
+            disabled={!!feedback}
+          >
+            <img
+              src={image.src}
+              alt={image.alt}
+              className="w-full h-32 object-contain"
+              data-ai-hint={image.hint}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
   
   const renderAudioQCM = () => (
     <div className="flex flex-col items-center gap-6 w-full">
@@ -712,6 +733,7 @@ const renderSetTime = () => (
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
           {exerciseData.type === 'qcm' && renderQCM()}
+          {exerciseData.type === 'image-qcm' && renderImageQCM()}
           {exerciseData.type === 'compose-sum' && renderComposeSum()}
           {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
           {exerciseData.type === 'set-time' && renderSetTime()}
