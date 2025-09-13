@@ -24,6 +24,7 @@ import { ComplementDixExercise } from '@/components/complement-dix-exercise';
 import { SonAnExercise } from '@/components/son-an-exercise';
 import { NombresComplexesExercise } from '@/components/nombres-complexes-exercise';
 import { LettresEtSonsExercise } from '@/components/lettres-et-sons-exercise';
+import { DictationExercise } from '@/components/dictation-exercise';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -72,6 +73,8 @@ export default function ExercisePage() {
         return <NombresComplexesExercise />;
       case 'lettres-et-sons':
         return <LettresEtSonsExercise />;
+      case 'dictee':
+        return <DictationExercise />;
       case 'denombrement':
       case 'time':
       case 'lire-les-nombres':

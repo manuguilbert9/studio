@@ -24,6 +24,7 @@ import {
   ArrowRight,
   Target,
   ALargeSmall,
+  PenLine,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -93,6 +94,14 @@ export const skills: Skill[] = [
     icon: <Ear />,
     category: 'Phonologie',
     isFixedLevel: 'A',
+  },
+  {
+    name: 'Dictée',
+    slug: 'dictee',
+    description: 'Écoute un mot et écris-le correctement.',
+    icon: <PenLine />,
+    category: 'Orthographe',
+    allowedLevels: ['B', 'C'],
   },
   {
     name: 'Le son [an]',
