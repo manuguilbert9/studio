@@ -107,7 +107,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     // For configurable skills that ARE homework, use default settings
     else if (isHomework) {
        const defaultCalcSettings = { operations: 0, numberSize: 1, complexity: 0 };
-       const defaultCurrSettings = { difficulty: 1 };
+       const defaultCurrSettings = { difficulty: 0 };
        const defaultTimeSettings = { level: 'A' as SkillLevel, showMinuteCircle: true, matchColors: true, coloredHands: true };
        const defaultCountSettings = { maxNumber: 10 };
        const defaultNumberLevelSettings = { level: 'A' as SkillLevel };
@@ -668,6 +668,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
 const renderSelectMultiple = () => (
     <div className="flex flex-col items-center justify-center w-full space-y-4">
+        {/* Item cloud */}
         <Card className="w-full p-4">
             <CardContent className="flex flex-wrap items-center justify-center gap-3 p-0">
                 {exerciseData.items?.map((item, index) => (
@@ -675,19 +676,20 @@ const renderSelectMultiple = () => (
                         key={index}
                         onClick={() => handleToggleSelectItem(index)}
                         disabled={!!feedback}
-                        className={cn("h-auto p-1 rounded-md transform active:scale-95 transition-all",
+                        className={cn("h-auto p-2 rounded-lg transform active:scale-95 transition-all",
                             selectedIndices.includes(index) ? 'ring-4 ring-accent' : 'ring-2 ring-transparent',
                             feedback === 'correct' && selectedIndices.includes(index) && 'ring-green-500',
                             feedback === 'incorrect' && selectedIndices.includes(index) && 'ring-red-500 animate-shake',
                             feedback && !selectedIndices.includes(index) && 'opacity-50'
                         )}
                     >
-                        <img src={item.image} alt={item.name} className="h-14 object-contain" />
+                        <img src={item.image} alt={item.name} className="h-20 object-contain" />
                     </button>
                 ))}
             </CardContent>
         </Card>
 
+        {/* Action buttons */}
         <div className="flex w-full gap-4 pt-4">
             <Button
                 size="lg"
@@ -736,8 +738,8 @@ const renderSetTime = () => (
 
         <CardHeader>
           <CardTitle className={cn(
-            "text-center font-body",
-            isTableauMode ? "text-5xl" : "text-3xl"
+            "text-center font-body text-2xl sm:text-3xl",
+            isTableauMode && "text-5xl"
             )}>{exerciseData.question}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center space-y-8 min-h-[300px] p-4 sm:p-6">
