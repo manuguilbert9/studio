@@ -17,7 +17,6 @@ import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { getSpellingLists, type SpellingList } from '@/services/spelling';
-import { generateSpeech } from '@/ai/flows/tts-flow';
 
 const normalizeText = (text: string) => {
   return text.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -65,24 +64,35 @@ export function DictationExercise() {
 
   const currentWord = useMemo(() => words[currentWordIndex] || '', [words, currentWordIndex]);
 
-  const handleSpeak = useCallback(async (text: string) => {
-    if (!text) return;
-    setIsGeneratingAudio(true);
-    try {
-      const result = await generateSpeech(text);
-      const audio = new Audio(result.audioDataUri);
-      audio.play();
-    } catch (e) {
-      console.error("Audio generation failed:", e);
-    } finally {
-      setIsGeneratingAudio(false);
+  const handleSpeak = useCallback((text: string) => {
+    if (!text || !('speechSynthesis' in window)) return;
+    
+    // Quick check to prevent spamming
+    if (speechSynthesis.speaking) {
+      return;
     }
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'fr-FR';
+    
+    // Handle async nature of speech synthesis events
+    setIsGeneratingAudio(true);
+    utterance.onend = () => {
+      setIsGeneratingAudio(false);
+    };
+    utterance.onerror = (e) => {
+      console.error("Speech synthesis error:", e);
+      setIsGeneratingAudio(false);
+    };
+
+    speechSynthesis.speak(utterance);
   }, []);
   
   // Speak the word when it changes
   useEffect(() => {
     if (currentWord) {
-      handleSpeak(currentWord);
+      // Give a slight delay for the UI to update before speaking
+      setTimeout(() => handleSpeak(currentWord), 100);
     }
   }, [currentWord, handleSpeak]);
 
