@@ -42,20 +42,43 @@ const getLiquidColor = (score: number) => {
 
 export function ScoreTube({ score }: ScoreTubeProps) {
   const [fillHeight, setFillHeight] = useState(0);
+  const [waveOffset, setWaveOffset] = useState(0);
 
   useEffect(() => {
     const animationTimeout = setTimeout(() => setFillHeight(score), 100);
-    return () => clearTimeout(animationTimeout);
+    
+    const handleScroll = () => {
+      setWaveOffset(window.scrollY * 0.5);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+        clearTimeout(animationTimeout);
+        window.removeEventListener('scroll', handleScroll);
+    };
   }, [score]);
   
   const liquidColor = getLiquidColor(score);
   const isPerfectScore = score >= 100;
 
-  const tubeHeight = 75; // Reduced by 50%
-  const tubeWidth = 30; // Reduced by 50%
+  const tubeHeight = 75;
+  const tubeWidth = 30;
   const tubeRadius = tubeWidth / 2;
+  
   const liquidY = tubeHeight - (tubeHeight * fillHeight) / 100;
-  const liquidHeight = (tubeHeight * fillHeight) / 100;
+  
+  const waveAmplitude = fillHeight > 0 ? 1.5 : 0;
+  const waveLength = tubeWidth;
+
+  const liquidPath = `
+    M 0 ${liquidY + waveAmplitude * Math.sin(waveOffset / 10)}
+    C ${waveLength / 4} ${liquidY + waveAmplitude * Math.sin(waveOffset / 10 + Math.PI / 2)},
+      ${waveLength * 3 / 4} ${liquidY + waveAmplitude * Math.sin(waveOffset / 10 - Math.PI / 2)},
+      ${waveLength} ${liquidY + waveAmplitude * Math.sin(waveOffset / 10 + Math.PI)}
+    L ${tubeWidth},${tubeHeight}
+    L 0,${tubeHeight}
+    Z
+  `;
 
   const tubePath = `M0,0 V${tubeHeight-tubeRadius} A${tubeRadius},${tubeRadius} 0 0 0 ${tubeWidth},${tubeHeight-tubeRadius} V0 Z`;
   
@@ -92,14 +115,11 @@ export function ScoreTube({ score }: ScoreTubeProps) {
 
         {/* Liquid */}
         <g clipPath="url(#tubeClip)">
-            <rect
-                x="0"
-                y={liquidY}
-                width={tubeWidth}
-                height={liquidHeight}
+            <path
+                d={liquidPath}
                 fill={isPerfectScore ? "url(#highlightGradient)" : liquidColor}
                 style={{ 
-                    transition: 'y 1.5s ease-out, height 1.5s ease-out',
+                    transition: 'd 1.5s ease-out',
                 }}
             />
         </g>

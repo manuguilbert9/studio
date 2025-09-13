@@ -40,10 +40,20 @@ const getLiquidColor = (score: number) => {
 
 export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
   const [fillHeight, setFillHeight] = useState(0);
+  const [waveOffset, setWaveOffset] = useState(0);
 
   useEffect(() => {
     const animationTimeout = setTimeout(() => setFillHeight(score), 100);
-    return () => clearTimeout(animationTimeout);
+
+    const handleScroll = () => {
+      setWaveOffset(window.scrollY);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+        clearTimeout(animationTimeout);
+        window.removeEventListener('scroll', handleScroll);
+    };
   }, [score]);
   
   const liquidColor = getLiquidColor(score);
@@ -56,10 +66,22 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
   const flaskPath = "M 30,0 H 90 L 120,150 H 0 Z";
   
   const liquidY = viewBoxHeight - (viewBoxHeight * fillHeight) / 100;
-  const liquidHeight = (viewBoxHeight * fillHeight) / 100;
+  
+  const waveAmplitude = fillHeight > 0 ? 2 : 0;
+  const waveLength = viewBoxWidth;
+
+  const liquidPath = `
+    M 0 ${liquidY + waveAmplitude * Math.sin(waveOffset / 10)}
+    C ${waveLength / 4} ${liquidY + waveAmplitude * Math.sin(waveOffset / 10 + Math.PI / 2)},
+      ${waveLength * 3 / 4} ${liquidY + waveAmplitude * Math.sin(waveOffset / 10 - Math.PI / 2)},
+      ${waveLength} ${liquidY + waveAmplitude * Math.sin(waveOffset / 10 + Math.PI)}
+    L ${viewBoxWidth},${viewBoxHeight}
+    L 0,${viewBoxHeight}
+    Z
+  `;
 
   const textColor = fillHeight < 40 ? 'hsl(var(--foreground))' : 'hsl(var(--accent-foreground))';
-  const textY = liquidY + liquidHeight / 2 + 5;
+  const textY = liquidY + ((viewBoxHeight * fillHeight) / 100) / 2 + 5;
 
   return (
     <div className="relative flex flex-col items-center justify-center mb-6">
@@ -92,14 +114,11 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
 
         {/* Liquid */}
         <g clipPath="url(#erlenmeyerClip)">
-            <rect
-                x="0"
-                y={liquidY}
-                width={viewBoxWidth}
-                height={liquidHeight}
+            <path
+                d={liquidPath}
                 fill={isPerfectScore ? "url(#highlightGradientFlask)" : liquidColor}
                 style={{ 
-                    transition: 'y 1.5s ease-out, height 1.5s ease-out',
+                    transition: 'd 1.5s ease-out',
                 }}
             />
         </g>
