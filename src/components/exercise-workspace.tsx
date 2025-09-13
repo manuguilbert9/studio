@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Archive, Banknote, Coins } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Banknote, Coins } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings } from '@/lib/questions';
 import { currency as currencyData, formatCurrency, euroPiecesAndBillets } from '@/lib/currency';
@@ -131,16 +131,25 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [droppedItemId, setDroppedItemId] = useState<UniqueIdentifier | null>(null);
   const [isOverDropArea, setIsOverDropArea] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   
    const sensors = useSensors(
     useSensor(PointerSensor, {
-      // Require the mouse to move by 5px before activating
       activationConstraint: {
         distance: 5,
       },
     })
   );
+
+
+  useEffect(() => {
+    if (document.body && activeId) {
+        document.body.style.touchAction = 'none';
+        document.body.style.overflow = 'hidden';
+    } else if (document.body) {
+        document.body.style.touchAction = 'auto';
+        document.body.style.overflow = 'auto';
+    }
+  }, [activeId]);
 
 
   useEffect(() => {
@@ -334,19 +343,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     }
   }
   
-    const handleDragStart = (event: DragStartEvent) => {
-        setIsDragging(true);
-        setActiveId(event.active.id);
-        document.body.style.touchAction = 'none';
-        document.body.style.overflow = 'hidden';
-    };
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id);
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setIsDragging(false);
     setActiveId(null);
-    document.body.style.touchAction = 'auto';
-    document.body.style.overflow = 'auto';
-
     const { over, active } = event;
     setIsOverDropArea(false);
     
@@ -365,7 +367,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   }
 
   const handleAddToSum = (item: { name: string; value: number; image: string; hint?: string }) => {
-    setComposedAmount(prev => prev + item.value);
+    const isEurosOnly = currencySettings?.difficulty === 1;
+    if (isEurosOnly) {
+       setComposedAmount(prev => prev + item.value);
+    } else {
+       setComposedAmount(prev => parseFloat((prev + item.value).toFixed(2)));
+    }
     setSelectedCoins(prev => [...prev, {src: item.image, alt: item.name, value: item.value}].sort((a,b) => b.value - a.value));
   }
   
@@ -720,7 +727,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
         <Card className="w-full p-4">
             <CardContent className="flex flex-wrap items-center justify-center gap-2 p-0">
-                {currencyData.map((item) => (
+                {(currencySettings?.difficulty === 1 ? euroPiecesAndBillets : currencyData).map((item) => (
                     <Button 
                         key={item.name} 
                         variant="ghost" 
@@ -775,10 +782,10 @@ const renderSelectMultiple = () => (
                         onClick={() => handleToggleSelectItem(index)}
                         disabled={!!feedback}
                         className={cn(
-                            "h-auto p-2 rounded-lg transform transition-all duration-300",
-                            selectedIndices.includes(index) ? '-translate-y-4' : 'translate-y-0',
-                            feedback === 'correct' && selectedIndices.includes(index) && 'opacity-100',
-                            feedback === 'incorrect' && selectedIndices.includes(index) && 'opacity-100 animate-shake',
+                            "h-auto p-2 rounded-lg transition-all duration-300",
+                            selectedIndices.includes(index) ? 'ring-4 ring-accent -translate-y-2' : 'ring-2 ring-transparent',
+                            feedback === 'correct' && selectedIndices.includes(index) && 'ring-green-500',
+                            feedback === 'incorrect' && selectedIndices.includes(index) && 'ring-red-500 animate-shake',
                             feedback && !selectedIndices.includes(index) && 'opacity-30'
                         )}
                     >
