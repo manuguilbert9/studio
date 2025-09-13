@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
-import { DndContext, useDraggable, useDroppable, DragEndEvent, DragStartEvent, UniqueIdentifier } from '@dnd-kit/core';
+import { DndContext, useDraggable, useDroppable, DragEndEvent, DragStartEvent, UniqueIdentifier, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 
 
 const motivationalMessages = [
@@ -127,6 +127,15 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [droppedItemId, setDroppedItemId] = useState<UniqueIdentifier | null>(null);
   const [isOverDropArea, setIsOverDropArea] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  
+   const sensors = useSensors(
+    useSensor(PointerSensor, {
+      // Require the mouse to move by 5px before activating
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
 
 
   useEffect(() => {
@@ -773,7 +782,7 @@ const renderSelectMultiple = () => (
 );
 
 const renderDragAndDropRecognition = () => (
-    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={({ over }) => setIsOverDropArea(!!over)}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={({ over }) => setIsOverDropArea(!!over)}>
       <div className="flex flex-col items-center justify-center w-full space-y-8">
         <DroppableArea id="droppable-box" isOver={isOverDropArea}>
           <div className="flex flex-col items-center justify-center gap-2 h-40 w-64">
