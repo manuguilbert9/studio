@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Maximize, Minimize } from 'lucide-react';
+import { Tablet, TabletSmartphone } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Tooltip,
@@ -49,12 +50,12 @@ export function FullscreenToggle() {
         <Tooltip>
             <TooltipTrigger asChild>
                  <Button variant="ghost" size="icon" onClick={toggleFullscreen}>
-                    {isFullscreen ? <Minimize className="h-5 w-5" /> : <Maximize className="h-5 w-5" />}
-                    <span className="sr-only">{isFullscreen ? 'Quitter le plein écran' : 'Passer en plein écran'}</span>
+                    {isFullscreen ? <TabletSmartphone className="h-6 w-6" /> : <Tablet className="h-6 w-6" />}
+                    <span className="sr-only">{isFullscreen ? 'Quitter le mode tablette' : 'Passer en mode tablette'}</span>
                 </Button>
             </TooltipTrigger>
             <TooltipContent>
-                <p>{isFullscreen ? 'Quitter le plein écran' : 'Plein écran'}</p>
+                <p>{isFullscreen ? 'Quitter le mode tablette' : 'Mode tablette'}</p>
             </TooltipContent>
         </Tooltip>
     </TooltipProvider>

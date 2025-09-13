@@ -25,6 +25,7 @@ import { SonAnExercise } from '@/components/son-an-exercise';
 import { NombresComplexesExercise } from '@/components/nombres-complexes-exercise';
 import { LettresEtSonsExercise } from '@/components/lettres-et-sons-exercise';
 import { DictationExercise } from '@/components/dictation-exercise';
+import { FullscreenToggle } from '@/components/fullscreen-toggle';
 
 export default function ExercisePage() {
   const params = useParams();
@@ -107,7 +108,9 @@ export default function ExercisePage() {
               <CardTitle className="font-headline text-4xl">{skill.name}</CardTitle>
             </CardHeader>
           </Card>
-          <div className="w-10 sm:w-[150px]"></div>
+          <div className="w-10 sm:w-[150px] flex justify-end">
+            <FullscreenToggle />
+          </div>
         </header>
 
         <main>
