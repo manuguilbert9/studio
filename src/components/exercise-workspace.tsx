@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
-import { DndContext, useDraggable, useDroppable, DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
+import { DndContext, useDraggable, useDroppable, DragEndEvent, DragStartEvent, UniqueIdentifier } from '@dnd-kit/core';
 
 
 const motivationalMessages = [
@@ -49,7 +49,7 @@ interface ExerciseWorkspaceProps {
   isTableauMode?: boolean;
 }
 
-function DraggableItem({ id, children, isOver }: { id: UniqueIdentifier, children: React.ReactNode, isOver: boolean }) {
+function DraggableItem({ id, children }: { id: UniqueIdentifier, children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
@@ -126,6 +126,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   // State for Drag and Drop
   const [droppedItemId, setDroppedItemId] = useState<UniqueIdentifier | null>(null);
   const [isOverDropArea, setIsOverDropArea] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
 
   useEffect(() => {
@@ -318,7 +319,17 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     }
   }
   
+    const handleDragStart = () => {
+        setIsDragging(true);
+        document.body.style.touchAction = 'none';
+        document.body.style.overflow = 'hidden';
+    };
+
   const handleDragEnd = (event: DragEndEvent) => {
+    setIsDragging(false);
+    document.body.style.touchAction = 'auto';
+    document.body.style.overflow = 'auto';
+
     const { over, active } = event;
     setIsOverDropArea(false);
     
@@ -762,7 +773,7 @@ const renderSelectMultiple = () => (
 );
 
 const renderDragAndDropRecognition = () => (
-    <DndContext onDragEnd={handleDragEnd} onDragOver={({ over }) => setIsOverDropArea(!!over)}>
+    <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={({ over }) => setIsOverDropArea(!!over)}>
       <div className="flex flex-col items-center justify-center w-full space-y-8">
         <DroppableArea id="droppable-box" isOver={isOverDropArea}>
           <div className="flex flex-col items-center justify-center gap-2 h-40 w-64">
@@ -780,7 +791,7 @@ const renderDragAndDropRecognition = () => (
         </DroppableArea>
         <div className="flex flex-wrap items-center justify-center gap-4">
           {exerciseData.items?.filter(item => item.id !== droppedItemId).map(item => (
-            <DraggableItem key={item.id} id={item.id!} isOver={isOverDropArea}>
+            <DraggableItem key={item.id} id={item.id!}>
                 <div className="p-2 bg-card rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-grab active:cursor-grabbing">
                      <img src={item.image} alt={item.name} className="h-20 sm:h-24 object-contain" />
                 </div>
