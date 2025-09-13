@@ -156,7 +156,7 @@ export function LongCalculationExercise() {
     const [isLoading, setIsLoading] = useState(true);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
 
-    const generateProblemsForLevel = (lvl: SkillLevel) => {
+    const generateProblemsForLevel = useCallback((lvl: SkillLevel) => {
         let newProblems: Problem[] = [];
         switch (lvl) {
             case 'B':
@@ -183,7 +183,7 @@ export function LongCalculationExercise() {
         }
         setProblems(newProblems.sort(() => Math.random() - 0.5));
         setIsLoading(false);
-    };
+    }, []);
     
     useEffect(() => {
         if(level === null && student) {
@@ -199,7 +199,7 @@ export function LongCalculationExercise() {
             setIsLoading(true);
             generateProblemsForLevel(level);
         }
-    }, [level]);
+    }, [level, generateProblemsForLevel]);
 
 
     const currentProblem = useMemo(() => {
