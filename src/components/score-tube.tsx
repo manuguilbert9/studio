@@ -87,7 +87,7 @@ export function ScoreTube({ score }: ScoreTubeProps) {
           d={tubePath}
           stroke="hsl(var(--foreground) / 0.5)"
           strokeWidth="2"
-          fill="hsl(var(--card))"
+          fill="transparent"
         />
 
         {/* Liquid */}

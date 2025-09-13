@@ -87,7 +87,7 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
           d={flaskPath}
           stroke="hsl(var(--foreground) / 0.5)"
           strokeWidth="3"
-          fill="hsl(var(--card))"
+          fill="transparent"
         />
 
         {/* Liquid */}
