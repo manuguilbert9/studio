@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -16,10 +17,10 @@ interface CurrencySettingsProps {
 }
 
 const difficultyDesc = [
-  "Niveau 1 : Faire une somme exacte (pièces et billets simples)",
-  "Niveau 2 : Faire une somme exacte (toutes pièces et billets)",
-  "Niveau 3 : Calculer une somme à partir d'images",
-  "Niveau 4 : Rendre la monnaie",
+  "Niveau A : Reconnaissance des pièces et billets",
+  "Niveau B : Faire une somme exacte",
+  "Niveau C : Calculer une somme",
+  "Niveau D : Rendre la monnaie",
 ];
 
 export function CurrencySettings({ onStart }: CurrencySettingsProps) {

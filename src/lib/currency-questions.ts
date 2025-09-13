@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { currency, formatCurrency } from './currency';
@@ -12,23 +13,108 @@ const getRandomAmount = (max: number, multipleOfFive: boolean = false): number =
     return parseFloat(amount.toFixed(2));
 }
 
+// --- LEVEL A: RECOGNITION ---
+
+// Question type 1 & 2: Show me the X coin/bill.
+const generateRecognitionQCM = (itemType: 'pièce' | 'billet'): Question => {
+    const items = currency.filter(c => c.type === itemType);
+    const correctItem = items[Math.floor(Math.random() * items.length)];
+    
+    const distractors = new Set<typeof correctItem>();
+    while(distractors.size < 2) {
+        const randomItem = items[Math.floor(Math.random() * items.length)];
+        if(randomItem.value !== correctItem.value) {
+            distractors.add(randomItem);
+        }
+    }
+    
+    const options = [correctItem, ...Array.from(distractors)].sort(() => Math.random() - 0.5);
+
+    return {
+        id: Date.now(),
+        level: 'A',
+        type: 'image-qcm',
+        question: `Montre-moi ${itemType === 'pièce' ? 'la pièce de' : 'le billet de'} ${correctItem.name}.`,
+        answer: correctItem.name,
+        images: options.map(item => ({ src: item.image, alt: item.name })),
+        currencySettings: { difficulty: 0 },
+    };
+}
+
+// Question type 3: Associate label with coin
+const generateLabelQCM = (): Question => {
+    const coins = currency.filter(c => c.type === 'pièce');
+    const correctCoin = coins[Math.floor(Math.random() * coins.length)];
+    
+    const distractors = new Set<typeof correctCoin>();
+    while(distractors.size < 2) {
+        const randomCoin = coins[Math.floor(Math.random() * coins.length)];
+        if(randomCoin.value !== correctCoin.value) {
+            distractors.add(randomCoin);
+        }
+    }
+    
+    const options = [correctCoin, ...Array.from(distractors)].sort(() => Math.random() - 0.5);
+
+    return {
+        id: Date.now(),
+        level: 'A',
+        type: 'image-qcm',
+        question: `Où est la pièce de ${correctCoin.name} ?`,
+        answer: correctCoin.name,
+        images: options.map(item => ({ src: item.image, alt: item.name })),
+        currencySettings: { difficulty: 0 },
+    };
+}
+
+// Question type 4 & 5: Sort coins/bills
+const generateSortingQuestion = (sortType: 'euros-vs-cents' | 'coins-vs-bills'): Question => {
+    const itemsToShow = currency.sort(() => Math.random() - 0.5).slice(0, 7);
+    
+    let question = '';
+    let correctValue = 0; // The 'value' we will check against
+
+    if (sortType === 'euros-vs-cents') {
+        question = "Trie les pièces : mets les EUROS dans la boîte.";
+        correctValue = 1; // Represents items >= 1 euro
+    } else { // coins-vs-bills
+        question = "Sépare les pièces et les billets : mets les BILLETS dans la boîte.";
+        correctValue = 2; // Represents items of type 'billet'
+    }
+
+    return {
+        id: Date.now(),
+        level: 'A',
+        type: 'select-multiple',
+        question: question,
+        items: itemsToShow.map(item => ({
+            name: item.name,
+            image: item.image,
+            // We'll use the 'value' field to encode the correct category
+            value: (sortType === 'euros-vs-cents') 
+                ? (item.value >= 1 ? 1 : 0) // 1 for euros, 0 for cents
+                : (item.type === 'billet' ? 2 : 3) // 2 for billets, 3 for coins
+        })),
+        correctValue: correctValue, // This is what we check against
+        currencySettings: { difficulty: 0 },
+    }
+}
+
+
 export async function generateCurrencyQuestion(settings: CurrencySettings): Promise<Question> {
     const { difficulty } = settings;
 
+    // --- LEVEL A ---
+    if (difficulty === 0) {
+        const questionType = Math.random();
+        if (questionType < 0.25) return generateRecognitionQCM('pièce');
+        if (questionType < 0.5) return generateRecognitionQCM('billet');
+        if (questionType < 0.75) return generateSortingQuestion('coins-vs-bills');
+        return generateSortingQuestion('euros-vs-cents');
+    }
+
+    // --- OTHER LEVELS (to be implemented) ---
     switch (difficulty) {
-        // Niveau 1: Faire une somme exacte (pièces et billets simples)
-        case 0: {
-            const targetAmount = getRandomAmount(10, true);
-            return {
-                id: Date.now(),
-                level: 'A',
-                type: 'compose-sum',
-                question: `Fais une somme de ${formatCurrency(targetAmount)}.`,
-                targetAmount: targetAmount,
-                currencySettings: settings,
-            };
-        }
-        
         // Niveau 2: Faire une somme exacte (toutes pièces et billets)
         case 1: {
             const targetAmount = getRandomAmount(50, true);
@@ -95,6 +181,6 @@ export async function generateCurrencyQuestion(settings: CurrencySettings): Prom
         }
 
         default:
-             return generateCurrencyQuestion({ difficulty: 0 }); // Fallback
+             return generateCurrencyQuestion({ difficulty: 1 }); // Fallback
     }
 }
