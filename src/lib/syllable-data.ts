@@ -45,5 +45,5 @@ export const syllableAttackData: SyllableData[] = [
   { syllable: 'to', word: 'tomate', image: '/images/syllables/tomate.png' },
   { syllable: 'va', word: 'vache', image: '/images/syllables/vache.png' },
   { syllable: 'vé', word: 'vélo', image: '/images/syllables/velo.png' },
-  { syllable: 'vo', word: 'voiture', image: '/images/syllables/voiture.png' },
+  { syllable: 'voi', word: 'voiture', image: '/images/syllables/voiture.png' },
 ];
