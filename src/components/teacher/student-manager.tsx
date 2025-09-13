@@ -186,17 +186,17 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
 
     const renderSkillToggles = (skillsByCategory: Record<string, typeof availableSkills>) => {
         return (
-             <div className="space-y-4">
+             <div className="space-y-3">
                 {allSkillCategories.map(category => {
                     const skillsInCategory = skillsByCategory[category];
                     if (!skillsInCategory || skillsInCategory.length === 0) return null;
                     return (
                         <div key={category}>
-                            <h4 className="font-medium text-sm text-muted-foreground mb-2">{category}</h4>
-                            <div className="space-y-2 p-3 rounded-lg bg-secondary/30">
+                            <h4 className="font-medium text-sm text-muted-foreground mb-1">{category}</h4>
+                            <div className="space-y-1 p-2 rounded-lg bg-secondary/30">
                                 {skillsInCategory.map(skill => (
-                                    <div key={skill.slug} className="flex items-center justify-between p-2 bg-card rounded-lg shadow-sm">
-                                        <Label htmlFor={`skill-switch-${skill.slug}`} className="text-sm font-medium">
+                                    <div key={skill.slug} className="flex items-center justify-between p-1 bg-card rounded-md shadow-sm">
+                                        <Label htmlFor={`skill-switch-${skill.slug}`} className="text-sm font-medium pl-2">
                                             {skill.name}
                                         </Label>
                                         <Switch
@@ -261,7 +261,7 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                         <TableRow>
                                             <TableHead>Prénom</TableHead>
                                             <TableHead>Code Secret</TableHead>
-                                            <TableHead>Niveaux</TableHead>
+                                            <TableHead>Niveaux Variables</TableHead>
                                             <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -273,16 +273,23 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                                 <TableCell>
                                                     <div className="flex gap-1 flex-wrap">
                                                     {student.levels && Object.entries(student.levels).length > 0 ? (
-                                                        Object.entries(student.levels).map(([skill, level]) => (
-                                                            <Tooltip key={skill}>
-                                                                <TooltipTrigger asChild>
-                                                                    <Badge variant="secondary">{level}</Badge>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>{availableSkills.find(s => s.slug === skill)?.name || skill}</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        ))
+                                                        Object.entries(student.levels).map(([skillSlug, level]) => {
+                                                            const skillInfo = availableSkills.find(s => s.slug === skillSlug);
+                                                            // Only show variable level badges
+                                                            if (skillInfo && !skillInfo.isFixedLevel) {
+                                                                return (
+                                                                     <Tooltip key={skillSlug}>
+                                                                        <TooltipTrigger asChild>
+                                                                            <Badge variant="secondary">{level}</Badge>
+                                                                        </TooltipTrigger>
+                                                                        <TooltipContent>
+                                                                            <p>{skillInfo.name}</p>
+                                                                        </TooltipContent>
+                                                                    </Tooltip>
+                                                                )
+                                                            }
+                                                            return null;
+                                                        })
                                                     ) : (
                                                         <span className="text-muted-foreground text-xs">Aucun</span>
                                                     )}
@@ -352,34 +359,34 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
                                     </div>
                                     <div>
                                         <h3 className="font-semibold border-b pb-2 mb-4">Exercices activés</h3>
-                                        <Accordion type="multiple" className="w-full space-y-2">
+                                        <Accordion type="multiple" className="w-full space-y-1">
                                             <AccordionItem value="var">
-                                                <AccordionTrigger className="text-base font-semibold px-4 rounded-md bg-slate-100">NIVEAU VARIABLE</AccordionTrigger>
-                                                <AccordionContent className="p-4">
+                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU VARIABLE</AccordionTrigger>
+                                                <AccordionContent className="p-2">
                                                     {renderSkillToggles(skillsByLevelType.variable)}
                                                 </AccordionContent>
                                             </AccordionItem>
                                             <AccordionItem value="fix-a">
-                                                <AccordionTrigger className="text-base font-semibold px-4 rounded-md bg-slate-100">NIVEAU FIXE A</AccordionTrigger>
-                                                <AccordionContent className="p-4">
+                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU FIXE A</AccordionTrigger>
+                                                <AccordionContent className="p-2">
                                                     {renderSkillToggles(skillsByLevelType.fixedA)}
                                                 </AccordionContent>
                                             </AccordionItem>
                                             <AccordionItem value="fix-b">
-                                                <AccordionTrigger className="text-base font-semibold px-4 rounded-md bg-slate-100">NIVEAU FIXE B</AccordionTrigger>
-                                                <AccordionContent className="p-4">
+                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU FIXE B</AccordionTrigger>
+                                                <AccordionContent className="p-2">
                                                     {renderSkillToggles(skillsByLevelType.fixedB)}
                                                 </AccordionContent>
                                             </AccordionItem>
                                             <AccordionItem value="fix-c">
-                                                <AccordionTrigger className="text-base font-semibold px-4 rounded-md bg-slate-100">NIVEAU FIXE C</AccordionTrigger>
-                                                <AccordionContent className="p-4">
+                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU FIXE C</AccordionTrigger>
+                                                <AccordionContent className="p-2">
                                                     {renderSkillToggles(skillsByLevelType.fixedC)}
                                                 </AccordionContent>
                                             </AccordionItem>
                                              <AccordionItem value="fix-d">
-                                                <AccordionTrigger className="text-base font-semibold px-4 rounded-md bg-slate-100">NIVEAU FIXE D</AccordionTrigger>
-                                                <AccordionContent className="p-4">
+                                                <AccordionTrigger className="text-base font-semibold px-4 py-2 rounded-md bg-slate-100">NIVEAU FIXE D</AccordionTrigger>
+                                                <AccordionContent className="p-2">
                                                     {renderSkillToggles(skillsByLevelType.fixedD)}
                                                 </AccordionContent>
                                             </AccordionItem>
