@@ -82,6 +82,7 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
 
   const textColor = fillHeight < 40 ? 'hsl(var(--foreground))' : 'hsl(var(--accent-foreground))';
   const textY = liquidY + ((viewBoxHeight * fillHeight) / 100) / 2 + 5;
+  const textStyle: React.CSSProperties = isPerfectScore ? {} : { color: textColor };
 
   return (
     <div className="relative flex flex-col items-center justify-center mb-6">
@@ -138,11 +139,25 @@ export function ErlenmeyerFlask({ score }: ErlenmeyerFlaskProps) {
           fontSize="24"
           fontWeight="bold"
           fill={textColor}
-          className="font-headline"
+          className={cn("font-headline transition-all duration-[1500ms] ease-out", isPerfectScore && "fill-transparent") /* Hide original text fill */}
           style={{ transition: 'y 1.5s ease-out' }}
         >
           {Math.round(fillHeight)}%
         </text>
+         {isPerfectScore && (
+          <text
+            x={viewBoxWidth / 2}
+            y={textY}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fontSize="24"
+            fontWeight="bold"
+            className="font-headline bg-gradient-highlight text-transparent bg-clip-text"
+            style={{ fill: 'url(#highlightGradientFlask)', transition: 'y 1.5s ease-out' }}
+          >
+            {Math.round(fillHeight)}%
+          </text>
+        )}
       </svg>
     </div>
   );
