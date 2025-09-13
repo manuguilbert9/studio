@@ -2,7 +2,7 @@
 
 'use server';
 
-import { currency, formatCurrency } from './currency';
+import { currency, euroPiecesAndBillets, formatCurrency, allCoins } from './currency';
 import type { Question, CurrencySettings } from './questions';
 
 const getRandomAmount = (max: number, multipleOfFive: boolean = false): number => {
@@ -13,69 +13,29 @@ const getRandomAmount = (max: number, multipleOfFive: boolean = false): number =
     return parseFloat(amount.toFixed(2));
 }
 
-// --- LEVEL A: RECOGNITION ---
 
-// Question type 1 & 2: Show me the X coin/bill.
-const generateRecognitionQCM = (itemType: 'pièce' | 'billet'): Question => {
-    const items = currency.filter(c => c.type === itemType);
-    const correctItem = items[Math.floor(Math.random() * items.length)];
+const generateRecognitionDragAndDrop = (): Question => {
+    const correctItem = euroPiecesAndBillets[Math.floor(Math.random() * euroPiecesAndBillets.length)];
     
     const distractors = new Set<typeof correctItem>();
     while(distractors.size < 2) {
-        const randomItem = items[Math.floor(Math.random() * items.length)];
+        const randomItem = euroPiecesAndBillets[Math.floor(Math.random() * euroPiecesAndBillets.length)];
         if(randomItem.value !== correctItem.value) {
             distractors.add(randomItem);
         }
     }
     
-    const options = [correctItem, ...Array.from(distractors)].sort(() => Math.random() - 0.5);
+    const items = [correctItem, ...Array.from(distractors)].sort(() => Math.random() - 0.5);
 
     return {
         id: Date.now(),
         level: 'A',
-        type: 'image-qcm',
-        question: `Montre-moi ${itemType === 'pièce' ? 'la pièce de' : 'le billet de'} ${correctItem.name}.`,
+        type: 'drag-and-drop-recognition',
+        question: `Mets ${correctItem.type === 'pièce' ? 'la pièce de' : 'le billet de'} ${correctItem.name} dans la boîte.`,
         answer: correctItem.name,
-        images: options.map(item => ({ src: item.image, alt: item.name })),
+        items: items.map(item => ({ id: item.name, name: item.name, image: item.image, value: item.value })),
         currencySettings: { difficulty: 0 },
     };
-}
-
-
-// Question type 4 & 5: Sort coins/bills
-const generateSortingQuestion = (sortType: 'euros-vs-cents' | 'coins-vs-bills'): Question => {
-    // Show a mix of coins and bills to make it more realistic
-    const itemsToShow = currency.sort(() => Math.random() - 0.5).slice(0, 7);
-    
-    let question = "Qu'est-ce qui va dans la boîte ?";
-    let correctValue = 0; // The 'value' we will check against
-    let boxLabel = '';
-
-    if (sortType === 'euros-vs-cents') {
-        boxLabel = 'EUROS';
-        correctValue = 1; // Represents items >= 1 euro
-    } else { // coins-vs-bills
-        boxLabel = 'BILLETS';
-        correctValue = 2; // Represents items of type 'billet'
-    }
-
-    return {
-        id: Date.now(),
-        level: 'A',
-        type: 'select-multiple',
-        question: question,
-        boxLabel: boxLabel,
-        items: itemsToShow.map(item => ({
-            name: item.name,
-            image: item.image,
-            // We'll use the 'value' field to encode the correct category
-            value: (sortType === 'euros-vs-cents') 
-                ? (item.value >= 1 ? 1 : 0) // 1 for euros, 0 for cents
-                : (item.type === 'billet' ? 2 : 3) // 2 for billets, 3 for coins
-        })),
-        correctValue: correctValue, // This is what we check against
-        currencySettings: { difficulty: 0 },
-    }
 }
 
 
@@ -84,14 +44,10 @@ export async function generateCurrencyQuestion(settings: CurrencySettings): Prom
 
     // --- LEVEL A ---
     if (difficulty === 0) {
-        const questionType = Math.random();
-        if (questionType < 0.3) return generateRecognitionQCM('pièce');
-        if (questionType < 0.6) return generateRecognitionQCM('billet');
-        if (questionType < 0.8) return generateSortingQuestion('coins-vs-bills');
-        return generateSortingQuestion('euros-vs-cents');
+        return generateRecognitionDragAndDrop();
     }
 
-    // --- OTHER LEVELS (to be implemented) ---
+    // --- OTHER LEVELS ---
     switch (difficulty) {
         // Niveau 2: Faire une somme exacte (toutes pièces et billets)
         case 1: {
@@ -108,11 +64,12 @@ export async function generateCurrencyQuestion(settings: CurrencySettings): Prom
 
         // Niveau 3: Calculer une somme à partir d'images
         case 2: {
-            const numItems = Math.floor(Math.random() * 4) + 3; // 3 to 6 items
+            const numItems = Math.floor(Math.random() * 5) + 3; // 3 to 7 items
             const items = [];
             let totalValue = 0;
             for(let i=0; i < numItems; i++) {
-                const item = currency[Math.floor(Math.random() * currency.length)];
+                // Use all coins for this level
+                const item = allCoins[Math.floor(Math.random() * allCoins.length)];
                 items.push(item);
                 totalValue += item.value;
             }
@@ -142,8 +99,11 @@ export async function generateCurrencyQuestion(settings: CurrencySettings): Prom
         // Niveau 4: Rendre la monnaie
         case 3: {
              const cost = getRandomAmount(40, true); // e.g., 12.35
-             const paymentOptions = currency.filter(c => c.value > cost && c.value % 5 === 0); // 5, 10, 20, 50
-             const paymentBill = paymentOptions[Math.floor(Math.random() * paymentOptions.length)];
+             const paymentOptions = euroPiecesAndBillets.filter(c => c.value > cost && c.type === 'billet');
+             const paymentBill = paymentOptions.length > 0
+                ? paymentOptions[Math.floor(Math.random() * paymentOptions.length)]
+                : { name: '50€', value: 50.00, image: '/images/monnaie/50euros.png', type: 'billet' }; // Fallback
+             
              const change = parseFloat((paymentBill.value - cost).toFixed(2));
             
             return {
@@ -159,6 +119,6 @@ export async function generateCurrencyQuestion(settings: CurrencySettings): Prom
         }
 
         default:
-             return generateCurrencyQuestion({ difficulty: 1 }); // Fallback
+             return generateCurrencyQuestion({ difficulty: 0 }); // Fallback
     }
 }

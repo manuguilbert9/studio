@@ -8,7 +8,7 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Archive } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Archive, Banknote, Coins } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings } from '@/lib/questions';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
@@ -29,6 +29,7 @@ import { format } from 'date-fns';
 import { Input } from './ui/input';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
+import { DndContext, useDraggable, useDroppable, DragEndEvent, UniqueIdentifier } from '@dnd-kit/core';
 
 
 const motivationalMessages = [
@@ -47,6 +48,30 @@ interface ExerciseWorkspaceProps {
   skill: Skill;
   isTableauMode?: boolean;
 }
+
+function DraggableItem({ id, children, isOver }: { id: UniqueIdentifier, children: React.ReactNode, isOver: boolean }) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: 99,
+  } : undefined;
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      {children}
+    </div>
+  );
+}
+
+function DroppableArea({ id, children, isOver }: { id: UniqueIdentifier, children: React.ReactNode, isOver: boolean }) {
+  const { setNodeRef } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={cn("p-4 border-4 border-dashed rounded-lg transition-colors", isOver ? "border-primary bg-primary/10" : "border-muted")}>
+      {children}
+    </div>
+  );
+}
+
 
 export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWorkspaceProps) {
   const searchParams = useSearchParams();
@@ -97,6 +122,11 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   
   // State for audio/written QCMs
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  
+  // State for Drag and Drop
+  const [droppedItemId, setDroppedItemId] = useState<UniqueIdentifier | null>(null);
+  const [isOverDropArea, setIsOverDropArea] = useState(false);
+
 
   useEffect(() => {
     // For non-configurable skills
@@ -123,7 +153,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
        }
     }
     // For configurable skills in 'en-classe' mode, derive level from student profile
-    else if (['time', 'lire-les-nombres'].includes(skill.slug) && !isUserLoading && !isHomework) {
+    else if (['time', 'lire-les-nombres', 'currency'].includes(skill.slug) && !isUserLoading && !isHomework) {
         const studentLevel = student?.levels?.[skill.slug] || 'A';
         
         if (skill.slug === 'time') {
@@ -137,6 +167,9 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         }
         if (skill.slug === 'lire-les-nombres') {
             startNumberLevelExercise({level: studentLevel});
+        }
+        if (skill.slug === 'currency') {
+            startCurrencyExercise({difficulty: ['A','B','C','D'].indexOf(studentLevel) });
         }
     } else if (skill.slug === 'ecoute-les-nombres' && !isHomework) {
          generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
@@ -185,6 +218,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setSelectedIndices([]);
     setCountedIndices([]);
     setSelectedOption(null);
+    setDroppedItemId(null);
+    setIsOverDropArea(false);
     setFeedback(null);
   }
 
@@ -280,6 +315,24 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       processCorrectAnswer();
     } else {
       processIncorrectAnswer();
+    }
+  }
+  
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { over, active } = event;
+    setIsOverDropArea(false);
+    
+    if (over?.id === 'droppable-box' && active.id) {
+        setDroppedItemId(active.id); // For visual feedback
+        if (active.id === exerciseData?.answer) {
+            processCorrectAnswer();
+        } else {
+            setFeedback('incorrect');
+            setTimeout(() => {
+                setDroppedItemId(null);
+                setFeedback(null);
+            }, 800);
+        }
     }
   }
 
@@ -708,6 +761,36 @@ const renderSelectMultiple = () => (
     </div>
 );
 
+const renderDragAndDropRecognition = () => (
+    <DndContext onDragEnd={handleDragEnd} onDragOver={({ over }) => setIsOverDropArea(!!over)}>
+      <div className="flex flex-col items-center justify-center w-full space-y-8">
+        <DroppableArea id="droppable-box" isOver={isOverDropArea}>
+          <div className="flex flex-col items-center justify-center gap-2 h-40 w-64">
+            {droppedItemId === exerciseData.answer ? (
+                <Check className="h-24 w-24 text-green-500" />
+            ) : feedback === 'incorrect' && droppedItemId ? (
+                <X className="h-24 w-24 text-red-500" />
+            ) : (
+              <>
+                <Banknote className="h-16 w-16 text-muted-foreground" />
+                <p className="text-muted-foreground">Dépose ici</p>
+              </>
+            )}
+          </div>
+        </DroppableArea>
+        <div className="flex flex-wrap items-center justify-center gap-4">
+          {exerciseData.items?.filter(item => item.id !== droppedItemId).map(item => (
+            <DraggableItem key={item.id} id={item.id!} isOver={isOverDropArea}>
+                <div className="p-2 bg-card rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-grab active:cursor-grabbing">
+                     <img src={item.image} alt={item.name} className="h-20 sm:h-24 object-contain" />
+                </div>
+            </DraggableItem>
+          ))}
+        </div>
+      </div>
+    </DndContext>
+  );
+
 const renderSetTime = () => (
     <InteractiveClock
       hour={exerciseData.hour!}
@@ -751,6 +834,7 @@ const renderSetTime = () => (
           {exerciseData.type === 'image-qcm' && renderImageQCM()}
           {exerciseData.type === 'compose-sum' && renderComposeSum()}
           {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
+          {exerciseData.type === 'drag-and-drop-recognition' && renderDragAndDropRecognition()}
           {exerciseData.type === 'set-time' && renderSetTime()}
           {exerciseData.type === 'count' && renderCount()}
           {exerciseData.type === 'audio-qcm' && renderAudioQCM()}
@@ -768,7 +852,7 @@ const renderSetTime = () => (
                 {feedback === 'correct' && (
                     <div className="text-2xl font-bold text-green-600 animate-pulse">{motivationalMessage}</div>
                 )}
-                {feedback === 'incorrect' && (
+                {feedback === 'incorrect' && exerciseData.type !== 'drag-and-drop-recognition' && (
                     <div className="text-2xl font-bold text-red-600 animate-shake">Oups ! Essaye encore.</div>
                 )}
             </>

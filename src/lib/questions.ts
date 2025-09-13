@@ -16,7 +16,7 @@ import { generateCurrencyQuestion } from './currency-questions';
 
 
 export interface Question extends CalendarQuestion, MentalMathQuestion {
-  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple';
+  type: 'qcm' | 'set-time' | 'count' | 'audio-qcm' | 'written-to-audio-qcm' | 'audio-to-text-input' | 'keyboard-count' | 'image-qcm' | 'click-date' | 'count-days' | 'compose-sum' | 'select-multiple' | 'drag-and-drop-recognition';
   question: string;
   // For QCM
   options?: string[];
@@ -52,7 +52,7 @@ export interface Question extends CalendarQuestion, MentalMathQuestion {
   targetAmount?: number;
   cost?: number;
   paymentImages?: { name: string, image: string }[];
-  items?: { name: string, image: string, value: number }[];
+  items?: { id?: string | number, name: string, image: string, value: number }[];
   correctValue?: number;
   boxLabel?: string;
 }
