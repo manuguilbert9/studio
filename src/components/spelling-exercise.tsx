@@ -17,6 +17,11 @@ import Confetti from 'react-dom-confetti';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
 
+interface SpellingExerciseProps {
+    exerciseId: string;
+    onFinish: () => void;
+}
+
 export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps) {
   const searchParams = useSearchParams();
   const isHomework = searchParams.get('from') === 'devoirs';
@@ -58,7 +63,8 @@ export function SpellingExercise({ exerciseId, onFinish }: SpellingExerciseProps
       setList(foundList);
       const half = Math.ceil(foundList.words.length / 2);
       const sessionWords = session === 'lundi' ? foundList.words.slice(0, half) : foundList.words.slice(half);
-      setWords(sessionWords);
+      // Shuffle the words for the exercise
+      setWords(sessionWords.sort(() => Math.random() - 0.5));
       setIsLoading(false);
     }
     loadExercise();
