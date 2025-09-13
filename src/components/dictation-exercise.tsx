@@ -22,6 +22,9 @@ const normalizeText = (text: string) => {
   return text.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 };
 
+const shuffleArray = (array: any[]) => [...array].sort(() => Math.random() - 0.5);
+
+
 export function DictationExercise() {
   const { student } = useContext(UserContext);
   const searchParams = useSearchParams();
@@ -34,6 +37,7 @@ export function DictationExercise() {
   const [selectedList, setSelectedList] = useState<SpellingList | null>(null);
 
   const [words, setWords] = useState<string[]>([]);
+  const [displayedWords, setDisplayedWords] = useState<string[]>([]);
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [userInput, setUserInput] = useState('');
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
@@ -152,12 +156,16 @@ export function DictationExercise() {
     const list = availableLists.find(l => l.id === listId);
     if (!list) return;
     setSelectedList(list);
-    setWords(list.words.sort(() => Math.random() - 0.5));
+    // Shuffle dictation order
+    setWords(shuffleArray(list.words));
+    // Set a different shuffled order for display
+    setDisplayedWords(shuffleArray(list.words));
   };
   
   const restartExercise = () => {
     setSelectedList(null);
     setWords([]);
+    setDisplayedWords([]);
     setCurrentWordIndex(0);
     setUserInput('');
     setFeedback(null);
@@ -256,7 +264,7 @@ export function DictationExercise() {
           <CardHeader><CardTitle>Mots de la dictée</CardTitle></CardHeader>
           <CardContent>
             <ul className="space-y-1 text-lg font-body">
-              {words.map(word => <li key={word}>{word}</li>)}
+              {displayedWords.map(word => <li key={word}>{word}</li>)}
             </ul>
           </CardContent>
         </Card>
