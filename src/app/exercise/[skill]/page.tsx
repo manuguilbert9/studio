@@ -80,6 +80,7 @@ export default function ExercisePage() {
       case 'lire-les-nombres':
       case 'ecoute-les-nombres':
       case 'syllabe-attaque':
+      case 'currency':
       default:
         return <ExerciseWorkspace skill={skill} />;
     }

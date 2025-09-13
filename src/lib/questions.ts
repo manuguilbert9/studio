@@ -12,6 +12,7 @@ import { generateKeyboardCountQuestion } from "./keyboard-count-questions";
 import { generateEcouteLesNombresQuestion } from './number-listening-questions';
 import { generateNombresComplexesQuestion } from './complex-number-questions';
 import { generateLireLesNombresQuestion } from './reading-number-questions';
+import { generateCurrencyQuestion } from './currency-questions';
 
 
 export interface Question extends CalendarQuestion, MentalMathQuestion {
@@ -168,6 +169,14 @@ export async function generateQuestions(
   
   if (skill === 'mental-calculation' && settings?.numberLevel) {
       return generateMentalMathQuestions(settings.numberLevel.level, count);
+  }
+  
+  if (skill === 'currency' && settings?.currency) {
+      const questions: Question[] = [];
+      for (let i = 0; i < count; i++) {
+        questions.push(await generateCurrencyQuestion(settings.currency!));
+      }
+      return questions;
   }
 
 

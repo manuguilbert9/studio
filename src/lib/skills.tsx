@@ -237,6 +237,13 @@ export const skills: Skill[] = [
     allowedLevels: ['A', 'B', 'C', 'D'],
   },
   {
+    name: 'La Monnaie',
+    slug: 'currency',
+    description: 'Apprendre à utiliser les pièces et les billets en euros.',
+    icon: <PiggyBank />,
+    category: 'Grandeurs et mesures',
+  },
+  {
     name: 'Calendrier',
     slug: 'calendar',
     description: 'Se repérer dans le temps, lire les dates et les durées.',
@@ -279,6 +286,10 @@ export function difficultyLevelToString(
 
     if (skillSlug === 'time' && timeSettings) {
         return `Niveau ${timeSettings.level}`;
+    }
+
+    if (skillSlug === 'currency' && currSettings) {
+        return `Niveau ${currSettings.difficulty + 1}`;
     }
 
     if (skillSlug === 'denombrement') {
