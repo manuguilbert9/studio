@@ -49,12 +49,15 @@ interface ExerciseWorkspaceProps {
   isTableauMode?: boolean;
 }
 
-function DraggableItem({ id, children }: { id: UniqueIdentifier, children: React.ReactNode }) {
+function DraggableItem({ id, children, isDragging }: { id: UniqueIdentifier, children: React.ReactNode, isDragging: boolean }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id });
+  
   const style = transform ? {
-    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    zIndex: 99,
-  } : undefined;
+      position: 'relative' as const,
+      left: transform.x,
+      top: transform.y,
+      zIndex: isDragging ? 100 : 'auto',
+  } : {};
 
   return (
     <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
@@ -62,6 +65,7 @@ function DraggableItem({ id, children }: { id: UniqueIdentifier, children: React
     </div>
   );
 }
+
 
 function DroppableArea({ id, children, isOver }: { id: UniqueIdentifier, children: React.ReactNode, isOver: boolean }) {
   const { setNodeRef } = useDroppable({ id });
@@ -124,6 +128,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   
   // State for Drag and Drop
+  const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
   const [droppedItemId, setDroppedItemId] = useState<UniqueIdentifier | null>(null);
   const [isOverDropArea, setIsOverDropArea] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -230,6 +235,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setSelectedOption(null);
     setDroppedItemId(null);
     setIsOverDropArea(false);
+    setActiveId(null);
     setFeedback(null);
   }
 
@@ -328,14 +334,16 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     }
   }
   
-    const handleDragStart = () => {
+    const handleDragStart = (event: DragStartEvent) => {
         setIsDragging(true);
+        setActiveId(event.active.id);
         document.body.style.touchAction = 'none';
         document.body.style.overflow = 'hidden';
     };
 
   const handleDragEnd = (event: DragEndEvent) => {
     setIsDragging(false);
+    setActiveId(null);
     document.body.style.touchAction = 'auto';
     document.body.style.overflow = 'auto';
 
@@ -800,7 +808,7 @@ const renderDragAndDropRecognition = () => (
         </DroppableArea>
         <div className="flex flex-wrap items-center justify-center gap-4">
           {exerciseData.items?.filter(item => item.id !== droppedItemId).map(item => (
-            <DraggableItem key={item.id} id={item.id!}>
+            <DraggableItem key={item.id} id={item.id!} isDragging={activeId === item.id}>
                 <div className="p-2 bg-card rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-grab active:cursor-grabbing">
                      <img src={item.image} alt={item.name} className="h-20 sm:h-24 object-contain" />
                 </div>
