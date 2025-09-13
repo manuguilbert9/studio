@@ -8,9 +8,9 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
-import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight } from 'lucide-react';
+import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2 } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
-import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType } from '@/lib/questions';
+import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings } from '@/lib/questions';
 import { currency as currencyData, formatCurrency } from '@/lib/currency';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryDisplay } from './score-history-display';
@@ -27,6 +27,8 @@ import { addScore, getScoresForUser, Score } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { format } from 'date-fns';
 import { Input } from './ui/input';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Label } from './ui/label';
 
 
 const motivationalMessages = [
@@ -68,13 +70,20 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   const [currencySettings, setCurrencySettings] = useState<CurrSettings | null>(null);
   const [timeSettings, setTimeSettings] = useState<TimeSettingsType | null>(null);
   const [countSettings, setCountSettings] = useState<CountSettingsType | null>(null);
+  const [numberLevelSettings, setNumberLevelSettings] = useState<NumberLevelSettings | null>(null);
   const [isReadyToStart, setIsReadyToStart] = useState(false);
 
   // useRef to hold a stable reference to settings for the save effect
-  const timeSettingsRef = useRef(timeSettings);
+  const settingsRef = useRef<any>(null);
   useEffect(() => {
-    timeSettingsRef.current = timeSettings;
-  }, [timeSettings]);
+    settingsRef.current = {
+      time: timeSettings,
+      count: countSettings,
+      numberLevel: numberLevelSettings,
+      calculation: calculationSettings,
+      currency: currencySettings,
+    };
+  }, [timeSettings, countSettings, numberLevelSettings, calculationSettings, currencySettings]);
   
   // State for compose-sum
   const [composedAmount, setComposedAmount] = useState(0);
@@ -85,10 +94,13 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
   // State for count
   const [countedIndices, setCountedIndices] = useState<number[]>([]);
+  
+  // State for audio/written QCMs
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
   useEffect(() => {
     // For non-configurable skills
-    if (!['calculation', 'currency', 'time', 'denombrement'].includes(skill.slug)) {
+    if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
     } 
@@ -98,22 +110,30 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
        const defaultCurrSettings = { difficulty: 1 };
        const defaultTimeSettings = { level: 'A' as SkillLevel, showMinuteCircle: true, matchColors: true, coloredHands: true };
        const defaultCountSettings = { maxNumber: 10 };
+       const defaultNumberLevelSettings = { level: 'A' as SkillLevel };
        
        if (skill.slug === 'calculation') startCalculationExercise(defaultCalcSettings);
        else if (skill.slug === 'currency') startCurrencyExercise(defaultCurrSettings);
        else if (skill.slug === 'time') startTimeExercise(defaultTimeSettings);
        else if (skill.slug === 'denombrement') startCountExercise(defaultCountSettings);
+       else if (skill.slug === 'lire-les-nombres') startNumberLevelExercise(defaultNumberLevelSettings);
     }
-    // For 'time' skill in 'en-classe' mode, derive level from student profile
-    else if (skill.slug === 'time' && !isUserLoading && !isHomework) {
+    // For configurable skills in 'en-classe' mode, derive level from student profile
+    else if (['time', 'lire-les-nombres'].includes(skill.slug) && !isUserLoading && !isHomework) {
         const studentLevel = student?.levels?.[skill.slug] || 'A';
-        const settings: TimeSettingsType = {
-            level: studentLevel,
-            showMinuteCircle: studentLevel !== 'D',
-            matchColors: studentLevel === 'A',
-            coloredHands: studentLevel === 'A' || studentLevel === 'B',
-        };
-        startTimeExercise(settings);
+        
+        if (skill.slug === 'time') {
+             const settings: TimeSettingsType = {
+                level: studentLevel,
+                showMinuteCircle: studentLevel !== 'D',
+                matchColors: studentLevel === 'A',
+                coloredHands: studentLevel === 'A' || studentLevel === 'B',
+            };
+            startTimeExercise(settings);
+        }
+        if (skill.slug === 'lire-les-nombres') {
+            startNumberLevelExercise({level: studentLevel});
+        }
     }
   }, [skill.slug, isHomework, student, isUserLoading]);
   
@@ -141,6 +161,12 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setIsReadyToStart(true);
   };
 
+   const startNumberLevelExercise = (settings: NumberLevelSettings) => {
+    setNumberLevelSettings(settings);
+    generateQuestions(skill.slug, NUM_QUESTIONS, { numberLevel: settings }).then(setQuestions);
+    setIsReadyToStart(true);
+  };
+
   const exerciseData = useMemo(() => {
     if (questions.length === 0) return null;
     return questions[currentQuestionIndex];
@@ -151,6 +177,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setSelectedCoins([]);
     setSelectedIndices([]);
     setCountedIndices([]);
+    setSelectedOption(null);
     setFeedback(null);
   }
 
@@ -191,6 +218,11 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
       processIncorrectAnswer();
     }
   };
+  
+  const handleGenericQcmSubmit = () => {
+    if (!exerciseData || feedback || !selectedOption) return;
+    handleQcmAnswer(selectedOption);
+  }
 
   const handleCountSubmit = (answer: number) => {
     if (!exerciseData || feedback || typeof exerciseData.countNumber === 'undefined') return;
@@ -290,11 +322,14 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
             skill: skill.slug,
             score: scoreValue,
           };
+          
+          const currentSettings = settingsRef.current;
+          if (skill.slug === 'calculation' && currentSettings.calculation) scoreData.calculationSettings = currentSettings.calculation;
+          if (skill.slug === 'currency' && currentSettings.currency) scoreData.currencySettings = currentSettings.currency;
+          if (skill.slug === 'time' && currentSettings.time) scoreData.timeSettings = currentSettings.time;
+          if (skill.slug === 'denombrement' && currentSettings.count) scoreData.countSettings = currentSettings.count;
+          if (skill.slug === 'lire-les-nombres' && currentSettings.numberLevel) scoreData.numberLevelSettings = currentSettings.numberLevel;
 
-          if (skill.slug === 'calculation' && calculationSettings) scoreData.calculationSettings = calculationSettings;
-          if (skill.slug === 'currency' && currencySettings) scoreData.currencySettings = currencySettings;
-          if (skill.slug === 'time' && timeSettingsRef.current) scoreData.timeSettings = timeSettingsRef.current;
-          if (skill.slug === 'denombrement' && countSettings) scoreData.countSettings = countSettings;
           
           await addScore(scoreData);
           
@@ -311,7 +346,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     };
     
     saveResult();
-  }, [isFinished, student, skill.slug, correctAnswers, calculationSettings, currencySettings, countSettings, isTableauMode, isHomework, homeworkDate]);
+  }, [isFinished, student, skill.slug, correctAnswers, isTableauMode, isHomework, homeworkDate]);
   
   const restartExercise = () => {
     hasSavedRef.current = false;
@@ -328,19 +363,28 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
     setCurrencySettings(null);
     setTimeSettings(null);
     setCountSettings(null);
+    setNumberLevelSettings(null);
     resetInteractiveStates();
     // For non-configurable skills, just regenerate
-    if (!['calculation', 'currency', 'time', 'denombrement'].includes(skill.slug)) {
+    if (!['calculation', 'currency', 'time', 'denombrement', 'lire-les-nombres'].includes(skill.slug)) {
       generateQuestions(skill.slug, NUM_QUESTIONS).then(setQuestions);
       setIsReadyToStart(true);
     }
   };
+  
+    const handleSpeak = (text: string) => {
+        if (!text || !('speechSynthesis' in window)) return;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+    };
 
   if (!isReadyToStart) {
       if (skill.slug === 'calculation' && !isHomework) return <CalculationSettings onStart={startCalculationExercise} />;
       if (skill.slug === 'currency' && !isHomework) return <CurrencySettings onStart={startCurrencyExercise} />;
       if (skill.slug === 'denombrement' && !isHomework) return <CountSettings onStart={startCountExercise} />;
-      // Time exercise now loads automatically, so we just show a loading state
+      // Time & NumberLevel exercises now load automatically, so we just show a loading state
       return <Card className="w-full shadow-2xl p-8 text-center">Chargement de l'exercice...</Card>;
   }
 
@@ -476,6 +520,44 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
         ))}
       </div>
     </>
+  );
+  
+  const renderAudioQCM = () => (
+    <div className="flex flex-col items-center gap-6 w-full">
+        {exerciseData.textToSpeak && (
+            <Button onClick={() => handleSpeak(exerciseData.textToSpeak!)}>
+                <Volume2 className="mr-2"/> Écouter
+            </Button>
+        )}
+        <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ''} className="grid grid-cols-2 gap-4 w-full max-w-sm">
+            {exerciseData.options?.map(opt => (
+            <div key={opt}>
+                <RadioGroupItem value={opt} id={opt} className="sr-only" />
+                <Label htmlFor={opt} className={cn("flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-20 text-3xl font-numbers", selectedOption === opt && 'border-primary')}>
+                    {opt}
+                </Label>
+            </div>
+            ))}
+        </RadioGroup>
+    </div>
+  );
+  
+  const renderWrittenToAudioQCM = () => (
+    <div className="flex flex-col items-center gap-6 w-full">
+        <p className="font-numbers text-8xl font-bold">{exerciseData.answer}</p>
+        <RadioGroup onValueChange={setSelectedOption} value={selectedOption || ''} className="grid grid-cols-2 gap-4 w-full max-w-md">
+            {exerciseData.optionsWithAudio?.map(opt => (
+                <div key={opt.text}>
+                    <RadioGroupItem value={opt.text} id={opt.text} className="sr-only" />
+                    <Label htmlFor={opt.text} className={cn("flex items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground cursor-pointer h-20 text-xl", selectedOption === opt.text && 'border-primary')}>
+                            <Button variant="ghost" size="icon" className="h-12 w-12" onClick={(e) => { e.preventDefault(); handleSpeak(opt.audio); }}>
+                                <Volume2 className="h-8 w-8 text-muted-foreground" />
+                            </Button>
+                    </Label>
+                </div>
+            ))}
+        </RadioGroup>
+    </div>
   );
 
   const renderComposeSum = () => (
@@ -634,14 +716,26 @@ const renderSetTime = () => (
           {exerciseData.type === 'select-multiple' && renderSelectMultiple()}
           {exerciseData.type === 'set-time' && renderSetTime()}
           {exerciseData.type === 'count' && renderCount()}
+          {exerciseData.type === 'audio-qcm' && renderAudioQCM()}
+          {exerciseData.type === 'written-to-audio-qcm' && renderWrittenToAudioQCM()}
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
-          {feedback === 'correct' && (
-            <div className="text-2xl font-bold text-green-600 animate-pulse">{motivationalMessage}</div>
-          )}
-           {feedback === 'incorrect' && (
-            <div className="text-2xl font-bold text-red-600 animate-shake">Oups ! Essaye encore.</div>
-          )}
+         {(exerciseData.type === 'audio-qcm' || exerciseData.type === 'written-to-audio-qcm') ? (
+            <div className='flex flex-col items-center gap-2'>
+                <Button onClick={handleGenericQcmSubmit} disabled={!selectedOption || !!feedback}>Valider</Button>
+                {feedback === 'incorrect' && <p className="text-destructive font-semibold">La bonne réponse était {exerciseData.answer}</p>}
+                {feedback === 'correct' && <p className="text-green-600 font-semibold">{motivationalMessage}</p>}
+            </div>
+         ) : (
+            <>
+                {feedback === 'correct' && (
+                    <div className="text-2xl font-bold text-green-600 animate-pulse">{motivationalMessage}</div>
+                )}
+                {feedback === 'incorrect' && (
+                    <div className="text-2xl font-bold text-red-600 animate-shake">Oups ! Essaye encore.</div>
+                )}
+            </>
+         )}
         </CardFooter>
         <style jsx>{`
           @keyframes fall {

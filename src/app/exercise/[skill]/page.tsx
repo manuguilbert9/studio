@@ -74,6 +74,9 @@ export default function ExercisePage() {
         return <LettresEtSonsExercise />;
       case 'denombrement':
       case 'time':
+      case 'lire-les-nombres':
+      case 'ecoute-les-nombres':
+      case 'syllabe-attaque':
       default:
         return <ExerciseWorkspace skill={skill} />;
     }
