@@ -83,7 +83,7 @@ export default function ResultsPage() {
                             category: skillInfo.category,
                         };
 
-                        if (skillSlug === 'reading-race') {
+                        if (skillSlug === 'reading-race' || skillSlug === 'fluence') {
                            result.lastScore = lastScores[0]; // The last score is the first in the sorted array
                         }
                         
@@ -187,7 +187,7 @@ export default function ResultsPage() {
                                     <h3 className="font-headline text-2xl">{result.name}</h3>
                                     <p className="font-semibold text-sm text-primary mb-2">{result.level}</p>
 
-                                    {result.slug === 'reading-race' ? (
+                                    {(result.slug === 'reading-race' || result.slug === 'fluence') ? (
                                         <div className="flex items-baseline gap-1">
                                             <p className="text-4xl font-bold font-headline mt-2">{result.lastScore}</p>
                                             <p className="text-sm text-muted-foreground">MCLM</p>

@@ -129,14 +129,14 @@ export const skills: Skill[] = [
   {
     name: 'Course de fluence',
     slug: 'reading-race',
-    description: "Lis un texte à voix haute et fais avancer ton personnage jusqu'à la ligne d'arrivée.",
+    description: "Lis un texte à voix haute le plus vite possible pour mesurer ta fluidité de lecture.",
     icon: <Rocket />,
     category: 'Lecture / compréhension',
   },
   {
     name: 'Fluence',
     slug: 'fluence',
-    description: 'Lis un texte à voix haute pour mesurer ta vitesse et ta précision de lecture.',
+    description: 'Lis un texte pour mesurer ta vitesse et ta précision de lecture (MCLM).',
     icon: <Mic />,
     category: 'Lecture / compréhension',
   },
