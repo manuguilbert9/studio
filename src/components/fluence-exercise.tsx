@@ -156,10 +156,16 @@ export function FluenceExercise() {
 
   const textsForLevelB = useMemo(() => {
     const texts = allTexts['Niveau B'] || [];
-    return {
-      'Sons simples': texts.filter(t => t.subCategory === 'sons simples'),
-      'Sons complexes': texts.filter(t => t.subCategory === 'sons complexes'),
+    const grouped: Record<string, FluenceText[]> = {
+      'Sons simples': [],
+      'Sons complexes': [],
     };
+    texts.forEach(t => {
+      if(t.subCategory && grouped[t.subCategory]) {
+        grouped[t.subCategory].push(t);
+      }
+    });
+    return grouped;
   }, [allTexts]);
   
   const formatTime = (totalSeconds: number) => {
