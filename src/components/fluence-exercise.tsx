@@ -184,45 +184,37 @@ export function FluenceExercise() {
         </CardHeader>
         <CardContent>
           <Accordion type="single" collapsible className="w-full">
-             {Object.entries(allTexts).map(([level, texts]) => {
+            {Object.entries(allTexts).map(([level, texts]) => {
               if (texts.length === 0) return null;
+
               if (level === 'Niveau B') {
-                 return (
+                return (
                   <AccordionItem value={level} key={level}>
                     <AccordionTrigger className="text-xl font-semibold">{level}</AccordionTrigger>
                     <AccordionContent>
                       <Accordion type="single" collapsible className="w-full pl-4">
                         {Object.entries(textsForLevelB).map(([subCategory, subTexts]) => {
-                           if (subTexts.length === 0) return null;
-                           // Ensure "Sons simples" comes first
-                           if (subCategory !== 'Sons simples' && textsForLevelB['Sons simples']?.length > 0) return null;
-
-                           const renderSubCategory = (category: string, textList: FluenceText[]) => (
-                             <AccordionItem value={category} key={category}>
-                                <AccordionTrigger>{category}</AccordionTrigger>
-                                <AccordionContent className="flex flex-col gap-2 pl-4">
-                                  {textList.map(text => (
-                                    <Button key={text.title} onClick={() => handleSelectText(text)} variant="ghost" className="justify-between h-auto py-2">
-                                      <span>{text.title}</span>
-                                      <span className="text-xs text-muted-foreground">{text.wordCount} mots</span>
-                                    </Button>
-                                  ))}
-                                </AccordionContent>
-                              </AccordionItem>
-                           );
-                           
-                           if (subCategory === 'Sons simples') {
-                             const simple = renderSubCategory('Sons simples', textsForLevelB['Sons simples']);
-                             const complexe = textsForLevelB['Sons complexes']?.length > 0 ? renderSubCategory('Sons complexes', textsForLevelB['Sons complexes']) : null;
-                             return [simple, complexe];
-                           }
-                           return null;
+                          if (subTexts.length === 0) return null;
+                          return (
+                            <AccordionItem value={subCategory} key={subCategory}>
+                              <AccordionTrigger>{subCategory}</AccordionTrigger>
+                              <AccordionContent className="flex flex-col gap-2 pl-4">
+                                {subTexts.map(text => (
+                                  <Button key={text.title} onClick={() => handleSelectText(text)} variant="ghost" className="justify-between h-auto py-2">
+                                    <span>{text.title}</span>
+                                    <span className="text-xs text-muted-foreground">{text.wordCount} mots</span>
+                                  </Button>
+                                ))}
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
                         })}
                       </Accordion>
                     </AccordionContent>
                   </AccordionItem>
                 )
               }
+
               return (
                  <AccordionItem value={level} key={level}>
                   <AccordionTrigger className="text-xl font-semibold">{level}</AccordionTrigger>
@@ -252,7 +244,7 @@ export function FluenceExercise() {
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline text-3xl">{selectedText.title}</CardTitle>
-                    <CardDescription>{selectedText.level} - {selectedText.wordCount} mots</CardDescription>
+                    <CardDescription>{selectedText.level}{selectedText.subCategory && ` - ${selectedText.subCategory}`} - {selectedText.wordCount} mots</CardDescription>
                 </CardHeader>
                 <CardContent className="prose max-w-none text-xl leading-relaxed">
                     {selectedText.content}
