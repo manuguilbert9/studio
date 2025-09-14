@@ -1,5 +1,4 @@
 
-
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -128,10 +127,17 @@ export const skills: Skill[] = [
     isFixedLevel: 'B',
   },
   {
-    name: 'Course de lecture',
+    name: 'Course de fluence',
     slug: 'reading-race',
     description: "Lis un texte à voix haute et fais avancer ton personnage jusqu'à la ligne d'arrivée.",
     icon: <Rocket />,
+    category: 'Lecture / compréhension',
+  },
+  {
+    name: 'Fluence',
+    slug: 'fluence',
+    description: 'Lis un texte à voix haute pour mesurer ta vitesse et ta précision de lecture.',
+    icon: <Mic />,
     category: 'Lecture / compréhension',
   },
   {

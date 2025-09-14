@@ -55,6 +55,7 @@ export default function ExercisePage() {
       case 'calendar':
         return <CalendarExercise />;
       case 'reading-race':
+      case 'fluence':
         return <ReadingRaceExercise />;
       case 'simple-word-reading':
         return <SimpleWordReadingExercise />;
