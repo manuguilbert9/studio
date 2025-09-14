@@ -201,26 +201,55 @@ export function ReadingRaceExercise() {
         </CardHeader>
         <CardContent>
             <Accordion type="multiple" className="w-full">
-                {Object.entries(textsGroupedBySubCategory).map(([level, subCategories]) => (
+                {Object.entries(textsGroupedBySubCategory).map(([level, subCategories]) => {
+                    const hasSubCategories = Object.keys(subCategories).some(key => key !== 'default');
+                    // Sort "sons simples" before "sons complexes"
+                    const sortedSubCategoryKeys = Object.keys(subCategories).sort((a, b) => {
+                        if (a.includes('simple')) return -1;
+                        if (b.includes('simple')) return 1;
+                        return a.localeCompare(b);
+                    });
+
+                    return (
                      <AccordionItem value={level} key={level}>
                         <AccordionTrigger className="text-xl font-semibold">{level}</AccordionTrigger>
                         <AccordionContent className="flex flex-col gap-4 pl-2">
-                           {Object.entries(subCategories).map(([subCategory, texts]) => (
-                                <div key={subCategory}>
-                                  {subCategory !== 'default' && <h4 className="font-semibold text-muted-foreground mb-2 capitalize">{subCategory.replace(/_/g, ' ')}</h4>}
-                                  <div className="flex flex-col gap-2">
-                                      {texts.map((item, index) => (
-                                          <Button key={index} onClick={() => handleSelectText(item)} variant="outline" size="lg" className="h-auto py-3 justify-start">
-                                              <span className='font-normal text-lg'>{item.title}</span>
-                                              <span className='ml-auto text-xs text-muted-foreground'>{item.wordCount} mots</span>
-                                          </Button>
-                                      ))}
-                                  </div>
+                           {hasSubCategories ? (
+                                <Accordion type="multiple" className="w-full">
+                                    {sortedSubCategoryKeys.map(subCategory => {
+                                        if (subCategory === 'default') return null;
+                                        const texts = subCategories[subCategory];
+                                        return (
+                                            <AccordionItem value={subCategory} key={subCategory}>
+                                                <AccordionTrigger className="font-semibold text-muted-foreground capitalize">
+                                                    {subCategory.replace(/_/g, ' ')}
+                                                </AccordionTrigger>
+                                                <AccordionContent className="flex flex-col gap-2 pt-2">
+                                                    {texts.map((item, index) => (
+                                                        <Button key={index} onClick={() => handleSelectText(item)} variant="outline" size="lg" className="h-auto py-3 justify-start">
+                                                            <span className='font-normal text-lg'>{item.title}</span>
+                                                            <span className='ml-auto text-xs text-muted-foreground'>{item.wordCount} mots</span>
+                                                        </Button>
+                                                    ))}
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        );
+                                    })}
+                                </Accordion>
+                           ) : (
+                                <div className="flex flex-col gap-2">
+                                    {(subCategories['default'] || []).map((item, index) => (
+                                        <Button key={index} onClick={() => handleSelectText(item)} variant="outline" size="lg" className="h-auto py-3 justify-start">
+                                            <span className='font-normal text-lg'>{item.title}</span>
+                                            <span className='ml-auto text-xs text-muted-foreground'>{item.wordCount} mots</span>
+                                        </Button>
+                                    ))}
                                 </div>
-                            ))}
+                           )}
                         </AccordionContent>
                     </AccordionItem>
-                ))}
+                    )
+                })}
             </Accordion>
         </CardContent>
       </Card>
