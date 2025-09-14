@@ -6,8 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Loader2, Play, Pause, Flag, Repeat, ArrowLeft, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { cn } from '@/lib/utils';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
@@ -79,7 +79,7 @@ export function ReadingRaceExercise() {
     };
   }, [isTimerRunning]);
   
-  const stopRaceAndCalculate = () => {
+  const stopRaceAndCalculate = useCallback(() => {
     setIsTimerRunning(false);
     
     if (!selectedText || timeElapsed === 0) {
@@ -92,7 +92,7 @@ export function ReadingRaceExercise() {
     const mclm = Math.round((wordsRead / timeElapsed) * 60);
     setFinalMCLM(Math.max(0, mclm));
     setExerciseState('finished');
-  };
+  }, [selectedText, timeElapsed, errorCount]);
 
    useEffect(() => {
       async function saveResult() {
@@ -123,7 +123,9 @@ export function ReadingRaceExercise() {
               }
           }
       };
-      saveResult();
+      if (exerciseState === 'finished') {
+        saveResult();
+      }
    }, [exerciseState, student, finalMCLM, hasBeenSaved, selectedText, timeElapsed, errorCount, isHomework, homeworkDate]);
   
   
@@ -287,13 +289,13 @@ export function ReadingRaceExercise() {
                 </Card>
             </CardContent>
             <CardFooter className="flex-col gap-4 pt-6">
-                 <Button onClick={stopRaceAndCalculate} size="lg">
+                 <Button onClick={resetExercise} size="lg">
                     <X className="mr-2" />
-                    Terminer et enregistrer
+                    Terminer et choisir un autre texte
                 </Button>
                 <Button onClick={tryAgain} variant="ghost" size="sm">
                     <Repeat className="mr-2" />
-                    Recommencer
+                    Recommencer la même lecture
                 </Button>
             </CardFooter>
         </Card>
