@@ -1,21 +1,27 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useContext } from 'react';
+import { useState, useEffect, useMemo, useCallback, useContext, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
-import { Loader2, Mic, MicOff, Flag, Repeat, ArrowLeft } from 'lucide-react';
-import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { Loader2, Play, Pause, Flag, Repeat, ArrowLeft, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { Progress } from './ui/progress';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
-import { readingTexts, ReadingText } from '@/lib/reading-texts';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 type ExerciseState = 'selecting' | 'ready' | 'racing' | 'finished';
+
+interface FluenceText {
+    level: string;
+    title: string;
+    content: string;
+    wordCount: number;
+}
 
 export function ReadingRaceExercise() {
   const { student } = useContext(UserContext);
@@ -23,176 +29,155 @@ export function ReadingRaceExercise() {
   const isHomework = searchParams.get('from') === 'devoirs';
   const homeworkDate = searchParams.get('date');
 
-  const [selectedText, setSelectedText] = useState<ReadingText | null>(null);
+  const [textsByLevel, setTextsByLevel] = useState<Record<string, FluenceText[]>>({});
+  const [isLoadingTexts, setIsLoadingTexts] = useState(true);
+
+  const [selectedText, setSelectedText] = useState<FluenceText | null>(null);
   const [exerciseState, setExerciseState] = useState<ExerciseState>('selecting');
   
-  const [transcript, setTranscript] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [finalWPM, setFinalWPM] = useState(0);
+  const [errorCount, setErrorCount] = useState(0);
+  const [finalMCLM, setFinalMCLM] = useState(0);
+  const [isTimerRunning, setIsTimerRunning] = useState(false);
+  
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
-  const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
-
-  const textToDisplay = useMemo(() => {
-    if (!selectedText) return '';
-    return selectedText.level === 'Niveau A' ? selectedText.text.toUpperCase() : selectedText.text;
-  }, [selectedText]);
-
-  // Words with punctuation for display
-  const wordsWithPunctuation = useMemo(() => {
-    if (!selectedText) return [];
-    return textToDisplay.split(/\s+/);
-  }, [textToDisplay]);
-  
-  // Words without punctuation for comparison
-  const textWordsForComparison = useMemo(() => {
-    return selectedText?.text.toLowerCase().replace(/[.,]/g, '').split(/\s+/) || [];
-  }, [selectedText]);
-  
-  // Spoken words without punctuation for comparison
-  const spokenWordsForComparison = useMemo(() => {
-    return transcript.toLowerCase().replace(/[.,]/g, '').split(/\s+/).filter(Boolean);
-  }, [transcript]);
-
-  const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
-      onResult: (result) => {
-          setTranscript(prev => `${prev} ${result}`.trim());
-      },
-      onError: (err) => {
-        if (err === 'not-allowed' || err === 'service-not-allowed') {
-            setError("L'accès au microphone est bloqué. Veuillez l'autoriser dans les paramètres de votre navigateur.");
-        } else {
-            setError("Une erreur de reconnaissance vocale est survenue.");
-        }
-      }
-  });
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (exerciseState === 'racing' && isListening) {
-      timer = setInterval(() => {
+    async function fetchTexts() {
+        setIsLoadingTexts(true);
+        try {
+            const levels = ['B', 'C', 'D'];
+            const allTexts: Record<string, FluenceText[]> = {};
+
+            for (const level of levels) {
+                const response = await fetch(`/api/fluence-texts?level=${level}`);
+                if (!response.ok) throw new Error(`Failed to fetch texts for level ${level}`);
+                const texts: FluenceText[] = await response.json();
+                allTexts[`Niveau ${level}`] = texts;
+            }
+            setTextsByLevel(allTexts);
+        } catch (error) {
+            console.error("Error fetching fluence texts:", error);
+        } finally {
+            setIsLoadingTexts(false);
+        }
+    }
+    fetchTexts();
+  }, []);
+
+  useEffect(() => {
+    if (isTimerRunning) {
+      timerRef.current = setInterval(() => {
         setTimeElapsed(prev => prev + 1);
       }, 1000);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
     }
-    return () => clearInterval(timer);
-  }, [exerciseState, isListening]);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isTimerRunning]);
   
-  const stopRace = useCallback(() => {
-    stopListening();
-    const correctWordsCount = spokenWordsForComparison.filter((word, index) => textWordsForComparison[index] && word === textWordsForComparison[index]).length;
-    const wpm = timeElapsed > 0 ? Math.round((correctWordsCount / timeElapsed) * 60) : 0;
+  const stopRaceAndCalculate = () => {
+    setIsTimerRunning(false);
     
-    const mistakes = textWordsForComparison.reduce((acc: string[], expectedWord, index) => {
-        const spokenWord = spokenWordsForComparison[index];
-        if (!spokenWord || spokenWord !== expectedWord) {
-            acc.push(expectedWord);
-        }
-        return acc;
-    }, []);
+    if (!selectedText || timeElapsed === 0) {
+        setFinalMCLM(0);
+        setExerciseState('finished');
+        return;
+    }
 
-    const details: ScoreDetail[] = [{
-        question: `Course : "${selectedText?.title}"`,
-        userAnswer: transcript,
-        correctAnswer: selectedText?.text || '',
-        status: 'completed',
-        mistakes: mistakes,
-    }];
-    setSessionDetails(details);
-
-    setFinalWPM(wpm);
+    const wordsRead = selectedText.wordCount - errorCount;
+    const mclm = Math.round((wordsRead / timeElapsed) * 60);
+    setFinalMCLM(Math.max(0, mclm));
     setExerciseState('finished');
-  }, [stopListening, timeElapsed, spokenWordsForComparison, textWordsForComparison, selectedText, transcript]);
+  };
 
    useEffect(() => {
-      const saveResult = async () => {
+      async function saveResult() {
           if (exerciseState === 'finished' && student && !hasBeenSaved && selectedText) {
               setHasBeenSaved(true);
+              const detail: ScoreDetail = {
+                    question: `Fluence: "${selectedText.title}"`,
+                    userAnswer: `Temps: ${timeElapsed}s, Erreurs: ${errorCount}`,
+                    correctAnswer: `${selectedText.wordCount} mots`,
+                    status: 'completed',
+              };
+
               if (isHomework && homeworkDate) {
                 await saveHomeworkResult({
                     userId: student.id,
                     date: homeworkDate,
-                    skillSlug: 'reading-race',
-                    score: finalWPM
+                    skillSlug: 'fluence',
+                    score: finalMCLM
                 });
               } else {
                 await addScore({
                     userId: student.id,
-                    skill: 'reading-race',
-                    score: finalWPM,
-                    details: sessionDetails,
-                    readingRaceSettings: { level: selectedText.level }
+                    skill: 'fluence',
+                    score: finalMCLM,
+                    details: [detail],
+                    readingRaceSettings: { level: selectedText.level as any }
                 });
               }
           }
       };
       saveResult();
-   }, [exerciseState, student, finalWPM, hasBeenSaved, sessionDetails, selectedText, isHomework, homeworkDate]);
+   }, [exerciseState, student, finalMCLM, hasBeenSaved, selectedText, timeElapsed, errorCount, isHomework, homeworkDate]);
   
-  useEffect(() => {
-      if (!selectedText || exerciseState !== 'racing') return;
-      
-      if (spokenWordsForComparison.length >= textWordsForComparison.length) {
-          const allCorrect = textWordsForComparison.every((word, index) => word === spokenWordsForComparison[index]);
-          if(allCorrect) {
-            stopRace();
-          }
-      }
-  }, [transcript, selectedText, stopRace, exerciseState, spokenWordsForComparison, textWordsForComparison]);
-
   
-  const handleSelectText = (text: ReadingText) => {
+  const handleSelectText = (text: FluenceText) => {
     setSelectedText(text);
     setExerciseState('ready');
   };
 
-  const startRace = () => {
-    setTranscript('');
+  const startTimer = () => {
     setTimeElapsed(0);
-    setError(null);
-    setFinalWPM(0);
+    setErrorCount(0);
+    setFinalMCLM(0);
     setHasBeenSaved(false);
-    setSessionDetails([]);
+    setIsTimerRunning(true);
     setExerciseState('racing');
-    startListening();
   };
   
   const resetExercise = () => {
-    stopListening();
+    if (timerRef.current) clearInterval(timerRef.current);
     setSelectedText(null);
     setExerciseState('selecting');
-    setTranscript('');
     setTimeElapsed(0);
+    setErrorCount(0);
     setHasBeenSaved(false);
+    setIsTimerRunning(false);
   };
 
   const tryAgain = () => {
-    stopListening();
-    setTranscript('');
+    if (timerRef.current) clearInterval(timerRef.current);
     setTimeElapsed(0);
-    setFinalWPM(0);
+    setErrorCount(0);
+    setFinalMCLM(0);
     setHasBeenSaved(false);
+    setIsTimerRunning(false);
     setExerciseState('ready');
   }
 
-  const textsByLevel = useMemo(() => {
-    const grouped: Record<string, ReadingText[]> = {};
-    readingTexts.forEach(text => {
-        if (!grouped[text.level]) {
-            grouped[text.level] = [];
-        }
-        grouped[text.level].push(text);
-    });
-    return grouped;
-  }, []);
-
   // --- Render Logic ---
+
+  if (isLoadingTexts) {
+    return (
+        <Card className="w-full max-w-2xl mx-auto shadow-2xl p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto" />
+            <p className="text-muted-foreground mt-4">Chargement des textes de fluence...</p>
+        </Card>
+    );
+  }
 
   if (exerciseState === 'selecting' || !selectedText) {
     return (
       <Card className="w-full max-w-2xl mx-auto shadow-2xl">
         <CardHeader>
-          <CardTitle className="font-headline text-3xl text-center">Choisis ton texte</CardTitle>
-          <CardDescription className="text-center">Choisis un texte pour commencer la course de lecture.</CardDescription>
+          <CardTitle className="font-headline text-3xl text-center">Choisis un texte</CardTitle>
+          <CardDescription className="text-center">Choisis un texte pour commencer l'exercice de fluence.</CardDescription>
         </CardHeader>
         <CardContent>
             <Accordion type="multiple" className="w-full">
@@ -203,6 +188,7 @@ export function ReadingRaceExercise() {
                              {texts.map((item, index) => (
                                 <Button key={index} onClick={() => handleSelectText(item)} variant="outline" size="lg" className="h-auto py-3 justify-start">
                                     <span className='font-normal text-lg'>{item.title}</span>
+                                    <span className='ml-auto text-xs text-muted-foreground'>{item.wordCount} mots</span>
                                 </Button>
                             ))}
                         </AccordionContent>
@@ -219,20 +205,16 @@ export function ReadingRaceExercise() {
         <Card className="w-full max-w-2xl mx-auto shadow-2xl">
             <CardHeader>
                 <CardTitle className="font-headline text-3xl text-center">{selectedText.title}</CardTitle>
-                <CardDescription className="text-center">Prépare-toi à lire le texte suivant à voix haute.</CardDescription>
+                <CardDescription className="text-center">Prépare-toi à lire le texte. Démarre le chronomètre quand tu commences.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <p className="text-lg p-4 bg-muted/50 rounded-lg">{textToDisplay}</p>
-                 {!isSupported ? (
-                    <p className="text-center text-destructive font-semibold">Désolé, la reconnaissance vocale n'est pas supportée par votre navigateur.</p>
-                 ) : (
-                    <div className='text-center'>
-                        <Button onClick={startRace} size="lg">
-                            <Mic className="mr-2" />
-                            Je suis prêt à commencer !
-                        </Button>
-                    </div>
-                )}
+                <p className="text-lg p-4 bg-muted/50 rounded-lg leading-relaxed">{selectedText.content}</p>
+                <div className='text-center'>
+                    <Button onClick={startTimer} size="lg">
+                        <Play className="mr-2" />
+                        Démarrer le chronomètre
+                    </Button>
+                </div>
             </CardContent>
              <CardFooter>
                 <Button onClick={resetExercise} variant="ghost" size="sm">
@@ -245,94 +227,74 @@ export function ReadingRaceExercise() {
   }
   
   if (exerciseState === 'racing') {
-      const correctWordsCount = spokenWordsForComparison.filter((word, index) => textWordsForComparison[index] && word === textWordsForComparison[index]).length;
-      const progress = textWordsForComparison.length > 0 ? (correctWordsCount / textWordsForComparison.length) * 100 : 0;
-      
       return (
          <Card className="w-full max-w-2xl mx-auto shadow-2xl">
             <CardHeader>
                 <CardTitle className="font-headline text-3xl text-center">{selectedText.title}</CardTitle>
+                 <CardDescription className="text-center pt-4 font-mono text-4xl font-bold">
+                    {Math.floor(timeElapsed / 60).toString().padStart(2,'0')}:{ (timeElapsed % 60).toString().padStart(2, '0') }
+                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <p className="text-2xl p-4 bg-muted/50 rounded-lg leading-relaxed">
-                    {wordsWithPunctuation.map((displayWord, index) => {
-                        const comparisonWord = textWordsForComparison[index];
-                        const spokenWord = spokenWordsForComparison[index];
-                        
-                        let status: 'correct' | 'incorrect' | 'pending' = 'pending';
-                        if (spokenWord) {
-                            status = spokenWord === comparisonWord ? 'correct' : 'incorrect';
-                        }
-                        
-                        return (
-                            <span key={index} className={cn(
-                                status === 'correct' && "text-green-600 font-bold",
-                                status === 'incorrect' && "text-red-500 font-bold line-through"
-                            )}>
-                                {displayWord}{' '}
-                            </span>
-                        )
-                    })}
-                </p>
+                 <p className="text-xl p-4 bg-muted/50 rounded-lg leading-relaxed">{selectedText.content}</p>
                 <div className="flex items-center justify-center gap-4">
-                     <Button onClick={stopRace} size="lg" variant="destructive">
+                     <Button onClick={() => setIsTimerRunning(p => !p)} size="lg" variant="secondary">
+                        {isTimerRunning ? <Pause className="mr-2" /> : <Play className="mr-2" />}
+                        {isTimerRunning ? 'Pause' : 'Reprendre'}
+                    </Button>
+                    <Button onClick={stopRaceAndCalculate} size="lg" variant="destructive">
                         <Flag className="mr-2" />
                         J'ai terminé !
                     </Button>
                 </div>
-                 {error && <p className="text-center text-destructive font-semibold">{error}</p>}
-                
-                <Progress value={progress} className="h-4" />
-
-                <div className="font-mono text-center text-lg">Temps : {timeElapsed}s</div>
-
             </CardContent>
          </Card>
       )
   }
 
   if (exerciseState === 'finished') {
-      const mistakes = sessionDetails[0]?.mistakes || [];
-
       return (
         <Card className="w-full max-w-2xl mx-auto shadow-2xl text-center">
             <CardHeader>
-                <CardTitle className="font-headline text-4xl mb-2">Course terminée !</CardTitle>
+                <CardTitle className="font-headline text-4xl mb-2">Lecture terminée !</CardTitle>
                 <Flag className="h-10 w-10 mx-auto text-primary" />
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <Card className="p-4">
-                        <CardDescription>Temps total</CardDescription>
+                        <CardDescription>Temps de lecture</CardDescription>
                         <p className="text-3xl font-bold">{timeElapsed}s</p>
                     </Card>
-                     <Card className="p-4">
-                        <CardDescription>Mots Correctement Lus / Minute</CardDescription>
-                        <p className="text-3xl font-bold">{finalWPM} <span className="text-lg">MCLM</span></p>
+                    <Card className="p-4">
+                        <CardDescription>Nombre de mots</CardDescription>
+                        <p className="text-3xl font-bold">{selectedText.wordCount}</p>
                     </Card>
                 </div>
-                {mistakes.length > 0 && (
-                    <Card className="p-4">
-                         <CardDescription>Mots à revoir</CardDescription>
-                         <p className="text-lg font-semibold text-destructive mt-2">{mistakes.join(', ')}</p>
-                    </Card>
-                )}
+                <Card className="p-4">
+                    <Label htmlFor="errors" className="text-lg">Nombre d'erreurs</Label>
+                    <Input 
+                        id="errors"
+                        type="number" 
+                        value={errorCount}
+                        onChange={(e) => setErrorCount(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                        className="w-24 h-12 text-2xl text-center mx-auto mt-2"
+                    />
+                </Card>
+                 <Card className="p-6 bg-primary/10 border-primary">
+                    <CardDescription>Score de fluence</CardDescription>
+                    <p className="text-5xl font-bold">{finalMCLM} <span className="text-2xl font-medium">MCLM</span></p>
+                    <p className="text-xs text-muted-foreground">(Mots Correctement Lus par Minute)</p>
+                </Card>
             </CardContent>
             <CardFooter className="flex-col gap-4 pt-6">
-                 {isHomework ? (
-                    <p className="text-muted-foreground">Tes devoirs sont terminés !</p>
-                 ) : (
-                    <>
-                        <Button onClick={tryAgain} size="lg">
-                            <Repeat className="mr-2" />
-                            Recommencer la même course
-                        </Button>
-                        <Button onClick={resetExercise} variant="ghost" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Choisir un autre texte
-                        </Button>
-                    </>
-                 )}
+                 <Button onClick={stopRaceAndCalculate} size="lg">
+                    <X className="mr-2" />
+                    Terminer et enregistrer
+                </Button>
+                <Button onClick={tryAgain} variant="ghost" size="sm">
+                    <Repeat className="mr-2" />
+                    Recommencer
+                </Button>
             </CardFooter>
         </Card>
       )

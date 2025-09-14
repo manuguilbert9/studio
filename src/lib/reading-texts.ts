@@ -1,4 +1,8 @@
 
+
+// THIS FILE IS NO LONGER USED AND CAN BE DELETED
+// Text data is now fetched from /public/fluence directory via an API route.
+
 export interface ReadingText {
     level: 'Niveau A' | 'Niveau B' | 'Niveau C' | 'Niveau D';
     title: string;

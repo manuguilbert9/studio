@@ -295,7 +295,7 @@ export function difficultyLevelToString(
     }
 
     if (skillSlug === 'currency' && currSettings) {
-        return `Niveau ${currSettings.difficulty + 1}`;
+        return `Niveau ${String.fromCharCode(65 + currSettings.difficulty)}`;
     }
 
     if (skillSlug === 'denombrement') {
