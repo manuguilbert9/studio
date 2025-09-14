@@ -1,3 +1,4 @@
+
 'use server';
 
 import { NextResponse } from 'next/server';
@@ -23,7 +24,11 @@ async function getFileContent(filename: string): Promise<{ title: string; senten
     const fileContent = await fs.readFile(filePath, 'utf8');
     
     const lines = fileContent.split('\n').filter(line => line.trim() !== '');
-    const title = lines.shift() || filename; // Use filename as fallback title
+    let title = lines.shift() || filename; // Use filename as fallback title
+    
+    // Remove <titre> tags from the title
+    title = title.replace(/<\/?titre>/g, '').trim();
+
     const sentences = lines;
 
     return { title, sentences };
