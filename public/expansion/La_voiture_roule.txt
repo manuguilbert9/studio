@@ -1,0 +1,6 @@
+<titre>La voiture roule</titre>
+
+La voiture roule.
+La voiture noire roule.
+La grosse voiture noire roule.
+La grosse voiture noire roule dans les rues.

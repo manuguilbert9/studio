@@ -13,7 +13,7 @@ import { LongCalculationExercise } from '@/components/long-calculation-exercise'
 import { WordFamiliesExercise } from '@/components/word-families-exercise';
 import { MentalCalculationExercise } from '@/components/mental-calculation-exercise';
 import { CalendarExercise } from '@/components/calendar-exercise';
-import { ReadingRaceExercise } from '@/components/reading-race-exercise';
+import { SentenceReadingExercise } from '@/components/sentence-reading-exercise';
 import { SimpleWordReadingExercise } from '@/components/simple-word-reading-exercise';
 import { WritingNotebook } from '@/components/writing-notebook';
 import { KeyboardCopyExercise } from '@/components/keyboard-copy-exercise';
@@ -54,9 +54,8 @@ export default function ExercisePage() {
         return <MentalCalculationExercise />;
       case 'calendar':
         return <CalendarExercise />;
-      case 'reading-race':
-      case 'fluence':
-        return <ReadingRaceExercise />;
+      case 'lire-des-phrases':
+        return <SentenceReadingExercise />;
       case 'simple-word-reading':
         return <SimpleWordReadingExercise />;
       case 'writing-notebook':

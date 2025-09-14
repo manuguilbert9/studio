@@ -1,0 +1,6 @@
+<titre>La fourmi marche</titre>
+
+La fourmi marche.
+La fourmi marche vite.
+La fourmi marche vite vers sa galerie.
+La fourmi marche vite vers sa galerie avec ses amies.

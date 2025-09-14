@@ -1,0 +1,6 @@
+<titre>Maman prépare</titre>
+
+Maman prépare.
+Maman prépare la soupe.
+Maman prépare la soupe de légumes.
+Maman prépare la soupe de légumes et une brioche.

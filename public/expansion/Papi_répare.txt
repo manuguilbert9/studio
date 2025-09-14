@@ -1,0 +1,6 @@
+<titre>Papi répare</titre>
+
+Papi répare.
+Papi répare la moto.
+Papi répare la moto et la voiture.
+Papi répare la moto et la voiture dans l’allée.

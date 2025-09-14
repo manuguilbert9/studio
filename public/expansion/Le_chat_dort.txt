@@ -1,0 +1,6 @@
+<titre>Le chat dort</titre>
+
+Le chat dort.
+Le petit chat dort.
+Le petit chat gris dort.
+Le petit chat gris dort sur le coussin.

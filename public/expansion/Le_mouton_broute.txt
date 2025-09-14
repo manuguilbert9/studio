@@ -1,0 +1,6 @@
+<titre>Le mouton broute</titre>
+
+Le mouton broute.
+Le mouton broute l’herbe.
+Le mouton broute l’herbe verte.
+Le mouton broute l’herbe verte dans le pré.
