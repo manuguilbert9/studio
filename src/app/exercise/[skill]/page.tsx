@@ -25,6 +25,7 @@ import { SonAnExercise } from '@/components/son-an-exercise';
 import { NombresComplexesExercise } from '@/components/nombres-complexes-exercise';
 import { LettresEtSonsExercise } from '@/components/lettres-et-sons-exercise';
 import { DictationExercise } from '@/components/dictation-exercise';
+import { FluenceExercise } from '@/components/fluence-exercise';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 
 export default function ExercisePage() {
@@ -56,6 +57,8 @@ export default function ExercisePage() {
         return <CalendarExercise />;
       case 'lire-des-phrases':
         return <SentenceReadingExercise />;
+      case 'fluence':
+        return <FluenceExercise />;
       case 'simple-word-reading':
         return <SimpleWordReadingExercise />;
       case 'writing-notebook':

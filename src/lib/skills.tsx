@@ -1,5 +1,4 @@
 
-
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -134,6 +133,13 @@ export const skills: Skill[] = [
     icon: <Mic />,
     category: 'Lecture / compréhension',
     isFixedLevel: 'B',
+  },
+   {
+    name: 'Fluence',
+    slug: 'fluence',
+    description: "Chronomètre ta lecture d'un texte et calcule ton score de fluence (MCLM).",
+    icon: <Rocket />,
+    category: 'Lecture / compréhension',
   },
   {
     name: 'Cahier d\'écriture',
@@ -309,3 +315,4 @@ export function difficultyLevelToString(
     // Fallback for any other case where level can't be determined
     return null;
 }
+
