@@ -52,7 +52,7 @@ export interface Question extends CalendarQuestion, MentalMathQuestion {
   targetAmount?: number;
   cost?: number;
   paymentImages?: { name: string, image: string }[];
-  items?: { id?: string | number, name: string, image: string, value: number }[];
+  items?: { id?: string | number, name: string, image: string, value: number, type: 'pièce' | 'billet' }[];
   correctValue?: number;
   boxLabel?: string;
 }

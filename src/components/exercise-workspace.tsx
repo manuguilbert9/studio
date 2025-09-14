@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { Check, Heart, Sparkles, Star, ThumbsUp, X, RefreshCw, Trash2, ArrowRight, Volume2, Banknote, Coins } from 'lucide-react';
 import { AnalogClock } from './analog-clock';
 import { generateQuestions, type Question, type CalculationSettings as CalcSettings, type CurrencySettings as CurrSettings, type TimeSettings as TimeSettingsType, type CountSettings as CountSettingsType, type NumberLevelSettings } from '@/lib/questions';
-import { currency as currencyData, formatCurrency, euroPiecesAndBillets } from '@/lib/currency';
+import { currency as currencyData, formatCurrency, euroPiecesAndBillets, allCoins } from '@/lib/currency';
 import { Progress } from '@/components/ui/progress';
 import { ScoreHistoryDisplay } from './score-history-display';
 import { Skeleton } from './ui/skeleton';
@@ -144,10 +144,8 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
   useEffect(() => {
     if (document.body && activeId) {
         document.body.style.touchAction = 'none';
-        document.body.style.overflow = 'hidden';
     } else if (document.body) {
         document.body.style.touchAction = 'auto';
-        document.body.style.overflow = 'auto';
     }
   }, [activeId]);
 
@@ -727,7 +725,7 @@ export function ExerciseWorkspace({ skill, isTableauMode = false }: ExerciseWork
 
         <Card className="w-full p-4">
             <CardContent className="flex flex-wrap items-center justify-center gap-2 p-0">
-                {(currencySettings?.difficulty === 1 ? euroPiecesAndBillets : currencyData).map((item) => (
+                {(currencySettings?.difficulty === 1 ? euroPiecesAndBillets : allCoins).map((item) => (
                     <Button 
                         key={item.name} 
                         variant="ghost" 

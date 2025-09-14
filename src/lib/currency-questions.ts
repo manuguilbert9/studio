@@ -15,28 +15,37 @@ const getRandomAmount = (max: number, multipleOfFive: boolean = false): number =
 
 
 const generateLevelA = (): Question => {
-    const questionType = Math.random() > 0.5 ? 'pieces' : 'billets';
+    const questionType = Math.random();
 
-    if (questionType === 'pieces') {
+    // Type 1: Recognize a specific coin/bill (drag & drop)
+    if (questionType < 0.5) {
+        const availableMoney = [...euroPiecesAndBillets].sort(() => 0.5 - Math.random());
+        const correctItem = availableMoney.shift()!; // Take the first one as correct
+        const distractors = availableMoney.slice(0, 2); // Take the next two as distractors
+        const items = [correctItem, ...distractors].sort(() => 0.5 - Math.random());
+
         return {
             id: Date.now(),
             level: 'A',
-            type: 'select-multiple',
-            question: "Qu'est-ce qui va dans la boîte ?",
-            boxLabel: 'Pièces de monnaie',
-            items: currency.map(item => ({...item, value: item.type === 'pièce' ? 1 : 0 })),
-            correctValue: 1, // 1 for 'pièce'
+            type: 'drag-and-drop-recognition',
+            question: `Mets la pièce de ${correctItem.name} dans la boîte.`,
+            boxLabel: "Glisse la bonne pièce ou le bon billet ici",
+            items: items.map(item => ({...item, id: item.name })),
+            answer: correctItem.name,
             currencySettings: { difficulty: 0 }
         };
-    } else {
+    } 
+    // Type 2: Sort pieces vs bills
+    else {
+        const sortBy = Math.random() > 0.5 ? 'pièce' : 'billet';
         return {
             id: Date.now(),
             level: 'A',
             type: 'select-multiple',
             question: "Qu'est-ce qui va dans la boîte ?",
-            boxLabel: 'Billets de banque',
-            items: currency.map(item => ({...item, value: item.type === 'billet' ? 1 : 0 })),
-            correctValue: 1, // 1 for 'billet'
+            boxLabel: sortBy === 'pièce' ? 'Pièces de monnaie' : 'Billets de banque',
+            items: currency.map(item => ({...item, value: item.type === sortBy ? 1 : 0 })),
+            correctValue: 1, // 1 for the correct type
             currencySettings: { difficulty: 0 }
         };
     }
@@ -45,14 +54,11 @@ const generateLevelA = (): Question => {
 export async function generateCurrencyQuestion(settings: CurrencySettings): Promise<Question> {
     const { difficulty } = settings;
 
-    // --- LEVEL A ---
     if (difficulty === 0) {
         return generateLevelA();
     }
     
-    // --- LEVEL B ---
     if (difficulty === 1) {
-        // Sums with euros only, no cents.
         const possibleTargets = [3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19];
         const targetAmount = possibleTargets[Math.floor(Math.random() * possibleTargets.length)];
          return {
@@ -67,13 +73,11 @@ export async function generateCurrencyQuestion(settings: CurrencySettings): Prom
 
 
     switch (difficulty) {
-        // Niveau 3: Calculer une somme à partir d'images
-        case 2: {
+        case 2: { // Niveau C
             const numItems = Math.floor(Math.random() * 5) + 3; // 3 to 7 items
             const items = [];
             let totalValue = 0;
             for(let i=0; i < numItems; i++) {
-                // Use all coins for this level
                 const item = allCoins[Math.floor(Math.random() * allCoins.length)];
                 items.push(item);
                 totalValue += item.value;
@@ -101,8 +105,7 @@ export async function generateCurrencyQuestion(settings: CurrencySettings): Prom
             }
         }
 
-        // Niveau 4: Rendre la monnaie
-        case 3: {
+        case 3: { // Niveau D
              const cost = getRandomAmount(40, true); // e.g., 12.35
              const paymentOptions = euroPiecesAndBillets.filter(c => c.value > cost && c.type === 'billet');
              const paymentBill = paymentOptions.length > 0
