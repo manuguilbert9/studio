@@ -1,0 +1,2 @@
+<titre>Texte 8</titre>
+Un pirate vit sur un navire. Il a des habits abîmés et porte une épée. Il crie « à l’abordage » et vole les trésors des navires ennemis qui s’approchent.

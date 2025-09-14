@@ -1,0 +1,11 @@
+<titre>Texte 8</titre>
+Pendant la nuit, une très forte tempête a provoqué 
+des dégâts dans toute la Bretagne. 
+Le vent soufflait à plus de cent kilomètres à l’heure. 
+Beaucoup d’arbres ont été cassés ou déracinés. Des 
+toits et des voitures ont été soulevés et emportés. Des 
+poteaux électriques ont été arrachés et il n’y a plus 
+d’électricité dans les maisons. Il est impossible de 
+rester en pleine tempête. 
+Les pompiers n’ont pu apporter des secours que le 
+matin, quand la tempête s’est calmée.

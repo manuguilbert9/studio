@@ -1,0 +1,4 @@
+<titre>Texte 1</titre>
+Agathe est la bille de Guillaume. Elle est restée au 
+fond de la poche du manteau de Guillaume, rangée 
+dans le grand placard noir, tout au fond du couloir.

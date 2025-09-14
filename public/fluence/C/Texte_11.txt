@@ -1,0 +1,12 @@
+<titre>Texte 11</titre>
+On connait neuf planètes principales autour du soleil. 
+Ce sont de la plus proche à la plus éloignée du soleil : 
+Mercure, Vénus, la Terre, Mars, Jupiter, Saturne, 
+Uranus, Neptune et Pluton. La plupart sont entourées 
+de satellites qui les accompagnent dans leur ronde. 
+La Terre n’a qu’un satellite : la lune. Mais Mars en a 
+deux. Mercure est à peine plus grosse que la lune. 
+Jupiter est la plus grosse planète du système solaire. 
+Autour du soleil circulent d’autres astres bizarres : les 
+comètes. Nous les voyons grâce à l’immense queue 
+qu’elles trainent.

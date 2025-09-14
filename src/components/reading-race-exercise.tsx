@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useContext, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useContext, useRef, Fragment } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
@@ -21,6 +21,7 @@ interface FluenceText {
     title: string;
     content: string;
     wordCount: number;
+    subCategory?: string;
 }
 
 export function ReadingRaceExercise() {
@@ -65,6 +66,23 @@ export function ReadingRaceExercise() {
     }
     fetchTexts();
   }, []);
+
+  const textsGroupedBySubCategory = useMemo(() => {
+    const grouped: Record<string, Record<string, FluenceText[]>> = {};
+    Object.keys(textsByLevel).forEach(level => {
+      grouped[level] = {};
+      const texts = textsByLevel[level];
+      texts.forEach(text => {
+        const subCategory = text.subCategory || 'default';
+        if (!grouped[level][subCategory]) {
+          grouped[level][subCategory] = [];
+        }
+        grouped[level][subCategory].push(text);
+      });
+    });
+    return grouped;
+  }, [textsByLevel]);
+
 
   useEffect(() => {
     if (isTimerRunning) {
@@ -183,15 +201,22 @@ export function ReadingRaceExercise() {
         </CardHeader>
         <CardContent>
             <Accordion type="multiple" className="w-full">
-                {Object.entries(textsByLevel).map(([level, texts]) => (
+                {Object.entries(textsGroupedBySubCategory).map(([level, subCategories]) => (
                      <AccordionItem value={level} key={level}>
                         <AccordionTrigger className="text-xl font-semibold">{level}</AccordionTrigger>
-                        <AccordionContent className="flex flex-col gap-2">
-                             {texts.map((item, index) => (
-                                <Button key={index} onClick={() => handleSelectText(item)} variant="outline" size="lg" className="h-auto py-3 justify-start">
-                                    <span className='font-normal text-lg'>{item.title}</span>
-                                    <span className='ml-auto text-xs text-muted-foreground'>{item.wordCount} mots</span>
-                                </Button>
+                        <AccordionContent className="flex flex-col gap-4 pl-2">
+                           {Object.entries(subCategories).map(([subCategory, texts]) => (
+                                <div key={subCategory}>
+                                  {subCategory !== 'default' && <h4 className="font-semibold text-muted-foreground mb-2 capitalize">{subCategory.replace(/_/g, ' ')}</h4>}
+                                  <div className="flex flex-col gap-2">
+                                      {texts.map((item, index) => (
+                                          <Button key={index} onClick={() => handleSelectText(item)} variant="outline" size="lg" className="h-auto py-3 justify-start">
+                                              <span className='font-normal text-lg'>{item.title}</span>
+                                              <span className='ml-auto text-xs text-muted-foreground'>{item.wordCount} mots</span>
+                                          </Button>
+                                      ))}
+                                  </div>
+                                </div>
                             ))}
                         </AccordionContent>
                     </AccordionItem>
