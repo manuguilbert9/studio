@@ -13,6 +13,7 @@ import { UserContext } from '@/context/user-context';
 import { addScore } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { Input } from './ui/input';
+import { Label } from './ui/label';
 
 interface FluenceText {
   level: string;
