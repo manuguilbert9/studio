@@ -23,6 +23,30 @@ function parseTextFile(content: string): Omit<FluenceText, 'level' | 'subCategor
     return { title, content: textContent, wordCount };
 }
 
+// Helper function to read texts from a directory
+async function readTextsFromDir(directory: string, level: string, subCategory?: string): Promise<FluenceText[]> {
+    const texts: FluenceText[] = [];
+    try {
+        const dirEntries = await fs.readdir(directory, { withFileTypes: true });
+
+        for (const entry of dirEntries) {
+            if (entry.isFile() && entry.name.endsWith('.txt')) {
+                const filePath = path.join(directory, entry.name);
+                const fileContent = await fs.readFile(filePath, 'utf8');
+                const parsedData = parseTextFile(fileContent);
+                texts.push({
+                    level: `Niveau ${level}`,
+                    subCategory: subCategory,
+                    ...parsedData
+                });
+            }
+        }
+    } catch (e) {
+        // If directory doesn't exist or is not readable, just return an empty array.
+        console.warn(`Could not read directory ${directory}, skipping.`);
+    }
+    return texts;
+}
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -34,44 +58,24 @@ export async function GET(request: Request) {
 
     try {
         const textsDir = path.join(process.cwd(), 'public', 'fluence', level);
-        const texts: FluenceText[] = [];
+        let allTexts: FluenceText[] = [];
         
+        // 1. Read files directly in the level directory (for C and D)
+        const rootTexts = await readTextsFromDir(textsDir, level);
+        allTexts = allTexts.concat(rootTexts);
+        
+        // 2. Look for subdirectories and read from them (for B)
         const dirEntries = await fs.readdir(textsDir, { withFileTypes: true });
-
         for (const entry of dirEntries) {
-            if (entry.isFile() && entry.name.endsWith('.txt')) {
-                const filePath = path.join(textsDir, entry.name);
-                const fileContent = await fs.readFile(filePath, 'utf8');
-                const parsedData = parseTextFile(fileContent);
-                texts.push({
-                    level: `Niveau ${level}`,
-                    ...parsedData
-                });
-            } else if (entry.isDirectory()) {
+            if (entry.isDirectory()) {
                 const subCategory = entry.name;
                 const subDir = path.join(textsDir, subCategory);
-                
-                try {
-                    const filenames = await fs.readdir(subDir);
-                    const textFiles = filenames.filter(filename => filename.endsWith('.txt'));
-
-                    for (const filename of textFiles) {
-                        const filePath = path.join(subDir, filename);
-                        const fileContent = await fs.readFile(filePath, 'utf8');
-                        const parsedData = parseTextFile(fileContent);
-                        texts.push({
-                            level: `Niveau ${level}`,
-                            subCategory: subCategory,
-                            ...parsedData
-                        });
-                    }
-                } catch(e) {
-                    console.warn(`Could not read subdirectory ${subDir}, skipping.`);
-                }
+                const subDirTexts = await readTextsFromDir(subDir, level, subCategory);
+                allTexts = allTexts.concat(subDirTexts);
             }
         }
-        
-        return NextResponse.json(texts);
+
+        return NextResponse.json(allTexts);
 
     } catch (error) {
         console.error(`Erreur lors de la lecture des fichiers pour le niveau ${level}:`, error);
