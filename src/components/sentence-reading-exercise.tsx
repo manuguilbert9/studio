@@ -1,14 +1,14 @@
+
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, useContext, Fragment } from 'react';
+import { useState, useEffect, useMemo, useCallback, useContext } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from './ui/button';
 import { Loader2, Mic, Repeat, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import type { ExpansionTextInfo, ExpansionTextContent } from '@/app/api/expansion-texts/route';
 import { Progress } from './ui/progress';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
@@ -43,6 +43,36 @@ export function SentenceReadingExercise() {
   const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
   const [showConfetti, setShowConfetti] = useState(false);
   const [hasBeenSaved, setHasBeenSaved] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+
+
+  const checkAnswer = (spokenText: string) => {
+    if (!currentSentence || isChecking) return;
+    
+    setIsChecking(true);
+    stopListening(); // Ensure listening is stopped before checking
+    
+    const isCorrect = normalize(spokenText) === normalize(currentSentence);
+    
+    const detail: ScoreDetail = {
+        question: `Lire : "${currentSentence}"`,
+        userAnswer: spokenText,
+        correctAnswer: currentSentence,
+        status: isCorrect ? 'correct' : 'incorrect',
+    };
+    setSessionDetails(prev => [...prev, detail]);
+
+    setFeedback(isCorrect ? 'correct' : 'incorrect');
+
+    if (isCorrect) {
+      setShowConfetti(true);
+      setTimeout(handleNextSentence, 2000);
+    } else {
+        // If incorrect, we are no longer checking, user has to retry
+        setIsChecking(false);
+    }
+  };
+
 
   const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
       onResult: (result) => {
@@ -51,6 +81,7 @@ export function SentenceReadingExercise() {
       onError: (err) => {
         if (err === 'aborted') return;
         setFeedback('incorrect');
+        setIsChecking(false);
       }
   });
 
@@ -93,37 +124,16 @@ export function SentenceReadingExercise() {
     if (selectedText && currentSentenceIndex < selectedText.sentences.length - 1) {
         setCurrentSentenceIndex(prev => prev + 1);
         setFeedback(null);
+        setIsChecking(false);
     } else {
         setExerciseState('finished');
     }
   }, [selectedText, currentSentenceIndex]);
 
-  const checkAnswer = (spokenText: string) => {
-    if (!currentSentence || isListening) return;
-    
-    stopListening();
-    
-    const isCorrect = normalize(spokenText) === normalize(currentSentence);
-    
-    const detail: ScoreDetail = {
-        question: `Lire : "${currentSentence}"`,
-        userAnswer: spokenText,
-        correctAnswer: currentSentence,
-        status: isCorrect ? 'correct' : 'incorrect',
-    };
-    setSessionDetails(prev => [...prev, detail]);
-
-    setFeedback(isCorrect ? 'correct' : 'incorrect');
-
-    if (isCorrect) {
-      setShowConfetti(true);
-      setTimeout(handleNextSentence, 2000);
-    }
-    // If incorrect, user has to click "Réessayer"
-  };
 
   const handleRetry = () => {
     setFeedback(null);
+    setIsChecking(false);
     startListening();
   };
 
@@ -165,6 +175,7 @@ export function SentenceReadingExercise() {
     setSessionDetails([]);
     setShowConfetti(false);
     setHasBeenSaved(false);
+    setIsChecking(false);
   };
   
   if (!isSupported) {
@@ -244,11 +255,14 @@ export function SentenceReadingExercise() {
             </p>
             <Button
                 onClick={isListening ? stopListening : startListening}
-                disabled={!!feedback}
+                disabled={!!feedback || isChecking}
                 size="lg"
-                className={cn("rounded-full h-24 w-24", isListening && 'bg-red-500 hover:bg-red-600 animate-pulse')}
+                className={cn("rounded-full h-24 w-24", 
+                    isListening && 'bg-red-500 hover:bg-red-600 animate-pulse',
+                    isChecking && 'bg-yellow-500 hover:bg-yellow-600'
+                )}
              >
-                <Mic className="h-10 w-10"/>
+                {isChecking ? <Loader2 className="h-10 w-10 animate-spin" /> : <Mic className="h-10 w-10"/>}
             </Button>
         </CardContent>
         <CardFooter className="h-24 flex items-center justify-center">
