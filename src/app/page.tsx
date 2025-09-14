@@ -121,7 +121,7 @@ export default function ModeSelectionPage() {
   }
 
   return (
-    <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background">
+    <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-8 bg-background relative">
       <div className="absolute top-8">
         <Logo />
       </div>
@@ -168,24 +168,26 @@ export default function ModeSelectionPage() {
             </CardHeader>
           </Card>
         </Link>
-         <Link href="/customize" className="group" aria-label="Personnaliser l'apparence">
-          <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
-            <div className="mb-6 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
-              <Palette />
-            </div>
-             <CardHeader>
-              <CardTitle className="font-headline text-3xl sm:text-4xl">Personnaliser</CardTitle>
-              <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
-                Change les couleurs de ton espace de travail.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-      </div>
-        <div className="mt-12">
+         
+        <div className="flex h-full items-center justify-center">
             <Button onClick={handleLogout} variant="outline" size="lg">
                 <LogOut className="mr-2" />
                 Déconnexion
+            </Button>
+        </div>
+      </div>
+      <div className="absolute bottom-4 right-4 flex items-center gap-2">
+            <Button asChild variant="ghost" size="icon">
+                <Link href="/customize">
+                    <Palette/>
+                    <span className="sr-only">Personnaliser</span>
+                </Link>
+            </Button>
+             <Button asChild variant="ghost" size="sm">
+                <Link href="/teacher/login">
+                    <School className="mr-2"/>
+                    Accès enseignant
+                </Link>
             </Button>
         </div>
     </main>
