@@ -40,7 +40,7 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
         {spellingId ? (
            <Link href={`/spelling/${spellingId}?from=devoirs&date=${date}`} className="group">
              <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
-                {isCompleted(`orthographe-${spellingId}`) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 bg-white rounded-full" />}
+                {isCompleted(`orthographe-${spellingId}`) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 rounded-full" />}
                 <div className="bg-yellow-100 p-3 rounded-full text-yellow-600 group-hover:scale-110 transition-transform">
                     <BrainCircuit />
                 </div>
@@ -54,7 +54,7 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
         ) : frenchSkill ? (
           <Link href={`/exercise/${frenchSkill.slug}?from=devoirs&date=${date}`} className="group">
             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
-              {isCompleted(frenchSkill.slug) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 bg-white rounded-full" />}
+              {isCompleted(frenchSkill.slug) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 rounded-full" />}
               <div className="bg-blue-100 p-3 rounded-full text-blue-600 group-hover:scale-110 transition-transform">
                 {frenchSkill.icon}
               </div>
@@ -71,7 +71,7 @@ function HomeworkCard({ date, assignment, completedHomework }: { date: string, a
         {mathSkill ? (
           <Link href={`/exercise/${mathSkill.slug}?from=devoirs&date=${date}`} className="group">
             <Card className="hover:shadow-lg hover:border-primary transition-all p-4 flex items-center gap-4 relative">
-               {isCompleted(mathSkill.slug) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 bg-white rounded-full" />}
+               {isCompleted(mathSkill.slug) && <CheckCircle className="absolute top-2 right-2 h-6 w-6 text-green-500 rounded-full" />}
               <div className="bg-red-100 p-3 rounded-full text-red-600 group-hover:scale-110 transition-transform">
                 {mathSkill.icon}
               </div>

@@ -158,7 +158,7 @@ export default function EnClassePage() {
                     <Link href={`/exercise/${skill.slug}`} key={skill.slug} className="group" aria-label={`Pratiquer ${skill.name}`}>
                       <Card className="flex h-full flex-col items-center justify-center p-6 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10 relative">
                         {skillsCompletedToday.has(skill.slug) && (
-                            <CheckCircle className="absolute top-3 right-3 h-6 w-6 text-green-500 bg-white rounded-full" />
+                            <CheckCircle className="absolute top-3 right-3 h-6 w-6 text-green-500 rounded-full" />
                         )}
                         <div className="mb-4 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-20 sm:[&>svg]:w-20">
                           {skill.icon}
