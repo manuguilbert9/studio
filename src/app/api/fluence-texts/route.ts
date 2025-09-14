@@ -12,7 +12,7 @@ interface FluenceText {
 }
 
 // Helper function to extract title and content from the file
-function parseTextFile(content: string, level: string): Omit<FluenceText, 'level' | 'subCategory'> {
+function parseTextFile(content: string): Omit<FluenceText, 'level' | 'subCategory'> {
     const titleMatch = content.match(/<titre>(.*?)<\/titre>/);
     const title = titleMatch ? titleMatch[1].trim() : 'Texte sans titre';
     
@@ -42,27 +42,31 @@ export async function GET(request: Request) {
             if (entry.isFile() && entry.name.endsWith('.txt')) {
                 const filePath = path.join(textsDir, entry.name);
                 const fileContent = await fs.readFile(filePath, 'utf8');
-                const parsedData = parseTextFile(fileContent, level);
+                const parsedData = parseTextFile(fileContent);
                 texts.push({
                     level: `Niveau ${level}`,
                     ...parsedData
                 });
             } else if (entry.isDirectory()) {
-                // If it's a directory, read files inside it (for level B)
                 const subCategory = entry.name;
                 const subDir = path.join(textsDir, subCategory);
-                const filenames = await fs.readdir(subDir);
-                const textFiles = filenames.filter(filename => filename.endsWith('.txt'));
+                
+                try {
+                    const filenames = await fs.readdir(subDir);
+                    const textFiles = filenames.filter(filename => filename.endsWith('.txt'));
 
-                for (const filename of textFiles) {
-                    const filePath = path.join(subDir, filename);
-                    const fileContent = await fs.readFile(filePath, 'utf8');
-                    const parsedData = parseTextFile(fileContent, level);
-                    texts.push({
-                        level: `Niveau ${level}`,
-                        subCategory: subCategory,
-                        ...parsedData
-                    });
+                    for (const filename of textFiles) {
+                        const filePath = path.join(subDir, filename);
+                        const fileContent = await fs.readFile(filePath, 'utf8');
+                        const parsedData = parseTextFile(fileContent);
+                        texts.push({
+                            level: `Niveau ${level}`,
+                            subCategory: subCategory,
+                            ...parsedData
+                        });
+                    }
+                } catch(e) {
+                    console.warn(`Could not read subdirectory ${subDir}, skipping.`);
                 }
             }
         }
@@ -74,4 +78,3 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: `Impossible de charger les textes pour le niveau ${level}.` }, { status: 500 });
     }
 }
-
