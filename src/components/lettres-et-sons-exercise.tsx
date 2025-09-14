@@ -40,11 +40,12 @@ function generateQuestion(): SoundQuestion {
     const incorrectWords = syllableAttackData.filter(d => !d.word.startsWith(letter)).slice(0, 2);
 
     // If we don't have enough words, we'll just use what we have (edge case)
+    let fallbackCounter = 1;
     while (correctWords.length < 2) {
-        correctWords.push({ word: 'exemple', syllable: 'ex', image: '' }); // fallback
+        correctWords.push({ word: `exemple${fallbackCounter++}`, syllable: 'ex', image: '' }); // fallback
     }
      while (incorrectWords.length < 2) {
-        incorrectWords.push({ word: 'test', syllable: 'te', image: '' }); // fallback
+        incorrectWords.push({ word: `test${fallbackCounter++}`, syllable: 'te', image: '' }); // fallback
     }
     
     const options: WordOption[] = [
