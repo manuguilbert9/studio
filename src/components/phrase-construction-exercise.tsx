@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useContext, useCallback } from 'react';
+import { useState, useEffect, useContext, useCallback, useMemo } from 'react';
 import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -113,6 +113,18 @@ export function PhraseConstructionExercise() {
       }
   };
 
+  const typedWords = useMemo(() => {
+    // Normalize and split the user's sentence into a set of unique words for quick lookup.
+    return new Set(
+      userSentence
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // remove accents
+        .replace(/[.,'!?]/g, '') // remove punctuation
+        .split(/\s+/) // split by spaces
+    );
+  }, [userSentence]);
+
   useEffect(() => {
     const saveFinalScore = async () => {
         if (gameState === 'finished' && student && !hasBeenSaved) {
@@ -204,7 +216,21 @@ export function PhraseConstructionExercise() {
       
       <CardContent className="space-y-6">
         <div className="flex flex-wrap items-center justify-center gap-3 p-4 bg-muted rounded-lg">
-          {wordsToUse.map((word, index) => <Badge key={`${word}-${index}`} variant="secondary" className="text-xl px-4 py-2">{word}</Badge>)}
+          {wordsToUse.map((word, index) => {
+            const isUsed = typedWords.has(word.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+            return (
+              <Badge 
+                key={`${word}-${index}`} 
+                variant={isUsed ? 'default' : 'secondary'} 
+                className={cn(
+                  "text-xl px-4 py-2 transition-colors duration-300",
+                  isUsed && "bg-green-200 text-green-800"
+                )}
+              >
+                {word}
+              </Badge>
+            );
+          })}
         </div>
         
         <Textarea
