@@ -28,7 +28,7 @@ function ResultCard({ skillSlug, averageScore, count }: ResultCardProps) {
                 {skill.icon}
             </div>
             <h3 className="font-headline text-xl">{skill.name}</h3>
-            {skill.slug === 'reading-race' || skill.slug === 'fluence' ? (
+            {skill.slug === 'fluence' ? (
                 <div className="flex flex-col items-center justify-center mt-2">
                     <Rocket className="h-10 w-10 text-muted-foreground" />
                     <p className="text-2xl font-bold font-headline mt-1">{averageScore}</p>
@@ -132,4 +132,3 @@ export function ResultsCarousel({ title, subtitle, icon, scores, onPrevious, onN
         </Card>
     );
 }
-
