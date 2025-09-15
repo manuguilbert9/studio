@@ -1,130 +1,60 @@
 
 'use client';
 
-import { useContext, useState, useEffect, useMemo } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { UserContext } from '@/context/user-context';
 import { Score, getScoresForUser } from '@/services/scores';
-import { getSkillBySlug, difficultyLevelToString, SkillCategory, allSkillCategories } from '@/lib/skills';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Home, Loader2, Rocket } from 'lucide-react';
+import { Home, Loader2, CalendarDays, Calendar, CalendarRange } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import { ScoreTube } from '@/components/score-tube';
-
-interface SkillResult {
-    slug: string;
-    name: string;
-    icon: React.ReactElement;
-    category: SkillCategory;
-    average: number;
-    count: number;
-    lastScore?: number;
-    level: string;
-}
-
+import { ResultsCarousel } from '@/components/results/results-carousel';
+import { OverallProgressChart } from '@/components/results/overall-progress-chart';
+import { 
+  isSameDay, 
+  isSameWeek, 
+  isSameMonth, 
+  subDays, 
+  addDays, 
+  subWeeks, 
+  addWeeks, 
+  subMonths, 
+  addMonths, 
+  format
+} from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function ResultsPage() {
     const { student, isLoading: isUserLoading } = useContext(UserContext);
-    const [results, setResults] = useState<SkillResult[]>([]);
+    const [allScores, setAllScores] = useState<Score[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const [currentDay, setCurrentDay] = useState(new Date());
+    const [currentWeek, setCurrentWeek] = useState(new Date());
+    const [currentMonth, setCurrentMonth] = useState(new Date());
+
     useEffect(() => {
-        async function fetchAndCalculateScores() {
+        async function fetchScores() {
             if (!student) {
                 if (!isUserLoading) setIsLoading(false);
                 return;
             }
             setIsLoading(true);
-
-            const allScores = await getScoresForUser(student.id);
-
-            if (allScores.length === 0) {
-                setResults([]);
-                setIsLoading(false);
-                return;
-            }
-
-            // Group scores by a composite key of skillSlug and difficultyLevel
-            const scoresBySkillAndLevel: Record<string, Score[]> = {};
-
-            for (const score of allScores) {
-                const difficulty = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings) || 'N/A';
-                const key = `${score.skill}::${difficulty}`;
-                
-                if (!scoresBySkillAndLevel[key]) {
-                    scoresBySkillAndLevel[key] = [];
-                }
-                scoresBySkillAndLevel[key].push(score);
-            }
-            
-            // Calculate average for each group
-            const calculatedResults: SkillResult[] = [];
-            for (const key in scoresBySkillAndLevel) {
-                const [skillSlug, level] = key.split('::');
-                const skillInfo = getSkillBySlug(skillSlug);
-
-                if (skillInfo) {
-                    const skillScores = scoresBySkillAndLevel[key];
-                    // Use last 10 scores *per level*
-                    const lastScores = skillScores.slice(0, 10).map(s => s.score);
-                    
-                    if (lastScores.length > 0) {
-                        const sum = lastScores.reduce((acc, s) => acc + s, 0);
-                        const average = sum / lastScores.length;
-                        
-                        const result: SkillResult = {
-                            slug: skillSlug,
-                            name: skillInfo.name,
-                            icon: skillInfo.icon,
-                            level: level,
-                            average: Math.round(average),
-                            count: lastScores.length,
-                            category: skillInfo.category,
-                        };
-
-                        if (skillSlug === 'reading-race' || skillSlug === 'fluence') {
-                           result.lastScore = lastScores[0]; // The last score is the first in the sorted array
-                        }
-                        
-                        calculatedResults.push(result);
-                    }
-                }
-            }
-
-            // Sort results by name, then by level
-            calculatedResults.sort((a, b) => {
-                if (a.name < b.name) return -1;
-                if (a.name > b.name) return 1;
-                if (a.level < b.level) return -1;
-                if (a.level > b.level) return 1;
-                return 0;
-            });
-
-
-            setResults(calculatedResults);
+            const scores = await getScoresForUser(student.id);
+            setAllScores(scores);
             setIsLoading(false);
         }
 
         if (!isUserLoading) {
-            fetchAndCalculateScores();
+            fetchScores();
         }
     }, [student, isUserLoading]);
-
-    const resultsByCategory = useMemo(() => {
-        const grouped: Record<string, SkillResult[]> = {};
-        allSkillCategories.forEach(cat => {
-            grouped[cat] = [];
-        });
-
-        results.forEach(result => {
-            if (grouped[result.category]) {
-                grouped[result.category].push(result);
-            }
-        });
-        
-        return grouped;
-    }, [results]);
+    
+    const scoresForDay = allScores.filter(score => isSameDay(new Date(score.createdAt), currentDay));
+    const scoresForWeek = allScores.filter(score => isSameWeek(new Date(score.createdAt), currentWeek, { locale: fr }));
+    const scoresForMonth = allScores.filter(score => isSameMonth(new Date(score.createdAt), currentMonth));
+    
 
     if (isLoading || isUserLoading) {
         return (
@@ -164,46 +94,50 @@ export default function ResultsPage() {
                 </div>
                 <Logo />
                 <h2 className="font-headline text-4xl sm:text-5xl">Mes Progrès</h2>
-                <p className="text-lg sm:text-xl text-muted-foreground">
-                    Voici la moyenne de tes 10 derniers exercices dans chaque matière.
-                </p>
             </header>
             
             <div className="space-y-12">
-                {allSkillCategories.map((category) => {
-                    const categoryResults = resultsByCategory[category] || [];
-                    if (categoryResults.length === 0) {
-                        return null; // Don't render the category if there are no results
-                    }
-                    return (
-                        <div key={category}>
-                        <h2 className="text-3xl font-headline border-b-2 border-primary pb-2 mb-6">{category}</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-                            {categoryResults.map(result => (
-                                <Card key={`${result.slug}-${result.level}`} className="flex flex-col items-center justify-start text-center p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-                                    <div className="text-primary [&>svg]:h-16 [&>svg]:w-16 mb-4">
-                                        {result.icon}
-                                    </div>
-                                    <h3 className="font-headline text-2xl">{result.name}</h3>
-                                    <p className="font-semibold text-sm text-primary mb-2">{result.level}</p>
+                <section>
+                    <ResultsCarousel
+                        title="Aujourd'hui"
+                        subtitle={format(currentDay, "EEEE d MMMM", { locale: fr })}
+                        icon={<CalendarDays />}
+                        scores={scoresForDay}
+                        onPrevious={() => setCurrentDay(d => subDays(d, 1))}
+                        onNext={() => setCurrentDay(d => addDays(d, 1))}
+                        isNextDisabled={isSameDay(currentDay, new Date())}
+                    />
+                </section>
+                
+                <section>
+                     <ResultsCarousel
+                        title="Cette Semaine"
+                        subtitle={`Semaine du ${format(currentWeek, "d MMM", { locale: fr })}`}
+                        icon={<Calendar />}
+                        scores={scoresForWeek}
+                        onPrevious={() => setCurrentWeek(w => subWeeks(w, 1))}
+                        onNext={() => setCurrentWeek(w => addWeeks(w, 1))}
+                        isNextDisabled={isSameWeek(currentWeek, new Date(), { locale: fr })}
+                    />
+                </section>
 
-                                    {(result.slug === 'reading-race' || result.slug === 'fluence') ? (
-                                        <div className="flex items-baseline gap-1">
-                                            <p className="text-4xl font-bold font-headline mt-2">{result.lastScore}</p>
-                                            <p className="text-sm text-muted-foreground">MCLM</p>
-                                        </div>
-                                    ) : (
-                                        <ScoreTube score={result.average} />
-                                    )}
-
-                                    <p className="text-xs text-muted-foreground mt-2">({result.count} exercices)</p>
-                                </Card>
-                            ))}
-                        </div>
-                        </div>
-                    );
-                })}
+                <section>
+                     <ResultsCarousel
+                        title="Ce Mois-ci"
+                        subtitle={format(currentMonth, "MMMM yyyy", { locale: fr })}
+                        icon={<CalendarRange />}
+                        scores={scoresForMonth}
+                        onPrevious={() => setCurrentMonth(m => subMonths(m, 1))}
+                        onNext={() => setCurrentMonth(m => addMonths(m, 1))}
+                        isNextDisabled={isSameMonth(currentMonth, new Date())}
+                    />
+                </section>
+                
+                <section>
+                    <OverallProgressChart allScores={allScores} />
+                </section>
             </div>
         </main>
     );
 }
+
