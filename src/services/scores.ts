@@ -21,6 +21,7 @@ export interface ScoreDetail {
     calculationState?: CalculationState;
     mistakes?: string[]; // For storing reading or spelling mistakes
     options?: string[]; // For QCM questions, to see what choices were offered
+    score?: number; // For exercises that provide a per-item score (like phrase construction)
 }
 
 export interface Score {

@@ -8,7 +8,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription }
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { cn } from '@/lib/utils';
-import { Check, RefreshCw, X, Loader2, Sparkles, Wand2, ThumbsUp, Send } from 'lucide-react';
+import { Check, RefreshCw, X, Loader2, Wand2, ThumbsUp, Send } from 'lucide-react';
 import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
@@ -87,6 +87,8 @@ export function PhraseConstructionExercise() {
         userAnswer: userSentence,
         correctAnswer: result.isCorrect ? userSentence : (result.correctedSentence || 'N/A'),
         status: result.isCorrect ? 'correct' : 'incorrect',
+        // Let's store the score in the detail object
+        score: result.score,
       };
       setSessionDetails(prev => [...prev, detail]);
 
@@ -116,7 +118,8 @@ export function PhraseConstructionExercise() {
         if (gameState === 'finished' && student && !hasBeenSaved) {
             setHasBeenSaved(true);
             const totalScore = sessionDetails.reduce((acc, detail) => {
-                 const score = (validationResult?.score || 0); // This is not right, should store score in detail
+                 // Use the score saved in the detail object
+                 const score = detail.score || 0;
                  return acc + score;
             }, 0);
             const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
@@ -140,7 +143,7 @@ export function PhraseConstructionExercise() {
         }
     };
     saveFinalScore();
-  }, [gameState, student, hasBeenSaved, sessionDetails, level, isHomework, homeworkDate, validationResult]);
+  }, [gameState, student, hasBeenSaved, sessionDetails, level, isHomework, homeworkDate]);
 
   const restartExercise = () => {
     setGameState('generating');
@@ -165,7 +168,8 @@ export function PhraseConstructionExercise() {
   }
   
   if (gameState === 'finished') {
-    const finalScore = sessionDetails.reduce((acc, detail) => acc + (detail.status === 'correct' ? (100 / NUM_SENTENCES_PER_SESSION) : 0), 0);
+    const totalScore = sessionDetails.reduce((acc, detail) => acc + (detail.score || 0), 0);
+    const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
     const correctCount = sessionDetails.filter(d => d.status === 'correct').length;
      return (
       <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
@@ -231,8 +235,11 @@ export function PhraseConstructionExercise() {
            <Card className={cn("p-4", validationResult.isCorrect ? "bg-green-100 border-green-400" : "bg-red-100 border-red-400")}>
              <CardContent className="flex items-start gap-4 p-0">
                {validationResult.isCorrect ? <ThumbsUp className="h-8 w-8 text-green-600 flex-shrink-0 mt-1" /> : <X className="h-8 w-8 text-red-600 flex-shrink-0 mt-1" />}
-               <div className="space-y-1">
-                 <p className="font-semibold">{validationResult.feedback}</p>
+               <div className="space-y-1 flex-grow">
+                 <div className="flex justify-between items-center">
+                   <p className="font-semibold">{validationResult.feedback}</p>
+                   <Badge variant={validationResult.isCorrect ? "default" : "destructive"}>{validationResult.score}/100</Badge>
+                 </div>
                  {!validationResult.isCorrect && validationResult.correctedSentence && (
                     <p className="text-sm text-muted-foreground">Exemple correct : <em className="font-medium">"{validationResult.correctedSentence}"</em></p>
                  )}
