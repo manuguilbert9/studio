@@ -8,7 +8,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Score } from '@/services/scores';
 import { getSkillBySlug, skills } from '@/lib/skills';
-import { format } from 'date-fns';
+import { format, startOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface OverallProgressChartProps {
@@ -33,7 +33,7 @@ export function OverallProgressChart({ allScores }: OverallProgressChartProps) {
         const general: Score[] = [];
         const fluence: Score[] = [];
         allScores.forEach(score => {
-            if (score.skill === 'fluence') {
+            if (score.skill === 'fluence' || score.skill === 'reading-race') {
                 fluence.push(score);
             } else {
                 general.push(score);
@@ -44,7 +44,7 @@ export function OverallProgressChart({ allScores }: OverallProgressChartProps) {
 
     const availableSkills = React.useMemo(() => {
         const uniqueSlugs = new Set(generalScores.map(s => s.skill));
-        return skills.filter(s => uniqueSlugs.has(s.slug) && s.slug !== 'fluence');
+        return skills.filter(s => uniqueSlugs.has(s.slug) && s.slug !== 'fluence' && s.slug !== 'reading-race');
     }, [generalScores]);
     
     const generalChartData = React.useMemo(() => {
@@ -52,12 +52,38 @@ export function OverallProgressChart({ allScores }: OverallProgressChartProps) {
             ? generalScores
             : generalScores.filter(s => s.skill === selectedSkill);
         
-        return filteredScores
-            .map(item => ({
-                date: new Date(item.createdAt),
-                score: item.score
+        if (selectedSkill !== 'all') {
+            // If a specific skill is selected, show individual scores for that skill
+             return filteredScores
+                .map(item => ({
+                    date: new Date(item.createdAt),
+                    score: item.score
+                }))
+                .sort((a,b) => a.date.getTime() - b.date.getTime())
+                .map(item => ({
+                    ...item,
+                    date: format(item.date, 'd MMM yy', { locale: fr })
+                }));
+        }
+
+        // If 'all' is selected, calculate the average score per day
+        const scoresByDay: Record<string, { total: number, count: number }> = {};
+        
+        filteredScores.forEach(item => {
+            const dayKey = format(startOfDay(new Date(item.createdAt)), 'yyyy-MM-dd');
+            if (!scoresByDay[dayKey]) {
+                scoresByDay[dayKey] = { total: 0, count: 0 };
+            }
+            scoresByDay[dayKey].total += item.score;
+            scoresByDay[dayKey].count += 1;
+        });
+
+        return Object.entries(scoresByDay)
+            .map(([dayKey, { total, count }]) => ({
+                date: new Date(dayKey),
+                score: Math.round(total / count),
             }))
-            .sort((a,b) => a.date.getTime() - b.date.getTime())
+            .sort((a, b) => a.date.getTime() - b.date.getTime())
             .map(item => ({
                 ...item,
                 date: format(item.date, 'd MMM yy', { locale: fr })
@@ -85,7 +111,10 @@ export function OverallProgressChart({ allScores }: OverallProgressChartProps) {
                     <div>
                         <CardTitle className="font-headline text-2xl">Progression Globale</CardTitle>
                         <CardDescription>
-                            L'historique de tes résultats (hors fluence) au fil du temps.
+                            {selectedSkill === 'all'
+                                ? "Moyenne de tes scores (hors fluence) par jour."
+                                : `Historique de tes résultats pour l'exercice "${getSkillBySlug(selectedSkill)?.name}".`
+                            }
                         </CardDescription>
                     </div>
                     <div className="w-full sm:w-64">
