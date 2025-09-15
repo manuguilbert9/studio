@@ -158,7 +158,7 @@ export function PhraseConstructionExercise() {
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-muted-foreground">L'IA prépare des mots pour toi...</p>
+          <p className="text-muted-foreground">Préparation des mots...</p>
         </CardContent>
       </Card>
     );
@@ -236,7 +236,6 @@ export function PhraseConstructionExercise() {
                  {!validationResult.isCorrect && validationResult.correctedSentence && (
                     <p className="text-sm text-muted-foreground">Exemple correct : <em className="font-medium">"{validationResult.correctedSentence}"</em></p>
                  )}
-                 <Badge>Score IA : {validationResult.score}/100</Badge>
                </div>
              </CardContent>
            </Card>
