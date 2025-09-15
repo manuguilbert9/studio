@@ -4,12 +4,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings } from 'lucide-react';
+import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings, Wrench } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportAllData, importAllData } from '@/services/database';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { getGloballyEnabledSkills, setGloballyEnabledSkills, getCurrentSchoolYear, setCurrentSchoolYear } from '@/services/teacher';
-import { skills, allSkillCategories } from '@/lib/skills';
+import { skills, allSkillCategories, SkillLevel } from '@/lib/skills';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -213,6 +213,74 @@ function ExercisesManager() {
     );
 }
 
+function MaintenanceManager() {
+    const { toast } = useToast();
+    const [isSyncing, setIsSyncing] = useState(false);
+
+    const handleSyncLevels = async () => {
+        setIsSyncing(true);
+        toast({ title: "Synchronisation en cours...", description: "Vérification des niveaux de compétence pour tous les élèves." });
+
+        try {
+            const allStudents = await getStudents();
+            let studentsUpdated = 0;
+
+            for (const student of allStudents) {
+                let needsUpdate = false;
+                const studentLevels = student.levels || {};
+                const studentEnabledSkills = student.enabledSkills || {};
+
+                for (const skill of skills) {
+                    // Check if skill is enabled and has variable levels, but no level is set for the student
+                    if (studentEnabledSkills[skill.slug] && !skill.isFixedLevel && !studentLevels[skill.slug]) {
+                        studentLevels[skill.slug] = 'B'; // Assign default level 'B'
+                        needsUpdate = true;
+                    }
+                }
+
+                if (needsUpdate) {
+                    await updateStudent(student.id, { levels: studentLevels });
+                    studentsUpdated++;
+                }
+            }
+
+            if (studentsUpdated > 0) {
+                toast({ title: "Synchronisation terminée !", description: `${studentsUpdated} élève(s) ont été mis à jour avec des niveaux par défaut.` });
+            } else {
+                toast({ title: "Aucune mise à jour nécessaire", description: "Tous les élèves ont déjà des niveaux définis pour leurs exercices activés." });
+            }
+
+        } catch (error) {
+            console.error("Error syncing student levels:", error);
+            toast({ variant: 'destructive', title: "Erreur de synchronisation", description: "Une erreur est survenue." });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Maintenance des Données</CardTitle>
+                <CardDescription>
+                    Utilisez ces outils pour assurer la cohérence et l'intégrité des données des élèves.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="flex flex-col gap-4 p-6 rounded-lg bg-secondary/50 items-start">
+                    <h3 className="font-semibold text-lg">Niveaux des exercices</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Si de nouveaux exercices à niveaux ont été ajoutés, cette action vérifiera que chaque élève a un niveau par défaut ('B') assigné pour cet exercice.
+                    </p>
+                    <Button onClick={handleSyncLevels} disabled={isSyncing}>
+                        {isSyncing ? <Loader2 className="mr-2 animate-spin" /> : <Wrench className="mr-2" />}
+                        Synchroniser les niveaux manquants
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 export function DatabaseManager() {
     const { toast } = useToast();
@@ -301,6 +369,7 @@ export function DatabaseManager() {
         <div className="space-y-8">
             <GeneralSettingsManager />
             <ExercisesManager />
+            <MaintenanceManager />
             <Card>
                 <CardHeader>
                     <CardTitle>Sauvegarde et Restauration</CardTitle>
