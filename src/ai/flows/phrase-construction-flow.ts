@@ -13,12 +13,12 @@ import { z } from 'zod';
 // 1. Flow for generating words
 // ===================================
 
-export const PhraseWordsInputSchema = z.object({
+const PhraseWordsInputSchema = z.object({
   level: z.enum(['B', 'C', 'D']).describe('The difficulty level (B: CP, C: CE1/CE2, D: CM1/CM2).'),
 });
 export type PhraseWordsInput = z.infer<typeof PhraseWordsInputSchema>;
 
-export const PhraseWordsOutputSchema = z.object({
+const PhraseWordsOutputSchema = z.object({
   words: z.array(z.string()).describe('An array of words to be used to construct a sentence.'),
 });
 export type PhraseWordsOutput = z.infer<typeof PhraseWordsOutputSchema>;
@@ -64,14 +64,14 @@ export async function generatePhraseWords(input: PhraseWordsInput): Promise<Phra
 // 2. Flow for validating the phrase
 // ===================================
 
-export const ValidatePhraseInputSchema = z.object({
+const ValidatePhraseInputSchema = z.object({
   providedWords: z.array(z.string()).describe('The list of words that were given to the student.'),
   userSentence: z.string().describe("The sentence constructed by the student."),
   level: z.enum(['B', 'C', 'D']).describe('The difficulty level of the exercise.'),
 });
 export type ValidatePhraseInput = z.infer<typeof ValidatePhraseInputSchema>;
 
-export const ValidatePhraseOutputSchema = z.object({
+const ValidatePhraseOutputSchema = z.object({
   isCorrect: z.boolean().describe('True if the sentence is considered correct, otherwise false.'),
   feedback: z.string().describe('A short, encouraging, and constructive feedback for the student, explaining why the sentence is correct or what could be improved. En français.'),
   score: z.number().int().min(0).max(100).describe('A score from 0 to 100 evaluating the quality of the sentence.'),
