@@ -24,9 +24,9 @@ const PhraseWordsOutputSchema = z.object({
 export type PhraseWordsOutput = z.infer<typeof PhraseWordsOutputSchema>;
 
 const levelInstructions = {
-    B: "Génère 3 mots simples et mélangés (sujet, verbe, adverbe ou adjectif). Le verbe doit être conjugué au présent de l'indicatif. Le vocabulaire doit être très concret et facile. La phrase à former doit être évidente. Exemple de sortie: ['dort', 'Camille', 'longtemps'].",
-    C: "Génère 4 mots (sujet, verbe, complément, adjectif). Le verbe peut être au présent ou au futur simple. Le vocabulaire peut être un peu plus abstrait. La phrase à former doit être simple. Exemples: 'Achille boira du café chaud', 'Le lion mange une grosse gazelle'.",
-    D: "Génère 4 ou 5 mots, incluant potentiellement des mots de liaison ou des pronoms. Le verbe peut être au passé composé ou à l'imparfait. Le vocabulaire est plus avancé, la phrase à construire peut demander un peu de réflexion sur la syntaxe. Exemples : 'Le cheval galopait dans la prairie verte', 'Hier, nous avons mangé une délicieuse tarte'.",
+    B: "Génère 3 mots simples et mélangés (sujet, verbe, adverbe ou adjectif). Le verbe doit être conjugué au présent de l'indicatif. Le vocabulaire doit être très concret et facile. La phrase à former doit être évidente. Exemple de sortie: ['dort', 'Camille', 'longtemps']. Varie les sujets et les verbes à chaque fois. Ne répète jamais les exemples.",
+    C: "Génère 4 mots (sujet, verbe, complément, adjectif). Le verbe peut être au présent ou au futur simple. Le vocabulaire peut être un peu plus abstrait. La phrase à former doit être simple. Exemples: 'Achille boira du café chaud', 'Le lion mange une grosse gazelle'. Pour les niveaux C et D, essaie de fournir des verbes à l'infinitif pour que l'élève doive réfléchir à la conjugaison. Varie les sujets et les verbes à chaque fois. Ne répète jamais les exemples.",
+    D: "Génère 4 ou 5 mots, incluant potentiellement des mots de liaison ou des pronoms. Le verbe peut être au passé composé ou à l'imparfait. Le vocabulaire est plus avancé, la phrase à construire peut demander un peu de réflexion sur la syntaxe. Exemples : 'Le cheval galopait dans la prairie verte', 'Hier, nous avons mangé une délicieuse tarte'. Pour les niveaux C et D, essaie de fournir des verbes à l'infinitif pour que l'élève doive réfléchir à la conjugaison. Varie les sujets et les verbes à chaque fois. Ne répète jamais les exemples.",
 };
 
 const generateWordsPrompt = ai.definePrompt({
@@ -38,8 +38,7 @@ const generateWordsPrompt = ai.definePrompt({
 Niveau de difficulté : {{level}}
 Instructions pour ce niveau : {{lookup ../levelInstructions level}}
 
-Ne génère qu'une seule liste de mots. Varie les sujets et les verbes à chaque fois. Ne répète jamais les exemples.
-Pour les niveaux C et D, essaie de fournir des verbes à l'infinitif pour que l'élève doive réfléchir à la conjugaison.
+Ne génère qu'une seule liste de mots.
 `,
   context: { levelInstructions },
 });
@@ -114,7 +113,7 @@ const validateConstructedPhraseFlow = ai.defineFlow(
         outputSchema: ValidatePhraseOutputSchema,
     },
     async (input) => {
-        const { output } = await validateConstructedPhrasePrompt(input);
+        const { output } = await validatePhrasePrompt(input);
         return output!;
     }
 );
