@@ -200,7 +200,7 @@ export function PhraseConstructionExercise() {
       
       <CardContent className="space-y-6">
         <div className="flex flex-wrap items-center justify-center gap-3 p-4 bg-muted rounded-lg">
-          {wordsToUse.map(word => <Badge key={word} variant="secondary" className="text-xl px-4 py-2">{word}</Badge>)}
+          {wordsToUse.map((word, index) => <Badge key={`${word}-${index}`} variant="secondary" className="text-xl px-4 py-2">{word}</Badge>)}
         </div>
         
         <Textarea
