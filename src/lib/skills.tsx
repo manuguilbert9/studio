@@ -1,5 +1,4 @@
 
-
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -25,7 +24,7 @@ import {
   Target,
   ALargeSmall,
   PenLine,
-  Sigma,
+  Blocks,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -162,11 +161,7 @@ export const skills: Skill[] = [
     name: 'Construction de phrases',
     slug: 'phrase-construction',
     description: "Utilise les mots fournis pour construire une phrase grammaticalement correcte.",
-    icon: (
-      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <path d="M 50 50 L 150 50 A 25 25 0 0 1 150 75 L 150 125 A 25 25 0 0 0 150 150 L 50 150 A 25 25 0 0 1 50 125 L 50 75 A 25 25 0 0 0 50 50 Z" fill="currentColor" />
-      </svg>
-    ),
+    icon: <Blocks />,
     category: 'Grammaire',
     allowedLevels: ['B', 'C', 'D'],
   },
