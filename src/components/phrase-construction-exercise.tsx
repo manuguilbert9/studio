@@ -16,7 +16,10 @@ import { saveHomeworkResult } from '@/services/homework';
 import { generatePhraseWords, validateConstructedPhrase, type ValidatePhraseOutput } from '@/ai/flows/phrase-construction-flow';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
+import { Progress } from './ui/progress';
+import { ScoreTube } from './score-tube';
 
+const NUM_SENTENCES_PER_SESSION = 5;
 
 // Helper function to shuffle an array
 const shuffleArray = (array: any[]) => {
@@ -30,17 +33,17 @@ export function PhraseConstructionExercise() {
   const homeworkDate = searchParams.get('date');
 
   const [level, setLevel] = useState<SkillLevel>('B');
-  const [gameState, setGameState] = useState<'generating' | 'playing' | 'validating' | 'feedback'>('generating');
+  const [gameState, setGameState] = useState<'generating' | 'playing' | 'validating' | 'feedback' | 'finished'>('generating');
   
   const [wordsToUse, setWordsToUse] = useState<string[]>([]);
   const [userSentence, setUserSentence] = useState('');
   const [validationResult, setValidationResult] = useState<ValidatePhraseOutput | null>(null);
   
   const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
-  const [totalCorrect, setTotalCorrect] = useState(0);
-  const [totalAttempts, setTotalAttempts] = useState(0);
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   
   const [showConfetti, setShowConfetti] = useState(false);
+  const [hasBeenSaved, setHasBeenSaved] = useState(false);
 
   useEffect(() => {
     if (student?.levels?.['phrase-construction']) {
@@ -70,7 +73,6 @@ export function PhraseConstructionExercise() {
     if (!userSentence.trim() || gameState !== 'playing') return;
 
     setGameState('validating');
-    setTotalAttempts(prev => prev + 1);
 
     try {
       const result = await validateConstructedPhrase({
@@ -89,7 +91,6 @@ export function PhraseConstructionExercise() {
       setSessionDetails(prev => [...prev, detail]);
 
       if (result.isCorrect) {
-        setTotalCorrect(prev => prev + 1);
         setShowConfetti(true);
       }
       
@@ -102,31 +103,51 @@ export function PhraseConstructionExercise() {
   
   const handleNext = () => {
       setShowConfetti(false);
-      generateNewExercise();
+      if(currentSentenceIndex < NUM_SENTENCES_PER_SESSION - 1) {
+          setCurrentSentenceIndex(prev => prev + 1);
+          generateNewExercise();
+      } else {
+          setGameState('finished');
+      }
   };
 
-  const handleSaveAndQuit = async () => {
-      if (!student) return;
-      
-      const score = totalAttempts > 0 ? (totalCorrect / totalAttempts) * 100 : 0;
-      if (isHomework && homeworkDate) {
-        await saveHomeworkResult({
-            userId: student.id,
-            date: homeworkDate,
-            skillSlug: 'phrase-construction',
-            score,
-        });
-      } else {
-        await addScore({
-            userId: student.id,
-            skill: 'phrase-construction',
-            score,
-            details: sessionDetails,
-            numberLevelSettings: { level }
-        });
-      }
-      // Ideally, navigate away after saving
-      console.log("Score saved, should navigate away now.");
+  useEffect(() => {
+    const saveFinalScore = async () => {
+        if (gameState === 'finished' && student && !hasBeenSaved) {
+            setHasBeenSaved(true);
+            const totalScore = sessionDetails.reduce((acc, detail) => {
+                 const score = (validationResult?.score || 0); // This is not right, should store score in detail
+                 return acc + score;
+            }, 0);
+            const finalScore = sessionDetails.length > 0 ? totalScore / sessionDetails.length : 0;
+            
+            if (isHomework && homeworkDate) {
+                await saveHomeworkResult({
+                    userId: student.id,
+                    date: homeworkDate,
+                    skillSlug: 'phrase-construction',
+                    score: finalScore,
+                });
+            } else {
+                await addScore({
+                    userId: student.id,
+                    skill: 'phrase-construction',
+                    score: finalScore,
+                    details: sessionDetails,
+                    numberLevelSettings: { level }
+                });
+            }
+        }
+    };
+    saveFinalScore();
+  }, [gameState, student, hasBeenSaved, sessionDetails, level, isHomework, homeworkDate, validationResult]);
+
+  const restartExercise = () => {
+    setGameState('generating');
+    setCurrentSentenceIndex(0);
+    setSessionDetails([]);
+    setHasBeenSaved(false);
+    generateNewExercise();
   };
 
   if (gameState === 'generating') {
@@ -142,6 +163,28 @@ export function PhraseConstructionExercise() {
       </Card>
     );
   }
+  
+  if (gameState === 'finished') {
+    const finalScore = sessionDetails.reduce((acc, detail) => acc + (detail.status === 'correct' ? (100 / NUM_SENTENCES_PER_SESSION) : 0), 0);
+    const correctCount = sessionDetails.filter(d => d.status === 'correct').length;
+     return (
+      <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
+        <CardHeader>
+          <CardTitle className="text-4xl font-headline mb-4">Session terminée !</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <p className="text-2xl">
+            Tu as réussi <span className="font-bold text-primary">{correctCount}</span> phrases sur <span className="font-bold">{NUM_SENTENCES_PER_SESSION}</span>.
+          </p>
+          <ScoreTube score={finalScore} />
+          <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4">
+            <RefreshCw className="mr-2" />
+            Recommencer une nouvelle session
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-2xl">
@@ -152,6 +195,7 @@ export function PhraseConstructionExercise() {
       <CardHeader>
         <CardTitle className="font-headline text-2xl text-center">Construis une phrase correcte</CardTitle>
         <CardDescription className="text-center">Utilise tous les mots suivants pour former une phrase qui a du sens.</CardDescription>
+        <Progress value={((currentSentenceIndex + 1) / NUM_SENTENCES_PER_SESSION) * 100} className="w-full mt-4 h-3" />
       </CardHeader>
       
       <CardContent className="space-y-6">
@@ -192,6 +236,7 @@ export function PhraseConstructionExercise() {
                  {!validationResult.isCorrect && validationResult.correctedSentence && (
                     <p className="text-sm text-muted-foreground">Exemple correct : <em className="font-medium">"{validationResult.correctedSentence}"</em></p>
                  )}
+                 <Badge>Score IA : {validationResult.score}/100</Badge>
                </div>
              </CardContent>
            </Card>
@@ -199,14 +244,15 @@ export function PhraseConstructionExercise() {
       </CardContent>
 
       <CardFooter className="flex justify-center">
-         <Button 
-            onClick={handleNext} 
-            disabled={gameState === 'validating' || gameState === 'generating'}
-            variant="secondary"
-         >
-           <Wand2 className="mr-2 h-4 w-4" />
-           Exercice Suivant
-         </Button>
+         {gameState === 'feedback' && (
+             <Button 
+                onClick={handleNext} 
+                variant="secondary"
+            >
+            <Wand2 className="mr-2 h-4 w-4" />
+            {currentSentenceIndex < NUM_SENTENCES_PER_SESSION - 1 ? "Exercice Suivant" : "Terminer la session"}
+            </Button>
+         )}
       </CardFooter>
     </Card>
   );

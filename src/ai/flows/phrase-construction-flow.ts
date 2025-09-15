@@ -4,7 +4,7 @@
  * @fileOverview AI flows for the Phrase Construction exercise.
  *
  * - generatePhraseWords: Generates a set of words based on a difficulty level.
- * - validateConstructedPhrase: Validates a user-constructed phrase against given words and grammatical rules.
+ * - validateConstructedPhrase: Validates a user-constructed phrase against given words and grammatical rules, providing a score.
  */
 
 import { ai } from '@/ai/genkit';
@@ -13,12 +13,12 @@ import { z } from 'zod';
 // 1. Flow for generating words
 // ===================================
 
-const PhraseWordsInputSchema = z.object({
+export const PhraseWordsInputSchema = z.object({
   level: z.enum(['B', 'C', 'D']).describe('The difficulty level (B: CP, C: CE1/CE2, D: CM1/CM2).'),
 });
 export type PhraseWordsInput = z.infer<typeof PhraseWordsInputSchema>;
 
-const PhraseWordsOutputSchema = z.object({
+export const PhraseWordsOutputSchema = z.object({
   words: z.array(z.string()).describe('An array of words to be used to construct a sentence.'),
 });
 export type PhraseWordsOutput = z.infer<typeof PhraseWordsOutputSchema>;
@@ -38,8 +38,8 @@ const generateWordsPrompt = ai.definePrompt({
 Niveau de difficulté : {{level}}
 Instructions pour ce niveau : {{lookup ../levelInstructions level}}
 
-Ne génère qu'une seule liste de mots. Ne répète pas les exemples. Varie les sujets et les verbes.
-Sauf pour le niveau B, assure-toi que les verbes sont à l'infinitif ou sous une forme qui nécessite une conjugaison par l'élève.
+Ne génère qu'une seule liste de mots. Varie les sujets et les verbes à chaque fois. Ne répète jamais les exemples.
+Pour les niveaux C et D, essaie de fournir des verbes à l'infinitif pour que l'élève doive réfléchir à la conjugaison.
 `,
   context: { levelInstructions },
 });
@@ -64,16 +64,17 @@ export async function generatePhraseWords(input: PhraseWordsInput): Promise<Phra
 // 2. Flow for validating the phrase
 // ===================================
 
-const ValidatePhraseInputSchema = z.object({
+export const ValidatePhraseInputSchema = z.object({
   providedWords: z.array(z.string()).describe('The list of words that were given to the student.'),
   userSentence: z.string().describe("The sentence constructed by the student."),
   level: z.enum(['B', 'C', 'D']).describe('The difficulty level of the exercise.'),
 });
 export type ValidatePhraseInput = z.infer<typeof ValidatePhraseInputSchema>;
 
-const ValidatePhraseOutputSchema = z.object({
+export const ValidatePhraseOutputSchema = z.object({
   isCorrect: z.boolean().describe('True if the sentence is considered correct, otherwise false.'),
   feedback: z.string().describe('A short, encouraging, and constructive feedback for the student, explaining why the sentence is correct or what could be improved. En français.'),
+  score: z.number().int().min(0).max(100).describe('A score from 0 to 100 evaluating the quality of the sentence.'),
   correctedSentence: z.string().optional().describe('If the sentence is incorrect, provide a possible correct version. En français.'),
 });
 export type ValidatePhraseOutput = z.infer<typeof ValidatePhraseOutputSchema>;
@@ -91,15 +92,18 @@ Voici la tâche de l'élève :
 Voici la phrase de l'élève : "{{userSentence}}"
 
 Évalue la phrase selon les 3 critères suivants :
-1.  **Inclusion des mots** : Tous les mots fournis (ou leurs formes conjuguées/accordées) doivent être présents dans la phrase. Pour le niveau B, les mots doivent être utilisés tels quels. Pour les autres niveaux, l'élève peut conjuguer les verbes.
-2.  **Correction grammaticale** : La phrase doit être grammaticalement correcte (conjugaison, accords, ordre des mots, ponctuation de base comme la majuscule au début et le point à la fin).
-3.  **Cohérence sémantique** : La phrase doit avoir un sens logique et clair.
+1.  **Inclusion des mots** : Tous les mots fournis (ou leurs formes conjuguées/accordées) doivent être présents dans la phrase. Pour le niveau B, les mots doivent être utilisés tels quels. Pour les autres niveaux, l'élève peut conjuguer les verbes. (Pondération: 40%)
+2.  **Correction grammaticale** : La phrase doit être grammaticalement correcte (conjugaison, accords, ordre des mots, ponctuation de base comme la majuscule au début et le point à la fin). (Pondération: 40%)
+3.  **Cohérence sémantique** : La phrase doit avoir un sens logique et clair. (Pondération: 20%)
 
-Analyse :
-- Si les 3 critères sont remplis, la phrase est correcte. Le feedback doit être positif et encourageant.
-- Si un ou plusieurs critères ne sont pas remplis, la phrase est incorrecte. Le feedback doit expliquer **gentiment et simplement** ce qui ne va pas (ex: "C'est un bon début, mais il manque un mot." ou "Fais attention à l'accord du verbe."). Propose une version corrigée si possible.
-
-Le feedback doit être très court (une phrase) et adapté au niveau de l'élève.
+Analyse et notation :
+- **isCorrect** : Ne doit être 'true' que si la phrase est absolument parfaite (les 3 critères sont remplis à 100%).
+- **Feedback** : Donne un feedback court (une phrase) et adapté à l'élève. Si c'est correct, sois encourageant. Si c'est incorrect, explique **gentiment et simplement** ce qui ne va pas (ex: "C'est un bon début, mais il manque un mot." ou "Fais attention à l'accord du verbe."). Propose une version corrigée si possible.
+- **Score** : Attribue un score sur 100 en te basant sur les pondérations.
+    - Phrase parfaite = 100.
+    - Petite erreur de ponctuation ou un mot manquant mais phrase compréhensible = 70-80.
+    - Grosse erreur de grammaire ou de sens = 30-50.
+    - Phrase complètement incohérente ou qui n'utilise pas les mots = 0-20.
 `,
 });
 
@@ -110,7 +114,7 @@ const validateConstructedPhraseFlow = ai.defineFlow(
         outputSchema: ValidatePhraseOutputSchema,
     },
     async (input) => {
-        const { output } = await validatePhrasePrompt(input);
+        const { output } = await validateConstructedPhrasePrompt(input);
         return output!;
     }
 );
