@@ -13,10 +13,15 @@ import Confetti from 'react-dom-confetti';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
-import { generatePhraseWords, validateConstructedPhrase, ValidatePhraseOutput } from '@/ai/flows/phrase-construction-flow';
+import { generatePhraseWords, validateConstructedPhrase, type ValidatePhraseOutput } from '@/ai/flows/phrase-construction-flow';
 import { Badge } from './ui/badge';
 import { Skeleton } from './ui/skeleton';
 
+
+// Helper function to shuffle an array
+const shuffleArray = (array: any[]) => {
+  return [...array].sort(() => Math.random() - 0.5);
+};
 
 export function PhraseConstructionExercise() {
   const { student } = useContext(UserContext);
@@ -49,7 +54,7 @@ export function PhraseConstructionExercise() {
     setValidationResult(null);
     try {
       const result = await generatePhraseWords({ level });
-      setWordsToUse(result.words);
+      setWordsToUse(shuffleArray(result.words));
       setGameState('playing');
     } catch (error) {
       console.error("Failed to generate words:", error);

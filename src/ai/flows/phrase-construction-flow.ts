@@ -24,7 +24,7 @@ const PhraseWordsOutputSchema = z.object({
 export type PhraseWordsOutput = z.infer<typeof PhraseWordsOutputSchema>;
 
 const levelInstructions = {
-    B: "Génère 3 mots simples (sujet, verbe au présent, adverbe ou adjectif). Le vocabulaire doit être très concret et facile. La phrase à former doit être évidente. Exemples : 'Camille dort longtemps', 'Le chat court vite'.",
+    B: "Génère 3 mots simples et mélangés (sujet, verbe, adverbe ou adjectif). Le verbe doit être conjugué au présent de l'indicatif. Le vocabulaire doit être très concret et facile. La phrase à former doit être évidente. Exemple de sortie: ['dort', 'Camille', 'longtemps'].",
     C: "Génère 4 mots (sujet, verbe, complément, adjectif). Le verbe peut être au présent ou au futur simple. Le vocabulaire peut être un peu plus abstrait. La phrase à former doit être simple. Exemples: 'Achille boira du café chaud', 'Le lion mange une grosse gazelle'.",
     D: "Génère 4 ou 5 mots, incluant potentiellement des mots de liaison ou des pronoms. Le verbe peut être au passé composé ou à l'imparfait. Le vocabulaire est plus avancé, la phrase à construire peut demander un peu de réflexion sur la syntaxe. Exemples : 'Le cheval galopait dans la prairie verte', 'Hier, nous avons mangé une délicieuse tarte'.",
 };
@@ -39,7 +39,7 @@ Niveau de difficulté : {{level}}
 Instructions pour ce niveau : {{lookup ../levelInstructions level}}
 
 Ne génère qu'une seule liste de mots. Ne répète pas les exemples. Varie les sujets et les verbes.
-Assure-toi que les verbes sont à l'infinitif ou sous une forme qui nécessite une conjugaison par l'élève.
+Sauf pour le niveau B, assure-toi que les verbes sont à l'infinitif ou sous une forme qui nécessite une conjugaison par l'élève.
 `,
   context: { levelInstructions },
 });
@@ -91,7 +91,7 @@ Voici la tâche de l'élève :
 Voici la phrase de l'élève : "{{userSentence}}"
 
 Évalue la phrase selon les 3 critères suivants :
-1.  **Inclusion des mots** : Tous les mots fournis (ou leurs formes conjuguées/accordées) doivent être présents dans la phrase.
+1.  **Inclusion des mots** : Tous les mots fournis (ou leurs formes conjuguées/accordées) doivent être présents dans la phrase. Pour le niveau B, les mots doivent être utilisés tels quels. Pour les autres niveaux, l'élève peut conjuguer les verbes.
 2.  **Correction grammaticale** : La phrase doit être grammaticalement correcte (conjugaison, accords, ordre des mots, ponctuation de base comme la majuscule au début et le point à la fin).
 3.  **Cohérence sémantique** : La phrase doit avoir un sens logique et clair.
 
