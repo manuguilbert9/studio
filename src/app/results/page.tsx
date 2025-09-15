@@ -21,7 +21,15 @@ import {
   addWeeks, 
   subMonths, 
   addMonths, 
-  format
+  format,
+  isToday,
+  isYesterday,
+  differenceInDays,
+  differenceInWeeks,
+  differenceInMonths,
+  startOfToday,
+  startOfWeek,
+  startOfMonth,
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -55,6 +63,34 @@ export default function ResultsPage() {
     const scoresForWeek = allScores.filter(score => isSameWeek(new Date(score.createdAt), currentWeek, { locale: fr }));
     const scoresForMonth = allScores.filter(score => isSameMonth(new Date(score.createdAt), currentMonth));
     
+    // --- Dynamic Date Labels Logic ---
+    const getDayLabel = (date: Date): string => {
+        const today = startOfToday();
+        const targetDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        if (isToday(targetDay)) return "Aujourd'hui";
+        if (isYesterday(targetDay)) return "Hier";
+        const diff = differenceInDays(today, targetDay);
+        if (diff === 2) return "Avant-hier";
+        return `Il y a ${diff} jours`;
+    };
+
+    const getWeekLabel = (date: Date): string => {
+        const today = startOfWeek(new Date(), { locale: fr });
+        const targetWeek = startOfWeek(date, { locale: fr });
+        if (isSameWeek(today, targetWeek, { locale: fr })) return "Cette semaine";
+        const diff = differenceInWeeks(today, targetWeek, { locale: fr });
+        if (diff === 1) return "La semaine dernière";
+        return `Il y a ${diff} semaines`;
+    };
+
+    const getMonthLabel = (date: Date): string => {
+        const today = startOfMonth(new Date());
+        const targetMonth = startOfMonth(date);
+        if (isSameMonth(today, targetMonth)) return "Ce mois-ci";
+        const diff = differenceInMonths(today, targetMonth);
+        if (diff === 1) return "Le mois dernier";
+        return `En ${format(targetMonth, "MMMM", { locale: fr })}`;
+    };
 
     if (isLoading || isUserLoading) {
         return (
@@ -99,7 +135,7 @@ export default function ResultsPage() {
             <div className="space-y-12">
                 <section>
                     <ResultsCarousel
-                        title="Aujourd'hui"
+                        title={getDayLabel(currentDay)}
                         subtitle={format(currentDay, "EEEE d MMMM", { locale: fr })}
                         icon={<CalendarDays />}
                         scores={scoresForDay}
@@ -111,8 +147,8 @@ export default function ResultsPage() {
                 
                 <section>
                      <ResultsCarousel
-                        title="Cette Semaine"
-                        subtitle={`Semaine du ${format(currentWeek, "d MMM", { locale: fr })}`}
+                        title={getWeekLabel(currentWeek)}
+                        subtitle={`Semaine du ${format(startOfWeek(currentWeek, { locale: fr }), "d MMM", { locale: fr })}`}
                         icon={<Calendar />}
                         scores={scoresForWeek}
                         onPrevious={() => setCurrentWeek(w => subWeeks(w, 1))}
@@ -123,7 +159,7 @@ export default function ResultsPage() {
 
                 <section>
                      <ResultsCarousel
-                        title="Ce Mois-ci"
+                        title={getMonthLabel(currentMonth)}
                         subtitle={format(currentMonth, "MMMM yyyy", { locale: fr })}
                         icon={<CalendarRange />}
                         scores={scoresForMonth}
