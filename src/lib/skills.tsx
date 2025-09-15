@@ -1,4 +1,5 @@
 
+
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -24,6 +25,7 @@ import {
   Target,
   ALargeSmall,
   PenLine,
+  Sigma,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -155,6 +157,14 @@ export const skills: Skill[] = [
     icon: <Keyboard />,
     category: 'Ecriture',
     isFixedLevel: 'A',
+  },
+  {
+    name: 'Construction de phrases',
+    slug: 'phrase-construction',
+    description: "Utilise les mots fournis pour construire une phrase grammaticalement correcte.",
+    icon: <Sigma />,
+    category: 'Grammaire',
+    allowedLevels: ['B', 'C', 'D'],
   },
   {
     name: 'Lire les nombres',
@@ -315,4 +325,3 @@ export function difficultyLevelToString(
     // Fallback for any other case where level can't be determined
     return null;
 }
-
