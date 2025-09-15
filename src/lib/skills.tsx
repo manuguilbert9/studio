@@ -163,10 +163,11 @@ export const skills: Skill[] = [
     slug: 'phrase-construction',
     description: "Utilise les mots fournis pour construire une phrase grammaticalement correcte.",
     icon: (
-      <svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M18.5 6.08579C18.5 5.57599 18.2393 5.1259 17.8028 4.9076C17.3663 4.6893 16.8373 4.74314 16.4586 5.0401L14.4586 6.5401C14.0799 6.83707 13.9241 7.33234 14.0614 7.79463C14.1987 8.25692 14.5986 8.58579 15.0858 8.58579H16.5C16.7761 8.58579 17 8.36193 17 8.08579V7.58579C17 7.0335 17.4477 6.58579 18 6.58579C18.2761 6.58579 18.5 6.36193 18.5 6.08579Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M5.5 17.9142C5.5 18.424 5.76071 18.8741 6.19722 19.0924C6.63373 19.3107 7.16269 19.2569 7.54142 18.9599L9.54142 17.4599C9.92015 17.1629 10.0759 16.6677 9.93863 16.2054C9.80135 15.7431 9.40139 15.4142 8.91421 15.4142H7.5C7.22386 15.4142 7 15.6381 7 15.9142V16.4142C7 16.9665 6.55228 17.4142 6 17.4142C5.72386 17.4142 5.5 17.6381 5.5 17.9142Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M12.4586 11.0401C12.0799 11.3371 11.9241 11.8323 12.0614 12.2946C12.1987 12.7569 12.5986 13.0858 13.0858 13.0858H14C14.5523 13.0858 15 12.6381 15 12.0858V11.5858C15 11.3096 14.7761 11.0858 14.5 11.0858C13.9113 11.0858 13.4143 10.7427 13.1557 10.2241" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg width="1em" height="1em" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <path d="M50 40 V30 C50 20, 40 20, 40 30 V40 H10 V50 C10 60, 20 60, 20 50 H30 V90 H40 C50 90, 50 80, 40 80 V70 H50 Z" fill="#92C639"/>
+        <path d="M60 10 V20 C60 30, 70 30, 70 20 V10 H90 V40 C90 50, 80 50, 80 40 V30 H60 Z" fill="#4285F4"/>
+        <path d="M90 60 V70 C90 80, 80 80, 80 70 V60 H60 V90 H70 C60 90, 60 100, 70 100 H90 Z" fill="#DB4437" transform="rotate(180, 75, 80)"/>
+        <path d="M40 60 H20 C10 60, 10 70, 20 70 H30 V90 H10 V80 C10 70, 0 70, 0 80 V90 H40 Z" fill="#F4B400" />
       </svg>
     ),
     category: 'Grammaire',
