@@ -26,6 +26,7 @@ import {
   ALargeSmall,
   PenLine,
   Sigma,
+  Component,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -162,7 +163,7 @@ export const skills: Skill[] = [
     name: 'Construction de phrases',
     slug: 'phrase-construction',
     description: "Utilise les mots fournis pour construire une phrase grammaticalement correcte.",
-    icon: <Sigma />,
+    icon: <Component />,
     category: 'Grammaire',
     allowedLevels: ['B', 'C', 'D'],
   },
