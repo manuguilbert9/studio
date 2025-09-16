@@ -5,3 +5,4 @@ import './flows/story-flow';
 import './flows/tts-flow';
 import './flows/phrase-construction-flow';
 import './flows/sentence-generation-flow';
+import './flows/motivational-phrase-flow';

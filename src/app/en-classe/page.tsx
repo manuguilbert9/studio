@@ -14,18 +14,19 @@ import { UserContext } from '@/context/user-context';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { getScoresForUser } from '@/services/scores';
 import { isToday } from 'date-fns';
+import { generateMotivationalPhrase } from '@/ai/flows/motivational-phrase-flow';
 
 export default function EnClassePage() {
   const { student, isLoading: isUserLoading } = useContext(UserContext);
   const [enabledSkillsList, setEnabledSkillsList] = useState<Skill[] | null>(null);
   const [skillsCompletedToday, setSkillsCompletedToday] = useState<Set<string>>(new Set());
+  const [motivationalPhrase, setMotivationalPhrase] = useState("Prêt(e) à relever un défi ?");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
       async function determineEnabledSkills() {
         if (!student) {
             if (!isUserLoading) {
-                // For non-logged in state, we might show a default set or nothing
                 setEnabledSkillsList([]); 
                 setIsLoading(false);
             }
@@ -33,6 +34,10 @@ export default function EnClassePage() {
         }
 
         setIsLoading(true);
+        
+        generateMotivationalPhrase().then(result => {
+            setMotivationalPhrase(result.phrase);
+        });
 
         // Fetch scores to determine which exercises were completed today
         const scores = await getScoresForUser(student.id);
@@ -126,7 +131,7 @@ export default function EnClassePage() {
         </div>
         <Logo />
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
-        <p className="text-lg sm:text-xl text-muted-foreground">Choisis un défi et montre ton génie !</p>
+        <p className="text-lg sm:text-xl text-muted-foreground">{motivationalPhrase}</p>
          <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
              <Button asChild variant="outline" size="sm">
                 <Link href="/results">
