@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useCallback } from 'react';
+import type { SkillLevel } from '@/lib/skills';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,10 +14,13 @@ import { ScoreTube } from './score-tube';
 import { UserContext } from '@/context/user-context';
 import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Label } from './ui/label';
+
 
 type Move = 'up' | 'down' | 'left' | 'right';
 type Tile = 'empty' | 'wall' | 'player' | 'key';
-type Level = {
+type LevelData = {
     grid: Tile[][];
     playerStart: { x: number, y: number };
     keyPos: { x: number, y: number };
@@ -25,7 +29,7 @@ type Level = {
 const LEVEL_COUNT = 5;
 
 // --- Grid Generation ---
-const generateLevel = (): Level => {
+const generateLevel = (): LevelData => {
     const width = 7;
     const height = 7;
     const grid: Tile[][] = Array.from({ length: height }, () => Array(width).fill('empty'));
@@ -52,7 +56,7 @@ const generateLevel = (): Level => {
     } while (grid[keyPos.y][keyPos.x] !== 'empty' || (keyPos.x === playerStart.x && keyPos.y === playerStart.y));
     grid[keyPos.y][keyPos.x] = 'key';
     
-    // Check if path exists, regenerate if not. This is a simple check.
+    // Check if path exists, regenerate if not.
     if (!isPathPossible(grid, playerStart, keyPos)) {
         return generateLevel();
     }
@@ -90,7 +94,9 @@ export function CodedPathExercise() {
     const isHomework = searchParams.get('from') === 'devoirs';
     const homeworkDate = searchParams.get('date');
 
-    const [level, setLevel] = useState<Level | null>(null);
+    const [level, setLevel] = useState<SkillLevel | null>(null);
+    const [currentLevelData, setCurrentLevelData] = useState<LevelData | null>(null);
+
     const [path, setPath] = useState<Move[]>([]);
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
     const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
@@ -99,12 +105,30 @@ export function CodedPathExercise() {
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showConfetti, setShowConfetti] = useState(false);
+    
+    // Level B state
     const [isSimulating, setIsSimulating] = useState(false);
     const [simulatedPlayerPos, setSimulatedPlayerPos] = useState<{x:number, y:number} | null>(null);
+
+    // Level A state
+    const [realtimePlayerPos, setRealtimePlayerPos] = useState<{ x: number; y: number } | null>(null);
+
+
+    useEffect(() => {
+        if(student?.levels?.['coded-path']) {
+            setLevel(student.levels['coded-path']);
+        } else {
+            setLevel('A');
+        }
+    }, [student]);
     
     useEffect(() => {
-        setLevel(generateLevel());
-    }, [currentLevelIndex]);
+        const newLevelData = generateLevel();
+        setCurrentLevelData(newLevelData);
+        if (level === 'A') {
+            setRealtimePlayerPos(newLevelData.playerStart);
+        }
+    }, [currentLevelIndex, level]);
 
     const handleNextLevel = () => {
         setShowConfetti(false);
@@ -117,19 +141,19 @@ export function CodedPathExercise() {
         }
     };
     
-    const checkPath = () => {
-        if (!level || path.length === 0) return;
+    const checkPathForLevelB = () => {
+        if (!currentLevelData || path.length === 0) return;
         setIsSimulating(true);
 
-        let pos = { ...level.playerStart };
+        let pos = { ...currentLevelData.playerStart };
         let pathIsCorrect = false;
         let step = 0;
 
         const interval = setInterval(() => {
             if (step >= path.length) { // End of path
-                pathIsCorrect = pos.x === level.keyPos.x && pos.y === level.keyPos.y;
+                pathIsCorrect = pos.x === currentLevelData.keyPos.x && pos.y === currentLevelData.keyPos.y;
                 clearInterval(interval);
-                finalizeCheck(pathIsCorrect);
+                finalizeCheck(pathIsCorrect, path.join(', '));
                 return;
             }
 
@@ -140,10 +164,10 @@ export function CodedPathExercise() {
             if (move === 'right') pos.x++;
             
             // Check for collision
-            if (pos.y < 0 || pos.y >= level.grid.length || pos.x < 0 || pos.x >= level.grid[0].length || level.grid[pos.y][pos.x] === 'wall') {
+            if (pos.y < 0 || pos.y >= currentLevelData.grid.length || pos.x < 0 || pos.x >= currentLevelData.grid[0].length || currentLevelData.grid[pos.y][pos.x] === 'wall') {
                 pathIsCorrect = false;
                 clearInterval(interval);
-                finalizeCheck(false);
+                finalizeCheck(false, path.join(', '));
                 return;
             }
             
@@ -152,11 +176,35 @@ export function CodedPathExercise() {
         }, 300);
     };
 
-    const finalizeCheck = (isCorrect: boolean) => {
+    const handleRealtimeMove = (move: Move) => {
+        if (!realtimePlayerPos || !currentLevelData || feedback) return;
+
+        let nextPos = { ...realtimePlayerPos };
+        if (move === 'up') nextPos.y--;
+        if (move === 'down') nextPos.y++;
+        if (move === 'left') nextPos.x--;
+        if (move === 'right') nextPos.x++;
+
+        const { y, x } = nextPos;
+        if (y < 0 || y >= currentLevelData.grid.length || x < 0 || x >= currentLevelData.grid[0].length || currentLevelData.grid[y][x] === 'wall') {
+            setFeedback('incorrect');
+            setTimeout(() => setFeedback(null), 500);
+            return;
+        }
+
+        setRealtimePlayerPos(nextPos);
+        
+        if (nextPos.x === currentLevelData.keyPos.x && nextPos.y === currentLevelData.keyPos.y) {
+            finalizeCheck(true, `Mouvement direct ${move}`);
+        }
+    };
+
+
+    const finalizeCheck = (isCorrect: boolean, userAnswer: string) => {
          const detail: ScoreDetail = {
             question: `Parcours ${currentLevelIndex + 1}`,
-            userAnswer: path.join(', '),
-            correctAnswer: 'Chemin valide', // Correct path can be complex, so we simplify
+            userAnswer: userAnswer,
+            correctAnswer: 'Chemin valide',
             status: isCorrect ? 'correct' : 'incorrect',
         };
         setSessionDetails(prev => [...prev, detail]);
@@ -181,8 +229,12 @@ export function CodedPathExercise() {
     }
 
     const addMove = (move: Move) => {
-        if (isSimulating || feedback) return;
-        setPath(prev => [...prev, move]);
+        if (level === 'A') {
+            handleRealtimeMove(move);
+        } else {
+            if (isSimulating || feedback) return;
+            setPath(prev => [...prev, move]);
+        }
     }
     const removeLastMove = () => {
         if (isSimulating || feedback) return;
@@ -195,18 +247,18 @@ export function CodedPathExercise() {
 
      useEffect(() => {
         const saveResult = async () => {
-             if (isFinished && student && !hasBeenSaved) {
+             if (isFinished && student && !hasBeenSaved && level) {
                 setHasBeenSaved(true);
                 const score = (correctAnswers / LEVEL_COUNT) * 100;
                 if (isHomework && homeworkDate) {
                     await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: 'coded-path', score });
                 } else {
-                    await addScore({ userId: student.id, skill: 'coded-path', score, details: sessionDetails });
+                    await addScore({ userId: student.id, skill: 'coded-path', score, details: sessionDetails, numberLevelSettings: { level } });
                 }
             }
         };
         saveResult();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
+    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate, level]);
 
     const restartExercise = () => {
         setCurrentLevelIndex(0);
@@ -217,6 +269,28 @@ export function CodedPathExercise() {
     };
     
     if (!level) {
+        return (
+            <Card className="w-full max-w-lg mx-auto shadow-2xl p-6">
+                <CardHeader>
+                    <CardTitle>Choisis ton niveau</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Label>Niveau de difficulté</Label>
+                    <Select onValueChange={(val) => setLevel(val as SkillLevel)}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Choisir un niveau..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="A">Niveau A (Déplacement direct)</SelectItem>
+                            <SelectItem value="B">Niveau B (Programmation)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </CardContent>
+            </Card>
+        );
+    }
+    
+    if (!currentLevelData) {
         return <Card className="w-full shadow-2xl p-8 text-center"><Loader2 className="animate-spin h-8 w-8 mx-auto" /></Card>;
     }
 
@@ -235,7 +309,8 @@ export function CodedPathExercise() {
         );
     }
     
-    const playerPos = simulatedPlayerPos || level.playerStart;
+    const playerPos = level === 'A' ? realtimePlayerPos : (simulatedPlayerPos || currentLevelData.playerStart);
+    if (!playerPos) return null; // Should not happen
 
     return (
         <Card className="w-full max-w-4xl mx-auto shadow-2xl">
@@ -244,15 +319,15 @@ export function CodedPathExercise() {
             </div>
             <CardHeader>
                 <CardTitle className="text-center font-headline text-3xl">Parcours Codé</CardTitle>
-                <CardDescription className="text-center">Construis le chemin pour que le robot atteigne la clé.</CardDescription>
+                <CardDescription className="text-center">Guidez le robot jusqu'à la clé.</CardDescription>
                 <Progress value={((currentLevelIndex + 1) / LEVEL_COUNT) * 100} className="w-full mt-4 h-3" />
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div className="flex justify-center">
-                     <div className="grid border-2 bg-muted/20" style={{gridTemplateColumns: `repeat(${level.grid[0].length}, 1fr)`}}>
-                        {level.grid.flat().map((tile, index) => {
-                            const x = index % level.grid[0].length;
-                            const y = Math.floor(index / level.grid[0].length);
+                     <div className={cn("grid border-2 bg-muted/20", feedback === 'incorrect' && level === 'A' && 'animate-shake')} style={{gridTemplateColumns: `repeat(${currentLevelData.grid[0].length}, 1fr)`}}>
+                        {currentLevelData.grid.flat().map((tile, index) => {
+                            const x = index % currentLevelData.grid[0].length;
+                            const y = Math.floor(index / currentLevelData.grid[0].length);
                             const isPlayerHere = playerPos.x === x && playerPos.y === y;
                             return (
                                 <div key={index} className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center border text-3xl sm:text-4xl">
@@ -266,18 +341,20 @@ export function CodedPathExercise() {
                 </div>
 
                 <div className="space-y-4">
-                    <div className="p-4 rounded-lg bg-muted min-h-[6rem]">
-                         <p className="text-sm text-muted-foreground mb-2">Chemin programmé :</p>
-                         <div className="flex flex-wrap gap-1">
-                            {path.map((move, i) => {
-                                if (move === 'up') return <ArrowUp key={i} className="h-8 w-8 text-secondary-foreground"/>
-                                if (move === 'down') return <ArrowDown key={i} className="h-8 w-8 text-secondary-foreground"/>
-                                if (move === 'left') return <ArrowLeft key={i} className="h-8 w-8 text-secondary-foreground"/>
-                                if (move === 'right') return <ArrowRight key={i} className="h-8 w-8 text-secondary-foreground"/>
-                                return null;
-                            })}
-                         </div>
-                    </div>
+                    {level === 'B' && (
+                        <div className="p-4 rounded-lg bg-muted min-h-[6rem]">
+                            <p className="text-sm text-muted-foreground mb-2">Chemin programmé :</p>
+                            <div className="flex flex-wrap gap-1">
+                                {path.map((move, i) => {
+                                    if (move === 'up') return <ArrowUp key={i} className="h-8 w-8 text-secondary-foreground"/>
+                                    if (move === 'down') return <ArrowDown key={i} className="h-8 w-8 text-secondary-foreground"/>
+                                    if (move === 'left') return <ArrowLeft key={i} className="h-8 w-8 text-secondary-foreground"/>
+                                    if (move === 'right') return <ArrowRight key={i} className="h-8 w-8 text-secondary-foreground"/>
+                                    return null;
+                                })}
+                            </div>
+                        </div>
+                    )}
                     
                     <div className="grid grid-cols-3 gap-2">
                         <div></div>
@@ -288,19 +365,22 @@ export function CodedPathExercise() {
                         <Button variant="outline" size="lg" className="h-16" onClick={() => addMove('right')}><ArrowRight className="h-8 w-8"/></Button>
                     </div>
 
-                     <div className="flex gap-2">
-                        <Button variant="outline" className="w-full" onClick={removeLastMove}><Undo2 className="mr-2 h-4 w-4"/>Annuler</Button>
-                        <Button variant="destructive" className="w-full" onClick={clearPath}><Trash2 className="mr-2 h-4 w-4"/>Effacer</Button>
-                    </div>
-
+                     {level === 'B' && (
+                        <div className="flex gap-2">
+                            <Button variant="outline" className="w-full" onClick={removeLastMove}><Undo2 className="mr-2 h-4 w-4"/>Annuler</Button>
+                            <Button variant="destructive" className="w-full" onClick={clearPath}><Trash2 className="mr-2 h-4 w-4"/>Effacer</Button>
+                        </div>
+                     )}
                 </div>
             </CardContent>
             <CardFooter className="flex-col gap-4 pt-6">
-                <Button size="lg" className="w-full max-w-md" onClick={checkPath} disabled={isSimulating || feedback !== null}>
-                    <Play className="mr-2"/> Lancer le robot !
-                </Button>
+                {level === 'B' && (
+                     <Button size="lg" className="w-full max-w-md" onClick={checkPathForLevelB} disabled={isSimulating || feedback !== null}>
+                        <Play className="mr-2"/> Lancer le robot !
+                    </Button>
+                )}
                  {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp/> Super !</div>}
-                 {feedback === 'incorrect' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon chemin.</div>}
+                 {feedback === 'incorrect' && level === 'B' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon chemin.</div>}
             </CardFooter>
              <style jsx>{`
                 @keyframes shake {
