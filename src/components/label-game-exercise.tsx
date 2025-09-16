@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useContext } from 'react';
@@ -20,8 +21,25 @@ import { generateSentence } from '@/ai/flows/sentence-generation-flow';
 
 const NUM_QUESTIONS = 5;
 
-// Helper to shuffle an array
-const shuffleArray = (array: any[]) => [...array].sort(() => Math.random() - 0.5);
+// Fisher-Yates shuffle algorithm
+const shuffleArray = (array: any[]) => {
+  let currentIndex = array.length,  randomIndex;
+  const newArray = [...array]; // Create a copy to avoid mutating the original
+  
+  // While there remain elements to shuffle.
+  while (currentIndex !== 0) {
+    // Pick a remaining element.
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [newArray[currentIndex], newArray[randomIndex]] = [
+      newArray[randomIndex], newArray[currentIndex]];
+  }
+
+  return newArray;
+};
+
 
 interface LabelItem {
     id: string;
