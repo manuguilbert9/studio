@@ -16,20 +16,7 @@ import { ScoreTube } from './score-tube';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-
-
-const SENTENCES = [
-    "Le chat dort.",
-    "Le chien court vite.",
-    "La fille mange une pomme.",
-    "Le garçon boit du lait.",
-    "Maman lit un livre.",
-    "Papa regarde la télé.",
-    "Le soleil brille fort.",
-    "L'oiseau chante dans l'arbre.",
-    "Le bébé pleure beaucoup.",
-    "La voiture roule sur la route."
-];
+import { generateSentence } from '@/ai/flows/sentence-generation-flow';
 
 const NUM_QUESTIONS = 5;
 
@@ -68,8 +55,8 @@ export function LabelGameExercise() {
     const isHomework = searchParams.get('from') === 'devoirs';
     const homeworkDate = searchParams.get('date');
     
-    const [sentences, setSentences] = useState<string[]>([]);
-    const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+    const [currentSentence, setCurrentSentence] = useState('');
     const [orderedLabels, setOrderedLabels] = useState<LabelItem[]>([]);
 
     const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
@@ -78,30 +65,40 @@ export function LabelGameExercise() {
     const [showConfetti, setShowConfetti] = useState(false);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
     const sensors = useSensors(useSensor(PointerSensor));
 
-    const currentSentence = useMemo(() => sentences[currentSentenceIndex], [sentences, currentSentenceIndex]);
-    
-    const setupQuestion = (index: number, sentenceList: string[]) => {
-        const words = sentenceList[index].split(/\s+/).filter(Boolean);
-        const shuffledLabels = shuffleArray(words.map((word, i) => ({ id: `${index}-${i}-${word}`, word })));
+    const setupQuestion = (sentence: string) => {
+        const words = sentence.split(/\s+/).filter(Boolean);
+        const shuffledLabels = shuffleArray(words.map((word, i) => ({ id: `${currentQuestionIndex}-${i}-${word}`, word })));
+        setCurrentSentence(sentence);
         setOrderedLabels(shuffledLabels);
+        setIsLoading(false);
+    }
+    
+    const fetchNewSentence = async () => {
+        setIsLoading(true);
+        try {
+            const { sentence } = await generateSentence();
+            setupQuestion(sentence);
+        } catch(e) {
+            console.error("Failed to generate sentence:", e);
+            // Fallback to a simple sentence on error
+            setupQuestion("Le chat dort sur le tapis.");
+        }
     }
 
-    // Setup exercise on mount
+    // Setup exercise on mount and for each new question
     useEffect(() => {
-        const shuffledSentences = shuffleArray(SENTENCES).slice(0, NUM_QUESTIONS);
-        setSentences(shuffledSentences);
-        setupQuestion(0, shuffledSentences);
-    }, []);
+        fetchNewSentence();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentQuestionIndex]);
 
     const handleNextQuestion = () => {
         setShowConfetti(false);
-        if (currentSentenceIndex < NUM_QUESTIONS - 1) {
-            const nextIndex = currentSentenceIndex + 1;
-            setCurrentSentenceIndex(nextIndex);
-            setupQuestion(nextIndex, sentences);
+        if (currentQuestionIndex < NUM_QUESTIONS - 1) {
+            setCurrentQuestionIndex(prev => prev + 1);
             setFeedback(null);
         } else {
             setIsFinished(true);
@@ -171,10 +168,7 @@ export function LabelGameExercise() {
     }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate]);
 
     const restartExercise = () => {
-        const shuffledSentences = shuffleArray(SENTENCES).slice(0, NUM_QUESTIONS);
-        setSentences(shuffledSentences);
-        setCurrentSentenceIndex(0);
-        setupQuestion(0, shuffledSentences);
+        setCurrentQuestionIndex(0);
         setFeedback(null);
         setIsFinished(false);
         setCorrectAnswers(0);
@@ -182,8 +176,18 @@ export function LabelGameExercise() {
         setSessionDetails([]);
     };
 
-    if (sentences.length === 0) {
-        return <Card className="w-full shadow-2xl p-8 text-center"><Loader2 className="mx-auto animate-spin" /></Card>;
+    if (isLoading) {
+        return (
+            <Card className="w-full max-w-2xl mx-auto shadow-2xl p-6">
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl text-center">Préparation de l'exercice...</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    <p className="text-muted-foreground">L'IA génère une nouvelle phrase...</p>
+                </CardContent>
+            </Card>
+        );
     }
     
     if (isFinished) {
@@ -210,7 +214,7 @@ export function LabelGameExercise() {
             <CardHeader>
                 <CardTitle className="font-headline text-2xl text-center">Le jeu des étiquettes</CardTitle>
                 <CardDescription className="text-center">Fais glisser les mots pour remettre la phrase dans le bon ordre.</CardDescription>
-                 <Progress value={((currentSentenceIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
+                 <Progress value={((currentQuestionIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
             </CardHeader>
             <CardContent className="min-h-[300px] flex flex-col items-center justify-center gap-6 p-6">
                 
