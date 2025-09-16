@@ -131,7 +131,7 @@ export const skills: Skill[] = [
     isFixedLevel: 'A',
   },
   {
-    name: 'Premiers mots',
+    name: 'Lire des mots',
     slug: 'simple-word-reading',
     description: 'Lire des mots simples à voix haute pour s\'entraîner.',
     icon: <Smile />,
@@ -351,4 +351,3 @@ export function difficultyLevelToString(
     // Fallback for any other case where level can't be determined
     return null;
 }
-
