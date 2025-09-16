@@ -37,17 +37,17 @@ export function numberToWords(num: number): string {
         return numberToFrench[num];
     }
 
-    if (num < 0 || num > 9999999) {
+    if (num < 0 || num > 999999999) {
         return "nombre hors limites";
     }
 
     if (num === 0) return "zéro";
 
     let words = "";
-
+    
     if (num >= 1000000) {
         const millions = Math.floor(num / 1000000);
-        words += (millions > 1 ? numberToWords(millions) : "") + " million" + (millions > 1 ? "s" : "");
+        words += numberToWords(millions) + " million" + (millions > 1 ? "s" : "");
         num %= 1000000;
         if (num > 0) words += " ";
     }
@@ -74,7 +74,7 @@ export function numberToWords(num: number): string {
 
     if (num > 0) {
         if (words !== "") words += "";
-        if (num < 20 || num % 10 === 0) {
+        if (numberToFrench[num]) {
             words += numberToFrench[num];
         } else {
             const tens = Math.floor(num / 10) * 10;

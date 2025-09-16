@@ -24,10 +24,9 @@ interface ResultsManagerProps {
     students: Student[];
     allScores: Score[];
     allWritingEntries: WritingEntry[];
-    onDataRefresh: () => void;
 }
 
-export function ResultsManager({ students, allScores, allWritingEntries, onDataRefresh }: ResultsManagerProps) {
+export function ResultsManager({ students, allScores, allWritingEntries }: ResultsManagerProps) {
     const { toast } = useToast();
 
     const sortedStudents = useMemo(() => {

@@ -5,7 +5,7 @@
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { skills } from '@/lib/skills';
-import { startOfWeek, addDays, getDay } from 'date-fns';
+import { startOfWeek, addDays, getDay, startOfDay } from 'date-fns';
 import type { Student } from './students';
 import type { Homework, Assignment } from './homework';
 
@@ -104,23 +104,14 @@ export async function getCurrentHomeworkForStudent(student: Student): Promise<As
     // From Monday 5 PM to Thursday 5 PM, we target Thursday
     if ((day === 1 && hour >= 17) || day === 2 || day === 3 || (day === 4 && hour < 17)) {
         daysToAdd = (4 - day + 7) % 7;
-        targetDate = addDays(now, daysToAdd);
+        targetDate = addDays(startOfDay(now), daysToAdd);
     }
     // From Thursday 5 PM to Monday 5 PM, we target Monday
     else {
         daysToAdd = (1 - day + 7) % 7;
-         if (daysToAdd === 0 && day === 1) { // If it's Monday but we're in this block, it must be before 17h
-            // so we target today's Monday
-         } else if (daysToAdd === 0 && day !== 1) {
-            // e.g. on a Sunday, daysToAdd is 1. Not 0.
-            // This case should not be hit with current logic.
-         } else if (daysToAdd > 0) {
-            // standard case
-         } else {
-            daysToAdd +=7; // ensure we go to the *next* Monday
-         }
-         targetDate = addDays(now, daysToAdd);
+        targetDate = addDays(startOfDay(now), daysToAdd);
     }
+
 
     if (!targetDate) return null;
 

@@ -27,6 +27,7 @@ import { LettresEtSonsExercise } from '@/components/lettres-et-sons-exercise';
 import { DictationExercise } from '@/components/dictation-exercise';
 import { FluenceExercise } from '@/components/fluence-exercise';
 import { PhraseConstructionExercise } from '@/components/phrase-construction-exercise';
+import { CodedPathExercise } from '@/components/coded-path-exercise';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 
 export default function ExercisePage() {
@@ -82,6 +83,8 @@ export default function ExercisePage() {
         return <DictationExercise />;
       case 'phrase-construction':
         return <PhraseConstructionExercise />;
+      case 'coded-path':
+        return <CodedPathExercise />;
       case 'denombrement':
       case 'time':
       case 'lire-les-nombres':

@@ -25,6 +25,7 @@ import {
   ALargeSmall,
   PenLine,
   Blocks,
+  Route,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -52,8 +53,8 @@ export const allSkillCategories: SkillCategory[] = [
     "Vocabulaire",
     "Nombres et calcul",
     "Grandeurs et mesures",
-    "Organisation et gestion de données",
     "Espace et géométrie",
+    "Organisation et gestion de données",
     "Problèmes"
 ];
 
@@ -164,6 +165,14 @@ export const skills: Skill[] = [
     icon: <Blocks />,
     category: 'Grammaire',
     allowedLevels: ['B', 'C', 'D'],
+  },
+    {
+    name: 'Parcours Codé',
+    slug: 'coded-path',
+    description: "Guidez le personnage jusqu'à la clé en créant une séquence de flèches.",
+    icon: <Route />,
+    category: 'Espace et géométrie',
+    isFixedLevel: 'B',
   },
   {
     name: 'Lire les nombres',
