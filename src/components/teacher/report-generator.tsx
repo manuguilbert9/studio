@@ -60,6 +60,8 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 15;
         const columnWidth = (pageWidth - 3 * margin) / 2;
+        const xCol1 = margin;
+        const xCol2 = margin + columnWidth + margin;
         
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
@@ -79,100 +81,128 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 scoresByCategory[skill.category].push(score);
             }
         });
+
+        // --- CONTENT LAYOUT LOGIC ---
+        const contentBlocks: { height: number; render: (x: number, y: number) => number }[] = [];
         
-        let yPos = 50;
-        let currentColumn = 1;
-
-        const renderBlock = (renderer: () => void) => {
-            const initialY = yPos;
-            const initialCol = currentColumn;
-            
-            // Render once to get the final Y position from autotable
-            renderer();
-            const finalY = (doc as any).lastAutoTable.finalY || initialY + 20; // fallback height
-            const blockHeight = finalY - initialY;
-            
-            // Reset to draw for real
-            yPos = initialY;
-            currentColumn = initialCol;
-            (doc as any).lastAutoTable.finalY = initialY;
-
-            if (yPos + blockHeight > pageHeight - margin) {
-                if (currentColumn === 1) {
-                    currentColumn = 2;
-                    yPos = 50;
-                } else {
-                    doc.addPage();
-                    currentColumn = 1;
-                    yPos = 50;
-                }
+        // Function to measure the height of a content block
+        const measureBlockHeight = (score: Score): number => {
+            let height = 15; // Title and score line
+            const body = score.details || [];
+            if (body.length > 0) {
+                 const table = autoTable.calculateDimensions(doc, {
+                    head: [['Question', 'Réponse']],
+                    body: body.map(d => [d.question, d.userAnswer]),
+                    tableWidth: columnWidth,
+                    styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
+                    columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
+                 });
+                 height += table.height;
+            } else {
+                 height += 2;
             }
-            
-            renderer();
-            yPos = (doc as any).lastAutoTable.finalY + 5;
+            return height;
         };
-
+        
+        // Create renderable blocks for each category and score
         for (const category of allSkillCategories) {
             const categoryScores = scoresByCategory[category];
             if (!categoryScores || categoryScores.length === 0) continue;
 
-            // Category Header
-            renderBlock(() => {
-                 autoTable(doc, {
-                    startY: yPos,
-                    head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
-                    theme: 'plain', tableWidth: columnWidth, margin: { left: currentColumn === 1 ? margin : margin * 2 + columnWidth },
-                });
+            // Render function for the category header
+            contentBlocks.push({
+                height: 15,
+                render: (x, y) => {
+                    autoTable(doc, {
+                        startY: y,
+                        head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
+                        theme: 'plain', tableWidth: columnWidth, margin: { left: x },
+                    });
+                    return (doc as any).lastAutoTable.finalY + 5 - y;
+                }
             });
 
             for (const score of categoryScores) {
-                 renderBlock(() => {
-                    const skillName = getSkillBySlug(score.skill)?.name || score.skill;
-                    const scoreDate = format(new Date(score.createdAt), 'dd/MM/yy', { locale: fr });
-                    const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)}%`;
-                    const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
-                    
-                    const head = [[
-                        { content: `${skillName} - ${scoreDate}`, styles: { fontStyle: 'bold' }},
-                        { content: scoreText, styles: { halign: 'center' }},
-                        { content: `Niveau ${level}`, styles: { halign: 'right' }}
-                    ]];
+                 // Render function for each score
+                const blockHeight = measureBlockHeight(score);
+                contentBlocks.push({
+                    height: blockHeight,
+                    render: (x, y) => {
+                        const skillName = getSkillBySlug(score.skill)?.name || score.skill;
+                        const scoreDate = format(new Date(score.createdAt), 'dd/MM/yy', { locale: fr });
+                        const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)}%`;
+                        const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
+                        
+                        let currentY = y;
+                        
+                        doc.setFontSize(10);
+                        doc.setFont('helvetica', 'bold');
+                        doc.text(`${skillName} - ${scoreDate}`, x, currentY);
+                        
+                        doc.setFont('helvetica', 'normal');
+                        doc.setFontSize(9);
+                        doc.text(scoreText, x + columnWidth / 2, currentY, { align: 'center'});
+                        
+                        if (level) {
+                            doc.text(`Niveau ${level}`, x + columnWidth, currentY, { align: 'right' });
+                        }
+                        currentY += 5;
 
-                    const body = (score.details || []).map(detail => [detail.question, detail.userAnswer]);
-
-                    autoTable(doc, {
-                        startY: yPos,
-                        head: head,
-                        body: body.length > 0 ? body : undefined,
-                        theme: body.length > 0 ? 'grid' : 'plain',
-                        tableWidth: columnWidth,
-                        margin: { left: currentColumn === 1 ? margin : margin * 2 + columnWidth },
-                        headStyles: { 
-                            fillColor: [245, 245, 245], 
-                            textColor: 20, 
-                            fontSize: 8, 
-                            cellPadding: {top: 1.5, right: 1.5, bottom: 0.5, left: 1.5}
-                        },
-                        bodyStyles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
-                        columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 'auto' } },
-                        didParseCell: (data) => {
-                            if (data.section === 'head') {
-                                // Clear default styles for custom layout
-                                data.cell.styles.fontStyle = 'normal';
-                                data.cell.styles.fontSize = 8;
-                            }
-                            if (data.section === 'body' && score.details && data.row.index >= 0 && score.details[data.row.index]) {
-                                if(score.details[data.row.index].status === 'incorrect'){
-                                    data.cell.styles.fillColor = LIGHT_RED_FILL;
-                                }
-                            }
-                        },
-                    });
-                 });
+                        if (score.details && score.details.length > 0) {
+                            const body = score.details.map(detail => [detail.question, detail.userAnswer]);
+                            autoTable(doc, {
+                                startY: currentY,
+                                head: [['Question', 'Réponse']],
+                                body,
+                                theme: 'grid', tableWidth: columnWidth, margin: { left: x },
+                                headStyles: { fillColor: [230, 230, 230], textColor: 20, fontSize: 8, cellPadding: 1 },
+                                styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
+                                columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
+                                didParseCell: (data) => {
+                                    if (score.details && data.row.index >= 0 && score.details[data.row.index]) {
+                                        if(score.details[data.row.index].status === 'incorrect'){
+                                            data.cell.styles.fillColor = LIGHT_RED_FILL;
+                                        }
+                                    }
+                                },
+                            });
+                             return (doc as any).lastAutoTable.finalY + 5 - y;
+                        } else {
+                            return 12; // Estimated height for empty block
+                        }
+                    }
+                });
             }
         }
+        
+        // --- DISTRIBUTION LOGIC ---
+        let yPositions = [50, 50]; // [yPosCol1, yPosCol2]
+        
+        let hasContent = contentBlocks.length > 0;
+        
+        contentBlocks.forEach(block => {
+            let currentColumn = yPositions[0] <= yPositions[1] ? 0 : 1;
+            let currentX = currentColumn === 0 ? xCol1 : xCol2;
 
-        if (studentScores.length === 0) {
+            if (yPositions[currentColumn] + block.height > pageHeight - margin) {
+                // Not enough space in the shorter column, try the other one
+                currentColumn = 1 - currentColumn;
+                currentX = currentColumn === 0 ? xCol1 : xCol2;
+
+                if (yPositions[currentColumn] + block.height > pageHeight - margin) {
+                    // Not enough space in either column, new page
+                    doc.addPage();
+                    yPositions = [50, 50];
+                    currentColumn = 0;
+                    currentX = xCol1;
+                }
+            }
+
+            const actualHeight = block.render(currentX, yPositions[currentColumn]);
+            yPositions[currentColumn] += actualHeight;
+        });
+
+        if (!hasContent) {
             doc.setFontSize(12);
             doc.setTextColor(100);
             doc.text("Aucune donnée de score pour cet élève sur la période sélectionnée.", pageWidth/2, 60, { align: 'center' });
@@ -296,3 +326,5 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         </Card>
     );
 }
+
+    
