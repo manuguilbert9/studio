@@ -129,9 +129,9 @@ export default function TeacherDashboardPage() {
           ) : (
             <Tabs defaultValue="students" className="w-full">
                 <TabsList className="grid w-full grid-cols-5">
-                    <TabsTrigger value="students">Gestion des élèves</TabsTrigger>
-                    <TabsTrigger value="groups">Gestion des groupes</TabsTrigger>
-                    <TabsTrigger value="homework">Gestion des devoirs</TabsTrigger>
+                    <TabsTrigger value="students">Élèves</TabsTrigger>
+                    <TabsTrigger value="groups">Groupes</TabsTrigger>
+                    <TabsTrigger value="homework">Devoirs</TabsTrigger>
                     <TabsTrigger value="results">Résultats</TabsTrigger>
                     <TabsTrigger value="database">Réglages</TabsTrigger>
                 </TabsList>
