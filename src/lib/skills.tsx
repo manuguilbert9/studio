@@ -28,6 +28,7 @@ import {
   Blocks,
   Route,
   Tags,
+  BrainCircuit,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -275,7 +276,7 @@ export const skills: Skill[] = [
     name: 'Calcul mental',
     slug: 'mental-calculation',
     description: 'Calculer de tête des additions, soustractions, multiplications et divisions.',
-    icon: <Calculator />,
+    icon: <BrainCircuit />,
     category: 'Nombres et calcul',
     allowedLevels: ['A', 'B', 'C', 'D'],
   },
