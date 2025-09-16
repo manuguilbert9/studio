@@ -244,7 +244,7 @@ export const skills: Skill[] = [
     name: "J'écoute entre 60 et 99",
     slug: 'nombres-complexes',
     description: 'Reconnaître les nombres complexes (60-99) à l\'oral et à l\'écrit.',
-    icon: <GitCompareArrows />,
+    icon: <div className="font-numbers font-bold text-5xl">84</div>,
     category: 'Nombres et calcul',
     isFixedLevel: 'B',
   },
