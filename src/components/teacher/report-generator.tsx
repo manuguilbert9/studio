@@ -46,7 +46,12 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         const pageHeight = doc.internal.pageSize.getHeight();
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 15;
-        let yPos = 50;
+        const columnWidth = (pageWidth - 3 * margin) / 2;
+        const xCol1 = margin;
+        const xCol2 = margin + columnWidth + margin;
+        let yPosLeft = 50;
+        let yPosRight = 50;
+        let currentColumn: 'left' | 'right' = 'left';
 
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
@@ -74,46 +79,98 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             if (categoryScores.length === 0) return;
             hasContent = true;
 
+            let startX: number;
+            let currentY: number;
+
+            // Choose the shorter column
+            if (yPosLeft <= yPosRight) {
+                currentColumn = 'left';
+                startX = xCol1;
+                currentY = yPosLeft;
+            } else {
+                currentColumn = 'right';
+                startX = xCol2;
+                currentY = yPosRight;
+            }
+            
+            // Check if we need a new page
+            if (currentY > pageHeight - 50) { // arbitrary bottom margin
+                if (currentColumn === 'left' && yPosRight > pageHeight - 50) {
+                     doc.addPage();
+                     yPosLeft = 50;
+                     yPosRight = 50;
+                     currentY = 50;
+                } else if (currentColumn === 'left') {
+                    currentColumn = 'right';
+                    startX = xCol2;
+                    currentY = yPosRight;
+                } else {
+                    doc.addPage();
+                    yPosLeft = 50;
+                    yPosRight = 50;
+                    currentColumn = 'left';
+                    startX = xCol1;
+                    currentY = 50;
+                }
+            }
+
+
             const categoryHead = [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]];
             autoTable(doc, {
-                startY: yPos,
+                startY: currentY,
                 head: categoryHead,
                 theme: 'plain',
-                tableWidth: pageWidth - margin * 2,
-                margin: { left: margin },
+                tableWidth: columnWidth,
+                margin: { left: startX },
             });
-            yPos = (doc as any).lastAutoTable.finalY + 4;
+            currentY = (doc as any).lastAutoTable.finalY + 4;
 
             for (const score of categoryScores) {
+                 if (currentY > pageHeight - 30) {
+                     if (currentColumn === 'left') {
+                        currentColumn = 'right';
+                        startX = xCol2;
+                        currentY = yPosRight;
+                     } else {
+                        doc.addPage();
+                        currentColumn = 'left';
+                        startX = xCol1;
+                        currentY = 50;
+                        yPosLeft = 50;
+                        yPosRight = 50;
+                     }
+                 }
+                
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
-                doc.text(getSkillBySlug(score.skill)?.name || score.skill, margin, yPos);
+                doc.text(getSkillBySlug(score.skill)?.name || score.skill, startX, currentY);
+                currentY += 5;
 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(9);
+                
                 const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
-                doc.text(`Score: ${scoreText}`, margin + (pageWidth - margin*2) / 2, yPos, { align: 'left' });
-                doc.text(format(new Date(score.createdAt), 'dd/MM/yy'), pageWidth - margin, yPos, { align: 'right' });
-                yPos += 5;
-
+                doc.text(scoreText, startX + columnWidth / 2, currentY, { align: 'center'});
+                doc.text(format(new Date(score.createdAt), 'dd/MM/yy'), startX + columnWidth, currentY, { align: 'right' });
+                
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
                 if (level) {
-                     doc.text(`Niveau ${level}`, margin, yPos, { align: 'left' });
+                     doc.text(level, startX, currentY);
                 }
-                yPos += 3;
+                currentY += 5;
                 
                  if (score.details && score.details.length > 0) {
                     const body = score.details.map(detail => [detail.question, detail.userAnswer]);
                     autoTable(doc, {
-                        startY: yPos,
+                        startY: currentY,
                         head: [['Question', 'Réponse']],
                         body,
                         theme: 'grid',
-                        tableWidth: pageWidth - margin * 2,
-                        margin: { left: margin },
-                        headStyles: { fillColor: [230, 230, 230], textColor: 20, fontSize: 8 },
+                        tableWidth: columnWidth,
+                        margin: { left: startX },
+                        headStyles: { fillColor: [230, 230, 230], textColor: 20, fontSize: 8, cellPadding: 1 },
                         styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
-                        columnStyles: { 0: { cellWidth: (pageWidth - margin * 2) * 0.5 }, 1: { cellWidth: (pageWidth - margin * 2) * 0.5 } },
+                        columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
                         didParseCell: (data) => {
                             if (score.details && data.row.index >= 0 && score.details[data.row.index]) {
                                 if(score.details[data.row.index].status === 'incorrect'){
@@ -122,10 +179,15 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                             }
                         },
                     });
-                    yPos = (doc as any).lastAutoTable.finalY + 5;
+                    currentY = (doc as any).lastAutoTable.finalY + 5;
                 } else {
-                    yPos += 2;
+                    currentY += 2;
                 }
+            }
+             if (currentColumn === 'left') {
+                yPosLeft = currentY;
+            } else {
+                yPosRight = currentY;
             }
         };
 
