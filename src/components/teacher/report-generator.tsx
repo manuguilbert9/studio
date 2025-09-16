@@ -46,13 +46,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         const pageHeight = doc.internal.pageSize.getHeight();
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 15;
-        const columnWidth = (pageWidth - 3 * margin) / 2;
-        const leftColumnX = margin;
-        const rightColumnX = margin + columnWidth + margin;
-        const pageBreakY = pageHeight - 20;
-        let yPosLeft = 50;
-        let yPosRight = 50;
-        let currentColumn = 'left'; // 'left' or 'right'
+        let yPos = 50;
 
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
@@ -79,72 +73,32 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             const categoryScores = scoresByCategory[category] || [];
             if (categoryScores.length === 0) return;
             hasContent = true;
-            
-            let yPos = currentColumn === 'left' ? yPosLeft : yPosRight;
-            let currentX = currentColumn === 'left' ? leftColumnX : rightColumnX;
 
             const categoryHead = [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]];
-
-            // Check if the entire category block (header + first item) can fit
-            // This is a rough estimation.
-            const estimatedBlockHeight = 16 + (categoryScores[0]?.details ? (categoryScores[0].details.length * 8) + 20 : 15);
-
-            if (yPos + estimatedBlockHeight > pageBreakY) {
-                if (currentColumn === 'left') {
-                    currentColumn = 'right';
-                    yPos = yPosRight;
-                    currentX = rightColumnX;
-                } else {
-                    doc.addPage();
-                    yPosLeft = 20;
-                    yPosRight = 20;
-                    currentColumn = 'left';
-                    yPos = yPosLeft;
-                    currentX = leftColumnX;
-                }
-            }
-
-
             autoTable(doc, {
                 startY: yPos,
                 head: categoryHead,
                 theme: 'plain',
-                tableWidth: columnWidth,
-                margin: { left: currentX },
+                tableWidth: pageWidth - margin * 2,
+                margin: { left: margin },
             });
             yPos = (doc as any).lastAutoTable.finalY + 4;
 
             for (const score of categoryScores) {
-                // Before drawing the next score, check if we need to switch columns or pages
-                 if (yPos > pageBreakY) {
-                    if (currentColumn === 'left') {
-                        currentColumn = 'right';
-                        yPos = yPosRight;
-                        currentX = rightColumnX;
-                    } else {
-                        doc.addPage();
-                        yPosLeft = 20;
-                        yPosRight = 20;
-                        currentColumn = 'left';
-                        yPos = yPosLeft;
-                        currentX = leftColumnX;
-                    }
-                }
-                
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
-                doc.text(getSkillBySlug(score.skill)?.name || score.skill, currentX, yPos);
+                doc.text(getSkillBySlug(score.skill)?.name || score.skill, margin, yPos);
 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(9);
                 const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
-                doc.text(`Score: ${scoreText}`, currentX + columnWidth / 2, yPos, { align: 'left' });
-                doc.text(format(new Date(score.createdAt), 'dd/MM/yy'), currentX + columnWidth, yPos, { align: 'right' });
+                doc.text(`Score: ${scoreText}`, margin + (pageWidth - margin*2) / 2, yPos, { align: 'left' });
+                doc.text(format(new Date(score.createdAt), 'dd/MM/yy'), pageWidth - margin, yPos, { align: 'right' });
                 yPos += 5;
 
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
                 if (level) {
-                     doc.text(`Niveau ${level}`, currentX, yPos, { align: 'left' });
+                     doc.text(`Niveau ${level}`, margin, yPos, { align: 'left' });
                 }
                 yPos += 3;
                 
@@ -155,11 +109,11 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                         head: [['Question', 'Réponse']],
                         body,
                         theme: 'grid',
-                        tableWidth: columnWidth,
-                        margin: { left: currentX },
+                        tableWidth: pageWidth - margin * 2,
+                        margin: { left: margin },
                         headStyles: { fillColor: [230, 230, 230], textColor: 20, fontSize: 8 },
                         styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
-                        columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
+                        columnStyles: { 0: { cellWidth: (pageWidth - margin * 2) * 0.5 }, 1: { cellWidth: (pageWidth - margin * 2) * 0.5 } },
                         didParseCell: (data) => {
                             if (score.details && data.row.index >= 0 && score.details[data.row.index]) {
                                 if(score.details[data.row.index].status === 'incorrect'){
@@ -172,12 +126,6 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 } else {
                     yPos += 2;
                 }
-            }
-
-            if (currentColumn === 'left') {
-                yPosLeft = yPos;
-            } else {
-                yPosRight = yPos;
             }
         };
 
@@ -302,5 +250,3 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         </Card>
     );
 }
-
-    
