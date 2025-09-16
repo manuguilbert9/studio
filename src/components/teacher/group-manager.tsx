@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, FormEvent, useMemo, useEffect } from 'react';
@@ -17,6 +16,8 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Label } from '../ui/label';
 import { skills as availableSkills, allSkillCategories, SkillLevel } from '@/lib/skills';
 import { Switch } from '../ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface GroupManagerProps {
     initialStudents: Student[];
@@ -34,7 +35,8 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
     // Editing states
     const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
     const [editingGroupName, setEditingGroupName] = useState('');
-    const [editingGroupSkills, setEditingGroupSkills] = useState<Record<string, boolean>>({});
+    const [editedLevels, setEditedLevels] = useState<Record<string, SkillLevel>>({});
+    const [editedEnabledSkills, setEditedEnabledSkills] = useState<Record<string, boolean>>({});
     const [isUpdatingSkills, setIsUpdatingSkills] = useState(false);
     const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
     
@@ -112,20 +114,30 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
         const groupStudents = studentsByGroup[group.id] || [];
         const firstStudent = groupStudents[0];
         
-        if(firstStudent && firstStudent.enabledSkills) {
-            setEditingGroupSkills(firstStudent.enabledSkills);
+        if(firstStudent) {
+            setEditedLevels(firstStudent.levels || {});
+            setEditedEnabledSkills(firstStudent.enabledSkills || {});
         } else {
             // Default to all enabled if group is empty or first student has no config
             const allEnabled: Record<string, boolean> = {};
-            availableSkills.forEach(skill => allEnabled[skill.slug] = true);
-            setEditingGroupSkills(allEnabled);
+            const defaultLevels: Record<string, SkillLevel> = {};
+            availableSkills.forEach(skill => {
+                 allEnabled[skill.slug] = true;
+                 if(!skill.isFixedLevel) defaultLevels[skill.slug] = 'B';
+            });
+            setEditedEnabledSkills(allEnabled);
+            setEditedLevels(defaultLevels);
         }
         setEditingGroupId(group.id);
         setIsSkillModalOpen(true);
     };
 
     const handleEnabledSkillChange = (skillSlug: string, isEnabled: boolean) => {
-        setEditingGroupSkills(prev => ({...prev, [skillSlug]: isEnabled}));
+        setEditedEnabledSkills(prev => ({...prev, [skillSlug]: isEnabled}));
+    };
+    
+    const handleLevelChange = (skillSlug: string, level: SkillLevel) => {
+        setEditedLevels(prev => ({ ...prev, [skillSlug]: level }));
     };
 
     const handleSaveGroupSkills = async () => {
@@ -136,7 +148,10 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
 
         try {
             const updatePromises = studentsToUpdate.map(student => 
-                updateStudent(student.id, { enabledSkills: editingGroupSkills })
+                updateStudent(student.id, { 
+                    enabledSkills: editedEnabledSkills,
+                    levels: editedLevels 
+                })
             );
             await Promise.all(updatePromises);
             toast({ title: "Exercices mis à jour", description: `La configuration des exercices pour le groupe a été enregistrée.`});
@@ -349,3 +364,4 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
     );
 }
 
+    
