@@ -143,9 +143,7 @@ const generateLevel = (level: SkillLevel): LevelData => {
     const height = 7;
     const grid: Tile[][] = Array.from({ length: height }, () => Array(width).fill('empty'));
 
-    const wallCount = level === 'B' 
-        ? Math.floor(Math.random() * 6) + 6 // 6 to 11 walls for level B
-        : Math.floor(Math.random() * 5) + 4; // 4 to 8 walls for level A
+    const wallCount = Math.floor(Math.random() * 6) + 6; // 6 to 11 walls
         
     for (let i = 0; i < wallCount; i++) {
         const x = Math.floor(Math.random() * width);
