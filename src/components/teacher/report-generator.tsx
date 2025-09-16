@@ -84,7 +84,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             let yPos = isLeftColumnShorter ? yPosLeft : yPosRight;
             let currentX = isLeftColumnShorter ? leftColumnX : rightColumnX;
 
-            const categoryHeaderHeight = 12;
+            const categoryHeaderHeight = 16; 
             
             if (yPos + categoryHeaderHeight > pageBreakY) {
                  if (currentColumn === 'left' && yPosRight + categoryHeaderHeight < pageBreakY) {
@@ -111,7 +111,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings);
                 const date = format(new Date(score.createdAt), 'dd/MM/yy HH:mm');
                 
-                const scoreBlockHeight = 12;
+                const scoreBlockHeight = 12; // Estimated height for the score info block
                 
                 if (yPos + scoreBlockHeight > pageBreakY) {
                      if (currentColumn === 'left' && yPosRight + scoreBlockHeight < pageBreakY) {
@@ -128,12 +128,14 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(9);
-                doc.text(`Score: ${scoreText}`, currentX + columnWidth/2, yPos, {align: 'left'});
+                doc.text(`Score: ${scoreText}`, currentX + columnWidth / 2, yPos, {align: 'left'});
                 doc.text(date, currentX + columnWidth, yPos, {align: 'right'});
                 yPos += 5;
                 
-                const levelText = level?.startsWith('Niveau ') ? level : (level ? `Niveau ${level}`: 'N/A');
-                doc.text(levelText, currentX, yPos, {align: 'left'});
+                const levelText = level?.startsWith('Niveau ') ? level : (level ? `Niveau ${level}` : '');
+                if (levelText) {
+                    doc.text(levelText, currentX, yPos, {align: 'left'});
+                }
                 yPos += 3;
                 
                 if (score.details && score.details.length > 0) {
