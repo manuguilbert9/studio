@@ -17,6 +17,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEn
 import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { generateSentence } from '@/ai/flows/sentence-generation-flow';
+import { format, isToday } from 'date-fns';
 
 const NUM_QUESTIONS = 5;
 
@@ -98,6 +99,9 @@ export function LabelGameExercise() {
         setIsLoading(true);
         try {
             const { sentence } = await generateSentence();
+            // Save the new sentence and today's date
+            const todayStr = format(new Date(), 'yyyy-MM-dd');
+            localStorage.setItem('labelGameDailySentence', JSON.stringify({ sentence, date: todayStr }));
             setupQuestion(sentence);
         } catch(e) {
             console.error("Failed to generate sentence:", e);
@@ -108,7 +112,22 @@ export function LabelGameExercise() {
 
     // Setup exercise on mount and for each new question
     useEffect(() => {
-        fetchNewSentence();
+        const storedData = localStorage.getItem('labelGameDailySentence');
+        if (storedData) {
+            const { sentence, date } = JSON.parse(storedData);
+            const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+            if (date === todayStr) {
+                // Use today's stored sentence
+                setupQuestion(sentence);
+            } else {
+                // It's a new day, fetch a new sentence
+                fetchNewSentence();
+            }
+        } else {
+            // No sentence stored, fetch a new one
+            fetchNewSentence();
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentQuestionIndex]);
 
