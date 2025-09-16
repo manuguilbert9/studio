@@ -157,38 +157,30 @@ const generateLevel = (level: SkillLevel): LevelData => {
 
     let playerStart: Position, keyPos: Position;
 
-    if (level === 'B') {
-        const corners = [
-            { x: 0, y: 0 }, { x: width - 1, y: 0 },
-            { x: 0, y: height - 1 }, { x: width - 1, y: height - 1 }
-        ];
-        
-        let startCornerIndex, endCornerIndex;
-        let attempts = 0;
-        
-        do {
-            startCornerIndex = Math.floor(Math.random() * corners.length);
-            playerStart = corners[startCornerIndex];
-            attempts++;
-            if (attempts > 20) return generateLevel('A'); // fallback
-        } while (grid[playerStart.y][playerStart.x] !== 'empty');
+    // For level A and B, ensure start and end points are distant.
+    const corners = [
+        { x: 0, y: 0 }, { x: width - 1, y: 0 },
+        { x: 0, y: height - 1 }, { x: width - 1, y: height - 1 }
+    ];
+    
+    let startCornerIndex, endCornerIndex;
+    let attempts = 0;
+    
+    do {
+        startCornerIndex = Math.floor(Math.random() * corners.length);
+        playerStart = corners[startCornerIndex];
+        attempts++;
+        if (attempts > 20) return generateLevel(level); // fallback
+    } while (grid[playerStart.y][playerStart.x] !== 'empty');
 
-        attempts = 0;
-        do {
-            endCornerIndex = Math.floor(Math.random() * corners.length);
-            keyPos = corners[endCornerIndex];
-            attempts++;
-             if (attempts > 20) return generateLevel('A'); // fallback
-        } while (endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty');
-    } else { // Level A
-        do {
-            playerStart = { x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height) };
-        } while (grid[playerStart.y][playerStart.x] !== 'empty');
-        
-        do {
-            keyPos = { x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height) };
-        } while (grid[keyPos.y][keyPos.x] !== 'empty' || (keyPos.x === playerStart.x && keyPos.y === playerStart.y));
-    }
+    attempts = 0;
+    do {
+        endCornerIndex = Math.floor(Math.random() * corners.length);
+        keyPos = corners[endCornerIndex];
+        attempts++;
+         if (attempts > 20) return generateLevel(level); // fallback
+    } while (endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty');
+
 
     if (!isPathPossible(grid, playerStart, keyPos)) {
         return generateLevel(level);
