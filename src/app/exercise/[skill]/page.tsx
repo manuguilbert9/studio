@@ -29,6 +29,7 @@ import { DictationExercise } from '@/components/dictation-exercise';
 import { FluenceExercise } from '@/components/fluence-exercise';
 import { PhraseConstructionExercise } from '@/components/phrase-construction-exercise';
 import { CodedPathExercise } from '@/components/coded-path-exercise';
+import { LabelGameExercise } from '@/components/label-game-exercise';
 import { FullscreenToggle } from '@/components/fullscreen-toggle';
 
 export default function ExercisePage() {
@@ -86,6 +87,8 @@ export default function ExercisePage() {
         return <DictationExercise />;
       case 'phrase-construction':
         return <PhraseConstructionExercise />;
+      case 'label-game':
+        return <LabelGameExercise />;
       case 'coded-path':
         return <CodedPathExercise />;
       case 'denombrement':
@@ -132,3 +135,4 @@ export default function ExercisePage() {
     </div>
   );
 }
+

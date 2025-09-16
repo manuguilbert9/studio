@@ -1,4 +1,5 @@
 
+
 import { type ReactElement } from 'react';
 import {
   BookOpenText,
@@ -26,6 +27,7 @@ import {
   PenLine,
   Blocks,
   Route,
+  Tags,
 } from 'lucide-react';
 import type { CalculationSettings, CurrencySettings, TimeSettings, CalendarSettings, NumberLevelSettings, CountSettings, ReadingRaceSettings } from './questions';
 
@@ -173,6 +175,14 @@ export const skills: Skill[] = [
     icon: <Blocks />,
     category: 'Grammaire',
     allowedLevels: ['B', 'C', 'D'],
+  },
+  {
+    name: 'Le jeu des étiquettes',
+    slug: 'label-game',
+    description: "Reconstruis la phrase en faisant glisser les mots dans le bon ordre.",
+    icon: <Tags />,
+    category: 'Grammaire',
+    isFixedLevel: 'B',
   },
     {
     name: 'Parcours Codé',
@@ -341,3 +351,4 @@ export function difficultyLevelToString(
     // Fallback for any other case where level can't be determined
     return null;
 }
+
