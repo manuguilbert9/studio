@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState } from 'react';
@@ -42,7 +41,6 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             dateRange.to && new Date(s.createdAt) <= dateRange.to
         ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-        // --- PAGE LAYOUT ---
         const pageHeight = doc.internal.pageSize.getHeight();
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 15;
@@ -50,10 +48,6 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         const xCol1 = margin;
         const xCol2 = margin + columnWidth + margin;
         
-        let currentX = xCol1;
-        let yPos = 50;
-        let currentColumn: 'left' | 'right' = 'left';
-
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(22);
@@ -73,61 +67,49 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             }
         });
 
-        let hasContent = false;
-        
-        const drawCategory = (category: string) => {
-            const categoryScores = scoresByCategory[category] || [];
-            if (categoryScores.length === 0) return;
-            hasContent = true;
-            
-            const categoryTitleHeight = 15;
-            
-            // Check if we need to switch column or page
-            if (yPos + categoryTitleHeight > pageHeight - margin) {
-                if (currentColumn === 'left') {
-                    currentColumn = 'right';
-                    currentX = xCol2;
-                    yPos = 50;
-                } else {
-                    doc.addPage();
-                    currentColumn = 'left';
-                    currentX = xCol1;
-                    yPos = 50;
+        // --- CONTENT FLOW LOGIC ---
+        let currentX = xCol1;
+        let yPos = 50;
+
+        const checkAndSwitchColumn = (neededHeight: number) => {
+             if (yPos + neededHeight > pageHeight - margin) {
+                if (currentX === xCol1) { // If in left column and it's full
+                    currentX = xCol2; // Move to right column
+                    yPos = 50; // Reset yPos to top
+                } else { // If in right column and it's full
+                    doc.addPage(); // Add new page
+                    currentX = xCol1; // Back to left column
+                    yPos = 50; // Reset yPos
                 }
             }
+        }
+        
+        let hasContent = false;
+        for (const category of allSkillCategories) {
+            const categoryScores = scoresByCategory[category];
+            if (!categoryScores || categoryScores.length === 0) continue;
+            hasContent = true;
 
-            // Draw Category Title
+            const categoryTitleHeight = 15;
+            checkAndSwitchColumn(categoryTitleHeight);
+
             autoTable(doc, {
                 startY: yPos,
                 head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
-                theme: 'plain',
-                tableWidth: columnWidth,
-                margin: { left: currentX },
+                theme: 'plain', tableWidth: columnWidth, margin: { left: currentX },
             });
             yPos = (doc as any).lastAutoTable.finalY + 4;
-
 
             for (const score of categoryScores) {
                 const skillName = getSkillBySlug(score.skill)?.name || score.skill;
                 const scoreDate = format(new Date(score.createdAt), 'dd/MM/yy', { locale: fr });
-                const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
+                const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)}%`;
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
                 
                 const skillLine = `${skillName} - ${scoreDate}`;
                 
                 const skillLineHeight = 10;
-                 if (yPos + skillLineHeight > pageHeight - margin) {
-                    if (currentColumn === 'left') {
-                        currentColumn = 'right';
-                        currentX = xCol2;
-                        yPos = 50;
-                    } else {
-                        doc.addPage();
-                        currentColumn = 'left';
-                        currentX = xCol1;
-                        yPos = 50;
-                    }
-                }
+                checkAndSwitchColumn(skillLineHeight);
 
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
@@ -142,26 +124,22 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 }
 
                 yPos += 5;
-                
+
                 if (score.details && score.details.length > 0) {
-                    const body = score.details.map(detail => [detail.question, detail.userAnswer]);
-                    autoTable(doc, {
+                     const body = score.details.map(detail => [detail.question, detail.userAnswer]);
+                     autoTable(doc, {
                         startY: yPos,
                         head: [['Question', 'Réponse']],
                         body,
-                        theme: 'grid',
-                        tableWidth: columnWidth,
-                        margin: { left: currentX },
+                        theme: 'grid', tableWidth: columnWidth, margin: { left: currentX },
                         headStyles: { fillColor: [230, 230, 230], textColor: 20, fontSize: 8, cellPadding: 1 },
                         styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
                         columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
-                        didDrawPage: (data) => {
-                             if(data.pageNumber > 1) {
-                                // If a new page was created by autoTable, reset columns
-                                currentColumn = 'left';
-                                currentX = xCol1;
-                             }
-                        },
+                         didDrawPage: (data) => {
+                            if (data.pageNumber > doc.internal.pages.length - 1) {
+                                // This is tricky because autoTable doesn't know about our columns
+                            }
+                         },
                         didParseCell: (data) => {
                             if (score.details && data.row.index >= 0 && score.details[data.row.index]) {
                                 if(score.details[data.row.index].status === 'incorrect'){
@@ -169,16 +147,18 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                                 }
                             }
                         },
+                         willDrawPage: (data) => {
+                            // This hook is better. When a new page is added by autotable, reset columns.
+                            yPos = 50;
+                            currentX = xCol1;
+                         }
                     });
                     yPos = (doc as any).lastAutoTable.finalY + 5;
                 } else {
-                    yPos += 2; // small space if no details
+                    yPos += 2;
                 }
             }
-        };
-
-        allSkillCategories.forEach(drawCategory);
-
+        }
 
         if (!hasContent) {
             doc.setFontSize(12);
