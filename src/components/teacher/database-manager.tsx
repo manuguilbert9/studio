@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -213,7 +214,7 @@ function ExercisesManager() {
     );
 }
 
-function MaintenanceManager() {
+function MaintenanceManager({ onDataRefresh }: { onDataRefresh: () => void }) {
     const { toast } = useToast();
     const [isSyncing, setIsSyncing] = useState(false);
 
@@ -246,6 +247,7 @@ function MaintenanceManager() {
 
             if (studentsUpdated > 0) {
                 toast({ title: "Synchronisation terminée !", description: `${studentsUpdated} élève(s) ont été mis à jour avec des niveaux par défaut.` });
+                onDataRefresh();
             } else {
                 toast({ title: "Aucune mise à jour nécessaire", description: "Tous les élèves ont déjà des niveaux définis pour leurs exercices activés." });
             }
@@ -282,7 +284,7 @@ function MaintenanceManager() {
     );
 }
 
-export function DatabaseManager() {
+export function DatabaseManager({ onDataRefresh }: { onDataRefresh: () => void }) {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isImportAlertOpen, setIsImportAlertOpen] = useState(false);
@@ -345,7 +347,7 @@ export function DatabaseManager() {
 
                     if (result.success) {
                         toast({ title: "Importation terminée !", description: "Les données ont été restaurées. La page va se rafraîchir." });
-                        setTimeout(() => window.location.reload(), 2000);
+                        setTimeout(() => onDataRefresh(), 2000);
                     } else {
                          throw new Error(result.error || 'Erreur inconnue lors de l\'importation.');
                     }
@@ -369,7 +371,7 @@ export function DatabaseManager() {
         <div className="space-y-8">
             <GeneralSettingsManager />
             <ExercisesManager />
-            <MaintenanceManager />
+            <MaintenanceManager onDataRefresh={onDataRefresh} />
             <Card>
                 <CardHeader>
                     <CardTitle>Sauvegarde et Restauration</CardTitle>

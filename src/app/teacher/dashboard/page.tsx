@@ -41,27 +41,28 @@ export default function TeacherDashboardPage() {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     
-    // First, get all students.
-    const studentData = await getStudents();
-    setStudents(studentData);
+    try {
+        const studentData = await getStudents();
+        setStudents(studentData);
 
-    // Now, using the fresh student data, get all other data in parallel.
-    const [groupData, scoresData, writingData, homeworkData, homeworkResultsData] = await Promise.all([
-      getGroups(),
-      getAllScores(),
-      getAllWritingEntries(),
-      getAllHomework(),
-      // Fetch results for all students that were just loaded
-      Promise.all(studentData.map(s => getHomeworkResultsForUser(s.id))).then(res => res.flat())
-    ]);
-    
-    setGroups(groupData);
-    setAllScores(scoresData);
-    setAllWritingEntries(writingData);
-    setAllHomework(homeworkData);
-    setAllHomeworkResults(homeworkResultsData);
-    
-    setIsLoading(false);
+        const [groupData, scoresData, writingData, homeworkData, homeworkResultsData] = await Promise.all([
+        getGroups(),
+        getAllScores(),
+        getAllWritingEntries(),
+        getAllHomework(),
+        Promise.all(studentData.map(s => getHomeworkResultsForUser(s.id))).then(res => res.flat())
+        ]);
+        
+        setGroups(groupData);
+        setAllScores(scoresData);
+        setAllWritingEntries(writingData);
+        setAllHomework(homeworkData);
+        setAllHomeworkResults(homeworkResultsData);
+    } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+    } finally {
+        setIsLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -141,7 +142,7 @@ export default function TeacherDashboardPage() {
                     />
                 </TabsContent>
                  <TabsContent value="database" className="mt-6">
-                    <DatabaseManager />
+                    <DatabaseManager onDataRefresh={loadData} />
                 </TabsContent>
             </Tabs>
           )}

@@ -19,7 +19,7 @@ import { Label } from '../ui/label';
 interface GroupManagerProps {
     initialStudents: Student[];
     initialGroups: Group[];
-    onGroupsChange: () => void; // Renamed for clarity, will be used for groups CUD operations
+    onGroupsChange: () => void;
 }
 
 export function GroupManager({ initialStudents, initialGroups, onGroupsChange }: GroupManagerProps) {
@@ -32,6 +32,12 @@ export function GroupManager({ initialStudents, initialGroups, onGroupsChange }:
     const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
     const [editingGroupName, setEditingGroupName] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    
+    // Update local state when initial props change
+    useState(() => {
+        setStudents(initialStudents);
+        setGroups(initialGroups);
+    });
 
     const studentsByGroup = useMemo(() => {
         const map: Record<string, Student[]> = {};
@@ -76,10 +82,6 @@ export function GroupManager({ initialStudents, initialGroups, onGroupsChange }:
     }
     
     const handleDeleteGroup = async (groupId: string) => {
-        // Unassign students locally first
-        setStudents(prevStudents => prevStudents.map(s => s.groupId === groupId ? { ...s, groupId: '' } : s));
-
-        // Then call DB operations
         const studentsInGroup = students.filter(s => s.groupId === groupId);
         for (const student of studentsInGroup) {
             await updateStudent(student.id, { groupId: '' });
@@ -96,17 +98,12 @@ export function GroupManager({ initialStudents, initialGroups, onGroupsChange }:
 
      const handleToggleStudentInGroup = async (studentId: string, groupId: string, isChecked: boolean) => {
         const newGroupId = isChecked ? groupId : '';
-
-        // Optimistic UI update
-        setStudents(prevStudents => prevStudents.map(s => s.id === studentId ? { ...s, groupId: newGroupId } : s));
-
         const result = await updateStudent(studentId, { groupId: newGroupId });
         
         if(!result.success) {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'assigner l'élève." });
-            // Revert UI change on failure
-            setStudents(prevStudents => prevStudents.map(s => s.id === studentId ? { ...s, groupId: isChecked ? '' : groupId } : s));
         }
+        onGroupsChange(); // Refresh all data to ensure consistency
     }
 
 
