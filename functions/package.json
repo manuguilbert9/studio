@@ -1,0 +1,15 @@
+{
+  "name": "functions",
+  "main": "index.js",
+  "scripts": {
+    "build": "next build"
+  },
+  "dependencies": {
+    "firebase-functions": "^4.3.0",
+    "next": "^14.0.0"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "private": true
+}
