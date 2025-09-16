@@ -24,9 +24,10 @@ interface ResultsManagerProps {
     students: Student[];
     allScores: Score[];
     allWritingEntries: WritingEntry[];
+    onDataRefresh: () => void;
 }
 
-export function ResultsManager({ students, allScores, allWritingEntries }: ResultsManagerProps) {
+export function ResultsManager({ students, allScores, allWritingEntries, onDataRefresh }: ResultsManagerProps) {
     const { toast } = useToast();
 
     const sortedStudents = useMemo(() => {
@@ -73,6 +74,7 @@ export function ResultsManager({ students, allScores, allWritingEntries }: Resul
         const result = await deleteScore(scoreId);
         if (result.success) {
             toast({ title: "Résultat supprimé", description: "Le score a été retiré de la base de données." });
+            // onDataRefresh will be called automatically by the real-time listener now
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible de supprimer le score." });
         }
@@ -84,25 +86,45 @@ export function ResultsManager({ students, allScores, allWritingEntries }: Resul
             <Card>
                 <CardHeader>
                     <CardTitle>Résultats Détaillés par Élève</CardTitle>
-                    <CardDescription>Consultez les graphiques de progression et les résultats pour chaque élève.</CardDescription>
+                    <CardDescription>Consultez les graphiques de progression et les résultats pour chaque élève. Les élèves les plus actifs apparaissent en premier.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {sortedStudents.length > 0 ? (
                     <Accordion type="multiple" className="w-full space-y-4">
                         {sortedStudents.map(student => {
                             const { scores, writings } = studentData[student.id];
+
                             const scoresBySkill = scores.reduce((acc, score) => {
                                 (acc[score.skill] = acc[score.skill] || []).push(score);
                                 return acc;
                             }, {} as Record<string, Score[]>);
                             
-                            const skillsByCategory = Object.keys(scoresBySkill).reduce((acc, skillSlug) => {
+                            const lastActivityBySkill = Object.entries(scoresBySkill).reduce((acc, [skillSlug, skillScores]) => {
+                                acc[skillSlug] = Math.max(...skillScores.map(s => new Date(s.createdAt).getTime()));
+                                return acc;
+                            }, {} as Record<string, number>);
+
+                            const skillsByCategory: Record<string, string[]> = {};
+                            const lastActivityByCategory: Record<string, number> = {};
+
+                            Object.keys(scoresBySkill).forEach(skillSlug => {
                                 const skill = getSkillBySlug(skillSlug);
                                 if (skill) {
-                                    (acc[skill.category] = acc[skill.category] || []).push(skillSlug);
+                                    if (!skillsByCategory[skill.category]) {
+                                        skillsByCategory[skill.category] = [];
+                                    }
+                                    skillsByCategory[skill.category].push(skillSlug);
+
+                                    const lastActivity = lastActivityBySkill[skillSlug];
+                                    if (!lastActivityByCategory[skill.category] || lastActivity > lastActivityByCategory[skill.category]) {
+                                        lastActivityByCategory[skill.category] = lastActivity;
+                                    }
                                 }
-                                return acc;
-                            }, {} as Record<string, string[]>);
+                            });
+
+                            const sortedCategories = Object.keys(skillsByCategory).sort((a,b) => {
+                                return (lastActivityByCategory[b] || 0) - (lastActivityByCategory[a] || 0);
+                            });
 
                             return (
                             <AccordionItem value={student.id} key={student.id} className="border rounded-lg">
@@ -110,14 +132,14 @@ export function ResultsManager({ students, allScores, allWritingEntries }: Resul
                                     {student.name}
                                 </AccordionTrigger>
                                 <AccordionContent className="px-6 pb-6 space-y-6">
-                                    {Object.keys(skillsByCategory).length > 0 ? (
-                                        allSkillCategories.map(category => {
-                                            if (!skillsByCategory[category]) return null;
+                                    {sortedCategories.length > 0 ? (
+                                        sortedCategories.map(category => {
+                                            const categorySkills = skillsByCategory[category].sort((a, b) => (lastActivityBySkill[b] || 0) - (lastActivityBySkill[a] || 0));
                                             return (
                                                 <div key={category}>
                                                     <h4 className="text-md font-semibold mb-3 border-b pb-2">{category}</h4>
                                                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                                                        {skillsByCategory[category].map(skillSlug => (
+                                                        {categorySkills.map(skillSlug => (
                                                             <SkillProgressChart
                                                                 key={skillSlug}
                                                                 skill={getSkillBySlug(skillSlug)!}
