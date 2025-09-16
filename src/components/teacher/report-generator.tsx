@@ -40,7 +40,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             s.userId === student.id &&
             dateRange.from && new Date(s.createdAt) >= dateRange.from &&
             dateRange.to && new Date(s.createdAt) <= dateRange.to
-        ).sort((a, b) => a.skill.localeCompare(b.skill));
+        ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
         // --- PAGE LAYOUT ---
         const pageHeight = doc.internal.pageSize.getHeight();
@@ -50,9 +50,9 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         const leftColumnX = margin;
         const rightColumnX = margin + columnWidth + margin;
         const pageBreakY = pageHeight - 20;
-
         let yPosLeft = 50;
         let yPosRight = 50;
+        let currentColumn = 'left'; // 'left' or 'right'
 
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
@@ -79,89 +79,105 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             const categoryScores = scoresByCategory[category] || [];
             if (categoryScores.length === 0) return;
             hasContent = true;
+            
+            let yPos = currentColumn === 'left' ? yPosLeft : yPosRight;
+            let currentX = currentColumn === 'left' ? leftColumnX : rightColumnX;
 
             const categoryHead = [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]];
 
-            // Estimate height to decide column placement
-            let estimatedHeight = 16; // Header height
-            categoryScores.forEach(score => {
-                estimatedHeight += 12; // Base height for score info
-                if (score.details && score.details.length > 0) {
-                    estimatedHeight += (score.details.length * 5) + 10; // Approx height for details table
-                }
-            });
-            
-            let currentX: number;
-            let currentY: number;
+            // Check if the entire category block (header + first item) can fit
+            // This is a rough estimation.
+            const estimatedBlockHeight = 16 + (categoryScores[0]?.details ? (categoryScores[0].details.length * 8) + 20 : 15);
 
-            if (yPosLeft + estimatedHeight <= pageBreakY) {
-                currentX = leftColumnX;
-                currentY = yPosLeft;
-            } else if (yPosRight + estimatedHeight <= pageBreakY) {
-                currentX = rightColumnX;
-                currentY = yPosRight;
-            } else {
-                 doc.addPage();
-                 yPosLeft = 20;
-                 yPosRight = 20;
-                 currentX = leftColumnX;
-                 currentY = yPosLeft;
+            if (yPos + estimatedBlockHeight > pageBreakY) {
+                if (currentColumn === 'left') {
+                    currentColumn = 'right';
+                    yPos = yPosRight;
+                    currentX = rightColumnX;
+                } else {
+                    doc.addPage();
+                    yPosLeft = 20;
+                    yPosRight = 20;
+                    currentColumn = 'left';
+                    yPos = yPosLeft;
+                    currentX = leftColumnX;
+                }
             }
-            
+
+
             autoTable(doc, {
-                startY: currentY,
+                startY: yPos,
                 head: categoryHead,
                 theme: 'plain',
                 tableWidth: columnWidth,
                 margin: { left: currentX },
             });
-            currentY = (doc as any).lastAutoTable.finalY + 4;
+            yPos = (doc as any).lastAutoTable.finalY + 4;
 
             for (const score of categoryScores) {
+                // Before drawing the next score, check if we need to switch columns or pages
+                 if (yPos > pageBreakY) {
+                    if (currentColumn === 'left') {
+                        currentColumn = 'right';
+                        yPos = yPosRight;
+                        currentX = rightColumnX;
+                    } else {
+                        doc.addPage();
+                        yPosLeft = 20;
+                        yPosRight = 20;
+                        currentColumn = 'left';
+                        yPos = yPosLeft;
+                        currentX = leftColumnX;
+                    }
+                }
+                
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
-                doc.text(getSkillBySlug(score.skill)?.name || score.skill, currentX, currentY);
+                doc.text(getSkillBySlug(score.skill)?.name || score.skill, currentX, yPos);
 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(9);
                 const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
-                doc.text(`Score: ${scoreText}`, currentX + columnWidth / 2, currentY, { align: 'left' });
-                doc.text(format(new Date(score.createdAt), 'dd/MM/yy'), currentX + columnWidth, currentY, { align: 'right' });
-                currentY += 5;
+                doc.text(`Score: ${scoreText}`, currentX + columnWidth / 2, yPos, { align: 'left' });
+                doc.text(format(new Date(score.createdAt), 'dd/MM/yy'), currentX + columnWidth, yPos, { align: 'right' });
+                yPos += 5;
 
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
                 if (level) {
-                     doc.text(`Niveau ${level}`, currentX, currentY, { align: 'left' });
+                     doc.text(`Niveau ${level}`, currentX, yPos, { align: 'left' });
                 }
-                currentY += 3;
+                yPos += 3;
                 
                  if (score.details && score.details.length > 0) {
-                    const body = score.details.map(detail => [detail.question, detail.userAnswer, detail.status]);
+                    const body = score.details.map(detail => [detail.question, detail.userAnswer]);
                     autoTable(doc, {
-                        startY: currentY,
+                        startY: yPos,
                         head: [['Question', 'Réponse']],
                         body,
                         theme: 'grid',
                         tableWidth: columnWidth,
                         margin: { left: currentX },
                         headStyles: { fillColor: [230, 230, 230], textColor: 20, fontSize: 8 },
-                        styles: { fontSize: 8, cellPadding: 1.5 },
+                        styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
+                        columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
                         didParseCell: (data) => {
-                            if (data.row.raw && data.row.raw[data.row.raw.length - 1] === 'incorrect') {
-                                data.cell.styles.fillColor = LIGHT_RED_FILL;
+                            if (score.details && data.row.index >= 0 && score.details[data.row.index]) {
+                                if(score.details[data.row.index].status === 'incorrect'){
+                                    data.cell.styles.fillColor = LIGHT_RED_FILL;
+                                }
                             }
-                        }
+                        },
                     });
-                    currentY = (doc as any).lastAutoTable.finalY + 5;
+                    yPos = (doc as any).lastAutoTable.finalY + 5;
                 } else {
-                    currentY += 2;
+                    yPos += 2;
                 }
             }
 
-            if (currentX === leftColumnX) {
-                yPosLeft = currentY;
+            if (currentColumn === 'left') {
+                yPosLeft = yPos;
             } else {
-                yPosRight = currentY;
+                yPosRight = yPos;
             }
         };
 
@@ -286,3 +302,5 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         </Card>
     );
 }
+
+    
