@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings, Wrench } from 'lucide-react';
+import { Upload, Download, Loader2, AlertTriangle, ListCollapse, Settings, Wrench, Sparkles } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { exportAllData, importAllData } from '@/services/database';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -15,6 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { getStudents, updateStudent } from '@/services/students';
+import { deleteDummyScores } from '@/services/scores';
 
 function GeneralSettingsManager() {
     const [schoolYear, setSchoolYear] = useState<string>('');
@@ -217,6 +218,8 @@ function ExercisesManager() {
 function MaintenanceManager({ onDataRefresh }: { onDataRefresh: () => void }) {
     const { toast } = useToast();
     const [isSyncing, setIsSyncing] = useState(false);
+    const [isCleaning, setIsCleaning] = useState(false);
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
     const handleSyncLevels = async () => {
         setIsSyncing(true);
@@ -259,18 +262,40 @@ function MaintenanceManager({ onDataRefresh }: { onDataRefresh: () => void }) {
             setIsSyncing(false);
         }
     };
+    
+    const handleCleanDummyData = async () => {
+        setIsConfirmOpen(false);
+        setIsCleaning(true);
+        toast({ title: "Nettoyage en cours...", description: "Suppression des scores de test." });
+
+        try {
+            const result = await deleteDummyScores();
+            if (result.success) {
+                toast({ title: "Nettoyage terminé !", description: `${result.deletedCount} score(s) de test ont été supprimés.` });
+                onDataRefresh();
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+             console.error("Error cleaning dummy scores:", error);
+             toast({ variant: 'destructive', title: "Erreur de nettoyage", description: "Une erreur est survenue." });
+        } finally {
+            setIsCleaning(false);
+        }
+
+    }
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Maintenance des Données</CardTitle>
+                <CardTitle>Maintenance et Nettoyage</CardTitle>
                 <CardDescription>
-                    Utilisez ces outils pour assurer la cohérence et l'intégrité des données des élèves.
+                    Utilisez ces outils pour assurer la cohérence et l'intégrité des données de l'application.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
                 <div className="flex flex-col gap-4 p-6 rounded-lg bg-secondary/50 items-start">
-                    <h3 className="font-semibold text-lg">Niveaux des exercices</h3>
+                    <h3 className="font-semibold text-lg flex items-center gap-2"><Wrench/> Niveaux des exercices</h3>
                     <p className="text-sm text-muted-foreground">
                         Si de nouveaux exercices à niveaux ont été ajoutés, cette action vérifiera que chaque élève a un niveau par défaut ('B') assigné pour cet exercice.
                     </p>
@@ -278,6 +303,32 @@ function MaintenanceManager({ onDataRefresh }: { onDataRefresh: () => void }) {
                         {isSyncing ? <Loader2 className="mr-2 animate-spin" /> : <Wrench className="mr-2" />}
                         Synchroniser les niveaux manquants
                     </Button>
+                </div>
+                 <div className="flex flex-col gap-4 p-6 rounded-lg bg-secondary/50 items-start">
+                    <h3 className="font-semibold text-lg flex items-center gap-2"><Sparkles/> Scores de test</h3>
+                    <p className="text-sm text-muted-foreground">
+                        Cette action supprimera tous les scores générés par les questions d'exemple (celles avec le texte "Ceci est un exemple de question...").
+                    </p>
+                    <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" onClick={() => setIsConfirmOpen(true)} disabled={isCleaning}>
+                                {isCleaning ? <Loader2 className="mr-2 animate-spin" /> : <Trash2 className="mr-2" />}
+                                Supprimer les scores de test
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                             <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmer la suppression ?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Êtes-vous sûr de vouloir supprimer tous les scores générés par les questions d'exemple ? Cette action est irréversible.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                             <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleCleanDummyData}>Confirmer</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </CardContent>
         </Card>
@@ -427,3 +478,5 @@ export function DatabaseManager({ onDataRefresh }: { onDataRefresh: () => void }
         </div>
     );
 }
+
+    
