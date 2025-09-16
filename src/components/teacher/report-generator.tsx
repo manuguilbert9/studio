@@ -20,120 +20,12 @@ import { type Score, CalculationState, ScoreDetail } from '@/services/scores';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
 
 const PRIMARY_COLOR = '#ea588b';
-const GREEN_COLOR = '#16a34a';
-const RED_COLOR = '#dc2626';
 const LIGHT_RED_FILL = '#fee2e2';
-const HEADING_FONT_SIZE = 14;
-const BASE_FONT_SIZE = 9;
-const SMALL_FONT_SIZE = 8;
-const WIDGET_FONT_SIZE = 6;
-
 
 interface ReportGeneratorProps {
     students: Student[];
     allScores: Score[];
 }
-
-const drawCalculationWidget = (doc: jsPDF, detail: ScoreDetail, startX: number, startY: number): { endX: number, endY: number } => {
-    if (!detail.calculationState) {
-        return { endX: startX, endY: startY };
-    }
-
-    const state = detail.calculationState;
-    const isAddition = detail.question.includes('+');
-    const operands = detail.question.split(/[+-]/).map(s => s.trim());
-    const numCols = Math.max(...operands.map(op => op.length), detail.correctAnswer.length);
-
-    const CELL_SIZE = 8;
-    const FONT_SIZE = WIDGET_FONT_SIZE;
-    const CARRY_FONT_SIZE = WIDGET_FONT_SIZE - 1;
-    let y = startY;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0);
-
-    const widgetStartX = startX;
-
-    // Draw carry cells (subtraction)
-    if (!isAddition) {
-        let x = widgetStartX + CELL_SIZE * (numCols > operands[0].length ? 1.5 : 0.5);
-        for (let i = 0; i < numCols - 1; i++) {
-            const colFromRight = numCols - 1 - i;
-            const id = `carry-${colFromRight}`;
-            const cellState = state[id];
-            doc.setDrawColor(200);
-            doc.rect(x + 1, y, CELL_SIZE-2, CELL_SIZE-2, 'S');
-            if (cellState?.value) {
-                doc.text(cellState.value, x + CELL_SIZE/2, y + CELL_SIZE/2 + 1, { align: 'center' });
-            }
-            x += CELL_SIZE;
-        }
-        y += CELL_SIZE;
-    }
-
-    // Draw operands
-    operands.forEach((operand, opIndex) => {
-        let x = widgetStartX;
-         if (opIndex === operands.length -1) {
-            doc.text(isAddition ? '+' : '-', x, y + CELL_SIZE/2 + 1);
-         }
-        x += CELL_SIZE / 2;
-        
-        const paddedOperand = operand.padStart(numCols, ' ');
-
-        for (let i = 0; i < numCols; i++) {
-            const digit = paddedOperand[i];
-            const cellId = `op-${opIndex}-${numCols - 1 - i}`;
-            const valueToDraw = state[cellId]?.value || digit;
-            
-            doc.setDrawColor(150);
-            doc.rect(x, y, CELL_SIZE, CELL_SIZE, 'S');
-            doc.setFontSize(FONT_SIZE);
-            doc.text(valueToDraw, x + CELL_SIZE/2, y + CELL_SIZE/2 + 2, { align: 'center' });
-            x += CELL_SIZE;
-        }
-        y += CELL_SIZE;
-    });
-
-    // Draw separator line
-    doc.setLineWidth(0.5);
-    doc.line(widgetStartX + CELL_SIZE/2, y, widgetStartX + CELL_SIZE/2 + numCols * CELL_SIZE, y);
-    y += 2;
-
-    // Draw result
-    let xResult = widgetStartX + CELL_SIZE / 2;
-    const paddedResult = (detail.userAnswer || '').padStart(numCols, ' ');
-    for (let i = 0; i < numCols; i++) {
-        const digit = paddedResult[i];
-        doc.setDrawColor(150);
-        doc.rect(xResult, y, CELL_SIZE, CELL_SIZE, 'S');
-        if (digit !== ' ') {
-            doc.setFontSize(FONT_SIZE);
-            doc.text(digit, xResult + CELL_SIZE / 2, y + CELL_SIZE / 2 + 2, { align: 'center' });
-        }
-        xResult += CELL_SIZE;
-    }
-    y += CELL_SIZE;
-
-    // Draw carry cells (addition)
-    if (isAddition) {
-         let x = widgetStartX + CELL_SIZE / 2;
-         for (let i = 0; i < numCols; i++) {
-            const colFromRight = numCols - 1 - i;
-            const id = `carry-${colFromRight}`;
-            const cellState = state[id];
-            if(cellState?.value) {
-                doc.setFontSize(CARRY_FONT_SIZE);
-                doc.text(cellState.value, x + CELL_SIZE, startY + 4 + (operands.length * CELL_SIZE) - 2, {align: 'center'});
-            }
-            x += CELL_SIZE;
-        }
-    }
-
-    const widgetWidth = (numCols + 1.5) * CELL_SIZE;
-    return { endX: startX + widgetWidth, endY: y };
-};
-
 
 export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -145,8 +37,8 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
     const generatePdfForStudent = (doc: jsPDF, student: Student, dateRange: DateRange) => {
         const studentScores = allScores.filter(s =>
             s.userId === student.id &&
-            new Date(s.createdAt) >= dateRange.from! &&
-            new Date(s.createdAt) <= dateRange.to!
+            dateRange.from && new Date(s.createdAt) >= dateRange.from &&
+            dateRange.to && new Date(s.createdAt) <= dateRange.to
         ).sort((a, b) => a.skill.localeCompare(b.skill));
 
         // --- PAGE LAYOUT ---
@@ -160,7 +52,6 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
 
         let yPosLeft = 50;
         let yPosRight = 50;
-        let currentColumn: 'left' | 'right' = 'left';
 
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
@@ -171,7 +62,6 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         doc.setFontSize(12);
         const dateString = `Bilan du ${format(dateRange.from!, 'd MMMM yyyy', { locale: fr })} au ${format(dateRange.to!, 'd MMMM yyyy', { locale: fr })}`;
         doc.text(dateString, pageWidth / 2, 35, { align: 'center' });
-
 
         const scoresByCategory: Record<string, Score[]> = {};
         allSkillCategories.forEach(cat => scoresByCategory[cat] = []);
@@ -188,25 +78,29 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             if (categoryScores.length === 0) continue;
             hasContent = true;
 
-            const categoryHeaderHeight = 12;
-            let yPos = currentColumn === 'left' ? yPosLeft : yPosRight;
-            let currentX = currentColumn === 'left' ? leftColumnX : rightColumnX;
+            const isLeftColumnShorter = yPosLeft <= yPosRight;
+            let currentColumn: 'left' | 'right' = isLeftColumnShorter ? 'left' : 'right';
+            let yPos = isLeftColumnShorter ? yPosLeft : yPosRight;
+            let currentX = isLeftColumnShorter ? leftColumnX : rightColumnX;
 
-            if (yPos + categoryHeaderHeight > pageBreakY) {
-                if (currentColumn === 'left') {
+            const categoryHeaderHeight = 12;
+            const estimatedCategoryHeight = categoryHeaderHeight + categoryScores.length * 20; // Rough estimate
+
+            if (yPos + estimatedCategoryHeight > pageBreakY) {
+                if (currentColumn === 'left' && yPosRight + estimatedCategoryHeight < pageBreakY) {
                     currentColumn = 'right';
-                    yPos = 50;
+                    yPos = yPosRight;
                     currentX = rightColumnX;
                 } else {
-                    doc.addPage();
-                    currentColumn = 'left';
-                    yPos = 20;
-                    currentX = leftColumnX;
-                    yPosLeft = 20;
-                    yPosRight = 20;
+                     doc.addPage();
+                     yPosLeft = 20;
+                     yPosRight = 20;
+                     currentColumn = 'left';
+                     yPos = 20;
+                     currentX = leftColumnX;
                 }
             }
-            
+
             autoTable(doc, {
                 startY: yPos,
                 head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
@@ -214,23 +108,25 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 tableWidth: columnWidth,
                 margin: { left: currentX },
             });
-
             yPos = (doc as any).lastAutoTable.finalY + 2;
 
             for (const score of categoryScores) {
                 const skill = getSkillBySlug(score.skill);
-                const scoreText = score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
+                const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings);
                 const date = format(new Date(score.createdAt), 'dd/MM/yy HH:mm');
                 
-                let scoreHeaderHeight = 10;
-                if (skill?.description) scoreHeaderHeight += 5;
+                let scoreBlockHeight = 12;
+                if(score.details?.length) {
+                    scoreBlockHeight += (score.details.length * 7) + 10;
+                }
 
-                 if (yPos + scoreHeaderHeight > pageBreakY) {
-                    if (currentColumn === 'left') {
-                        currentColumn = 'right'; yPos = 50; currentX = rightColumnX;
+                if (yPos + scoreBlockHeight > pageBreakY) {
+                     if (currentColumn === 'left' && yPosRight + scoreBlockHeight < pageBreakY) {
+                        currentColumn = 'right'; yPos = yPosRight; currentX = rightColumnX;
                     } else {
-                        doc.addPage(); currentColumn = 'left'; yPos = 20; currentX = leftColumnX; yPosLeft = 20; yPosRight = 20;
+                        doc.addPage(); yPosLeft = 20; yPosRight = 20;
+                        currentColumn = 'left'; yPos = 20; currentX = leftColumnX;
                     }
                 }
                 
@@ -239,21 +135,19 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 doc.text(skill?.name || score.skill, currentX, yPos);
                 
                 doc.setFont('helvetica', 'normal');
-                doc.setFontSize(BASE_FONT_SIZE);
-                doc.text(`Score: ${scoreText}`, currentX + columnWidth/2 - 15, yPos, {align: 'left'});
+                doc.setFontSize(9);
+                doc.text(`Score: ${scoreText}`, currentX + columnWidth/2, yPos, {align: 'left'});
                 doc.text(date, currentX + columnWidth, yPos, {align: 'right'});
                 yPos += 5;
                 doc.text(`Niveau: ${level || 'N/A'}`, currentX, yPos, {align: 'left'});
-                yPos += 5;
+                yPos += 3;
                 
                 if (score.details && score.details.length > 0) {
-                    const headers: string[] = ['Question', 'Réponse'];
-                    
                     const body = score.details.map(detail => [detail.question, detail.userAnswer, detail.status]);
 
                     autoTable(doc, {
                         startY: yPos,
-                        head: [headers],
+                        head: [['Question', 'Réponse']],
                         body: body,
                         theme: 'grid',
                         tableWidth: columnWidth,
@@ -261,10 +155,10 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                         headStyles: {
                             fillColor: [230, 230, 230],
                             textColor: 20,
-                            fontSize: SMALL_FONT_SIZE,
+                            fontSize: 8,
                         },
                         styles: {
-                            fontSize: SMALL_FONT_SIZE,
+                            fontSize: 8,
                             cellPadding: 1.5,
                         },
                         didParseCell: (data) => {
