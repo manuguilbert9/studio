@@ -29,13 +29,16 @@ type LevelData = {
 const LEVEL_COUNT = 5;
 
 // --- Grid Generation ---
-const generateLevel = (): LevelData => {
+const generateLevel = (level: SkillLevel): LevelData => {
     const width = 7;
     const height = 7;
     const grid: Tile[][] = Array.from({ length: height }, () => Array(width).fill('empty'));
 
     // Place walls
-    const wallCount = Math.floor(Math.random() * 5) + 4; // 4 to 8 walls
+    const wallCount = level === 'B' 
+        ? Math.floor(Math.random() * 6) + 6 // 6 to 11 walls for level B
+        : Math.floor(Math.random() * 5) + 4; // 4 to 8 walls for level A
+        
     for (let i = 0; i < wallCount; i++) {
         const x = Math.floor(Math.random() * width);
         const y = Math.floor(Math.random() * height);
@@ -44,21 +47,58 @@ const generateLevel = (): LevelData => {
         }
     }
 
-    // Place player and key, ensuring they are not on walls and are reachable
     let playerStart, keyPos;
-    do {
-        playerStart = { x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height) };
-    } while (grid[playerStart.y][playerStart.x] !== 'empty');
+
+    if (level === 'B') {
+        const corners = [
+            { x: 0, y: 0 }, { x: width - 1, y: 0 },
+            { x: 0, y: height - 1 }, { x: width - 1, y: height - 1 }
+        ];
+        
+        let startCornerIndex, endCornerIndex;
+        
+        // Find a valid start corner
+        let attempts = 0;
+        do {
+            startCornerIndex = Math.floor(Math.random() * corners.length);
+            playerStart = corners[startCornerIndex];
+            attempts++;
+        } while (grid[playerStart.y][playerStart.x] !== 'empty' && attempts < 10);
+        
+        if (grid[playerStart.y][playerStart.x] !== 'empty') {
+             // If we can't find a free corner, fallback to random placement
+            return generateLevel('A');
+        }
+
+        // Find a different, valid end corner
+        attempts = 0;
+        do {
+            endCornerIndex = Math.floor(Math.random() * corners.length);
+            keyPos = corners[endCornerIndex];
+            attempts++;
+        } while ((endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty') && attempts < 10);
+
+         if (grid[keyPos.y][keyPos.x] !== 'empty') {
+            // Fallback
+            return generateLevel('A');
+        }
+    } else {
+        // Level A random placement
+        do {
+            playerStart = { x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height) };
+        } while (grid[playerStart.y][playerStart.x] !== 'empty');
+        
+        do {
+            keyPos = { x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height) };
+        } while (grid[keyPos.y][keyPos.x] !== 'empty' || (keyPos.x === playerStart.x && keyPos.y === playerStart.y));
+    }
+    
     grid[playerStart.y][playerStart.x] = 'player';
-    
-    do {
-        keyPos = { x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height) };
-    } while (grid[keyPos.y][keyPos.x] !== 'empty' || (keyPos.x === playerStart.x && keyPos.y === playerStart.y));
     grid[keyPos.y][keyPos.x] = 'key';
-    
+
     // Check if path exists, regenerate if not.
     if (!isPathPossible(grid, playerStart, keyPos)) {
-        return generateLevel();
+        return generateLevel(level);
     }
 
     return { grid, playerStart, keyPos };
@@ -123,10 +163,12 @@ export function CodedPathExercise() {
     }, [student]);
     
     useEffect(() => {
-        const newLevelData = generateLevel();
-        setCurrentLevelData(newLevelData);
-        if (level === 'A') {
-            setRealtimePlayerPos(newLevelData.playerStart);
+        if (level) {
+            const newLevelData = generateLevel(level);
+            setCurrentLevelData(newLevelData);
+            if (level === 'A') {
+                setRealtimePlayerPos(newLevelData.playerStart);
+            }
         }
     }, [currentLevelIndex, level]);
 
