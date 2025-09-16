@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -108,7 +109,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 tableWidth: columnWidth,
                 margin: { left: currentX },
             });
-            yPos = (doc as any).lastAutoTable.finalY + 2;
+            yPos = (doc as any).lastAutoTable.finalY + 4; // Increased spacing
 
             for (const score of categoryScores) {
                 const skill = getSkillBySlug(score.skill);
@@ -139,7 +140,9 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 doc.text(`Score: ${scoreText}`, currentX + columnWidth/2, yPos, {align: 'left'});
                 doc.text(date, currentX + columnWidth, yPos, {align: 'right'});
                 yPos += 5;
-                doc.text(`Niveau: ${level || 'N/A'}`, currentX, yPos, {align: 'left'});
+                
+                const levelText = level?.startsWith('Niveau ') ? level : `Niveau: ${level || 'N/A'}`;
+                doc.text(levelText, currentX, yPos, {align: 'left'});
                 yPos += 3;
                 
                 if (score.details && score.details.length > 0) {
