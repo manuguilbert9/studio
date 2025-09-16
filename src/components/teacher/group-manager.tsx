@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, FormEvent, useMemo } from 'react';
+import { useState, FormEvent, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Loader2, UserPlus, Pencil, Trash2, Users, Settings } from 'lucide-react';
@@ -39,10 +39,10 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
     const [isSkillModalOpen, setIsSkillModalOpen] = useState(false);
     
     // Update local state when initial props change from real-time listener
-    useState(() => {
+    useEffect(() => {
         setStudents(initialStudents);
         setGroups(initialGroups);
-    });
+    }, [initialStudents, initialGroups]);
 
     const studentsByGroup = useMemo(() => {
         const map: Record<string, Student[]> = {};
@@ -304,9 +304,28 @@ export function GroupManager({ initialStudents, initialGroups }: GroupManagerPro
                                                      <Label htmlFor={`group-skill-${skill.slug}`} className="text-sm font-medium pl-2 flex-grow">
                                                          {skill.name}
                                                      </Label>
+                                                      {!skill.isFixedLevel && (
+                                                        <Select 
+                                                            value={editedLevels[skill.slug]} 
+                                                            onValueChange={(value) => handleLevelChange(skill.slug, value as SkillLevel)}
+                                                            disabled={!editedEnabledSkills[skill.slug]}
+                                                        >
+                                                            <SelectTrigger className="w-24 h-8 text-xs">
+                                                                <SelectValue placeholder="Niv." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {(skill.allowedLevels || ['A', 'B', 'C', 'D']).map(level => (
+                                                                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                     )}
+                                                     {skill.isFixedLevel && (
+                                                         <Badge variant="outline" className="w-24 justify-center h-8 text-xs">Niveau {skill.isFixedLevel}</Badge>
+                                                     )}
                                                      <Switch
                                                          id={`group-skill-${skill.slug}`}
-                                                         checked={editingGroupSkills[skill.slug] ?? false}
+                                                         checked={editedEnabledSkills[skill.slug] ?? false}
                                                          onCheckedChange={(checked) => handleEnabledSkillChange(skill.slug, checked)}
                                                      />
                                                  </div>
