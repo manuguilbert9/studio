@@ -85,22 +85,16 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             let currentX = isLeftColumnShorter ? leftColumnX : rightColumnX;
 
             const categoryHeaderHeight = 12;
-            const estimatedCategoryHeight = categoryHeaderHeight + categoryScores.length * 20; // Rough estimate
-
-            if (yPos + estimatedCategoryHeight > pageBreakY) {
-                if (currentColumn === 'left' && yPosRight + estimatedCategoryHeight < pageBreakY) {
-                    currentColumn = 'right';
-                    yPos = yPosRight;
-                    currentX = rightColumnX;
+            
+            if (yPos + categoryHeaderHeight > pageBreakY) {
+                 if (currentColumn === 'left' && yPosRight + categoryHeaderHeight < pageBreakY) {
+                    currentColumn = 'right'; yPos = yPosRight; currentX = rightColumnX;
                 } else {
-                     doc.addPage();
-                     yPosLeft = 20;
-                     yPosRight = 20;
-                     currentColumn = 'left';
-                     yPos = 20;
-                     currentX = leftColumnX;
+                     doc.addPage(); yPosLeft = 20; yPosRight = 20;
+                     currentColumn = 'left'; yPos = 20; currentX = leftColumnX;
                 }
             }
+
 
             autoTable(doc, {
                 startY: yPos,
@@ -109,7 +103,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 tableWidth: columnWidth,
                 margin: { left: currentX },
             });
-            yPos = (doc as any).lastAutoTable.finalY + 4; // Increased spacing
+            yPos = (doc as any).lastAutoTable.finalY + 4;
 
             for (const score of categoryScores) {
                 const skill = getSkillBySlug(score.skill);
@@ -117,11 +111,8 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings);
                 const date = format(new Date(score.createdAt), 'dd/MM/yy HH:mm');
                 
-                let scoreBlockHeight = 12;
-                if(score.details?.length) {
-                    scoreBlockHeight += (score.details.length * 7) + 10;
-                }
-
+                const scoreBlockHeight = 12;
+                
                 if (yPos + scoreBlockHeight > pageBreakY) {
                      if (currentColumn === 'left' && yPosRight + scoreBlockHeight < pageBreakY) {
                         currentColumn = 'right'; yPos = yPosRight; currentX = rightColumnX;
@@ -141,7 +132,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 doc.text(date, currentX + columnWidth, yPos, {align: 'right'});
                 yPos += 5;
                 
-                const levelText = level?.startsWith('Niveau ') ? level : `Niveau: ${level || 'N/A'}`;
+                const levelText = level?.startsWith('Niveau ') ? level : (level ? `Niveau ${level}`: 'N/A');
                 doc.text(levelText, currentX, yPos, {align: 'left'});
                 yPos += 3;
                 
