@@ -26,6 +26,17 @@ const shuffleArray = (array: any[]) => {
   return [...array].sort(() => Math.random() - 0.5);
 };
 
+// Helper function to get word counts
+const getWordCounts = (words: string[]): Map<string, number> => {
+  const counts = new Map<string, number>();
+  for (const word of words) {
+    const normalizedWord = word.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    counts.set(normalizedWord, (counts.get(normalizedWord) || 0) + 1);
+  }
+  return counts;
+};
+
+
 export function PhraseConstructionExercise() {
   const { student } = useContext(UserContext);
   const searchParams = useSearchParams();
@@ -113,17 +124,20 @@ export function PhraseConstructionExercise() {
       }
   };
 
-  const typedWords = useMemo(() => {
-    // Normalize and split the user's sentence into a set of unique words for quick lookup.
-    return new Set(
-      userSentence
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // remove accents
-        .replace(/[.,'!?]/g, '') // remove punctuation
-        .split(/\s+/) // split by spaces
-    );
+  const typedWordCounts = useMemo(() => {
+    const words = userSentence
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[.,'!?]/g, '')
+      .split(/\s+/)
+      .filter(Boolean);
+    return getWordCounts(words);
   }, [userSentence]);
+
+  // Keep track of how many times each word badge has been rendered and marked as 'used'
+  const renderedUsageCount = useMemo(() => new Map<string, number>(), [wordsToUse]);
+
 
   useEffect(() => {
     const saveFinalScore = async () => {
@@ -202,6 +216,9 @@ export function PhraseConstructionExercise() {
     );
   }
 
+  // Reset usage counts for each render of the badges
+  renderedUsageCount.clear();
+
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-2xl">
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
@@ -217,7 +234,16 @@ export function PhraseConstructionExercise() {
       <CardContent className="space-y-6">
         <div className="flex flex-wrap items-center justify-center gap-3 p-4 bg-muted rounded-lg">
           {wordsToUse.map((word, index) => {
-            const isUsed = typedWords.has(word.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""));
+             const normalizedWord = word.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const countInSentence = typedWordCounts.get(normalizedWord) || 0;
+            const alreadyRenderedUsed = renderedUsageCount.get(normalizedWord) || 0;
+            
+            const isUsed = countInSentence > alreadyRenderedUsed;
+
+            if (isUsed) {
+                renderedUsageCount.set(normalizedWord, alreadyRenderedUsed + 1);
+            }
+
             return (
               <Badge 
                 key={`${word}-${index}`} 
