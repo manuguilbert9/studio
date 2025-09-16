@@ -19,22 +19,91 @@ import { Label } from './ui/label';
 
 
 type Move = 'up' | 'down' | 'left' | 'right';
-type Tile = 'empty' | 'wall' | 'player' | 'key';
+type Tile = 'empty' | 'wall' | 'player' | 'key' | 'trap';
+type Position = { x: number, y: number };
 type LevelData = {
     grid: Tile[][];
-    playerStart: { x: number, y: number };
-    keyPos: { x: number, y: number };
+    playerStart: Position;
+    keyPos: Position;
 };
 
 const LEVEL_COUNT = 5;
 
 // --- Grid Generation ---
+
+// Helper to shuffle an array
+const shuffle = (array: any[]) => {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+};
+
+// Generates a maze-like structure for Level C
+const generateMaze = (width: number, height: number): { grid: Tile[][], playerStart: Position, keyPos: Position } => {
+    // Ensure width and height are odd for the maze algorithm
+    const w = width % 2 === 0 ? width + 1 : width;
+    const h = height % 2 === 0 ? height + 1 : height;
+    
+    let grid: Tile[][] = Array.from({ length: h }, () => Array(w).fill('wall'));
+    let path: Position[] = [];
+
+    function carvePassages(cx: number, cy: number) {
+        const directions = shuffle([
+            { x: 0, y: -2, wallY: -1 }, // North
+            { x: 2, y: 0, wallX: 1 },  // East
+            { x: 0, y: 2, wallY: 1 },  // South
+            { x: -2, y: 0, wallX: -1 }  // West
+        ]);
+
+        for (const dir of directions) {
+            const nx = cx + dir.x;
+            const ny = cy + dir.y;
+
+            if (ny >= 0 && ny < h && nx >= 0 && nx < w && grid[ny][nx] === 'wall') {
+                grid[cy + (dir.wallY || 0)][cx + (dir.wallX || 0)] = 'empty';
+                grid[ny][nx] = 'empty';
+                path.push({x: nx, y: ny});
+                carvePassages(nx, ny);
+            }
+        }
+    }
+
+    const startX = Math.floor(Math.random() * (w / 2)) * 2;
+    const startY = Math.floor(Math.random() * (h / 2)) * 2;
+    grid[startY][startX] = 'empty';
+    path.push({x: startX, y: startY});
+    carvePassages(startX, startY);
+
+    const playerStart = path[0];
+    const keyPos = path[path.length - 1];
+    
+    // Add traps after maze is carved
+    const pathWithoutStartEnd = path.slice(1, -1);
+    const trapCount = Math.floor(pathWithoutStartEnd.length * 0.1); // ~10% of path are traps
+    for (let i = 0; i < trapCount; i++) {
+        const trapIndex = Math.floor(Math.random() * pathWithoutStartEnd.length);
+        const {x, y} = pathWithoutStartEnd[trapIndex];
+        if (grid[y][x] === 'empty') {
+            grid[y][x] = 'trap';
+        }
+    }
+
+    return { grid, playerStart, keyPos };
+};
+
+
 const generateLevel = (level: SkillLevel): LevelData => {
+    if (level === 'C') {
+        const { grid, playerStart, keyPos } = generateMaze(15, 15);
+        return { grid, playerStart, keyPos };
+    }
+    
     const width = 7;
     const height = 7;
     const grid: Tile[][] = Array.from({ length: height }, () => Array(width).fill('empty'));
 
-    // Place walls
     const wallCount = level === 'B' 
         ? Math.floor(Math.random() * 6) + 6 // 6 to 11 walls for level B
         : Math.floor(Math.random() * 5) + 4; // 4 to 8 walls for level A
@@ -47,7 +116,7 @@ const generateLevel = (level: SkillLevel): LevelData => {
         }
     }
 
-    let playerStart, keyPos;
+    let playerStart: Position, keyPos: Position;
 
     if (level === 'B') {
         const corners = [
@@ -56,34 +125,23 @@ const generateLevel = (level: SkillLevel): LevelData => {
         ];
         
         let startCornerIndex, endCornerIndex;
-        
-        // Find a valid start corner
         let attempts = 0;
+        
         do {
             startCornerIndex = Math.floor(Math.random() * corners.length);
             playerStart = corners[startCornerIndex];
             attempts++;
-        } while (grid[playerStart.y][playerStart.x] !== 'empty' && attempts < 10);
-        
-        if (grid[playerStart.y][playerStart.x] !== 'empty') {
-             // If we can't find a free corner, fallback to random placement
-            return generateLevel('A');
-        }
+            if (attempts > 10) return generateLevel('A'); // fallback
+        } while (grid[playerStart.y][playerStart.x] !== 'empty');
 
-        // Find a different, valid end corner
         attempts = 0;
         do {
             endCornerIndex = Math.floor(Math.random() * corners.length);
             keyPos = corners[endCornerIndex];
             attempts++;
-        } while ((endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty') && attempts < 10);
-
-         if (grid[keyPos.y][keyPos.x] !== 'empty') {
-            // Fallback
-            return generateLevel('A');
-        }
-    } else {
-        // Level A random placement
+             if (attempts > 10) return generateLevel('A'); // fallback
+        } while (endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty');
+    } else { // Level A
         do {
             playerStart = { x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height) };
         } while (grid[playerStart.y][playerStart.x] !== 'empty');
@@ -92,20 +150,19 @@ const generateLevel = (level: SkillLevel): LevelData => {
             keyPos = { x: Math.floor(Math.random() * width), y: Math.floor(Math.random() * height) };
         } while (grid[keyPos.y][keyPos.x] !== 'empty' || (keyPos.x === playerStart.x && keyPos.y === playerStart.y));
     }
-    
-    grid[playerStart.y][playerStart.x] = 'player';
-    grid[keyPos.y][keyPos.x] = 'key';
 
-    // Check if path exists, regenerate if not.
     if (!isPathPossible(grid, playerStart, keyPos)) {
         return generateLevel(level);
     }
-
+    
+    grid[playerStart.y][playerStart.x] = 'empty'; // Temporarily empty to place key
+    grid[keyPos.y][keyPos.x] = 'empty';
+    
     return { grid, playerStart, keyPos };
 };
 
-// Simple BFS to check if a path exists
-const isPathPossible = (grid: Tile[][], start: {x:number, y:number}, end: {x:number, y:number}): boolean => {
+
+const isPathPossible = (grid: Tile[][], start: Position, end: Position): boolean => {
     const queue = [start];
     const visited = new Set([`${start.y},${start.x}`]);
     const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]];
@@ -146,12 +203,10 @@ export function CodedPathExercise() {
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showConfetti, setShowConfetti] = useState(false);
     
-    // Level B state
     const [isSimulating, setIsSimulating] = useState(false);
-    const [simulatedPlayerPos, setSimulatedPlayerPos] = useState<{x:number, y:number} | null>(null);
-
-    // Level A state
-    const [realtimePlayerPos, setRealtimePlayerPos] = useState<{ x: number; y: number } | null>(null);
+    const [simulatedPlayerPos, setSimulatedPlayerPos] = useState<Position | null>(null);
+    const [realtimePlayerPos, setRealtimePlayerPos] = useState<Position | null>(null);
+    const [brokenTraps, setBrokenTraps] = useState<Position[]>([]);
 
 
     useEffect(() => {
@@ -166,9 +221,8 @@ export function CodedPathExercise() {
         if (level) {
             const newLevelData = generateLevel(level);
             setCurrentLevelData(newLevelData);
-            if (level === 'A') {
-                setRealtimePlayerPos(newLevelData.playerStart);
-            }
+            setRealtimePlayerPos(newLevelData.playerStart);
+            setBrokenTraps([]);
         }
     }, [currentLevelIndex, level]);
 
@@ -183,13 +237,15 @@ export function CodedPathExercise() {
         }
     };
     
-    const checkPathForLevelB = () => {
+    const checkPathForLevelB_or_C = () => {
         if (!currentLevelData || path.length === 0) return;
         setIsSimulating(true);
+        setBrokenTraps([]);
 
         let pos = { ...currentLevelData.playerStart };
         let pathIsCorrect = false;
         let step = 0;
+        let trapsTriggered: Position[] = [];
 
         const interval = setInterval(() => {
             if (step >= path.length) { // End of path
@@ -205,8 +261,16 @@ export function CodedPathExercise() {
             if (move === 'left') pos.x--;
             if (move === 'right') pos.x++;
             
-            // Check for collision
-            if (pos.y < 0 || pos.y >= currentLevelData.grid.length || pos.x < 0 || pos.x >= currentLevelData.grid[0].length || currentLevelData.grid[pos.y][pos.x] === 'wall') {
+            if (pos.y < 0 || pos.y >= currentLevelData.grid.length || pos.x < 0 || pos.x >= currentLevelData.grid[0].length || currentLevelData.grid[pos.y][pos.x] === 'wall' || trapsTriggered.some(t => t.x === pos.x && t.y === pos.y)) {
+                pathIsCorrect = false;
+                clearInterval(interval);
+                finalizeCheck(false, path.join(', '));
+                return;
+            }
+
+            if(currentLevelData.grid[pos.y][pos.x] === 'trap') {
+                trapsTriggered.push({...pos});
+                setBrokenTraps(prev => [...prev, {...pos}]);
                 pathIsCorrect = false;
                 clearInterval(interval);
                 finalizeCheck(false, path.join(', '));
@@ -215,7 +279,7 @@ export function CodedPathExercise() {
             
             setSimulatedPlayerPos({ ...pos });
             step++;
-        }, 300);
+        }, 200);
     };
 
     const handleRealtimeMove = (move: Move) => {
@@ -228,11 +292,19 @@ export function CodedPathExercise() {
         if (move === 'right') nextPos.x++;
 
         const { y, x } = nextPos;
-        if (y < 0 || y >= currentLevelData.grid.length || x < 0 || x >= currentLevelData.grid[0].length || currentLevelData.grid[y][x] === 'wall') {
+        if (y < 0 || y >= currentLevelData.grid.length || x < 0 || x >= currentLevelData.grid[0].length || currentLevelData.grid[y][x] === 'wall' || brokenTraps.some(t => t.x === x && t.y === y)) {
             setFeedback('incorrect');
             setTimeout(() => setFeedback(null), 500);
             return;
         }
+        
+        if (currentLevelData.grid[y][x] === 'trap') {
+            setBrokenTraps(prev => [...prev, { x, y }]);
+            setFeedback('incorrect');
+            setTimeout(() => setFeedback(null), 500);
+            return;
+        }
+
 
         setRealtimePlayerPos(nextPos);
         
@@ -324,7 +396,8 @@ export function CodedPathExercise() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="A">Niveau A (Déplacement direct)</SelectItem>
-                            <SelectItem value="B">Niveau B (Programmation)</SelectItem>
+                            <SelectItem value="B">Niveau B (Programmation simple)</SelectItem>
+                            <SelectItem value="C">Niveau C (Labyrinthe & Pièges)</SelectItem>
                         </SelectContent>
                     </Select>
                 </CardContent>
@@ -353,6 +426,11 @@ export function CodedPathExercise() {
     
     const playerPos = level === 'A' ? realtimePlayerPos : (simulatedPlayerPos || currentLevelData.playerStart);
     if (!playerPos) return null; // Should not happen
+    
+    const isSmallGrid = level !== 'C';
+    const tileSize = isSmallGrid ? 'w-12 h-12 sm:w-14 sm:h-14' : 'w-8 h-8';
+    const iconSize = isSmallGrid ? 'h-8 w-8 sm:h-10 sm:h-10' : 'h-6 w-6';
+    const textSize = isSmallGrid ? 'text-3xl sm:text-4xl' : 'text-xl';
 
     return (
         <Card className="w-full max-w-4xl mx-auto shadow-2xl">
@@ -367,23 +445,31 @@ export function CodedPathExercise() {
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div className="flex justify-center">
                      <div className={cn("grid border-2 bg-muted/20", feedback === 'incorrect' && level === 'A' && 'animate-shake')} style={{gridTemplateColumns: `repeat(${currentLevelData.grid[0].length}, 1fr)`}}>
-                        {currentLevelData.grid.flat().map((tile, index) => {
-                            const x = index % currentLevelData.grid[0].length;
-                            const y = Math.floor(index / currentLevelData.grid[0].length);
-                            const isPlayerHere = playerPos.x === x && playerPos.y === y;
-                            return (
-                                <div key={index} className="w-12 h-12 sm:w-14 sm:h-14 flex items-center justify-center border text-3xl sm:text-4xl">
-                                    {isPlayerHere && <Bot className="h-8 w-8 sm:h-10 sm:h-10 text-blue-600 z-10"/>}
-                                    {tile === 'wall' && <div className="w-full h-full bg-slate-600"/>}
-                                    {tile === 'key' && !isPlayerHere && <KeyRound className="h-8 w-8 text-yellow-500"/>}
-                                </div>
-                            )
-                        })}
+                        {currentLevelData.grid.map((row, y) => 
+                            row.map((tile, x) => {
+                                const isPlayerHere = playerPos.x === x && playerPos.y === y;
+                                const isStart = currentLevelData.playerStart.x === x && currentLevelData.playerStart.y === y;
+                                const isKey = currentLevelData.keyPos.x === x && currentLevelData.keyPos.y === y;
+                                const isBroken = brokenTraps.some(t => t.x === x && t.y === y);
+                                return (
+                                    <div key={`${y}-${x}`} className={cn("relative flex items-center justify-center border", textSize, tileSize,
+                                      isStart && 'bg-blue-200/50',
+                                      isKey && 'bg-yellow-200/50'
+                                    )}>
+                                        {isPlayerHere && <Bot className={cn(iconSize, "text-blue-600 z-10")}/>}
+                                        {tile === 'wall' && <div className="w-full h-full bg-slate-600"/>}
+                                        {isBroken && <div className="w-full h-full bg-black"/>}
+                                        {tile === 'trap' && !isBroken && <div className="w-2/3 h-2/3 bg-slate-400/50 rounded-full border-2 border-dashed border-slate-500" />}
+                                        {isKey && !isPlayerHere && <KeyRound className={cn(iconSize, "text-yellow-500")}/>}
+                                    </div>
+                                )
+                           })
+                        )}
                     </div>
                 </div>
 
                 <div className="space-y-4">
-                    {level === 'B' && (
+                    {level !== 'A' && (
                         <div className="p-4 rounded-lg bg-muted min-h-[6rem]">
                             <p className="text-sm text-muted-foreground mb-2">Chemin programmé :</p>
                             <div className="flex flex-wrap gap-1">
@@ -407,7 +493,7 @@ export function CodedPathExercise() {
                         <Button variant="outline" size="lg" className="h-16" onClick={() => addMove('right')}><ArrowRight className="h-8 w-8"/></Button>
                     </div>
 
-                     {level === 'B' && (
+                     {level !== 'A' && (
                         <div className="flex gap-2">
                             <Button variant="outline" className="w-full" onClick={removeLastMove}><Undo2 className="mr-2 h-4 w-4"/>Annuler</Button>
                             <Button variant="destructive" className="w-full" onClick={clearPath}><Trash2 className="mr-2 h-4 w-4"/>Effacer</Button>
@@ -416,13 +502,13 @@ export function CodedPathExercise() {
                 </div>
             </CardContent>
             <CardFooter className="flex-col gap-4 pt-6">
-                {level === 'B' && (
-                     <Button size="lg" className="w-full max-w-md" onClick={checkPathForLevelB} disabled={isSimulating || feedback !== null}>
+                {level !== 'A' && (
+                     <Button size="lg" className="w-full max-w-md" onClick={checkPathForLevelB_or_C} disabled={isSimulating || feedback !== null}>
                         <Play className="mr-2"/> Lancer le robot !
                     </Button>
                 )}
                  {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp/> Super !</div>}
-                 {feedback === 'incorrect' && level === 'B' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon chemin.</div>}
+                 {feedback === 'incorrect' && level !== 'A' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon chemin.</div>}
             </CardFooter>
              <style jsx>{`
                 @keyframes shake {

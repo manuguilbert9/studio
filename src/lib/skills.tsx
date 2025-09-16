@@ -172,7 +172,7 @@ export const skills: Skill[] = [
     description: "Guidez le personnage jusqu'à la clé en créant une séquence de flèches.",
     icon: <Route />,
     category: 'Espace et géométrie',
-    allowedLevels: ['A', 'B'],
+    allowedLevels: ['A', 'B', 'C'],
   },
   {
     name: 'Lire les nombres',
