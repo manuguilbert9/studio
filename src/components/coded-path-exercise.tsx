@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useContext, useCallback } from 'react';
@@ -40,28 +41,28 @@ const shuffle = (array: any[]) => {
   return array;
 };
 
-// Depth-first search to find the solution path.
-const findSolutionPath = (grid: Tile[][], start: Position, end: Position): Position[] | null => {
-    const stack: { pos: Position, path: Position[] }[] = [{ pos: start, path: [start] }];
+// Breadth-first search to find the SHORTEST solution path.
+const findShortestPath = (grid: Tile[][], start: Position, end: Position): Position[] | null => {
+    const queue: { pos: Position, path: Position[] }[] = [{ pos: start, path: [start] }];
     const visited = new Set([`${start.y},${start.x}`]);
     const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]]; // S, N, E, W
     const width = grid[0].length;
     const height = grid.length;
 
-    while (stack.length > 0) {
-        const { pos, path } = stack.pop()!;
+    while (queue.length > 0) {
+        const { pos, path } = queue.shift()!;
         if (pos.x === end.x && pos.y === end.y) {
             return path; // Solution found
         }
         
-        for (const [dx, dy] of shuffle(dirs)) {
+        for (const [dx, dy] of dirs) {
             const nextX = pos.x + dx;
             const nextY = pos.y + dy;
 
             if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height && grid[nextY][nextX] !== 'wall' && !visited.has(`${nextY},${nextX}`)) {
                 visited.add(`${nextY},${nextX}`);
                 const newPath = [...path, { x: nextX, y: nextY }];
-                stack.push({ pos: { x: nextX, y: nextY }, path: newPath });
+                queue.push({ pos: { x: nextX, y: nextY }, path: newPath });
             }
         }
     }
@@ -107,7 +108,7 @@ const generateMaze = (width: number, height: number): { grid: Tile[][], playerSt
     let playerStart = emptyCells[0];
     let keyPos = emptyCells[emptyCells.length-1];
 
-    const solutionPath = findSolutionPath(grid, playerStart, keyPos);
+    const solutionPath = findShortestPath(grid, playerStart, keyPos);
     if (!solutionPath) {
         // Fallback or retry logic if somehow no path is found
         return generateMaze(width, height); 
@@ -116,7 +117,7 @@ const generateMaze = (width: number, height: number): { grid: Tile[][], playerSt
     const solutionPathSet = new Set(solutionPath.map(p => `${p.y},${p.x}`));
 
     // Add traps to cells that are NOT part of the solution path
-    const potentialTrapCells = emptyCells.filter(cell => !solutionPathSet.has(`${cell.y},${cell.x}`));
+    const potentialTrapCells = emptyCells.filter(cell => !solutionPathSet.has(`${cell.y},${cell.x}`) && (cell.x !== playerStart.x || cell.y !== playerStart.y) && (cell.x !== keyPos.x || cell.y !== keyPos.y));
     const trapCount = Math.floor(potentialTrapCells.length * 0.15); // ~15% of non-solution path are traps
     
     const shuffledPotentialTraps = shuffle(potentialTrapCells);
@@ -236,7 +237,7 @@ export function CodedPathExercise() {
     const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
     const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
     const [isFinished, setIsFinished] = useState(false);
-    const [correctAnswers, setCorrectAnswers] = useState(0);
+    const [sessionScores, setSessionScores] = useState<number[]>([]);
     const [hasBeenSaved, setHasBeenSaved] = useState(false);
     const [sessionDetails, setSessionDetails] = useState<ScoreDetail[]>([]);
     const [showConfetti, setShowConfetti] = useState(false);
@@ -289,7 +290,7 @@ export function CodedPathExercise() {
             if (step >= path.length) { // End of path
                 pathIsCorrect = pos.x === currentLevelData.keyPos.x && pos.y === currentLevelData.keyPos.y;
                 clearInterval(interval);
-                finalizeCheck(pathIsCorrect, path.join(', '));
+                finalizeCheck(pathIsCorrect, path);
                 return;
             }
 
@@ -302,7 +303,7 @@ export function CodedPathExercise() {
             if (pos.y < 0 || pos.y >= currentLevelData.grid.length || pos.x < 0 || pos.x >= currentLevelData.grid[0].length || currentLevelData.grid[pos.y][pos.x] === 'wall' || trapsTriggered.some(t => t.x === pos.x && t.y === pos.y)) {
                 pathIsCorrect = false;
                 clearInterval(interval);
-                finalizeCheck(false, path.join(', '));
+                finalizeCheck(false, path);
                 return;
             }
 
@@ -311,7 +312,7 @@ export function CodedPathExercise() {
                 setBrokenTraps(prev => [...prev, {...pos}]);
                 pathIsCorrect = false;
                 clearInterval(interval);
-                finalizeCheck(false, path.join(', '));
+                finalizeCheck(false, path);
                 return;
             }
             
@@ -343,26 +344,42 @@ export function CodedPathExercise() {
             return;
         }
 
-
+        const newPath = [...path, move];
+        setPath(newPath);
         setRealtimePlayerPos(nextPos);
         
         if (nextPos.x === currentLevelData.keyPos.x && nextPos.y === currentLevelData.keyPos.y) {
-            finalizeCheck(true, `Mouvement direct ${move}`);
+            finalizeCheck(true, newPath);
         }
     };
 
 
-    const finalizeCheck = (isCorrect: boolean, userAnswer: string) => {
+    const finalizeCheck = (isCorrect: boolean, userPath: Move[]) => {
+         let score = 0;
+         if (isCorrect && currentLevelData) {
+            const shortestPath = findShortestPath(currentLevelData.grid, currentLevelData.playerStart, currentLevelData.keyPos);
+            const shortestLength = shortestPath ? shortestPath.length - 1 : 0;
+            const userLength = userPath.length;
+
+            if (shortestLength > 0 && userLength >= shortestLength) {
+                const wastedMoves = userLength - shortestLength;
+                score = Math.max(0, 100 - (wastedMoves * 5));
+            } else {
+                 score = 100; // Should not happen with BFS but a good fallback
+            }
+        }
+        setSessionScores(prev => [...prev, score]);
+
          const detail: ScoreDetail = {
             question: `Parcours ${currentLevelIndex + 1}`,
-            userAnswer: userAnswer,
+            userAnswer: userPath.join(', '),
             correctAnswer: 'Chemin valide',
             status: isCorrect ? 'correct' : 'incorrect',
+            score: score
         };
         setSessionDetails(prev => [...prev, detail]);
         
         if (isCorrect) {
-            setCorrectAnswers(prev => prev + 1);
             setFeedback('correct');
             setShowConfetti(true);
         } else {
@@ -401,21 +418,22 @@ export function CodedPathExercise() {
         const saveResult = async () => {
              if (isFinished && student && !hasBeenSaved && level) {
                 setHasBeenSaved(true);
-                const score = (correctAnswers / LEVEL_COUNT) * 100;
+                const finalScore = sessionScores.length > 0 ? sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length : 0;
+
                 if (isHomework && homeworkDate) {
-                    await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: 'coded-path', score });
+                    await saveHomeworkResult({ userId: student.id, date: homeworkDate, skillSlug: 'coded-path', score: finalScore });
                 } else {
-                    await addScore({ userId: student.id, skill: 'coded-path', score, details: sessionDetails, numberLevelSettings: { level } });
+                    await addScore({ userId: student.id, skill: 'coded-path', score: finalScore, details: sessionDetails, numberLevelSettings: { level } });
                 }
             }
         };
         saveResult();
-    }, [isFinished, student, correctAnswers, hasBeenSaved, sessionDetails, isHomework, homeworkDate, level]);
+    }, [isFinished, student, hasBeenSaved, sessionDetails, isHomework, homeworkDate, level, sessionScores]);
 
     const restartExercise = () => {
         setCurrentLevelIndex(0);
         setIsFinished(false);
-        setCorrectAnswers(0);
+        setSessionScores([]);
         setHasBeenSaved(false);
         setSessionDetails([]);
     };
@@ -448,14 +466,16 @@ export function CodedPathExercise() {
     }
 
     if (isFinished) {
+        const finalScore = sessionScores.length > 0 ? sessionScores.reduce((a, b) => a + b, 0) / sessionScores.length : 0;
+
         return (
             <Card className="w-full max-w-lg mx-auto shadow-2xl text-center p-4 sm:p-8">
                 <CardHeader><CardTitle className="text-4xl font-headline mb-4">Exercice terminé !</CardTitle></CardHeader>
                 <CardContent className="space-y-6">
                     <p className="text-2xl">
-                        Tu as réussi <span className="font-bold text-primary">{correctAnswers}</span> parcours sur <span className="font-bold">{LEVEL_COUNT}</span>.
+                        Tu as réussi {sessionScores.filter(s => s > 0).length} parcours sur {LEVEL_COUNT}.
                     </p>
-                    <ScoreTube score={(correctAnswers / LEVEL_COUNT) * 100} />
+                    <ScoreTube score={finalScore} />
                     <Button onClick={restartExercise} variant="outline" size="lg" className="mt-4"><RefreshCw className="mr-2" />Recommencer</Button>
                 </CardContent>
             </Card>
@@ -561,3 +581,4 @@ export function CodedPathExercise() {
         </Card>
     );
 }
+
