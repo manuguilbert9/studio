@@ -18,13 +18,11 @@ import autoTable from 'jspdf-autotable';
 import { type Student } from '@/services/students';
 import { type Score, CalculationState, ScoreDetail } from '@/services/scores';
 import { getSkillBySlug, difficultyLevelToString, allSkillCategories } from '@/lib/skills';
-import { AdditionWidget } from '../tableau/addition-widget';
-import { SoustractionWidget } from '../tableau/soustraction-widget';
-
 
 const PRIMARY_COLOR = '#ea588b';
 const GREEN_COLOR = '#16a34a';
 const RED_COLOR = '#dc2626';
+const LIGHT_RED_FILL = '#fee2e2';
 const HEADING_FONT_SIZE = 14;
 const BASE_FONT_SIZE = 9;
 const SMALL_FONT_SIZE = 8;
@@ -151,17 +149,29 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             new Date(s.createdAt) <= dateRange.to!
         ).sort((a, b) => a.skill.localeCompare(b.skill));
 
+        // --- PAGE LAYOUT ---
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 14;
+        const columnWidth = (pageWidth - 3 * margin) / 2;
+        const leftColumnX = margin;
+        const rightColumnX = margin + columnWidth + margin;
+        const pageBreakY = pageHeight - 20;
+
+        let yPosLeft = 50;
+        let yPosRight = 50;
+        let currentColumn: 'left' | 'right' = 'left';
+
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(22);
-        doc.text(student.name, 105, 25, { align: 'center' });
+        doc.text(student.name, pageWidth / 2, 25, { align: 'center' });
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(12);
         const dateString = `Bilan du ${format(dateRange.from!, 'd MMMM yyyy', { locale: fr })} au ${format(dateRange.to!, 'd MMMM yyyy', { locale: fr })}`;
-        doc.text(dateString, 105, 35, { align: 'center' });
+        doc.text(dateString, pageWidth / 2, 35, { align: 'center' });
 
-        let yPos = 50;
 
         const scoresByCategory: Record<string, Score[]> = {};
         allSkillCategories.forEach(cat => scoresByCategory[cat] = []);
@@ -178,134 +188,108 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
             if (categoryScores.length === 0) continue;
             hasContent = true;
 
-            if (yPos > 250) {
-                doc.addPage();
-                yPos = 20;
-            }
+            const categoryHeaderHeight = 12;
+            let yPos = currentColumn === 'left' ? yPosLeft : yPosRight;
+            let currentX = currentColumn === 'left' ? leftColumnX : rightColumnX;
 
+            if (yPos + categoryHeaderHeight > pageBreakY) {
+                if (currentColumn === 'left') {
+                    currentColumn = 'right';
+                    yPos = 50;
+                    currentX = rightColumnX;
+                } else {
+                    doc.addPage();
+                    currentColumn = 'left';
+                    yPos = 20;
+                    currentX = leftColumnX;
+                    yPosLeft = 20;
+                    yPosRight = 20;
+                }
+            }
+            
             autoTable(doc, {
                 startY: yPos,
                 head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
                 theme: 'plain',
+                tableWidth: columnWidth,
+                margin: { left: currentX },
             });
+
             yPos = (doc as any).lastAutoTable.finalY + 2;
-            
+
             for (const score of categoryScores) {
-                 if (yPos > 260) {
-                    doc.addPage();
-                    yPos = 20;
-                }
                 const skill = getSkillBySlug(score.skill);
                 const scoreText = score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
                 const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings);
                 const date = format(new Date(score.createdAt), 'dd/MM/yy HH:mm');
                 
+                let scoreHeaderHeight = 10;
+                if (skill?.description) scoreHeaderHeight += 5;
+
+                 if (yPos + scoreHeaderHeight > pageBreakY) {
+                    if (currentColumn === 'left') {
+                        currentColumn = 'right'; yPos = 50; currentX = rightColumnX;
+                    } else {
+                        doc.addPage(); currentColumn = 'left'; yPos = 20; currentX = leftColumnX; yPosLeft = 20; yPosRight = 20;
+                    }
+                }
+                
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
-                doc.text(`${skill?.name || score.skill}`, 14, yPos);
+                doc.text(skill?.name || score.skill, currentX, yPos);
                 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(BASE_FONT_SIZE);
-                doc.text(`Score: ${scoreText}`, 100, yPos, {align: 'left'});
-                doc.text(`Niveau: ${level || 'N/A'}`, 140, yPos, {align: 'left'});
-                doc.text(date, 200, yPos, {align: 'right'});
+                doc.text(`Score: ${scoreText}`, currentX + columnWidth/2 - 15, yPos, {align: 'left'});
+                doc.text(date, currentX + columnWidth, yPos, {align: 'right'});
+                yPos += 5;
+                doc.text(`Niveau: ${level || 'N/A'}`, currentX, yPos, {align: 'left'});
                 yPos += 5;
                 
-                if (skill?.description) {
-                    doc.setFontSize(SMALL_FONT_SIZE);
-                    doc.setFont('helvetica', 'italic');
-                    doc.setTextColor(100); // Gray color
-                    doc.text(skill.description, 14, yPos);
-                    doc.setTextColor(0);
-                    yPos += 5;
-                }
-
-
-                if (score.skill === 'long-calculation' && score.details && score.details.length > 0) {
-                    yPos += 4;
-                    let currentX = 14;
-                    let maxWidgetY = yPos;
-                    
-                    score.details.forEach((detail) => {
-                        const widgetWidth = (String(detail.correctAnswer).length + 2) * 8;
-                        if (currentX + widgetWidth > 200) { 
-                            currentX = 14;
-                            yPos = maxWidgetY + 4;
-                        }
-                        if (yPos > 220) {
-                            doc.addPage();
-                            yPos = 20;
-                            currentX = 14;
-                        }
-                        
-                        doc.setFontSize(SMALL_FONT_SIZE);
-                        const statusText = detail.status === 'correct' ? 'Correct' : 'Incorrect';
-                        doc.setTextColor(detail.status === 'correct' ? GREEN_COLOR : RED_COLOR);
-                        doc.text(statusText, currentX, yPos - 2);
-                        doc.setTextColor(0);
-
-                        const { endX, endY } = drawCalculationWidget(doc, detail, currentX, yPos);
-                        currentX = endX + 8;
-                        maxWidgetY = Math.max(maxWidgetY, endY);
-                    });
-                    yPos = maxWidgetY + 5;
-                } else if (score.details && score.details.length > 0) {
-                    const hasOptionsColumn = score.details.some(d => d.options && d.options.length > 0);
-                    const hasMistakesColumn = score.details.some(d => d.mistakes && d.mistakes.length > 0);
-                    const shouldShowCorrectAnswer = score.skill !== 'simple-word-reading' && score.skill !== 'ecoute-les-nombres' && score.skill !== 'nombres-complexes' && score.skill !== 'lire-les-nombres';
-
+                if (score.details && score.details.length > 0) {
                     const headers: string[] = ['Question', 'Réponse'];
-                    if (hasOptionsColumn) headers.push('Options proposées');
-                    if (shouldShowCorrectAnswer) headers.push('Bonne réponse');
-                    if (hasMistakesColumn) headers.push('Erreurs');
-                    headers.push('Statut');
-
-                    const body = score.details.map(detail => {
-                        const row: (string|undefined)[] = [detail.question, detail.userAnswer];
-                        if (hasOptionsColumn) row.push(detail.options?.join(', ') || '-');
-                        if (shouldShowCorrectAnswer) row.push(detail.correctAnswer);
-                        if (hasMistakesColumn) row.push(detail.mistakes?.join(', ') || '-');
-                        row.push(detail.status === 'correct' ? 'Correct' : 'Incorrect');
-                        return row;
-                    });
+                    
+                    const body = score.details.map(detail => [detail.question, detail.userAnswer, detail.status]);
 
                     autoTable(doc, {
                         startY: yPos,
                         head: [headers],
                         body: body,
                         theme: 'grid',
+                        tableWidth: columnWidth,
+                        margin: { left: currentX },
                         headStyles: {
                             fillColor: [230, 230, 230],
                             textColor: 20,
-                            fontSize: SMALL_FONT_SIZE - 1,
+                            fontSize: SMALL_FONT_SIZE,
                         },
                         styles: {
-                            fontSize: SMALL_FONT_SIZE - 1,
+                            fontSize: SMALL_FONT_SIZE,
                             cellPadding: 1.5,
                         },
                         didParseCell: (data) => {
-                             if (data.column.dataKey === headers.length - 1) { // Status column
-                                const cellText = data.cell.raw as string;
-                                if (cellText.startsWith('Correct')) {
-                                    data.cell.styles.textColor = GREEN_COLOR;
-                                } else if (cellText.startsWith('Incorrect')) {
-                                    data.cell.styles.textColor = RED_COLOR;
-                                }
+                            if (data.row.raw && data.row.raw[data.row.raw.length - 1] === 'incorrect') {
+                                data.cell.styles.fillColor = LIGHT_RED_FILL;
                             }
                         }
                     });
                      yPos = (doc as any).lastAutoTable.finalY + 5;
                 } else {
-                     yPos += 2; // Add a small gap
+                     yPos += 2;
                 }
             }
-             yPos += 5;
+
+            if (currentColumn === 'left') {
+                yPosLeft = yPos;
+            } else {
+                yPosRight = yPos;
+            }
         }
 
         if (!hasContent) {
             doc.setFontSize(12);
             doc.setTextColor(100);
-            doc.text("Aucune donnée de score pour cet élève sur la période sélectionnée.", 105, 60, { align: 'center' });
+            doc.text("Aucune donnée de score pour cet élève sur la période sélectionnée.", pageWidth/2, 60, { align: 'center' });
         }
     };
     
