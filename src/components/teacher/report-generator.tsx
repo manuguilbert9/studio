@@ -84,20 +84,16 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
 
         // --- CONTENT LAYOUT LOGIC ---
         const contentBlocks: { height: number; render: (x: number, y: number) => number }[] = [];
-        
+        const tableHeaderHeight = 6; // Estimation for autoTable header
+
         // Function to measure the height of a content block
         const measureBlockHeight = (score: Score): number => {
             let height = 15; // Title and score line
-            const body = score.details || [];
-            if (body.length > 0) {
-                 const table = autoTable.calculateDimensions(doc, {
-                    head: [['Question', 'Réponse']],
-                    body: body.map(d => [d.question, d.userAnswer]),
-                    tableWidth: columnWidth,
-                    styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
-                    columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
-                 });
-                 height += table.height;
+            if (score.details && score.details.length > 0) {
+                 // Estimate table height
+                 const cellHeight = 4;
+                 const estimatedTableHeight = tableHeaderHeight + score.details.length * cellHeight;
+                 height += estimatedTableHeight;
             } else {
                  height += 2;
             }
@@ -118,7 +114,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                         head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
                         theme: 'plain', tableWidth: columnWidth, margin: { left: x },
                     });
-                    return (doc as any).lastAutoTable.finalY + 5 - y;
+                    return (doc as any).lastAutoTable.finalY - y;
                 }
             });
 
@@ -166,9 +162,9 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                                     }
                                 },
                             });
-                             return (doc as any).lastAutoTable.finalY + 5 - y;
+                             return (doc as any).lastAutoTable.finalY - y;
                         } else {
-                            return 12; // Estimated height for empty block
+                            return 7; // Estimated height for empty block
                         }
                     }
                 });
@@ -176,30 +172,61 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         }
         
         // --- DISTRIBUTION LOGIC ---
-        let yPositions = [50, 50]; // [yPosCol1, yPosCol2]
+        let col1Height = 0;
+        let col2Height = 0;
+        let yPos1 = 50;
+        let yPos2 = 50;
         
         let hasContent = contentBlocks.length > 0;
         
         contentBlocks.forEach(block => {
-            let currentColumn = yPositions[0] <= yPositions[1] ? 0 : 1;
-            let currentX = currentColumn === 0 ? xCol1 : xCol2;
-
-            if (yPositions[currentColumn] + block.height > pageHeight - margin) {
-                // Not enough space in the shorter column, try the other one
-                currentColumn = 1 - currentColumn;
-                currentX = currentColumn === 0 ? xCol1 : xCol2;
-
-                if (yPositions[currentColumn] + block.height > pageHeight - margin) {
-                    // Not enough space in either column, new page
-                    doc.addPage();
-                    yPositions = [50, 50];
-                    currentColumn = 0;
-                    currentX = xCol1;
+            if (col1Height <= col2Height) {
+                // Check if the block fits in column 1. If not, try column 2 on the same page.
+                if (yPos1 + block.height > pageHeight - margin) {
+                    if (yPos2 + block.height > pageHeight - margin) { // Doesn't fit in col2 either
+                        doc.addPage();
+                        yPos1 = 50;
+                        yPos2 = 50;
+                        col1Height = 0;
+                        col2Height = 0;
+                        
+                        const actualHeight = block.render(xCol1, yPos1);
+                        yPos1 += actualHeight + 5;
+                        col1Height += actualHeight;
+                    } else { // Fits in col2
+                        const actualHeight = block.render(xCol2, yPos2);
+                        yPos2 += actualHeight + 5;
+                        col2Height += actualHeight;
+                    }
+                } else { // Fits in col1
+                    const actualHeight = block.render(xCol1, yPos1);
+                    yPos1 += actualHeight + 5;
+                    col1Height += actualHeight;
+                }
+            } else {
+                // Check if the block fits in column 2. If not, try column 1 on a new page.
+                if (yPos2 + block.height > pageHeight - margin) {
+                     if (yPos1 + block.height > pageHeight - margin) { // Doesn't fit in col1 either
+                        doc.addPage();
+                        yPos1 = 50;
+                        yPos2 = 50;
+                        col1Height = 0;
+                        col2Height = 0;
+                        
+                        const actualHeight = block.render(xCol1, yPos1);
+                        yPos1 += actualHeight + 5;
+                        col1Height += actualHeight;
+                    } else { // Fits in col1
+                         const actualHeight = block.render(xCol1, yPos1);
+                         yPos1 += actualHeight + 5;
+                         col1Height += actualHeight;
+                    }
+                } else { // Fits in col2
+                    const actualHeight = block.render(xCol2, yPos2);
+                    yPos2 += actualHeight + 5;
+                    col2Height += actualHeight;
                 }
             }
-
-            const actualHeight = block.render(currentX, yPositions[currentColumn]);
-            yPositions[currentColumn] += actualHeight;
         });
 
         if (!hasContent) {
@@ -326,5 +353,3 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         </Card>
     );
 }
-
-    
