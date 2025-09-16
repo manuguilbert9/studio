@@ -154,4 +154,3 @@ export function SkillProgressChart({ skill, scores, onDeleteScore }: SkillProgre
     </Card>
   );
 }
-
