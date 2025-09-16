@@ -14,7 +14,7 @@ import { addScore, ScoreDetail } from '@/services/scores';
 import { saveHomeworkResult } from '@/services/homework';
 import { ScoreTube } from './score-tube';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
-import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { arrayMove, SortableContext, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 
@@ -36,13 +36,19 @@ const NUM_QUESTIONS = 5;
 // Helper to shuffle an array
 const shuffleArray = (array: any[]) => [...array].sort(() => Math.random() - 0.5);
 
+interface LabelItem {
+    id: string;
+    word: string;
+}
+
 // The component for each draggable word label
-function SortableLabel({ id, word }: { id: string; word: string }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+function SortableLabel({ item }: { item: LabelItem }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    zIndex: isDragging ? 10 : 'auto',
   };
 
   return (
@@ -50,7 +56,7 @@ function SortableLabel({ id, word }: { id: string; word: string }) {
       className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm cursor-grab active:cursor-grabbing active:shadow-md"
     >
       <GripVertical className="h-5 w-5 text-muted-foreground" />
-      <span className="text-xl font-medium">{word}</span>
+      <span className="text-xl font-medium select-none">{item.word}</span>
     </div>
   );
 }
@@ -64,7 +70,7 @@ export function LabelGameExercise() {
     
     const [sentences, setSentences] = useState<string[]>([]);
     const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
-    const [orderedWords, setOrderedWords] = useState<string[]>([]);
+    const [orderedLabels, setOrderedLabels] = useState<LabelItem[]>([]);
 
     const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
     const [isFinished, setIsFinished] = useState(false);
@@ -76,12 +82,18 @@ export function LabelGameExercise() {
     const sensors = useSensors(useSensor(PointerSensor));
 
     const currentSentence = useMemo(() => sentences[currentSentenceIndex], [sentences, currentSentenceIndex]);
+    
+    const setupQuestion = (index: number, sentenceList: string[]) => {
+        const words = sentenceList[index].split(/\s+/).filter(Boolean);
+        const shuffledLabels = shuffleArray(words.map((word, i) => ({ id: `${index}-${i}-${word}`, word })));
+        setOrderedLabels(shuffledLabels);
+    }
 
     // Setup exercise on mount
     useEffect(() => {
         const shuffledSentences = shuffleArray(SENTENCES).slice(0, NUM_QUESTIONS);
         setSentences(shuffledSentences);
-        setOrderedWords(shuffleArray(shuffledSentences[0].split(/\s+/).filter(Boolean)));
+        setupQuestion(0, shuffledSentences);
     }, []);
 
     const handleNextQuestion = () => {
@@ -89,7 +101,7 @@ export function LabelGameExercise() {
         if (currentSentenceIndex < NUM_QUESTIONS - 1) {
             const nextIndex = currentSentenceIndex + 1;
             setCurrentSentenceIndex(nextIndex);
-            setOrderedWords(shuffleArray(sentences[nextIndex].split(/\s+/).filter(Boolean)));
+            setupQuestion(nextIndex, sentences);
             setFeedback(null);
         } else {
             setIsFinished(true);
@@ -99,7 +111,7 @@ export function LabelGameExercise() {
     const checkAnswer = () => {
         if (feedback) return;
 
-        const reconstructedSentence = orderedWords.join(' ');
+        const reconstructedSentence = orderedLabels.map(label => label.word).join(' ');
         const isCorrect = reconstructedSentence === currentSentence;
 
         const detail: ScoreDetail = {
@@ -124,9 +136,9 @@ export function LabelGameExercise() {
     function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event;
         if (over && active.id !== over.id) {
-            setOrderedWords((items) => {
-                const oldIndex = items.indexOf(active.id as string);
-                const newIndex = items.indexOf(over.id as string);
+            setOrderedLabels((items) => {
+                const oldIndex = items.findIndex(item => item.id === active.id);
+                const newIndex = items.findIndex(item => item.id === over.id);
                 return arrayMove(items, oldIndex, newIndex);
             });
         }
@@ -162,7 +174,7 @@ export function LabelGameExercise() {
         const shuffledSentences = shuffleArray(SENTENCES).slice(0, NUM_QUESTIONS);
         setSentences(shuffledSentences);
         setCurrentSentenceIndex(0);
-        setOrderedWords(shuffleArray(shuffledSentences[0].split(/\s+/).filter(Boolean)));
+        setupQuestion(0, shuffledSentences);
         setFeedback(null);
         setIsFinished(false);
         setCorrectAnswers(0);
@@ -201,16 +213,13 @@ export function LabelGameExercise() {
                  <Progress value={((currentSentenceIndex + 1) / NUM_QUESTIONS) * 100} className="w-full mt-4 h-3" />
             </CardHeader>
             <CardContent className="min-h-[300px] flex flex-col items-center justify-center gap-6 p-6">
-                <p className="font-body text-3xl font-semibold text-center text-primary">
-                    {currentSentence}
-                </p>
-
-                <div className="p-4 bg-muted rounded-lg w-full">
+                
+                <div className="p-4 bg-muted rounded-lg w-full min-h-[8rem] flex items-center justify-center">
                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                        <SortableContext items={orderedWords} strategy={verticalListSortingStrategy}>
-                            <div className="space-y-3">
-                                {orderedWords.map((word, index) => (
-                                    <SortableLabel key={`${word}-${index}`} id={word} word={word} />
+                        <SortableContext items={orderedLabels.map(l => l.id)} strategy={horizontalListSortingStrategy}>
+                            <div className="flex flex-wrap justify-center gap-3">
+                                {orderedLabels.map((labelItem) => (
+                                    <SortableLabel key={labelItem.id} item={labelItem} />
                                 ))}
                             </div>
                         </SortableContext>
@@ -222,7 +231,7 @@ export function LabelGameExercise() {
                     <Check className="mr-2"/> Valider
                 </Button>
                 {feedback === 'correct' && <div className="text-xl font-bold text-green-600 flex items-center gap-2 animate-pulse"><ThumbsUp/> Parfait !</div>}
-                {feedback === 'incorrect' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon ordre.</div>}
+                {feedback === 'incorrect' && <div className="text-xl font-bold text-red-600 flex items-center gap-2 animate-shake"><X/> Oups, ce n'est pas le bon ordre. La bonne phrase était : "{currentSentence}"</div>}
             </CardFooter>
              <style jsx>{`
                 @keyframes shake {
@@ -237,4 +246,3 @@ export function LabelGameExercise() {
         </Card>
     );
 }
-
