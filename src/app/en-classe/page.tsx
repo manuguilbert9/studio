@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useContext, useEffect, useState, useMemo } from 'react';
@@ -130,7 +131,7 @@ export default function EnClassePage() {
              <Button asChild variant="outline" size="sm">
                 <Link href="/results">
                     <BarChart3 className="mr-2" />
-                    Mes Résultats
+                    Mes Progrès
                 </Link>
             </Button>
              {student.hasCustomSchedule && (

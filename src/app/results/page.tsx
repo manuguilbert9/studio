@@ -70,7 +70,9 @@ export default function ResultsPage() {
         if (isToday(targetDay)) return "Aujourd'hui";
         if (isYesterday(targetDay)) return "Hier";
         const diff = differenceInDays(today, targetDay);
-        if (diff === 2) return "Avant-hier";
+        if (diff > 0 && diff < 7) {
+            return format(targetDay, "EEEE", { locale: fr });
+        }
         return `Il y a ${diff} jours`;
     };
 
@@ -122,7 +124,7 @@ export default function ResultsPage() {
             <header className="mb-12 text-center space-y-4 relative">
                 <div className="absolute top-0 left-0">
                     <Button asChild variant="outline" size="sm">
-                        <Link href="/en-classe">
+                        <Link href="/">
                             <Home className="mr-2" />
                             Retour
                         </Link>

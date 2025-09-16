@@ -6,7 +6,7 @@ import { useState, FormEvent, useContext } from 'react';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Logo } from '@/components/logo';
-import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart, Palette } from 'lucide-react';
+import { Book, Users, LogOut, ArrowRight, School, KeyRound, User, Loader2, BookHeart, Palette, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -168,13 +168,19 @@ export default function ModeSelectionPage() {
             </CardHeader>
           </Card>
         </Link>
-         
-        <div className="flex h-full items-center justify-center">
-            <Button onClick={handleLogout} variant="outline" size="lg">
-                <LogOut className="mr-2" />
-                Déconnexion
-            </Button>
-        </div>
+         <Link href="/results" className="group" aria-label="Accéder aux résultats">
+          <Card className="flex h-full flex-col items-center justify-center p-8 sm:p-12 text-center transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 hover:bg-primary/10">
+            <div className="mb-6 text-primary transition-transform duration-300 group-hover:scale-110 [&>svg]:h-16 [&>svg]:w-16 sm:[&>svg]:h-24 sm:[&>svg]:w-24">
+              <BarChart3 />
+            </div>
+             <CardHeader>
+              <CardTitle className="font-headline text-3xl sm:text-4xl">Mes Progrès</CardTitle>
+              <CardDescription className="text-muted-foreground text-base sm:text-lg mt-2">
+                Consulte tes scores et suis ta progression.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </Link>
       </div>
       <div className="absolute bottom-4 right-4 flex items-center gap-2">
             <Button asChild variant="ghost" size="icon">
@@ -188,6 +194,12 @@ export default function ModeSelectionPage() {
                     <School className="mr-2"/>
                     Accès enseignant
                 </Link>
+            </Button>
+        </div>
+         <div className="absolute bottom-4 left-4">
+            <Button onClick={handleLogout} variant="outline" size="lg">
+                <LogOut className="mr-2" />
+                Déconnexion
             </Button>
         </div>
     </main>

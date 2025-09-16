@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
@@ -39,22 +40,29 @@ export default function TeacherDashboardPage() {
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
-    const [studentData, groupData, scoresData, writingData, homeworkData, homeworkResultsData] = await Promise.all([
-      getStudents(),
+    
+    // First, get all students.
+    const studentData = await getStudents();
+    setStudents(studentData);
+
+    // Now, using the fresh student data, get all other data in parallel.
+    const [groupData, scoresData, writingData, homeworkData, homeworkResultsData] = await Promise.all([
       getGroups(),
       getAllScores(),
       getAllWritingEntries(),
       getAllHomework(),
-      Promise.all(students.map(s => getHomeworkResultsForUser(s.id))).then(res => res.flat())
+      // Fetch results for all students that were just loaded
+      Promise.all(studentData.map(s => getHomeworkResultsForUser(s.id))).then(res => res.flat())
     ]);
-    setStudents(studentData);
+    
     setGroups(groupData);
     setAllScores(scoresData);
     setAllWritingEntries(writingData);
     setAllHomework(homeworkData);
     setAllHomeworkResults(homeworkResultsData);
+    
     setIsLoading(false);
-  }, [students]);
+  }, []);
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem('teacher_authenticated') === 'true';
@@ -117,8 +125,10 @@ export default function TeacherDashboardPage() {
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
                     <HomeworkManager 
+                        students={students}
                         groups={groups}
                         allHomework={allHomework}
+                        allHomeworkResults={allHomeworkResults}
                         onHomeworkChange={loadData}
                     />
                 </TabsContent>
