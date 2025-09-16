@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect, useContext } from 'react';
@@ -202,7 +201,7 @@ export function LabelGameExercise() {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                    <p className="text-muted-foreground">L'IA génère une nouvelle phrase...</p>
+                    <p className="text-muted-foreground">Je te pêche une nouvelle phrase... 🎣</p>
                 </CardContent>
             </Card>
         );
