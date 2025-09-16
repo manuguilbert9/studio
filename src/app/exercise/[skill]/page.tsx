@@ -22,6 +22,7 @@ import { LetterRecognitionExercise } from '@/components/letter-recognition-exerc
 import { ReadingDirectionExercise } from '@/components/reading-direction-exercise';
 import { ComplementDixExercise } from '@/components/complement-dix-exercise';
 import { SonAnExercise } from '@/components/son-an-exercise';
+import { SonInExercise } from '@/components/son-in-exercise';
 import { NombresComplexesExercise } from '@/components/nombres-complexes-exercise';
 import { LettresEtSonsExercise } from '@/components/lettres-et-sons-exercise';
 import { DictationExercise } from '@/components/dictation-exercise';
@@ -75,6 +76,8 @@ export default function ExercisePage() {
         return <ComplementDixExercise />;
       case 'son-an':
         return <SonAnExercise />;
+      case 'son-in':
+        return <SonInExercise />;
       case 'nombres-complexes':
         return <NombresComplexesExercise />;
       case 'lettres-et-sons':

@@ -113,6 +113,14 @@ export const skills: Skill[] = [
     isFixedLevel: 'B',
   },
   {
+    name: 'Le son [in]',
+    slug: 'son-in',
+    description: "Choisis la bonne écriture (in, im, ain, ein) pour compléter les mots.",
+    icon: <ALargeSmall />,
+    category: 'Orthographe',
+    isFixedLevel: 'B',
+  },
+  {
     name: 'Sens de lecture',
     slug: 'reading-direction',
     description: 'Appuie sur les objets de gauche à droite, ligne par ligne, pour t\'habituer au sens de la lecture.',
