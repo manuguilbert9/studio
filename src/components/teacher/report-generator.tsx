@@ -45,7 +45,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         // --- PAGE LAYOUT ---
         const pageHeight = doc.internal.pageSize.getHeight();
         const pageWidth = doc.internal.pageSize.getWidth();
-        const margin = 14;
+        const margin = 15;
         const columnWidth = (pageWidth - 3 * margin) / 2;
         const leftColumnX = margin;
         const rightColumnX = margin + columnWidth + margin;
@@ -74,107 +74,99 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
         });
 
         let hasContent = false;
-        for (const category of allSkillCategories) {
+        
+        const drawCategory = (category: string) => {
             const categoryScores = scoresByCategory[category] || [];
-            if (categoryScores.length === 0) continue;
+            if (categoryScores.length === 0) return;
             hasContent = true;
 
-            const isLeftColumnShorter = yPosLeft <= yPosRight;
-            let currentColumn: 'left' | 'right' = isLeftColumnShorter ? 'left' : 'right';
-            let yPos = isLeftColumnShorter ? yPosLeft : yPosRight;
-            let currentX = isLeftColumnShorter ? leftColumnX : rightColumnX;
+            const categoryHead = [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]];
 
-            const categoryHeaderHeight = 16; 
-            
-            if (yPos + categoryHeaderHeight > pageBreakY) {
-                 if (currentColumn === 'left' && yPosRight + categoryHeaderHeight < pageBreakY) {
-                    currentColumn = 'right'; yPos = yPosRight; currentX = rightColumnX;
-                } else {
-                     doc.addPage(); yPosLeft = 20; yPosRight = 20;
-                     currentColumn = 'left'; yPos = 20; currentX = leftColumnX;
+            // Estimate height to decide column placement
+            let estimatedHeight = 16; // Header height
+            categoryScores.forEach(score => {
+                estimatedHeight += 12; // Base height for score info
+                if (score.details && score.details.length > 0) {
+                    estimatedHeight += (score.details.length * 5) + 10; // Approx height for details table
                 }
+            });
+            
+            let currentX: number;
+            let currentY: number;
+
+            if (yPosLeft + estimatedHeight <= pageBreakY) {
+                currentX = leftColumnX;
+                currentY = yPosLeft;
+            } else if (yPosRight + estimatedHeight <= pageBreakY) {
+                currentX = rightColumnX;
+                currentY = yPosRight;
+            } else {
+                 doc.addPage();
+                 yPosLeft = 20;
+                 yPosRight = 20;
+                 currentX = leftColumnX;
+                 currentY = yPosLeft;
             }
-
-
+            
             autoTable(doc, {
-                startY: yPos,
-                head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
+                startY: currentY,
+                head: categoryHead,
                 theme: 'plain',
                 tableWidth: columnWidth,
                 margin: { left: currentX },
             });
-            yPos = (doc as any).lastAutoTable.finalY + 4;
+            currentY = (doc as any).lastAutoTable.finalY + 4;
 
             for (const score of categoryScores) {
-                const skill = getSkillBySlug(score.skill);
-                const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
-                const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings, score.readingRaceSettings);
-                const date = format(new Date(score.createdAt), 'dd/MM/yy HH:mm');
-                
-                const scoreBlockHeight = 12; // Estimated height for the score info block
-                
-                if (yPos + scoreBlockHeight > pageBreakY) {
-                     if (currentColumn === 'left' && yPosRight + scoreBlockHeight < pageBreakY) {
-                        currentColumn = 'right'; yPos = yPosRight; currentX = rightColumnX;
-                    } else {
-                        doc.addPage(); yPosLeft = 20; yPosRight = 20;
-                        currentColumn = 'left'; yPos = 20; currentX = leftColumnX;
-                    }
-                }
-                
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
-                doc.text(skill?.name || score.skill, currentX, yPos);
-                
+                doc.text(getSkillBySlug(score.skill)?.name || score.skill, currentX, currentY);
+
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(9);
-                doc.text(`Score: ${scoreText}`, currentX + columnWidth / 2, yPos, {align: 'left'});
-                doc.text(date, currentX + columnWidth, yPos, {align: 'right'});
-                yPos += 5;
-                
-                const levelText = level?.startsWith('Niveau ') ? level : (level ? `Niveau ${level}` : '');
-                if (levelText) {
-                    doc.text(levelText, currentX, yPos, {align: 'left'});
-                }
-                yPos += 3;
-                
-                if (score.details && score.details.length > 0) {
-                    const body = score.details.map(detail => [detail.question, detail.userAnswer, detail.status]);
+                const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)} %`;
+                doc.text(`Score: ${scoreText}`, currentX + columnWidth / 2, currentY, { align: 'left' });
+                doc.text(format(new Date(score.createdAt), 'dd/MM/yy'), currentX + columnWidth, currentY, { align: 'right' });
+                currentY += 5;
 
+                const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
+                if (level) {
+                     doc.text(`Niveau ${level}`, currentX, currentY, { align: 'left' });
+                }
+                currentY += 3;
+                
+                 if (score.details && score.details.length > 0) {
+                    const body = score.details.map(detail => [detail.question, detail.userAnswer, detail.status]);
                     autoTable(doc, {
-                        startY: yPos,
+                        startY: currentY,
                         head: [['Question', 'Réponse']],
-                        body: body,
+                        body,
                         theme: 'grid',
                         tableWidth: columnWidth,
                         margin: { left: currentX },
-                        headStyles: {
-                            fillColor: [230, 230, 230],
-                            textColor: 20,
-                            fontSize: 8,
-                        },
-                        styles: {
-                            fontSize: 8,
-                            cellPadding: 1.5,
-                        },
+                        headStyles: { fillColor: [230, 230, 230], textColor: 20, fontSize: 8 },
+                        styles: { fontSize: 8, cellPadding: 1.5 },
                         didParseCell: (data) => {
                             if (data.row.raw && data.row.raw[data.row.raw.length - 1] === 'incorrect') {
                                 data.cell.styles.fillColor = LIGHT_RED_FILL;
                             }
                         }
                     });
-                     yPos = (doc as any).lastAutoTable.finalY + 5;
+                    currentY = (doc as any).lastAutoTable.finalY + 5;
                 } else {
-                     yPos += 2;
+                    currentY += 2;
                 }
             }
 
-            if (currentColumn === 'left') {
-                yPosLeft = yPos;
+            if (currentX === leftColumnX) {
+                yPosLeft = currentY;
             } else {
-                yPosRight = yPos;
+                yPosRight = currentY;
             }
-        }
+        };
+
+        allSkillCategories.forEach(drawCategory);
+
 
         if (!hasContent) {
             doc.setFontSize(12);
