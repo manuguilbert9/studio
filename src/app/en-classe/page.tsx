@@ -126,7 +126,7 @@ export default function EnClassePage() {
         </div>
         <Logo />
         <h2 className="font-headline text-4xl sm:text-5xl">Bonjour, {student.name}!</h2>
-        <p className="text-lg sm:text-xl text-muted-foreground">Que veux-tu pratiquer aujourd'hui ?</p>
+        <p className="text-lg sm:text-xl text-muted-foreground">Choisis un défi et montre ton génie !</p>
          <div className="absolute top-0 right-0 flex flex-col items-end gap-2">
              <Button asChild variant="outline" size="sm">
                 <Link href="/results">
