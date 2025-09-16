@@ -19,10 +19,9 @@ import { Label } from '../ui/label';
 interface GroupManagerProps {
     initialStudents: Student[];
     initialGroups: Group[];
-    onGroupsChange: () => void;
 }
 
-export function GroupManager({ initialStudents, initialGroups, onGroupsChange }: GroupManagerProps) {
+export function GroupManager({ initialStudents, initialGroups }: GroupManagerProps) {
     const { toast } = useToast();
     const [students, setStudents] = useState(initialStudents);
     const [groups, setGroups] = useState(initialGroups);
@@ -31,9 +30,8 @@ export function GroupManager({ initialStudents, initialGroups, onGroupsChange }:
     const [isCreating, setIsCreating] = useState(false);
     const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
     const [editingGroupName, setEditingGroupName] = useState('');
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     
-    // Update local state when initial props change
+    // Update local state when initial props change from real-time listener
     useState(() => {
         setStudents(initialStudents);
         setGroups(initialGroups);
@@ -61,7 +59,6 @@ export function GroupManager({ initialStudents, initialGroups, onGroupsChange }:
         if (result.id) {
             toast({ title: "Groupe créé !", description: `Le groupe "${newGroupName}" a été ajouté.` });
             setNewGroupName('');
-            onGroupsChange(); // Refresh groups from DB
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible de créer le groupe." });
         }
@@ -73,7 +70,6 @@ export function GroupManager({ initialStudents, initialGroups, onGroupsChange }:
         const result = await updateGroup(groupId, { name: editingGroupName });
          if (result.success) {
             toast({ title: "Groupe mis à jour."});
-            onGroupsChange();
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible de renommer le groupe." });
         }
@@ -90,7 +86,6 @@ export function GroupManager({ initialStudents, initialGroups, onGroupsChange }:
         const result = await deleteGroup(groupId);
         if(result.success) {
              toast({ title: "Groupe supprimé."});
-             onGroupsChange();
         } else {
              toast({ variant: 'destructive', title: "Erreur", description: "Impossible de supprimer le groupe." });
         }
@@ -103,7 +98,7 @@ export function GroupManager({ initialStudents, initialGroups, onGroupsChange }:
         if(!result.success) {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'assigner l'élève." });
         }
-        onGroupsChange(); // Refresh all data to ensure consistency
+        // No manual refresh needed, onSnapshot will handle it.
     }
 
 

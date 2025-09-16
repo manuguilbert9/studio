@@ -24,14 +24,13 @@ interface HomeworkManagerProps {
   groups: Group[];
   allHomework: Homework[];
   allHomeworkResults: HomeworkResult[];
-  onHomeworkChange: () => void;
 }
 
 const frenchSkills = skills.filter(s => ['Phonologie', 'Lecture / compréhension', 'Ecriture', 'Grammaire', 'Conjugaison', 'Vocabulaire', 'Orthographe'].includes(s.category));
 const mathSkills = skills.filter(s => ['Nombres et calcul', 'Grandeurs et mesures', 'Espace et géométrie'].includes(s.category));
 
 
-export function HomeworkManager({ students, groups, allHomework, allHomeworkResults, onHomeworkChange }: HomeworkManagerProps) {
+export function HomeworkManager({ students, groups, allHomework, allHomeworkResults }: HomeworkManagerProps) {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [assignments, setAssignments] = useState<Record<string, Assignment>>({});
@@ -73,7 +72,6 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
 
     if (result.success) {
       toast({ title: 'Devoirs enregistrés', description: 'Les devoirs pour le jour sélectionné ont été mis à jour.' });
-      onHomeworkChange();
     } else {
       toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'enregistrer les devoirs." });
     }
@@ -268,4 +266,3 @@ export function HomeworkManager({ students, groups, allHomework, allHomeworkResu
     </div>
   );
 }
-

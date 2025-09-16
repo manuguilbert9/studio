@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Loader2, Home, LogOut } from 'lucide-react';
 import { Logo } from '@/components/logo';
-import { useToast } from '@/hooks/use-toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StudentManager } from '@/components/teacher/student-manager';
@@ -23,6 +22,8 @@ import { FullscreenToggle } from '@/components/fullscreen-toggle';
 import { BuildInfo } from '@/components/teacher/build-info';
 import { getAllWritingEntries, WritingEntry } from '@/services/writing';
 import { getAllHomework, type Homework, getHomeworkResultsForUser, HomeworkResult } from '@/services/homework';
+import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
 
 export default function TeacherDashboardPage() {
@@ -37,43 +38,59 @@ export default function TeacherDashboardPage() {
   const [allWritingEntries, setAllWritingEntries] = useState<WritingEntry[]>([]);
   const [allHomework, setAllHomework] = useState<Homework[]>([]);
   const [allHomeworkResults, setAllHomeworkResults] = useState<HomeworkResult[]>([]);
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    
-    try {
-        const studentData = await getStudents();
-        setStudents(studentData);
-
-        const [groupData, scoresData, writingData, homeworkData, homeworkResultsData] = await Promise.all([
-        getGroups(),
-        getAllScores(),
-        getAllWritingEntries(),
-        getAllHomework(),
-        Promise.all(studentData.map(s => getHomeworkResultsForUser(s.id))).then(res => res.flat())
-        ]);
-        
-        setGroups(groupData);
-        setAllScores(scoresData);
-        setAllWritingEntries(writingData);
-        setAllHomework(homeworkData);
-        setAllHomeworkResults(homeworkResultsData);
-    } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-    } finally {
-        setIsLoading(false);
-    }
+  
+  const refreshAllData = useCallback(async () => {
+    // This function can be used for a hard refresh if needed, but onSnapshot handles real-time updates.
+    // For simplicity, we can leave this logic within useEffect.
   }, []);
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem('teacher_authenticated') === 'true';
     if (!isAuth) {
       router.replace('/teacher/login');
-    } else {
-      setIsAuthenticated(true);
-      loadData();
-    }
-  }, [router, loadData]);
+      return;
+    } 
+    
+    setIsAuthenticated(true);
+    setIsLoading(true);
+    
+    const unsubscribers = [
+      onSnapshot(query(collection(db, 'students'), orderBy('name', 'asc')), snapshot => {
+        setStudents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Student)));
+        setIsLoading(false);
+      }),
+      onSnapshot(query(collection(db, 'groups'), orderBy('createdAt', 'asc')), snapshot => {
+        setGroups(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Group)));
+      }),
+      onSnapshot(query(collection(db, 'scores'), orderBy('createdAt', 'desc')), snapshot => {
+        setAllScores(snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data(),
+            createdAt: (doc.data().createdAt as any).toDate().toISOString()
+        } as Score)));
+      }),
+       onSnapshot(query(collection(db, 'writingEntries'), orderBy('createdAt', 'desc')), snapshot => {
+        setAllWritingEntries(snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data(),
+            createdAt: (doc.data().createdAt as any).toDate().toISOString()
+        } as WritingEntry)));
+      }),
+       onSnapshot(query(collection(db, 'homework')), snapshot => {
+        setAllHomework(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Homework)));
+      }),
+       onSnapshot(query(collection(db, 'homeworkResults')), snapshot => {
+        setAllHomeworkResults(snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data(),
+             createdAt: (doc.data().createdAt as any)?.toDate().toISOString()
+        } as HomeworkResult)));
+      }),
+    ];
+
+    return () => unsubscribers.forEach(unsub => unsub());
+
+  }, [router]);
   
   const handleLogout = () => {
     sessionStorage.removeItem('teacher_authenticated');
@@ -119,10 +136,10 @@ export default function TeacherDashboardPage() {
                     <TabsTrigger value="database">Réglages</TabsTrigger>
                 </TabsList>
                 <TabsContent value="students" className="mt-6">
-                    <StudentManager students={students} onStudentsChange={loadData} />
+                    <StudentManager students={students} />
                 </TabsContent>
                 <TabsContent value="groups" className="mt-6">
-                    <GroupManager initialStudents={students} initialGroups={groups} onGroupsChange={loadData} />
+                    <GroupManager initialStudents={students} initialGroups={groups} />
                 </TabsContent>
                 <TabsContent value="homework" className="mt-6">
                     <HomeworkManager 
@@ -130,7 +147,6 @@ export default function TeacherDashboardPage() {
                         groups={groups}
                         allHomework={allHomework}
                         allHomeworkResults={allHomeworkResults}
-                        onHomeworkChange={loadData}
                     />
                 </TabsContent>
                  <TabsContent value="results" className="mt-6">
@@ -138,11 +154,10 @@ export default function TeacherDashboardPage() {
                         students={students} 
                         allScores={allScores} 
                         allWritingEntries={allWritingEntries}
-                        onDataRefresh={loadData} 
                     />
                 </TabsContent>
                  <TabsContent value="database" className="mt-6">
-                    <DatabaseManager onDataRefresh={loadData} />
+                    <DatabaseManager onDataRefresh={refreshAllData} />
                 </TabsContent>
             </Tabs>
           )}

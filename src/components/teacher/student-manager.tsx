@@ -29,10 +29,9 @@ const skillLevels: { value: SkillLevel, label: string }[] = [
 
 interface StudentManagerProps {
     students: Student[];
-    onStudentsChange: () => void;
 }
 
-export function StudentManager({ students, onStudentsChange }: StudentManagerProps) {
+export function StudentManager({ students }: StudentManagerProps) {
     const { toast } = useToast();
     const [newStudentName, setNewStudentName] = useState('');
     const [newStudentCode, setNewStudentCode] = useState('');
@@ -68,7 +67,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
             });
             setNewStudentName('');
             setNewStudentCode('');
-            onStudentsChange(); // Refresh the list
         } catch(error) {
             toast({
                 variant: 'destructive',
@@ -116,7 +114,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         });
         
         if (result.success) {
-            onStudentsChange();
             toast({ title: "Élève mis à jour", description: `Les informations de ${editedName} ont été modifiées.` });
             closeEditModal();
         } else {
@@ -128,7 +125,6 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
     const handleDeleteStudent = async (studentId: string) => {
         const result = await deleteStudent(studentId);
         if (result.success) {
-            onStudentsChange();
             toast({ title: "Élève supprimé", description: "L'élève a bien été supprimé de la liste." });
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de supprimer l'élève." });
@@ -351,4 +347,3 @@ export function StudentManager({ students, onStudentsChange }: StudentManagerPro
         </>
     );
 }
-

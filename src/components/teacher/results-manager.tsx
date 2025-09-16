@@ -24,10 +24,9 @@ interface ResultsManagerProps {
     students: Student[];
     allScores: Score[];
     allWritingEntries: WritingEntry[];
-    onDataRefresh: () => void;
 }
 
-export function ResultsManager({ students, allScores, allWritingEntries, onDataRefresh }: ResultsManagerProps) {
+export function ResultsManager({ students, allScores, allWritingEntries }: ResultsManagerProps) {
     const { toast } = useToast();
 
     const sortedStudents = useMemo(() => {
@@ -74,7 +73,6 @@ export function ResultsManager({ students, allScores, allWritingEntries, onDataR
         const result = await deleteScore(scoreId);
         if (result.success) {
             toast({ title: "Résultat supprimé", description: "Le score a été retiré de la base de données." });
-            onDataRefresh();
         } else {
             toast({ variant: 'destructive', title: "Erreur", description: "Impossible de supprimer le score." });
         }
