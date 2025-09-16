@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar as CalendarIcon, FileDown } from 'lucide-react';
-import { format, startOfMonth } from 'date-fns';
+import { format, startOfMonth, startOfDay, endOfDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { DateRange } from 'react-day-picker';
 import { cn } from '@/lib/utils';
@@ -29,24 +30,36 @@ interface ReportGeneratorProps {
 
 export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+    const [filterBySchoolTime, setFilterBySchoolTime] = useState<boolean>(false);
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: startOfMonth(new Date()),
         to: new Date(),
     });
     
     const generatePdfForStudent = (doc: jsPDF, student: Student, dateRange: DateRange) => {
-        const studentScores = allScores.filter(s =>
-            s.userId === student.id &&
-            dateRange.from && new Date(s.createdAt) >= dateRange.from &&
-            dateRange.to && new Date(s.createdAt) <= dateRange.to
-        ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+        const studentScores = allScores.filter(s => {
+            if (s.userId !== student.id || !dateRange.from || !dateRange.to) return false;
+            
+            const scoreDate = new Date(s.createdAt);
+            const scoreHour = scoreDate.getHours();
+            const scoreMinutes = scoreDate.getMinutes();
+
+            const isInDateRange = scoreDate >= startOfDay(dateRange.from) && scoreDate <= endOfDay(dateRange.to);
+            if (!isInDateRange) return false;
+
+            if (filterBySchoolTime) {
+                const isInTimeRange = (scoreHour > 8 || (scoreHour === 8 && scoreMinutes >= 45)) &&
+                                    (scoreHour < 16 || (scoreHour === 16 && scoreMinutes <= 45));
+                return isInTimeRange;
+            }
+            
+            return true;
+        }).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
         const pageHeight = doc.internal.pageSize.getHeight();
         const pageWidth = doc.internal.pageSize.getWidth();
         const margin = 15;
         const columnWidth = (pageWidth - 3 * margin) / 2;
-        const xCol1 = margin;
-        const xCol2 = margin + columnWidth + margin;
         
         // --- HEADER ---
         doc.setFont('helvetica', 'bold');
@@ -66,101 +79,100 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 scoresByCategory[skill.category].push(score);
             }
         });
-
-        // --- CONTENT FLOW LOGIC ---
-        let currentX = xCol1;
+        
         let yPos = 50;
+        let currentColumn = 1;
 
-        const checkAndSwitchColumn = (neededHeight: number) => {
-             if (yPos + neededHeight > pageHeight - margin) {
-                if (currentX === xCol1) { // If in left column and it's full
-                    currentX = xCol2; // Move to right column
-                    yPos = 50; // Reset yPos to top
-                } else { // If in right column and it's full
-                    doc.addPage(); // Add new page
-                    currentX = xCol1; // Back to left column
-                    yPos = 50; // Reset yPos
+        const renderBlock = (renderer: () => void) => {
+            const initialY = yPos;
+            const initialCol = currentColumn;
+            
+            // Render once to get the final Y position from autotable
+            renderer();
+            const finalY = (doc as any).lastAutoTable.finalY || initialY + 20; // fallback height
+            const blockHeight = finalY - initialY;
+            
+            // Reset to draw for real
+            yPos = initialY;
+            currentColumn = initialCol;
+            (doc as any).lastAutoTable.finalY = initialY;
+
+            if (yPos + blockHeight > pageHeight - margin) {
+                if (currentColumn === 1) {
+                    currentColumn = 2;
+                    yPos = 50;
+                } else {
+                    doc.addPage();
+                    currentColumn = 1;
+                    yPos = 50;
                 }
             }
-        }
-        
-        let hasContent = false;
+            
+            renderer();
+            yPos = (doc as any).lastAutoTable.finalY + 5;
+        };
+
         for (const category of allSkillCategories) {
             const categoryScores = scoresByCategory[category];
             if (!categoryScores || categoryScores.length === 0) continue;
-            hasContent = true;
 
-            const categoryTitleHeight = 15;
-            checkAndSwitchColumn(categoryTitleHeight);
-
-            autoTable(doc, {
-                startY: yPos,
-                head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
-                theme: 'plain', tableWidth: columnWidth, margin: { left: currentX },
+            // Category Header
+            renderBlock(() => {
+                 autoTable(doc, {
+                    startY: yPos,
+                    head: [[{ content: category, styles: { fillColor: PRIMARY_COLOR, fontStyle: 'bold', textColor: '#ffffff' } }]],
+                    theme: 'plain', tableWidth: columnWidth, margin: { left: currentColumn === 1 ? margin : margin * 2 + columnWidth },
+                });
             });
-            yPos = (doc as any).lastAutoTable.finalY + 4;
 
             for (const score of categoryScores) {
-                const skillName = getSkillBySlug(score.skill)?.name || score.skill;
-                const scoreDate = format(new Date(score.createdAt), 'dd/MM/yy', { locale: fr });
-                const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)}%`;
-                const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
-                
-                const skillLine = `${skillName} - ${scoreDate}`;
-                
-                const skillLineHeight = 10;
-                checkAndSwitchColumn(skillLineHeight);
+                 renderBlock(() => {
+                    const skillName = getSkillBySlug(score.skill)?.name || score.skill;
+                    const scoreDate = format(new Date(score.createdAt), 'dd/MM/yy', { locale: fr });
+                    const scoreText = score.skill === 'fluence' || score.skill === 'reading-race' ? `${score.score} MCLM` : `${Math.round(score.score)}%`;
+                    const level = difficultyLevelToString(score.skill, score.score, score.calculationSettings, score.currencySettings, score.timeSettings, score.calendarSettings, score.numberLevelSettings, score.countSettings);
+                    
+                    const head = [[
+                        { content: `${skillName} - ${scoreDate}`, styles: { fontStyle: 'bold' }},
+                        { content: scoreText, styles: { halign: 'center' }},
+                        { content: `Niveau ${level}`, styles: { halign: 'right' }}
+                    ]];
 
-                doc.setFontSize(10);
-                doc.setFont('helvetica', 'bold');
-                doc.text(skillLine, currentX, yPos);
-                
-                doc.setFont('helvetica', 'normal');
-                doc.setFontSize(9);
-                doc.text(scoreText, currentX + columnWidth / 2, yPos, { align: 'center'});
-                
-                if (level) {
-                     doc.text(`Niveau ${level}`, currentX + columnWidth, yPos, { align: 'right' });
-                }
+                    const body = (score.details || []).map(detail => [detail.question, detail.userAnswer]);
 
-                yPos += 5;
-
-                if (score.details && score.details.length > 0) {
-                     const body = score.details.map(detail => [detail.question, detail.userAnswer]);
-                     autoTable(doc, {
+                    autoTable(doc, {
                         startY: yPos,
-                        head: [['Question', 'Réponse']],
-                        body,
-                        theme: 'grid', tableWidth: columnWidth, margin: { left: currentX },
-                        headStyles: { fillColor: [230, 230, 230], textColor: 20, fontSize: 8, cellPadding: 1 },
-                        styles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
-                        columnStyles: { 0: { cellWidth: columnWidth * 0.5 }, 1: { cellWidth: columnWidth * 0.5 } },
-                         didDrawPage: (data) => {
-                            if (data.pageNumber > doc.internal.pages.length - 1) {
-                                // This is tricky because autoTable doesn't know about our columns
-                            }
-                         },
+                        head: head,
+                        body: body.length > 0 ? body : undefined,
+                        theme: body.length > 0 ? 'grid' : 'plain',
+                        tableWidth: columnWidth,
+                        margin: { left: currentColumn === 1 ? margin : margin * 2 + columnWidth },
+                        headStyles: { 
+                            fillColor: [245, 245, 245], 
+                            textColor: 20, 
+                            fontSize: 8, 
+                            cellPadding: {top: 1.5, right: 1.5, bottom: 0.5, left: 1.5}
+                        },
+                        bodyStyles: { fontSize: 8, cellPadding: 1.5, overflow: 'linebreak' },
+                        columnStyles: { 0: { cellWidth: 'auto' }, 1: { cellWidth: 'auto' }, 2: { cellWidth: 'auto' } },
                         didParseCell: (data) => {
-                            if (score.details && data.row.index >= 0 && score.details[data.row.index]) {
+                            if (data.section === 'head') {
+                                // Clear default styles for custom layout
+                                data.cell.styles.fontStyle = 'normal';
+                                data.cell.styles.fontSize = 8;
+                            }
+                            if (data.section === 'body' && score.details && data.row.index >= 0 && score.details[data.row.index]) {
                                 if(score.details[data.row.index].status === 'incorrect'){
                                     data.cell.styles.fillColor = LIGHT_RED_FILL;
                                 }
                             }
                         },
-                         willDrawPage: (data) => {
-                            // This hook is better. When a new page is added by autotable, reset columns.
-                            yPos = 50;
-                            currentX = xCol1;
-                         }
                     });
-                    yPos = (doc as any).lastAutoTable.finalY + 5;
-                } else {
-                    yPos += 2;
-                }
+                 });
             }
         }
 
-        if (!hasContent) {
+        if (studentScores.length === 0) {
             doc.setFontSize(12);
             doc.setTextColor(100);
             doc.text("Aucune donnée de score pour cet élève sur la période sélectionnée.", pageWidth/2, 60, { align: 'center' });
@@ -202,10 +214,10 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                 </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row items-center gap-6 p-6 bg-secondary/30 rounded-lg">
-                <div className="grid gap-2 w-full sm:w-1/3">
+                <div className="grid gap-2 w-full sm:w-auto">
                     <Label htmlFor="student-select">Élève</Label>
                     <Select onValueChange={setSelectedStudentId} value={selectedStudentId || ''}>
-                        <SelectTrigger id="student-select">
+                        <SelectTrigger id="student-select" className="w-full sm:w-48">
                             <SelectValue placeholder="Choisir un élève..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -223,7 +235,7 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                                 id="date-range"
                                 variant={"outline"}
                                 className={cn(
-                                    "w-full sm:w-[300px] justify-start text-left font-normal",
+                                    "w-full sm:w-[280px] justify-start text-left font-normal",
                                     !dateRange && "text-muted-foreground"
                                 )}
                             >
@@ -254,6 +266,12 @@ export function ReportGenerator({ students, allScores }: ReportGeneratorProps) {
                             />
                         </PopoverContent>
                     </Popover>
+                </div>
+                <div className="flex items-center space-x-2 self-end pb-2">
+                    <Checkbox id="school-time" checked={filterBySchoolTime} onCheckedChange={(checked) => setFilterBySchoolTime(!!checked)} />
+                    <Label htmlFor="school-time" className="text-sm font-medium leading-none">
+                        Temps de classe (8h45 - 16h45)
+                    </Label>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto self-end">
                     <Button
