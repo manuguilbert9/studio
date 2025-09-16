@@ -40,6 +40,34 @@ const shuffle = (array: any[]) => {
   return array;
 };
 
+// Depth-first search to find the solution path.
+const findSolutionPath = (grid: Tile[][], start: Position, end: Position): Position[] | null => {
+    const stack: { pos: Position, path: Position[] }[] = [{ pos: start, path: [start] }];
+    const visited = new Set([`${start.y},${start.x}`]);
+    const dirs = [[0, 1], [0, -1], [1, 0], [-1, 0]]; // S, N, E, W
+    const width = grid[0].length;
+    const height = grid.length;
+
+    while (stack.length > 0) {
+        const { pos, path } = stack.pop()!;
+        if (pos.x === end.x && pos.y === end.y) {
+            return path; // Solution found
+        }
+        
+        for (const [dx, dy] of shuffle(dirs)) {
+            const nextX = pos.x + dx;
+            const nextY = pos.y + dy;
+
+            if (nextX >= 0 && nextX < width && nextY >= 0 && nextY < height && grid[nextY][nextX] !== 'wall' && !visited.has(`${nextY},${nextX}`)) {
+                visited.add(`${nextY},${nextX}`);
+                const newPath = [...path, { x: nextX, y: nextY }];
+                stack.push({ pos: { x: nextX, y: nextY }, path: newPath });
+            }
+        }
+    }
+    return null; // No path found
+};
+
 // Generates a maze-like structure for Level C
 const generateMaze = (width: number, height: number): { grid: Tile[][], playerStart: Position, keyPos: Position } => {
     // Ensure width and height are odd for the maze algorithm
@@ -47,9 +75,12 @@ const generateMaze = (width: number, height: number): { grid: Tile[][], playerSt
     const h = height % 2 === 0 ? height + 1 : height;
     
     let grid: Tile[][] = Array.from({ length: h }, () => Array(w).fill('wall'));
-    let path: Position[] = [];
+    let emptyCells: Position[] = [];
 
     function carvePassages(cx: number, cy: number) {
+        grid[cy][cx] = 'empty';
+        emptyCells.push({x: cx, y: cy});
+
         const directions = shuffle([
             { x: 0, y: -2, wallY: -1 }, // North
             { x: 2, y: 0, wallX: 1 },  // East
@@ -63,8 +94,7 @@ const generateMaze = (width: number, height: number): { grid: Tile[][], playerSt
 
             if (ny >= 0 && ny < h && nx >= 0 && nx < w && grid[ny][nx] === 'wall') {
                 grid[cy + (dir.wallY || 0)][cx + (dir.wallX || 0)] = 'empty';
-                grid[ny][nx] = 'empty';
-                path.push({x: nx, y: ny});
+                emptyCells.push({x: cx + (dir.wallX || 0), y: cy + (dir.wallY || 0) });
                 carvePassages(nx, ny);
             }
         }
@@ -72,22 +102,27 @@ const generateMaze = (width: number, height: number): { grid: Tile[][], playerSt
 
     const startX = Math.floor(Math.random() * (w / 2)) * 2;
     const startY = Math.floor(Math.random() * (h / 2)) * 2;
-    grid[startY][startX] = 'empty';
-    path.push({x: startX, y: startY});
     carvePassages(startX, startY);
-
-    const playerStart = path[0];
-    const keyPos = path[path.length - 1];
     
-    // Add traps after maze is carved
-    const pathWithoutStartEnd = path.slice(1, -1);
-    const trapCount = Math.floor(pathWithoutStartEnd.length * 0.1); // ~10% of path are traps
-    for (let i = 0; i < trapCount; i++) {
-        const trapIndex = Math.floor(Math.random() * pathWithoutStartEnd.length);
-        const {x, y} = pathWithoutStartEnd[trapIndex];
-        if (grid[y][x] === 'empty') {
-            grid[y][x] = 'trap';
-        }
+    let playerStart = emptyCells[0];
+    let keyPos = emptyCells[emptyCells.length-1];
+
+    const solutionPath = findSolutionPath(grid, playerStart, keyPos);
+    if (!solutionPath) {
+        // Fallback or retry logic if somehow no path is found
+        return generateMaze(width, height); 
+    }
+    
+    const solutionPathSet = new Set(solutionPath.map(p => `${p.y},${p.x}`));
+
+    // Add traps to cells that are NOT part of the solution path
+    const potentialTrapCells = emptyCells.filter(cell => !solutionPathSet.has(`${cell.y},${cell.x}`));
+    const trapCount = Math.floor(potentialTrapCells.length * 0.15); // ~15% of non-solution path are traps
+    
+    const shuffledPotentialTraps = shuffle(potentialTrapCells);
+    for (let i = 0; i < Math.min(trapCount, shuffledPotentialTraps.length); i++) {
+        const {x, y} = shuffledPotentialTraps[i];
+        grid[y][x] = 'trap';
     }
 
     return { grid, playerStart, keyPos };
@@ -96,8 +131,11 @@ const generateMaze = (width: number, height: number): { grid: Tile[][], playerSt
 
 const generateLevel = (level: SkillLevel): LevelData => {
     if (level === 'C') {
-        const { grid, playerStart, keyPos } = generateMaze(15, 15);
-        return { grid, playerStart, keyPos };
+        let maze;
+        do {
+            maze = generateMaze(15, 15);
+        } while (!isPathPossible(maze.grid, maze.playerStart, maze.keyPos));
+        return maze;
     }
     
     const width = 7;
@@ -131,7 +169,7 @@ const generateLevel = (level: SkillLevel): LevelData => {
             startCornerIndex = Math.floor(Math.random() * corners.length);
             playerStart = corners[startCornerIndex];
             attempts++;
-            if (attempts > 10) return generateLevel('A'); // fallback
+            if (attempts > 20) return generateLevel('A'); // fallback
         } while (grid[playerStart.y][playerStart.x] !== 'empty');
 
         attempts = 0;
@@ -139,7 +177,7 @@ const generateLevel = (level: SkillLevel): LevelData => {
             endCornerIndex = Math.floor(Math.random() * corners.length);
             keyPos = corners[endCornerIndex];
             attempts++;
-             if (attempts > 10) return generateLevel('A'); // fallback
+             if (attempts > 20) return generateLevel('A'); // fallback
         } while (endCornerIndex === startCornerIndex || grid[keyPos.y][keyPos.x] !== 'empty');
     } else { // Level A
         do {
@@ -454,12 +492,12 @@ export function CodedPathExercise() {
                                 return (
                                     <div key={`${y}-${x}`} className={cn("relative flex items-center justify-center border", textSize, tileSize,
                                       isStart && 'bg-blue-200/50',
-                                      isKey && 'bg-yellow-200/50'
+                                      isKey && 'bg-yellow-200/50',
+                                      tile === 'trap' && !isBroken && 'border-dashed border-slate-400/50'
                                     )}>
                                         {isPlayerHere && <Bot className={cn(iconSize, "text-blue-600 z-10")}/>}
                                         {tile === 'wall' && <div className="w-full h-full bg-slate-600"/>}
                                         {isBroken && <div className="w-full h-full bg-black"/>}
-                                        {tile === 'trap' && !isBroken && <div className="w-2/3 h-2/3 bg-slate-400/50 rounded-full border-2 border-dashed border-slate-500" />}
                                         {isKey && !isPlayerHere && <KeyRound className={cn(iconSize, "text-yellow-500")}/>}
                                     </div>
                                 )
